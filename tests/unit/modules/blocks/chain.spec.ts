@@ -377,10 +377,13 @@ describe('modules/blocks/chain', () => {
       await inst.applyBlock(block, false, false, accountsMap);
       expect(blocksModule.lastBlock).instanceof(Object);
       expect(blocksModule.lastBlock.id).eq(block.id);
-      expect(blocksModule.lastBlock.transactions).deep.eq(allTxs.map(t => {
-        delete t.requesterPublicKey;
-        return t;
-      }));
+      expect(blocksModule.lastBlock.transactions).deep.eq(allTxs
+        .map((t) => toBufferedTransaction(t))
+        .map((t) => {
+          delete t.requesterPublicKey;
+          delete t.signSignature;
+          return t;
+        }));
       // expect (blocksModule.lastBlock).deep.eq({transactions: allTxs});
     });
     it('should not save block in blocksModule if roundsModuleTick fails', async () => {

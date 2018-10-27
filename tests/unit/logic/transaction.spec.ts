@@ -470,6 +470,7 @@ describe('logic/transaction', () => {
       txTypeVerifyStub       = sandbox.stub(sendTransaction, 'verify').resolves();
       sender.isMultisignature = () => false;
       instGetIdStub     = sandbox.stub(instance, 'getId').returns(tx.id);
+      accountLogicStub.stubs.assertValidAddress.returns(null);
     });
 
     it('should throw if the tx.id is wrong', async () => {
@@ -774,6 +775,17 @@ describe('logic/transaction', () => {
 
       await expect(instance.verify(tx, sender, null /*requester*/, 1))
         .to.rejectedWith('Account or requester account is not multisignature');
+    });
+
+    describe('wrong recipient', () => {
+      it('should throw if accountLogic.assertValidAddress fails', async () => {
+        accountLogicStub.stubs.assertValidAddress.throws(new Error('AL Error'));
+        await expect(instance.verify(tx, sender, requester, 1)).rejectedWith('AL Error');
+      });
+      it('should not throw if accountLogic.assertValidAddresses does not fail', async () => {
+        accountLogicStub.stubs.assertValidAddress.returns(null);
+        await expect(instance.verify(tx, sender, requester, 1)).fulfilled;
+      });
     });
   });
 

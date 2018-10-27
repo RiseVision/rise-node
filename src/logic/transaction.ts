@@ -7,6 +7,7 @@ import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
 import {
   BigNum,
+  catchToLoggerAndRemapError,
   constants,
   Ed,
   ExceptionsList,
@@ -125,16 +126,14 @@ export class TransactionLogic implements ITransactionLogic {
     bb.writeByte(tx.type);
     bb.writeUint32(tx.timestamp);
 
-    const senderPublicKeyBuffer = Buffer.isBuffer(tx.senderPublicKey) ?
-      tx.senderPublicKey : Buffer.from(tx.senderPublicKey, 'hex');
+    const senderPublicKeyBuffer = tx.senderPublicKey;
     // tslint:disable-next-line
     for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
       bb.writeByte(senderPublicKeyBuffer[i]);
     }
 
     if (tx.requesterPublicKey) {
-      const requesterPublicKey = Buffer.isBuffer(tx.requesterPublicKey) ?
-        tx.requesterPublicKey : Buffer.from(tx.requesterPublicKey, 'hex');
+      const requesterPublicKey = tx.requesterPublicKey;
       // tslint:disable-next-line
       for (let i = 0; i < requesterPublicKey.length; i++) {
         bb.writeByte(requesterPublicKey[i]);
@@ -142,7 +141,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (tx.recipientId) {
-      const recipient = tx.recipientId.slice(0, -this.constants.addressSuffix.length);
+      const recipient = tx.recipientId.slice(0, -1);
       const recBuf    = new BigNum(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
@@ -165,8 +164,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSignature && tx.signature) {
-      const signatureBuffer = Buffer.isBuffer(tx.signature) ?
-        tx.signature : Buffer.from(tx.signature, 'hex');
+      const signatureBuffer = tx.signature;
       // tslint:disable-next-line
       for (let i = 0; i < signatureBuffer.length; i++) {
         bb.writeByte(signatureBuffer[i]);
@@ -174,8 +172,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     if (!skipSecondSignature && tx.signSignature) {
-      const signSignatureBuffer = Buffer.isBuffer(tx.signSignature) ?
-        tx.signSignature : Buffer.from(tx.signSignature, 'hex');
+      const signSignatureBuffer = tx.signSignature;
       // tslint:disable-next-line
       for (let i = 0; i < signSignatureBuffer.length; i++) {
         bb.writeByte(signSignatureBuffer[i]);
@@ -294,6 +291,7 @@ export class TransactionLogic implements ITransactionLogic {
     };
   }
 
+  @RunThroughExceptions(ExceptionsList.tx_verify)
   public async verify(tx: IConfirmedTransaction<any> | IBaseTransaction<any>, sender: AccountsModel,
                       requester: AccountsModel, height: number) {
     this.assertKnownTransactionType(tx.type);
@@ -344,6 +342,10 @@ export class TransactionLogic implements ITransactionLogic {
 
     if (String(tx.senderId).toUpperCase() !== String(sender.address).toUpperCase()) {
       throw new Error('Invalid sender address');
+    }
+
+    if (tx.recipientId) {
+      this.accountLogic.assertValidAddress(tx.recipientId);
     }
 
     const multisignatures = (sender.multisignatures || sender.u_multisignatures || []).slice();

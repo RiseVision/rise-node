@@ -1,6 +1,6 @@
 import { Column, DataType, HasMany, Model, PrimaryKey, Table } from 'sequelize-typescript';
 import * as _ from 'lodash';
-import { SignedBlockType } from '../logic';
+import { SignedAndChainedBlockType, SignedBlockType } from '../logic';
 import { TransactionsModel } from './TransactionsModel';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
@@ -67,7 +67,17 @@ export class BlocksModel extends Model<BlocksModel> {
   @HasMany(() => TransactionsModel, { as: "TransactionsModel" })
   private TransactionsModel: TransactionsModel[];
 
-  // tslint:disable member-ordering
+  public toJSON(): SignedAndChainedBlockType {
+    const toRet        = super.toJSON();
+    toRet.transactions = (toRet.TransactionsModel || [])
+      .map((t, idx) => {
+        t.asset = this.transactions[idx].asset;
+        return t;
+      });
+    return toRet;
+  }
+
+// tslint:disable member-ordering
   public static classFromPOJO(pojo: SignedBlockType): BlocksModel {
     const toRet = new this();
     Object.keys(pojo).forEach((k) => toRet[k] = pojo[k]);
@@ -75,7 +85,7 @@ export class BlocksModel extends Model<BlocksModel> {
   }
 
   public static toStringBlockType(btmp: SignedBlockType, TxModel: typeof TransactionsModel, blocksModule: IBlocksModule): SignedBlockType<string> {
-    const b = _.cloneDeep(btmp instanceof BlocksModel ? btmp.toJSON() : btmp);
+    const b   = _.cloneDeep(btmp instanceof BlocksModel ? btmp.toJSON() : btmp);
     const txs = (btmp.transactions || [])
       .map((t) => TxModel.toTransportTransaction(t, blocksModule));
     if (!Buffer.isBuffer(b.blockSignature) || !Buffer.isBuffer(b.generatorPublicKey) || !Buffer.isBuffer(b.payloadHash)) {
@@ -88,7 +98,6 @@ export class BlocksModel extends Model<BlocksModel> {
       generatorPublicKey: b.generatorPublicKey.toString('hex'),
       payloadHash       : b.payloadHash.toString('hex'),
     };
-    delete toRet.TransactionsModel;
     return toRet;
   }
 }

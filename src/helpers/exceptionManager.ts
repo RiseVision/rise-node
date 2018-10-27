@@ -1,13 +1,14 @@
 import { inject, injectable } from 'inversify';
 import 'reflect-metadata';
-import { ExceptionModel } from '../models';
 import { Symbols } from '../ioc/symbols';
+import { ExceptionModel } from '../models';
 
 export const ExceptionsList = {
   assertValidSlot    : Symbol('assertValidSlot'),
   checkBalance       : Symbol('checkBalance'),
   tx_apply           : Symbol('tx_apply'),
   tx_applyUnconfirmed: Symbol('tx_applyUnconfirmed'),
+  tx_verify          : Symbol('tx_verify'),
 };
 
 export interface IExceptionHandler<K> {
