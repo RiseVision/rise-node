@@ -170,7 +170,7 @@ describe('TPS', function () {
     const theBlocks = [];
     let lastBlock   = blocksModule.lastBlock;
     for (let i = 0; i < blocks; i++) {
-      const b = await initializer.generateBlock(txs.splice(0, blockSize), lastBlock as any);
+      const b = await initializer.generateBlock(txs.splice(0, blockSize), null, lastBlock as any);
       console.log('txs in block ', i, b.transactions.length);
       lastBlock = b as any;
       theBlocks.push(b);
