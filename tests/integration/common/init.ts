@@ -84,14 +84,14 @@ export class IntegrationTestInitializer {
     expect(blockModule.lastBlock.height).to.be.eq(height - howMany);
   }
 
-  public async generateBlock(transactions: Array<ITransaction<any>> = []): Promise<SignedBlockType & {height: number}> {
+  public async generateBlock(transactions: Array<ITransaction<any>> = [], slot?: number): Promise<SignedBlockType & {height: number}> {
     const blockLogic      = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
     const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
     const height          = blockModule.lastBlock.height;
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const delegates       = await delegatesModule.generateDelegateList(height + 1);
-    const theSlot         = height;
+    const theSlot         = slot || height;
     const delegateId      = delegates[theSlot % slots.delegates];
     const kp              = getKeypairByPkey(delegateId.toString('hex'));
 
