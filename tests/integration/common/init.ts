@@ -15,7 +15,7 @@ import { SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
 import { IBlockLogic } from '../../../src/ioc/interfaces/logic';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { toBufferedTransaction } from '../../utils/txCrafter';
-import { MigrationsModel } from '../../../src/models';
+import { BlocksModel, MigrationsModel } from '../../../src/models';
 import { IBaseTransaction } from '../../../src/logic/transactions';
 import { SequenceStub } from '../../stubs';
 
@@ -84,10 +84,11 @@ export class IntegrationTestInitializer {
     expect(blockModule.lastBlock.height).to.be.eq(height - howMany);
   }
 
-  public async generateBlock(transactions: Array<ITransaction<any>> = [], slot?: number): Promise<SignedBlockType & {height: number}> {
+  public async generateBlock(transactions: Array<ITransaction<any>> = [], slot?: number, prevBlock?: BlocksModel): Promise<SignedBlockType & {height: number}> {
     const blockLogic      = this.appManager.container.get<IBlockLogic>(Symbols.logic.block);
     const blockModule     = this.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
-    const height          = blockModule.lastBlock.height;
+    const lastB = prevBlock ? prevBlock : blockModule.lastBlock;
+    const height          = lastB.height;
     const delegatesModule = this.appManager.container.get<IDelegatesModule>(Symbols.modules.delegates);
     const slots           = this.appManager.container.get<Slots>(Symbols.helpers.slots);
     const delegates       = await delegatesModule.generateDelegateList(height + 1);
@@ -97,7 +98,7 @@ export class IntegrationTestInitializer {
 
     return blockLogic.create({
       keypair      : kp,
-      previousBlock: blockModule.lastBlock,
+      previousBlock: prevBlock ? prevBlock : blockModule.lastBlock,
       timestamp    : slots.getSlotTime(theSlot),
       transactions : transactions.map((t) => toBufferedTransaction(t)),
     });

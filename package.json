@@ -58,11 +58,13 @@
     "shuffle-array": "^1.0.1",
     "socket.io": "=2.1.1",
     "sodium": "=2.0.3",
+    "sodium-native": "^2.1.6",
     "source-map-support": "=0.5.6",
     "squel": "=5.12.2",
     "strftime": "=0.10.0",
     "traverse": "^0.6.6",
     "uuid": "=3.3.2",
+    "supersha": "0.0.1",
     "z-schema": "=3.22.0"
   },
   "devDependencies": {
