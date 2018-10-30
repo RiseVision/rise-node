@@ -191,7 +191,7 @@ export class IntegrationTestInitializer {
     this.appManager = new AppManager(
       JSON.parse(JSON.stringify(require(`${__dirname}/../../../../core-launchpad/tests/unit/assets/config.json`))),
       loggerCreator({
-        echo    : 'debug',
+        echo    : 'error',
         filename: '/dev/null',
       }),
       'integration-version',

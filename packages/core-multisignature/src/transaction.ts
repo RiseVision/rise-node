@@ -89,32 +89,6 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     this.unconfirmedSignatures = {};
   }
 
-  @postConstruct()
-  private postConstruct() {
-    this.multisigSchema = {
-      id        : 'Multisignature',
-      type      : 'object',
-      properties: {
-        min      : {
-          type   : 'integer',
-          minimum: this.constants.multisigConstraints.min.minimum,
-          maximum: this.constants.multisigConstraints.min.maximum,
-        },
-        keysgroup: {
-          type    : 'array',
-          minItems: this.constants.multisigConstraints.keysgroup.minItems,
-          maxItems: this.constants.multisigConstraints.keysgroup.maxItems,
-        },
-        lifetime : {
-          type   : 'integer',
-          minimum: this.constants.multisigConstraints.lifetime.minimum,
-          maximum: this.constants.multisigConstraints.lifetime.maximum,
-        },
-      },
-      required  : ['min', 'keysgroup', 'lifetime'],
-    };
-  }
-
   public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
     return this.systemModule.getFees(height).fees.multisignature;
   }
@@ -161,48 +135,7 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   }
 
   public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<void> {
-    if (!tx.asset || !tx.asset.multisignature) {
-      throw new Error('Invalid transaction asset');
-    }
-
-    if (!Array.isArray(tx.asset.multisignature.keysgroup)) {
-      throw new Error('Invalid multisignature keysgroup. Must be an array');
-    }
-
-    if (tx.asset.multisignature.keysgroup.length === 0) {
-      throw new Error('Invalid multisignature keysgroup. Must not be empty');
-    }
-
-    // check multisig asset is valid hex publickeys
-    for (const key of tx.asset.multisignature.keysgroup) {
-      if (!key || typeof(key) !== 'string' || key.length !== 64 + 1) {
-        throw new Error('Invalid member in keysgroup');
-      }
-    }
-
-    if (tx.asset.multisignature.min < this.constants.multisigConstraints.min.minimum ||
-      tx.asset.multisignature.min > this.constants.multisigConstraints.min.maximum) {
-      throw new Error(`Invalid multisignature min. Must be between ${this.constants.multisigConstraints.min.minimum} and ${
-        this.constants.multisigConstraints.min.maximum}`);
-    }
-
-    if (tx.asset.multisignature.min > tx.asset.multisignature.keysgroup.length) {
-      throw new Error('Invalid multisignature min. Must be less than or equal to keysgroup size');
-    }
-
-    if (tx.asset.multisignature.lifetime < this.constants.multisigConstraints.lifetime.minimum ||
-      tx.asset.multisignature.lifetime > this.constants.multisigConstraints.lifetime.maximum) {
-      throw new Error(`Invalid multisignature lifetime. Must be between ${this.constants.multisigConstraints
-        .lifetime.minimum} and ${this.constants.multisigConstraints.lifetime.maximum}`);
-    }
-
-    if (tx.recipientId) {
-      throw new Error('Invalid recipient');
-    }
-
-    if (tx.amount !== 0) {
-      throw new Error('Invalid transaction amount');
-    }
+    this.assertValidFormat(tx);
 
     if (this.ready(tx, sender)) {
       for (const key of tx.asset.multisignature.keysgroup) {
@@ -228,27 +161,6 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
 
     if (tx.asset.multisignature.keysgroup.indexOf(`+${sender.publicKey.toString('hex')}`) !== -1) {
       throw new Error('Invalid multisignature keysgroup. Cannot contain sender');
-    }
-
-    for (const key of tx.asset.multisignature.keysgroup) {
-      if (typeof(key) !== 'string') {
-        throw new Error('Invalid member in keysgroup');
-      }
-
-      const sign   = key[0];
-      const pubKey = key.substring(1);
-      if (sign !== '+') {
-        throw new Error('Invalid math operator in multisignature keysgroup');
-      }
-
-      if (!this.schema.validate(pubKey, { format: 'publicKey' })) {
-        throw new Error('Invalid publicKey in multisignature keysgroup');
-      }
-    }
-
-    // Check for duplicated keys
-    if (tx.asset.multisignature.keysgroup.filter((k, i, a) => a.indexOf(k) !== i).length > 0) {
-      throw new Error('Encountered duplicate public key in multisignature keysgroup');
     }
   }
 
@@ -335,9 +247,6 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   public objectNormalize(tx: IBaseTransaction<MultisigAsset>): IBaseTransaction<MultisigAsset> {
     const report = this.schema.validate(tx.asset.multisignature, this.multisigSchema);
     if (!report) {
-      console.log(this.multisigSchema);
-      console.log(tx);
-      process.exit(1);
       throw new Error(`Failed to validate multisignature schema: ${this.schema.getLastErrors()
         .map((err) => err.message).join(', ')}`);
     }
@@ -390,7 +299,8 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
    * @param sender
    * @returns {boolean}
    */
-  public async ready(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig): Promise<boolean> {
+  public async ready(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<boolean> {
+    this.assertValidFormat(tx);
     if (!Array.isArray(tx.signatures)) {
       return false;
     }
@@ -484,5 +394,97 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
 
     }
     return ops;
+  }
+
+  private assertValidFormat(tx: IBaseTransaction<MultisigAsset>) {
+    if (!tx.asset || !tx.asset.multisignature) {
+      throw new Error('Invalid transaction asset');
+    }
+
+    if (!Array.isArray(tx.asset.multisignature.keysgroup)) {
+      throw new Error('Invalid multisignature keysgroup. Must be an array');
+    }
+
+    if (tx.asset.multisignature.keysgroup.length === 0) {
+      throw new Error('Invalid multisignature keysgroup. Must not be empty');
+    }
+
+    // check multisig asset is valid hex publickeys
+    for (const key of tx.asset.multisignature.keysgroup) {
+      if (!key || typeof(key) !== 'string' || key.length !== 64 + 1) {
+        throw new Error('Invalid member in keysgroup');
+      }
+    }
+
+    if (tx.asset.multisignature.min < this.constants.multisigConstraints.min.minimum ||
+      tx.asset.multisignature.min > this.constants.multisigConstraints.min.maximum) {
+      throw new Error(`Invalid multisignature min. Must be between ${this.constants.multisigConstraints.min.minimum} and ${
+        this.constants.multisigConstraints.min.maximum}`);
+    }
+
+    if (tx.asset.multisignature.min > tx.asset.multisignature.keysgroup.length) {
+      throw new Error('Invalid multisignature min. Must be less than or equal to keysgroup size');
+    }
+
+    if (tx.asset.multisignature.lifetime < this.constants.multisigConstraints.lifetime.minimum ||
+      tx.asset.multisignature.lifetime > this.constants.multisigConstraints.lifetime.maximum) {
+      throw new Error(`Invalid multisignature lifetime. Must be between ${this.constants.multisigConstraints
+        .lifetime.minimum} and ${this.constants.multisigConstraints.lifetime.maximum}`);
+    }
+
+    if (tx.recipientId) {
+      throw new Error('Invalid recipient');
+    }
+
+    if (tx.amount !== 0) {
+      throw new Error('Invalid transaction amount');
+    }
+
+    for (const key of tx.asset.multisignature.keysgroup) {
+      if (typeof(key) !== 'string') {
+        throw new Error('Invalid member in keysgroup');
+      }
+
+      const sign   = key[0];
+      const pubKey = key.substring(1);
+      if (sign !== '+') {
+        throw new Error('Invalid math operator in multisignature keysgroup');
+      }
+
+      if (!this.schema.validate(pubKey, { format: 'publicKey' })) {
+        throw new Error('Invalid publicKey in multisignature keysgroup');
+      }
+    }
+
+    // Check for duplicated keys
+    if (tx.asset.multisignature.keysgroup.filter((k, i, a) => a.indexOf(k) !== i).length > 0) {
+      throw new Error('Encountered duplicate public key in multisignature keysgroup');
+    }
+  }
+
+  @postConstruct()
+  private postConstruct() {
+    this.multisigSchema = {
+      id        : 'Multisignature',
+      type      : 'object',
+      properties: {
+        min      : {
+          type   : 'integer',
+          minimum: this.constants.multisigConstraints.min.minimum,
+          maximum: this.constants.multisigConstraints.min.maximum,
+        },
+        keysgroup: {
+          type    : 'array',
+          minItems: this.constants.multisigConstraints.keysgroup.minItems,
+          maxItems: this.constants.multisigConstraints.keysgroup.maxItems,
+        },
+        lifetime : {
+          type   : 'integer',
+          minimum: this.constants.multisigConstraints.lifetime.minimum,
+          maximum: this.constants.multisigConstraints.lifetime.maximum,
+        },
+      },
+      required  : ['min', 'keysgroup', 'lifetime'],
+    };
   }
 }

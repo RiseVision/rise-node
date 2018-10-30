@@ -125,14 +125,20 @@ export class PoolManager {
     const missingUnconfirmed = this.constants.maxTxsPerBlock - this.pool.unconfirmed.count;
     const readyTxs           = this.pool.ready.list({
       limit  : missingUnconfirmed,
-      reverse: true,
       sortFn : (a, b) => a.tx.fee - b.tx.fee,
     }).map((t) => t.tx);
 
     const accMap = await this.accountsModule.txAccounts(readyTxs);
 
+    const confirmedIDs = await this.module
+      .filterConfirmedIds(readyTxs.map((t) => t.id));
     const unconfirmedInCycle: Array<IBaseTransaction<any> & { relays: number }> = [];
     for (const readyTx of readyTxs) {
+      if (confirmedIDs.indexOf(readyTx.id) !== -1) {
+        this.logger.warn(`Transaction ${readyTx.id} was ready but already confirmed`);
+        this.pool.removeFromPool(readyTx.id);
+        continue;
+      }
       try {
         // Check transaction is still valid.
         await this.module.checkTransaction(readyTx, accMap, null);
@@ -140,6 +146,7 @@ export class PoolManager {
         await this.module.applyUnconfirmed(readyTx, accMap[readyTx.senderId]);
         // Move it from one queue to another
         this.pool.moveTx(readyTx.id, 'ready', 'unconfirmed');
+
         unconfirmedInCycle.push(readyTx as any);
 
         // Notify

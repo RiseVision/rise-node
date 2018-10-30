@@ -5,7 +5,7 @@ import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import * as uuid from 'uuid';
 // import { generateAccount } from './accountsUtils';
 
-export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction<T> => {
+export const toBufferedTransaction = <T>(t: ITransaction<any>): IBaseTransaction<T> & {senderId: string} => {
   return {
     ...t,
 

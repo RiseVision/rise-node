@@ -21,6 +21,7 @@ import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import * as uuid from 'uuid';
 import initializer from './init';
+import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
 
 const delegates    = require('../../../../core-launchpad/tests/unit/assets/genesisDelegates.json');
 const genesisBlock = require('../../../../core-launchpad/tests/unit/assets/genesisBlock.json');
@@ -90,6 +91,7 @@ export const confirmTransactions = async (txs: Array<ITransaction<any>>, withTxP
     }
 
     await initializer.rawMineBlocks(Math.ceil(txs.length / consts.maxTxsPerBlock));
+
     for (const tx of txs) {
       expect(txPool.transactionInPool(tx.id)).is.false; // (`TX ${tx.id} is still in pool :(`);
     }
@@ -168,7 +170,13 @@ export const createMultiSignAccount = async (wallet: LiskWallet, keys: LiskWalle
   for (const signature of signatures) {
     await multisigModule.onNewSignature({ signature: Buffer.from(signature, 'hex'), transaction: tx.id, relays: 10 });
   }
+  const poolManager = initializer.appManager.container.get<PoolManager>(TXSymbols.poolManager);
+  await poolManager.processPool();
+
   await initializer.rawMineBlocks(1);
+
+  expect(initializer.appManager.container.get<BlocksModule>(BlocksSymbols.modules.blocks).lastBlock.transactions)
+    .length(1);
   return { wallet, keys, tx };
 };
 

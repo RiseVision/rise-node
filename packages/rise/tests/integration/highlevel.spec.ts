@@ -5,15 +5,6 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { LiskWallet } from 'dpos-offline';
 import * as supertest from 'supertest';
-import { IBlockLogic, ITransactionLogic, ITransactionPoolLogic } from '../../src/ioc/interfaces/logic';
-import {
-  IAccountsModule,
-  IBlocksModule,
-  ISystemModule,
-  ITransactionsModule,
-  ITransportModule
-} from '../../src/ioc/interfaces/modules';
-import { Symbols } from '../../src/ioc/symbols';
 import initializer from './common/init';
 import {
   confirmTransactions,
@@ -25,16 +16,36 @@ import {
   createSendTransaction,
   createVoteTransaction,
   easyCreateMultiSignAccount,
-  enqueueAndProcessBundledTransaction,
   enqueueAndProcessTransactions,
-  getRandomDelegateWallet,
+  getRandomDelegateWallet, getSelfTransportPeer,
 } from './common/utils';
-import { Ed, wait } from '../../src/helpers';
 import BigNumber from 'bignumber.js';
-import { create2ndSigTX, toBufferedTransaction } from '../utils/txCrafter';
-import { BlocksModel, TransactionsModel } from '../../src/models';
 import { Sequelize } from 'sequelize-typescript';
-import { BlockLogic, IBytesBlock } from '../../src/logic';
+import { BlockLogic, BlocksModel, BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
+import {
+  TransactionLogic,
+  TransactionPool,
+  TransactionsModel,
+  TransactionsModule, TXSymbols
+} from '@risevision/core-transactions';
+import { wait } from '@risevision/core-utils';
+import { AccountsModule, AccountsSymbols } from '@risevision/core-accounts';
+import { SystemModule } from '@risevision/core';
+import { IBytesBlock } from '@risevision/core-types';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
+import { TransportModule } from '@risevision/core-p2p';
+import { Crypto } from '@risevision/core-helpers';
+import { p2pSymbols } from '@risevision/core-p2p';
+import { ModelSymbols } from '@risevision/core-models';
+import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
+import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
+import {
+  AccountsModelWithMultisig,
+  MultisigSymbols,
+  PostSignaturesRequest
+} from '@risevision/core-multisignature';
+import { PoolManager } from '@risevision/core-transactions';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);
@@ -43,31 +54,33 @@ describe('highlevel checks', function () {
   const funds = Math.pow(10, 11);
   let senderAccount: LiskWallet;
   initializer.setup();
-  let blockLogic: IBlockLogic;
-  let blocksModule: IBlocksModule;
-  let accModule: IAccountsModule;
-  let txModule: ITransactionsModule;
-  let txPool: ITransactionPoolLogic;
-  let transportModule: ITransportModule;
-  let txLogic: ITransactionLogic;
-  let systemModule: ISystemModule;
-  let ed: Ed;
+  let blockLogic: BlockLogic;
+  let blocksModule: BlocksModule;
+  let accModule: IAccountsModule<AccountsModelForDPOS & AccountsModelWith2ndSign & AccountsModelWithMultisig>;
+  let txModule: TransactionsModule;
+  let txPool: TransactionPool;
+  let transportModule: TransportModule;
+  let txPoolManager: PoolManager;
+  let txLogic: TransactionLogic;
+  let systemModule: SystemModule;
+  let ed: Crypto;
 
   let txModel: typeof TransactionsModel;
   let blocksModel: typeof BlocksModel;
   beforeEach(async () => {
     const {wallet: randomAccount} = await createRandomAccountWithFunds(funds);
     senderAccount                 = randomAccount;
-    ed                            = initializer.appManager.container.get(Symbols.helpers.crypto);
-    blocksModule                  = initializer.appManager.container.get(Symbols.modules.blocks);
-    accModule                     = initializer.appManager.container.get(Symbols.modules.accounts);
-    txModule                      = initializer.appManager.container.get(Symbols.modules.transactions);
-    transportModule               = initializer.appManager.container.get(Symbols.modules.transport);
-    txPool                        = initializer.appManager.container.get(Symbols.logic.transactionPool);
-    txLogic                       = initializer.appManager.container.get(Symbols.logic.transaction);
+    ed                            = initializer.appManager.container.get(Symbols.generic.crypto);
+    blocksModule                  = initializer.appManager.container.get(BlocksSymbols.modules.blocks);
+    accModule                     = initializer.appManager.container.get(AccountsSymbols.module);
+    txModule                      = initializer.appManager.container.get(TXSymbols.module);
+    transportModule               = initializer.appManager.container.get(p2pSymbols.modules.transport);
+    txPool                        = initializer.appManager.container.get(TXSymbols.pool);
+    txLogic                       = initializer.appManager.container.get(TXSymbols.logic);
     systemModule                  = initializer.appManager.container.get(Symbols.modules.system);
-    txModel                       = initializer.appManager.container.get(Symbols.models.transactions);
-    blocksModel                   = initializer.appManager.container.get(Symbols.models.blocks);
+    txPoolManager                 = initializer.appManager.container.get(TXSymbols.poolManager);
+    txModel                       = initializer.appManager.container.getNamed(ModelSymbols.model, TXSymbols.model);
+    blocksModel                   = initializer.appManager.container.getNamed(ModelSymbols.model, BlocksSymbols.model);
     blockLogic                    = initializer.appManager.container.get(Symbols.logic.block);
   });
   afterEach(async function () {
@@ -289,12 +302,17 @@ describe('highlevel checks', function () {
         ];
         await enqueueAndProcessTransactions(txs);
         await initializer.rawMineBlocks(1);
+
+        expect(blocksModule.lastBlock.transactions.length).eq(1);
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.username).is.eq('vekexasia');
 
         expect(await accModule.getAccount({username: 'meow'})).is.undefined;
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
 
+        expect(txModule.transactionInPool(txs[1].id)).is.true;
+        // PoolManager should kill the invalid transaction now.
+        await txPoolManager.processPool();
         // Both transactions should not be in pool
         expect(txModule.transactionInPool(txs[1].id)).is.false;
         expect(txModule.transactionInPool(txs[0].id)).is.false;
@@ -326,7 +344,16 @@ describe('highlevel checks', function () {
           await createSecondSignTransaction(0, senderAccount, pk),
           await createSecondSignTransaction(0, senderAccount, pk2),
         ];
-        await confirmTransactions(txs, true);
+        await enqueueAndProcessTransactions(txs);
+        await initializer.rawMineBlocks(1);
+        expect(blocksModule.lastBlock.transactions.length).eq(1);
+        await txPoolManager.processPool();
+
+        // Check that all transactions are not in pool right now (either cause they were included in block or rejected
+        for (let tx of txs) {
+          expect(txPool.transactionInPool(tx.id)).is.false;
+        }
+
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.secondPublicKey.toString('hex')).to.be.eq(pk);
         expect(acc.secondSignature).to.be.eq(1);
@@ -335,6 +362,12 @@ describe('highlevel checks', function () {
     });
 
     describe('multiSignature', () => {
+      let postsignRequest: PostSignaturesRequest;
+      beforeEach(async () => {
+        postsignRequest = initializer.appManager
+          .container.getNamed(p2pSymbols.transportMethod, MultisigSymbols.p2p.postSignatures);
+      });
+
       it('should create multisignature account', async () => {
         const {keys, wallet, tx} = await easyCreateMultiSignAccount(3, 3);
 
@@ -350,11 +383,15 @@ describe('highlevel checks', function () {
       it('should not allow min > than keys', async () => {
         const keys     = new Array(3).fill(null).map(() => createRandomWallet());
         const signedTx = createMultiSignTransaction(senderAccount, 4, keys.map((k) => `+${k.publicKey}`));
-        await confirmTransactions([signedTx], true);
-
+        await enqueueAndProcessTransactions([signedTx]);
+        await initializer.rawMineBlocks(1);
         expect(blocksModule.lastBlock.transactions.length).eq(0);
+
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.isMultisignature()).is.false;
+
+        await txPoolManager.processPool();
+        expect(txPool.transactionInPool(signedTx.id)).is.false;
         //return expect(txModule.processUnconfirmedTransaction(signedTx, false, false)).to.be
         //  .rejectedWith('Invalid multisignature min. Must be less than or equal to keysgroup size');
       });
@@ -363,12 +400,11 @@ describe('highlevel checks', function () {
         const signedTx = toBufferedTransaction(
           createMultiSignTransaction(senderAccount, 2, keys.map((k) => `+${k.publicKey}`))
         );
-        await txModule.processUnconfirmedTransaction(signedTx, false);
-        await txPool.processBundled();
-        await txModule.fillPool();
+        await txModule.processIncomingTransactions([signedTx], null);
+        await txPoolManager.processPool();
         await initializer.rawMineBlocks(1);
         // In pool => valid and not included in block.
-        expect(txPool.multisignature.has(signedTx.id)).is.true;
+        expect(txPool.pending.has(signedTx.id)).is.true;
 
         // let it sign by all.
         const signatures = keys.map((k) => ed.sign(
@@ -377,31 +413,43 @@ describe('highlevel checks', function () {
             privateKey: Buffer.from(k.privKey, 'hex'),
             publicKey : Buffer.from(k.publicKey, 'hex'),
           }
-        ).toString('hex'));
+        ));
 
+        const selfPeer = getSelfTransportPeer();
         for (let i = 0; i < signatures.length - 1; i++) {
-          await transportModule.receiveSignatures([{
-            signature  : signatures[i],
-            transaction: signedTx.id,
-          }]);
-          await txModule.fillPool();
+          await selfPeer.makeRequest(postsignRequest, {
+            body: {
+              signatures: [{
+                signature: signatures[i],
+                transaction: signedTx.id,
+                relays: 3,
+              }]
+            }
+          });
+          await txPoolManager.processPool();
           await initializer.rawMineBlocks(1);
           const acc = await accModule.getAccount({address: senderAccount.address});
           expect(acc.multisignatures).to.be.null;
-          expect(txPool.multisignature.has(signedTx.id)).is.true;
+          expect(txPool.pending.has(signedTx.id)).is.true;
         }
 
         //Lets confirm account
-        await transportModule.receiveSignatures([{
-          signature  : signatures[signatures.length-1],
-          transaction: signedTx.id,
-        }]);
-        await txModule.fillPool();
+        await selfPeer.makeRequest(postsignRequest, {
+          body: {
+            signatures: [{
+              signature  : signatures[signatures.length-1],
+              transaction: signedTx.id,
+              relays: 3,
+            }]
+          }
+        });
+        await txPoolManager.processPool();
+
         await initializer.rawMineBlocks(1);
         const acc = await accModule.getAccount({address: senderAccount.address});
         expect(acc.multisignatures).to.not.be.null;
         expect(acc.isMultisignature()).is.true;
-        expect(txPool.multisignature.has(signedTx.id)).is.false;
+        expect(txPool.pending.has(signedTx.id)).is.false;
 
       });
     });
@@ -439,12 +487,11 @@ describe('highlevel checks', function () {
 
       // Create some 1 satoshi transactions
       const txs = await Promise.all(
-        new Array(10000).fill(null)
+        new Array(1000).fill(null)
           .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
       );
 
-      await txPool.processBundled();
-      await txModule.fillPool();
+      await txPoolManager.processPool();
       const total = 900;
       for (let i = 0; i < total; i++) {
         if (i % (total / 10 | 0) === 0) {
@@ -455,16 +502,11 @@ describe('highlevel checks', function () {
         const block = await initializer.generateBlock([curTx]);
 
         await Promise.all([
-          wait(Math.random() * 10)
-            .then(() => enqueueAndProcessBundledTransaction(nextTx)),
+          wait(Math.random() * 50)
+            .then(() => enqueueAndProcessTransactions([nextTx])),
           // Broadcast block with current transaction
-          wait(Math.random() * 10)
-            .then(() => supertest(initializer.appManager.expressApp)
-              .post('/peer/blocks')
-              .set(fieldheader)
-              .send({ block: blocksModel.toStringBlockType(block, txModel, blocksModule) })
-              .expect(200)
-            )
+          wait(Math.random() * 50)
+            .then(() => initializer.postBlock(block))
         ]);
 
 
@@ -472,9 +514,8 @@ describe('highlevel checks', function () {
 
         // Next TX should be in pool we ensure it gets processed by refilling pool
         expect(txModule.transactionInPool(nextTx.id)).true;
-        await txPool.processBundled();
-        await txModule.fillPool();
-        expect(txModule.transactionUnconfirmed(nextTx.id)).true;
+        await txPoolManager.processPool();
+        expect(txPool.unconfirmed.has(nextTx.id)).true;
 
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
@@ -507,22 +548,16 @@ describe('highlevel checks', function () {
        * in the hope that a dual applyUnconfirmed gets done causing inconsistency.
        */
 
-      const fieldheader = {
-        nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
-        version: '0.1.10',
-        port   : 1,
-      };
-
       const startHeight = blocksModule.lastBlock.height;
       const fundPerTx   = 1;
 
       // Create some 1 satoshi transactions
       const txs = await Promise.all(
-        new Array(10000).fill(null)
+        new Array(1000).fill(null)
           .map((what, idx) => createSendTransaction(0, fundPerTx, senderAccount, '1R', {timestamp: idx}))
       );
 
-      const total = 900;
+      const total = 1000;
       for (let i = 0; i < total; i++) {
         const block = await initializer.generateBlock(txs.slice(i, i + 1));
         if (i % (total / 10 | 0) === 0) {
@@ -534,22 +569,16 @@ describe('highlevel checks', function () {
           // simulate fillPool (forgeModule calling it)
           // wait(Math.random() * 100).then(() => jobsQueue.bau['delegatesNextForge']()),
           // Broadcast block with current transaction
-          wait(Math.random() * 10).then(() => supertest(initializer.appManager.expressApp)
-            .post('/peer/blocks')
-            .set(fieldheader)
-            .send({block: blocksModel.toStringBlockType(block, txModel, blocksModule)})
-            .expect(200)),
+          wait(Math.random() * 50)
+            .then(() => initializer.postBlock(block, 'p2p')),
           // Send the current (same) transaction
-          wait(Math.random() * 10).then(() => enqueueAndProcessTransactions(txs.slice(i, i+1)))
+          wait(Math.random() * 50)
+            .then(() => enqueueAndProcessTransactions(txs.slice(i, i+1)))
 
         ]);
 
         expect(blocksModule.lastBlock.blockSignature).to.be.deep.eq(block.blockSignature);
 
-
-        if (txModule.getMergedTransactionList().length > 0) {
-          console.log(txModule.getMergedTransactionList().length, i);
-        }
         // expect(txModule.getMergedTransactionList().length).is.eq(0);
         // Check balances are correct so that no other applyUnconfirmed happened.
         // NOTE: this could fail as <<<--HERE-->>> an applyUnconfirmed (of NEXT tx) could
@@ -572,48 +601,50 @@ describe('highlevel checks', function () {
       expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
     });
   });
-  describe('blockLogic / transactionLogic .fromBytes()', () => {
-      let instance: BlockLogic;
-      let transactions;
-      let block;
-      let otherAccounts;
-      beforeEach(async () => {
-        otherAccounts = await createRandomAccountWithFunds(123);
-        transactions = [
-          await createSendTransaction(1, 1, senderAccount, otherAccounts.wallet.address),
-          await createVoteTransaction(1, senderAccount, otherAccounts.delegate.publicKey, true),
-        ];
-        block = await initializer.generateBlock(transactions);
-      });
 
-      it('should create block and transactions identical to the original one', () => {
-        block.transactions = transactions.map((tx) => {
-          tx.senderPublicKey = Buffer.from(tx.senderPublicKey, 'hex');
-          tx.signature = Buffer.from(tx.signature, 'hex');
-          tx.height = block.height;
-          tx.blockId = block.id;
-          tx.relays = undefined;
-          return tx;
-        });
-        block.relays = 1;
-        const origBytes = blockLogic.getBytes(block);
-        const bytesBlock: IBytesBlock = {
-          bytes: origBytes as any,
-          transactions: transactions.map((tx) => {
-            return {
-              bytes: txLogic.getBytes(tx) as any,
-              hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
-              hasSignSignature: typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
-              fee: tx.fee
-            };
-          }),
-          height: block.height,
-          relays: 1
-        };
-        const fromBytesBlock = blockLogic.fromBytes(bytesBlock);
-        expect(fromBytesBlock).to.be.deep.eq(block);
-      });
-  });
+  // TODO: Lerna ? -> not sure why this is here.
+  // describe('blockLogic / transactionLogic .fromBytes()', () => {
+  //     let instance: BlockLogic;
+  //     let transactions;
+  //     let block;
+  //     let otherAccounts;
+  //     beforeEach(async () => {
+  //       otherAccounts = await createRandomAccountWithFunds(123);
+  //       transactions = [
+  //         await createSendTransaction(1, 1, senderAccount, otherAccounts.wallet.address),
+  //         await createVoteTransaction(1, senderAccount, otherAccounts.delegate.publicKey, true),
+  //       ];
+  //       block = await initializer.generateBlock(transactions);
+  //     });
+  //
+  //     it('should create block and transactions identical to the original one', () => {
+  //       block.transactions = transactions.map((tx) => {
+  //         tx.senderPublicKey = Buffer.from(tx.senderPublicKey, 'hex');
+  //         tx.signature = Buffer.from(tx.signature, 'hex');
+  //         tx.height = block.height;
+  //         tx.blockId = block.id;
+  //         tx.relays = undefined;
+  //         return tx;
+  //       });
+  //       block.relays = 1;
+  //       const origBytes = blockLogic.getBytes(block);
+  //       const bytesBlock: IBytesBlock = {
+  //         bytes: origBytes as any,
+  //         transactions: transactions.map((tx) => {
+  //           return {
+  //             bytes: txLogic.getBytes(tx) as any,
+  //             hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
+  //             hasSignSignature: typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
+  //             fee: tx.fee
+  //           };
+  //         }),
+  //         height: block.height,
+  //         relays: 1
+  //       };
+  //       const fromBytesBlock = blockLogic.fromBytes(bytesBlock);
+  //       expect(fromBytesBlock).to.be.deep.eq(block);
+  //     });
+  // });
 
   // describe('he', () => {
   //   it('bau', async function () {
