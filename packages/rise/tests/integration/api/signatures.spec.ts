@@ -18,7 +18,7 @@ describe('api/signatures', () => {
 
   describe('[PUT] /', () => {
     it('should return method deprecated', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .put('/api/signatures/')
         .expect(500)
         .then((response) => {

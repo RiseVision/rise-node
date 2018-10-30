@@ -479,7 +479,7 @@ describe('api/delegates', () => {
     let cfg: APIConfig;
     beforeEach(async () => {
       cfg = initializer.appManager.container.get(Symbols.generic.appConfig);
-      cfg.api.access.restrictedWhiteList= [ '127.0.0.1', '::ffff:127.0.0.1'];
+      cfg.api.access.restrictedWhiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
     });
 
     checkPostRequiredParam('secret', '/api/delegates/forging/disable', {});
