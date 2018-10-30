@@ -2,10 +2,10 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkIntParam, checkRequiredParam, checkReturnObjKeyVal } from './utils';
-import { Symbols } from '../../../src/ioc/symbols';
-import { IPeersLogic } from '../../../src/ioc/interfaces/logic';
-import { createFakePeers } from '../../utils/fakePeersFactory';
-import { PeerState, PeerType } from '../../../src/logic';
+import { Symbols } from '@risevision/core-interfaces';
+import { PeerState, PeerType } from '@risevision/core-types';
+import { createFakePeers } from '../../../../core-p2p/tests/unit/utils/fakePeersFactory';
+import { PeersLogic } from '@risevision/core-p2p';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/peers', () => {
@@ -24,7 +24,7 @@ describe('api/peers', () => {
       let disconnectedPeers: PeerType[];
       let bannedPeers: PeerType[];
       beforeEach(async () => {
-        const peersLogic  = initializer.appManager.container.get<IPeersLogic>(Symbols.logic.peers);
+        const peersLogic  = initializer.appManager.container.get<PeersLogic>(Symbols.logic.peers);
         const peers       = createFakePeers(10);
         connectedPeers    = peers.splice(0, 2);
         disconnectedPeers = peers.splice(0, 3);
@@ -41,14 +41,14 @@ describe('api/peers', () => {
       });
 
       afterEach(() => {
-        const peersLogic = initializer.appManager.container.get<IPeersLogic>(Symbols.logic.peers);
+        const peersLogic = initializer.appManager.container.get<PeersLogic>(Symbols.logic.peers);
         connectedPeers.concat(disconnectedPeers).concat(bannedPeers)
           .forEach((p) => peersLogic.remove(p));
       });
 
       describe('state filter', () => {
         it('should return only connected peers', async () => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .get(`/api/peers?state=${PeerState.CONNECTED}`)
             .expect(200)
             .then((resp) => {
@@ -63,7 +63,7 @@ describe('api/peers', () => {
         });
 
         it('should return only disconnected peers', async () => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .get(`/api/peers?state=${PeerState.DISCONNECTED}`)
             .expect(200)
             .then((resp) => {
@@ -78,7 +78,7 @@ describe('api/peers', () => {
         });
 
         it('should return only BANNED peers', async () => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .get(`/api/peers?state=${PeerState.BANNED}`)
             .expect(200)
             .then((resp) => {
@@ -96,7 +96,7 @@ describe('api/peers', () => {
 
       describe('port filter', () => {
         it('should filter the port and return only the one with such port', async () => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .get(`/api/peers?port=${connectedPeers[0].port}`)
             .expect(200)
             .then((resp) => {
@@ -108,7 +108,7 @@ describe('api/peers', () => {
       });
       describe('limit & offset', () => {
         it('should honor limit and return only 1 peer', async () => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .get('/api/peers?limit=1')
             .expect(200)
             .then((resp) => {
@@ -117,7 +117,7 @@ describe('api/peers', () => {
             });
         });
         it('should honor offset & limit and return only 1 peer', async () => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .get('/api/peers?limit=5&offset=9')
             .expect(200)
             .then((resp) => {
@@ -136,7 +136,7 @@ describe('api/peers', () => {
     checkRequiredParam('port', '/api/peers/get?ip=1.1.1.1&port=1000');
     checkIntParam('port', '/api/peers/get?ip=1.1.1.1', {min: 1, max: 65535});
     it('should throw peer not found if peer is not found', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/peers/get?ip=1.1.1.1&port=100')
         .expect(200)
         .then((response) => {
@@ -154,7 +154,7 @@ describe('api/peers', () => {
       let disconnectedPeers: PeerType[];
       let bannedPeers: PeerType[];
       before(async () => {
-        const peersLogic  = initializer.appManager.container.get<IPeersLogic>(Symbols.logic.peers);
+        const peersLogic  = initializer.appManager.container.get<PeersLogic>(Symbols.logic.peers);
         const peers       = createFakePeers(10);
         connectedPeers    = peers.splice(0, 2);
         disconnectedPeers = peers.splice(0, 3);
