@@ -2,24 +2,29 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkAddress, checkIntParam, checkPubKey } from './utils';
-import { AppConfig } from '../../../src/types/genericTypes';
-import { Symbols } from '../../../src/ioc/symbols';
-import { confirmTransactions, createSendTransaction, findDelegateByUsername } from '../common/utils';
+import {
+  confirmTransactions, createRandomAccountsWithFunds, createRandomWallet, createSecondSignTransaction,
+  createSendTransaction,
+  easyCreateMultiSignAccount,
+  findDelegateByUsername
+} from '../common/utils';
 import { LiskWallet } from 'dpos-offline';
-import { toBufferedTransaction } from '../../utils/txCrafter';
-import { IAccountsModule, IBlocksModule, ISystemModule } from '../../../src/ioc/interfaces/modules';
+import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
+import { AppConfig } from '@risevision/core-types';
+import { IAccountsModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/accounts', () => {
 
   initializer.setup();
+  initializer.autoRestoreEach();
 
   describe('/', () => {
     checkAddress('address', '/api/accounts/');
     checkPubKey('publicKey', '/api/accounts/');
 
     it('should throw if no address nor pubkey is provided', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/')
         .expect(200)
         .then((response) => {
@@ -29,7 +34,7 @@ describe('api/accounts', () => {
     });
 
     it('should throw if both address and pubkey are provided but relates to different account', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/?publicKey=f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d&address=11316019077384178848R')
         .expect(200)
         .then((response) => {
@@ -39,7 +44,7 @@ describe('api/accounts', () => {
     });
 
     it('should throw if account cannot be found', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/?address=1R')
         .expect(200)
         .then((response) => {
@@ -49,7 +54,7 @@ describe('api/accounts', () => {
     });
 
     it('should return account data if all ok', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/?address=12333350760210376657R')
         .expect(200)
         .then((response) => {
@@ -58,12 +63,55 @@ describe('api/accounts', () => {
           expect(response.body.account).to.be.deep.eq({
             address             : '12333350760210376657R',
             balance             : '108910891000000',
-            multisignatures     : [],
+            multisignatures     : null,
             publicKey           : 'f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d',
             secondPublicKey     : null,
             secondSignature     : 0,
-            u_multisignatures   : [],
+            u_multisignatures   : null,
             unconfirmedBalance  : '108910891000000',
+            unconfirmedSignature: 0,
+          });
+        });
+    });
+    it('should return multisig data', async () => {
+      const {wallet, keys } = await easyCreateMultiSignAccount(4, 3);
+      return supertest(initializer.apiExpress)
+        .get(`/api/accounts/?address=${wallet.address}`)
+        .expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+          expect(response.body.account).to.exist;
+          expect(response.body.account).to.be.deep.eq({
+            address             : wallet.address,
+            balance             : '99500000000',
+            multisignatures     : keys.map((k) => k.publicKey),
+            publicKey           : wallet.publicKey,
+            secondPublicKey     : null,
+            secondSignature     : 0,
+            u_multisignatures   : keys.map((k) => k.publicKey),
+            unconfirmedBalance  : '99500000000',
+            unconfirmedSignature: 0,
+          });
+        });
+    });
+    it('should return second signature data', async () => {
+      const [{account}] = await createRandomAccountsWithFunds(1, 1e10);
+      const tx = await createSecondSignTransaction(1, account, createRandomWallet().publicKey);
+      return supertest(initializer.apiExpress)
+        .get(`/api/accounts/?address=${account.address}`)
+        .expect(200)
+        .then((response) => {
+          expect(response.body.success).is.true;
+          expect(response.body.account).to.exist;
+          expect(response.body.account).to.be.deep.eq({
+            address             : account.address,
+            balance             : '9500000000',
+            multisignatures     : null,
+            publicKey           : account.publicKey,
+            secondPublicKey     : (tx.asset as any).signature.publicKey,
+            secondSignature     : 1,
+            u_multisignatures   : null,
+            unconfirmedBalance  : '9500000000',
             unconfirmedSignature: 0,
           });
         });
@@ -72,7 +120,7 @@ describe('api/accounts', () => {
 
   describe('/getBalance', () => {
     it('should return error if address is not provided', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/getBalance')
         .expect(200)
         .then((response) => {
@@ -83,7 +131,7 @@ describe('api/accounts', () => {
     checkAddress('address', '/api/accounts/getBalance');
 
     it('should return balance 0 if account is not found', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/getBalance?address=1R')
         .expect(200)
         .then((response) => {
@@ -94,7 +142,7 @@ describe('api/accounts', () => {
         });
     });
     it('should return balance and unconfirmedBalance in return object', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/getBalance?address=12324540900396688540R')
         .expect(200)
         .then((response) => {
@@ -111,7 +159,7 @@ describe('api/accounts', () => {
   describe('/getPublicKey', () => {
     checkAddress('address', '/api/accounts/getPublicKey');
     it('should return error if address is not provided', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/getPublicKey')
         .expect(200)
         .then((response) => {
@@ -121,7 +169,7 @@ describe('api/accounts', () => {
     });
 
     it('should return Account not foundif account is not found', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/getPublicKey?address=1R')
         .expect(200)
         .then((response) => {
@@ -132,7 +180,7 @@ describe('api/accounts', () => {
       });
 
     it('should return correct publicKey and unconfirmedBalance in return object', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/getPublicKey?address=12324540900396688540R')
         .expect(200)
         .then((response) => {
@@ -145,7 +193,7 @@ describe('api/accounts', () => {
   describe('/delegates', () => {
     checkAddress('address', '/api/accounts/delegates');
     it('should return error if address is not provided', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/delegates')
         .expect(200)
         .then((response) => {
@@ -155,7 +203,7 @@ describe('api/accounts', () => {
     });
 
     it('should return Account not foundif account is not found', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/delegates?address=1R')
         .expect(200)
         .then((response) => {
@@ -166,7 +214,7 @@ describe('api/accounts', () => {
     });
 
     it('should return correct voted delegates', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/accounts/delegates?address=8832350072536010884R')
         .expect(200)
         .then((response) => {
@@ -192,7 +240,6 @@ describe('api/accounts', () => {
   });
 
   describe('/top', () => {
-    initializer.autoRestoreEach();
     beforeEach(async function () {
       this.timeout(5000);
       const txs = [];
@@ -221,14 +268,14 @@ describe('api/accounts', () => {
     it('should return error if appConfig.topAccounts is false', async () => {
       const ac = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
       ac.topAccounts = false;
-      await supertest(initializer.appManager.expressApp)
+      await supertest(initializer.apiExpress)
         .get('/api/accounts/top')
         .expect(403);
     });
     it('should limit topAccounts response to 100 results with 0 offset when no params', async () => {
       const ac = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
       ac.topAccounts = true;
-      const {body}     = await supertest(initializer.appManager.expressApp)
+      const {body}     = await supertest(initializer.apiExpress)
         .get(`/api/accounts/top`)
         .expect(200);
       expect(body.accounts.length).eq(100);
@@ -236,10 +283,11 @@ describe('api/accounts', () => {
       expect(body.accounts[0].address).eq('1R');
     });
     it('should return accounts in ordered by balance honoring limits and offset', async () => {
+
       const ac = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
       ac.topAccounts = true;
       for (let i = 0; i < 10; i++) {
-        const {body}     = await supertest(initializer.appManager.expressApp)
+        const {body}     = await supertest(initializer.apiExpress)
           .get(`/api/accounts/top?limit=${10}&offset=${i * 10 + 1}`)
           .expect(200);
         const {accounts} = body;

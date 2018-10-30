@@ -11,11 +11,6 @@ import {
 import * as supertest from 'supertest';
 import * as chai from 'chai';
 import * as chaiSorted from 'chai-sorted';
-import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
-import { Symbols } from '../../../src/ioc/symbols';
-import { ISlots } from '../../../src/ioc/interfaces/helpers';
-import { SignedAndChainedBlockType } from '../../../src/logic';
-import { AppConfig } from '../../../src/types/genericTypes';
 import {
   confirmTransactions,
   createRandomAccountWithFunds,
@@ -24,14 +19,20 @@ import {
   createWallet,
   getRandomDelegateWallet
 } from '../common/utils';
-import { IForgeModule } from '../../../src/ioc/interfaces/modules/IForgeModule';
-import { BlocksModel, TransactionsModel } from '../../../src/models';
+import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import { TransactionsModel } from '@risevision/core-transactions';
+import { BlocksModel } from '@risevision/core-blocks';
+import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+import { dPoSSymbols, ForgeModule } from '@risevision/core-consensus-dpos';
+import { DposAppConfig, Slots } from '@risevision/core-consensus-dpos';
+import { ModelSymbols } from '@risevision/core-models';
+import { APIConfig } from '@risevision/core-apis';
 
 chai.use(chaiSorted);
 
 const {expect} = chai;
-const delegates = require('../genesisDelegates.json');
 
+const delegates    = require('../../../../core-launchpad/tests/unit/assets/genesisDelegates.json');
 // tslint:disable no-unused-expression max-line-length
 describe('api/delegates', () => {
 
@@ -58,7 +59,7 @@ describe('api/delegates', () => {
     checkReturnObjKeyVal('totalCount', 101, '/api/delegates');
 
     it('should return delegates array', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/')
         .expect(200)
         .then((response) => {
@@ -70,7 +71,7 @@ describe('api/delegates', () => {
 
     ['approval', 'productivity', 'rank', 'vote', 'username', 'address', 'publicKey'].forEach((sortKey: string) => {
       it('should honor orderBy ' + sortKey + ' asc param', async () => {
-        return supertest(initializer.appManager.expressApp)
+        return supertest(initializer.apiExpress)
           .get('/api/delegates/?orderBy=' + sortKey + ':asc')
           .expect(200)
           .then((response) => {
@@ -81,7 +82,7 @@ describe('api/delegates', () => {
       });
 
       it('should honor orderBy ' + sortKey + ' desc param', async () => {
-        return supertest(initializer.appManager.expressApp)
+        return supertest(initializer.apiExpress)
           .get('/api/delegates/?orderBy=' + sortKey + ':desc')
           .expect(200)
           .then((response) => {
@@ -93,7 +94,7 @@ describe('api/delegates', () => {
     });
 
     it('should honor limit param', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/?limit=10')
         .expect(200)
         .then((response) => {
@@ -104,7 +105,7 @@ describe('api/delegates', () => {
     });
 
     it('should honor offset param', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/?offset=30')
         .expect(200)
         .then((response) => {
@@ -122,7 +123,7 @@ describe('api/delegates', () => {
     checkReturnObjKeyVal('height', 102, '/api/delegates/fee');
 
     it('should return fee value for delegate', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/fee')
         .expect(200)
         .then((response) => {
@@ -138,7 +139,7 @@ describe('api/delegates', () => {
     checkPubKey('generatorPublicKey', '/api/delegates/forging/getForgedByAccount');
 
     it('should calculate the total forged amount', async () => {
-        return supertest(initializer.appManager.expressApp)
+        return supertest(initializer.apiExpress)
           .get('/api/delegates/forging/getForgedByAccount?generatorPublicKey=b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3')
           .expect(200)
           .then((response) => {
@@ -149,7 +150,7 @@ describe('api/delegates', () => {
     it('should calculate the forged amount accounting start and end', async () => {
       const start = new Date(new Date().getTime() - 1000).getTime() / 1000;
       const end = new Date().getTime() / 1000;
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/forging/getForgedByAccount?start=' + start + '&end=' + end + '&generatorPublicKey=b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3')
         .expect(200)
         .then((response) => {
@@ -163,7 +164,7 @@ describe('api/delegates', () => {
     checkPubKey('publicKey', '/api/delegates/get');
 
     it('should return delegate object by username', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/get?username=genesisDelegate32')
         .expect(200)
         .then((response) => {
@@ -184,7 +185,7 @@ describe('api/delegates', () => {
     });
 
     it('should return delegate object by publicKey', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/get?publicKey=eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44')
         .expect(200)
         .then((response) => {
@@ -205,7 +206,7 @@ describe('api/delegates', () => {
     });
 
     it('should throw delegate not found if delecate is not there', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/get?publicKey=77f247617346ba37b635ee13ef9ac44eec7460f47ea4df03cd28a7bc90170284') // pk does not exist
         .expect(200)
         .then((response) => {
@@ -222,7 +223,7 @@ describe('api/delegates', () => {
       const {wallet: newAcc} = await createRandomAccountWithFunds(1e10);
       await createVoteTransaction(1, newAcc, 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44', true);
 
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/voters?publicKey=eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44')
         .expect(200)
         .then((response) => {
@@ -244,7 +245,7 @@ describe('api/delegates', () => {
     });
 
     it('should return empty array if delegate does not exist', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/voters?publicKey=77f247617346ba37b635ee13ef9ac44eec7460f47ea4df03cd28a7bc90170284') // pk does not exist
         .expect(200)
         .then((response) => {
@@ -258,7 +259,7 @@ describe('api/delegates', () => {
     checkRequiredParam('q', '/api/delegates/search?q=haha');
     checkIntParam('limit', '/api/delegates/search?q=haha', { min: 1, max: 1000 });
     it('should return delegates array matching search criteria', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/search?q=33')
         .expect(200)
         .then((response) => {
@@ -280,7 +281,7 @@ describe('api/delegates', () => {
     });
 
     it('should honor limit parameter', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/search?q=genesis&limit=30')
         .expect(200)
         .then((response) => {
@@ -296,32 +297,28 @@ describe('api/delegates', () => {
 
   describe('/getNextForgers', () => {
     let curBlock: SignedAndChainedBlockType;
-    let slots: ISlots;
+    let slots: Slots;
     let blocksModel: typeof BlocksModel;
     let blocksModule: IBlocksModule;
     let txModel: typeof TransactionsModel;
     beforeEach(async () => {
       blocksModule = initializer.appManager.container.get<IBlocksModule>(Symbols.modules.blocks);
       curBlock     = blocksModule.lastBlock;
-      blocksModel  = initializer.appManager.container.get<typeof BlocksModel>(Symbols.models.blocks);
-      txModel      = initializer.appManager.container.get<typeof TransactionsModel>(Symbols.models.transactions);
-      slots        = initializer.appManager.container.get<ISlots>(Symbols.helpers.slots);
+      blocksModel  = initializer.appManager.container.getNamed<typeof BlocksModel>(ModelSymbols.model, Symbols.models.blocks);
+      txModel      = initializer.appManager.container.getNamed<typeof TransactionsModel>(ModelSymbols.model,Symbols.models.transactions);
+      slots        = initializer.appManager.container.get<Slots>(dPoSSymbols.helpers.slots);
     });
 
     it('should return current block', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/getNextForgers').expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.currentBlock).to.be.deep.equal(blocksModel.toStringBlockType(
-            curBlock,
-            txModel,
-            blocksModule
-          ));
+          expect(response.body.currentBlock).to.be.deep.equal(blocksModel.toStringBlockType(curBlock));
         });
     });
     it('should return currentBlock slot', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/getNextForgers').expect(200)
         .then((response) => {
           expect(response.body.currentBlockSlot).to.be.deep.equal(100);
@@ -329,7 +326,7 @@ describe('api/delegates', () => {
     });
 
     it('should return current slot (time)', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/getNextForgers').expect(200)
         .then((response) => {
           expect(response.body.currentSlot).to.be.deep.equal(slots.getSlotNumber());
@@ -337,7 +334,7 @@ describe('api/delegates', () => {
     });
 
     it('should return next delegates in line to forge', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/getNextForgers?limit=101').expect(200)
         .then((response) => {
           expect(response.body.delegates.length).to.be.equal(slots.delegates);
@@ -346,25 +343,25 @@ describe('api/delegates', () => {
   });
 
   describe('/forging/status', () => {
-    let cfg: AppConfig;
+    let cfg: APIConfig;
     beforeEach(async () => {
-      cfg = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
-      cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
+      cfg = initializer.appManager.container.get(Symbols.generic.appConfig);
+      cfg.api.access.restrictedWhiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
     });
 
     checkPubKey('publicKey', '/api/delegates/forging/status');
 
     it('should disallow request from unallowed ip', async () => {
-      cfg.forging.access.whiteList = [];
-      return supertest(initializer.appManager.expressApp)
+      cfg.api.access.restrictedWhiteList = [];
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/forging/status').expect(403)
         .then((response) => {
-          expect(response.body.error).to.be.equal('Delegates API access denied');
+          expect(response.body.error).to.be.equal('Private API access denied');
         });
     });
 
     it('should check for publicKey only if provided', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/forging/status?publicKey=241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14').expect(200)
         .then((response) => {
           expect(response.body).to.be.deep.equal({
@@ -376,7 +373,7 @@ describe('api/delegates', () => {
     });
 
     it('should return all enabled delegates to forge', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/delegates/forging/status').expect(200)
         .then((response) => {
           expect(response.body).to.be.deep.equal({
@@ -389,10 +386,10 @@ describe('api/delegates', () => {
   });
 
   describe('/forging/enable', () => {
-    let cfg: AppConfig;
+    let cfg: APIConfig;
     beforeEach(async () => {
-      cfg = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
-      cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
+      cfg = initializer.appManager.container.get(Symbols.generic.appConfig);
+      cfg.api.access.restrictedWhiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
     });
 
     checkPostRequiredParam('secret', '/api/delegates/forging/enable', {
@@ -401,16 +398,16 @@ describe('api/delegates', () => {
     checkPostPubKey('publicKey', '/api/delegates/forging/enable', {secret: 'aaa'});
 
     it('should disallow request from unallowed ip', async () => {
-      cfg.forging.access.whiteList = [];
-      return supertest(initializer.appManager.expressApp)
+      cfg.api.access.restrictedWhiteList = [];
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable').expect(403)
         .then((response) => {
-          expect(response.body.error).to.be.equal('Delegates API access denied');
+          expect(response.body.error).to.be.equal('Private API access denied');
         });
     });
 
     it('should throw error if given publicKey differs from computed pk', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
           publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
@@ -422,14 +419,14 @@ describe('api/delegates', () => {
     });
 
     it('should throw error if forging is already enabled for such account', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
           publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
           secret: 'sense reduce weird pluck result business unable dust garage gaze business anchor',
         }).expect(200)
         .then((response) => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .post('/api/delegates/forging/enable')
             .send({
               publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
@@ -443,7 +440,7 @@ describe('api/delegates', () => {
 
     it('should throw error if account is not found', async () => {
       // Key pair is valid but account does not exist
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
           publicKey: '0cf75c0afa655b7658d971765d4989d8553d639eeed57eaa45b1991b61db1856',
@@ -466,7 +463,7 @@ describe('api/delegates', () => {
       );
       await confirmTransactions([tx], false);
       // Try to enable forging on this new non-delegate account
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
           publicKey: wallet.publicKey,
@@ -479,10 +476,10 @@ describe('api/delegates', () => {
   });
 
   describe('/forging/disable', () => {
-    let cfg: AppConfig;
+    let cfg: APIConfig;
     beforeEach(async () => {
-      cfg = initializer.appManager.container.get<AppConfig>(Symbols.generic.appConfig);
-      cfg.forging.access.whiteList = [ '127.0.0.1', '::ffff:127.0.0.1'];
+      cfg = initializer.appManager.container.get(Symbols.generic.appConfig);
+      cfg.api.access.restrictedWhiteList= [ '127.0.0.1', '::ffff:127.0.0.1'];
     });
 
     checkPostRequiredParam('secret', '/api/delegates/forging/disable', {});
@@ -491,16 +488,16 @@ describe('api/delegates', () => {
     });
 
     it('should disallow request from unallowed ip', async () => {
-      cfg.forging.access.whiteList = [];
-      return supertest(initializer.appManager.expressApp)
+      cfg.api.access.restrictedWhiteList = [];
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable').expect(403)
         .then((response) => {
-          expect(response.body.error).to.be.equal('Delegates API access denied');
+          expect(response.body.error).to.be.equal('Private API access denied');
         });
     });
 
     it('should throw error if given publicKey differs from computed pk', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
           publicKey: '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
@@ -512,13 +509,13 @@ describe('api/delegates', () => {
     });
 
     it('should throw error if forging is already disabled for such account', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
           publicKey: '21ba4bd249c3369c1a1c15a2f309ce993db9396c55d519f17d0138fafee36d66',
           secret: 'chunk torch ice snow lunar cute school trigger portion gift home canal',
         }).expect(200).then((res) => {
-          return supertest(initializer.appManager.expressApp)
+          return supertest(initializer.apiExpress)
             .post('/api/delegates/forging/disable')
             .send({
               publicKey: '21ba4bd249c3369c1a1c15a2f309ce993db9396c55d519f17d0138fafee36d66',
@@ -530,13 +527,13 @@ describe('api/delegates', () => {
     });
 
     it('should throw error if account is not found', async () => {
-      const forgeModule = initializer.appManager.container.get<IForgeModule>(Symbols.modules.forge);
+      const forgeModule = initializer.appManager.container.get<ForgeModule>(dPoSSymbols.modules.forge);
       forgeModule.enableForge({
         privateKey: Buffer.from('aaaa', 'hex'),
         publicKey: Buffer.from('b7717adf51800bce03b1aebdad444220734c423f0014944bfcdb8d615641c61e', 'hex'),
       });
       // Key pair is valid but account does not exist
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
           publicKey: 'b7717adf51800bce03b1aebdad444220734c423f0014944bfcdb8d615641c61e',
@@ -558,13 +555,13 @@ describe('api/delegates', () => {
         wallet.address
       );
       await confirmTransactions([tx], false);
-      const forgeModule = initializer.appManager.container.get<IForgeModule>(Symbols.modules.forge);
+      const forgeModule = initializer.appManager.container.get<ForgeModule>(dPoSSymbols.modules.forge);
       forgeModule.enableForge({
         privateKey: Buffer.from('aaaa', 'hex'),
         publicKey: Buffer.from(wallet.publicKey, 'hex'),
       });
       // Try to disable forging on this new non-delegate account
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
           publicKey: wallet.publicKey,

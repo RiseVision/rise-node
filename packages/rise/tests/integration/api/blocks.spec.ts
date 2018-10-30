@@ -2,22 +2,22 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
-import { IBlocksModule } from '../../../src/ioc/interfaces/modules';
-import { Symbols } from '../../../src/ioc/symbols';
-import { create2ndSigTX, createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 import {
   createRandomAccountsWithFunds,
   createRandomAccountWithFunds, createRandomWallet, createRegDelegateTransaction, createSecondSignTransaction,
   createSendTransaction,
   createVoteTransaction, getRandomDelegateWallet
 } from '../common/utils';
+import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
+import { BlocksModule } from '@risevision/core-blocks';
+import { Symbols } from '@risevision/core-interfaces';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/blocks', () => {
 
   initializer.setup();
   initializer.autoRestoreEach();
-  let blocksModule: IBlocksModule;
+  let blocksModule: BlocksModule;
   beforeEach(() => {
     blocksModule = initializer.appManager.container.get(Symbols.modules.blocks);
   });
@@ -33,7 +33,7 @@ describe('api/blocks', () => {
       checkPubKey('generatorPublicKey', '/api/blocks');
       initializer.autoRestoreEach();
       it('should return an array of blocks', async () => {
-        return supertest(initializer.appManager.expressApp)
+        return supertest(initializer.apiExpress)
           .get('/api/blocks')
           .expect(200)
           .then((response) => {
@@ -47,7 +47,7 @@ describe('api/blocks', () => {
       it('should account offset & orderBy parameter', async () => {
         const initialHeight = blocksModule.lastBlock.height;
         await initializer.rawMineBlocks(3);
-        return supertest(initializer.appManager.expressApp)
+        return supertest(initializer.apiExpress)
           .get(`/api/blocks?offset=${initialHeight}&orderBy=height:asc`)
           .expect(200)
           .then((response) => {
@@ -62,7 +62,7 @@ describe('api/blocks', () => {
       it('should account limit parameter', async () => {
         const initialHeight = blocksModule.lastBlock.height;
         await initializer.rawMineBlocks(3);
-        return supertest(initializer.appManager.expressApp)
+        return supertest(initializer.apiExpress)
           .get(`/api/blocks?offset=${initialHeight}&orderBy=height:asc&limit=1`)
           .expect(200)
           .then((response) => {
@@ -88,7 +88,7 @@ describe('api/blocks', () => {
           await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
         ];
         await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
-        const { body } = await supertest(initializer.appManager.expressApp)
+        const { body } = await supertest(initializer.apiExpress)
           .get('/api/blocks/?limit=1&orderBy=height:desc')
           .expect(200);
         expect(body.blocks[0].transactions[0].asset).deep.eq(txs[0].asset);
@@ -102,7 +102,7 @@ describe('api/blocks', () => {
   describe('/get', () => {
     checkRequiredParam('id', '/api/blocks/get');
     it('should return block object', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/get?id=16985986483000875063')
         .expect(200)
         .then((response) => {
@@ -112,7 +112,7 @@ describe('api/blocks', () => {
         });
     });
     it('should throw block not found if invalid block id is given', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/get?id=1')
         .expect(200)
         .then((response) => {
@@ -130,7 +130,7 @@ describe('api/blocks', () => {
         await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
       ];
       const b = await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
-      const { body } = await supertest(initializer.appManager.expressApp)
+      const { body } = await supertest(initializer.apiExpress)
         .get(`/api/blocks/get?id=${b.id}`)
         .expect(200);
       expect(body.block.transactions[0].asset).deep.eq(txs[0].asset);
@@ -149,7 +149,7 @@ describe('api/blocks', () => {
     );
     it('should return corret height', async () => {
       await initializer.rawMineBlocks(10);
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/getHeight')
         .expect(200)
         .then((response) => {
@@ -166,7 +166,7 @@ describe('api/blocks', () => {
     );
     it('should change broadhash and return new one if based on known blocks', async () => {
       await initializer.rawMineBlocks(5);
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/getBroadhash')
         .expect(200)
         .then((response) => {
@@ -188,7 +188,7 @@ describe('api/blocks', () => {
     checkIntParam('height', '/api/blocks/getFee', { min: 0 });
     // checkRequiredParam('height', '/api/blocks/getFee');
     it('should return obj with several elements', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/getFee')
         .expect(200)
         .then((response) => {
@@ -204,7 +204,7 @@ describe('api/blocks', () => {
         });
     });
     it('should use provided height', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/getFee?height=10000&asd=asd')
         .expect(200)
         .then((response) => {
@@ -222,7 +222,7 @@ describe('api/blocks', () => {
     checkReturnObjKeyVal('height', 2, '/api/blocks/getFees');
 
     it('should return fees obj with several elements', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/getFees')
         .expect(200)
         .then((response) => {
@@ -237,7 +237,7 @@ describe('api/blocks', () => {
     });
 
     it('should use provided height', async () => {
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/getFees?height=10000&asd=asd')
         .expect(200)
         .then((response) => {
@@ -280,7 +280,7 @@ describe('api/blocks', () => {
     it('should calc supply correctly for height 100', async function (){
       this.timeout(20000);
       await initializer.rawMineBlocks(99); // 1 is already mined
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/blocks/getSupply')
         .expect(200)
         .then((response) => {

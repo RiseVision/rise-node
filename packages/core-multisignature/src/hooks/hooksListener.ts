@@ -50,7 +50,7 @@ export class MultisigHooksListener extends ExtendableClass {
     }
 
     if (!this.multisigUtils.txMultiSigReady(tx, sender)) {
-      throw new Error('MultiSig Transaction is not ready');
+      throw new Error(`MultiSig Transaction ${tx.id} is not ready`);
     }
 
     // In multisig accounts

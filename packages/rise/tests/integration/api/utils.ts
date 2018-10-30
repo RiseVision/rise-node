@@ -3,12 +3,11 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import * as url from 'url';
-import { Symbols } from '../../../src/ioc/symbols';
-import { ProtoBufHelper } from '../../../src/helpers';
+import { ProtoBufHelper, p2pSymbols  } from '@risevision/core-p2p';
 
 export const checkAddress = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid address`, async () => {
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .get(`${baseUrl}?${paramName}=1`)
       .expect(200)
       .then((response) => {
@@ -19,10 +18,11 @@ export const checkAddress = (paramName: string, baseUrl: string) => {
 };
 export const checkPubKey = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid publicKey`, async () => {
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .get(`${baseUrl}?${paramName}=1`)
       .expect(200)
       .then((response) => {
+        console.log(response.body);
         expect(response.body.success).is.false;
         expect(response.body.error).to.contain(`${paramName} - Object didn't pass validation for format publicKey`);
       });
@@ -32,7 +32,7 @@ export const checkPubKey = (paramName: string, baseUrl: string) => {
 export const checkPostPubKey = (paramName: string, baseUrl: string, body: any) => {
   it(`should throw if ${paramName} is not a valid publicKey`, async () => {
     body[paramName] = '1';
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .post(`${baseUrl}`)
       .send(body)
       .expect(200)
@@ -44,7 +44,7 @@ export const checkPostPubKey = (paramName: string, baseUrl: string, body: any) =
 };
 export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: string, headers: any = {}, proto?: {namespace: string, message?: string}) => {
   it(`should return .${objKey} with ${expectedValue}`, async () => {
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .get(path)
       .set(headers)
       .expect(200)
@@ -54,7 +54,7 @@ export const checkReturnObjKeyVal = (objKey: string, expectedValue: any, path: s
           if (!proto) {
             throw new Error('Response seems to be protobuf but no proto file provided');
           }
-          const protobufHelper = initializer.appManager.container.get<ProtoBufHelper>(Symbols.helpers.protoBuf);
+          const protobufHelper = initializer.appManager.container.get<ProtoBufHelper>(p2pSymbols.helpers.protoBuf);
           obj = protobufHelper.decode(response.body, proto.namespace, proto.message);
         } else {
           if (objKey !== 'success') {
@@ -75,7 +75,7 @@ export const checkEnumParam = (paramName: string, allowedValues: string[], valid
       delete theURLOBJ.path;
       delete theURLOBJ.href;
       theURLOBJ.query[paramName] = value;
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get(url.format(theURLOBJ))
         .expect(200)
         .then((response) => {
@@ -91,7 +91,7 @@ export const checkEnumParam = (paramName: string, allowedValues: string[], valid
     delete theURLOBJ.path;
     delete theURLOBJ.href;
     theURLOBJ.query[paramName] = 'ahahahaha';
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .get(url.format(theURLOBJ))
       .expect(200)
       .then((response) => {
@@ -106,7 +106,7 @@ export const checkRequiredParam = (paramName: string, validUrl: string) => {
     delete theURLOBJ.search;
     delete theURLOBJ.path;
     delete theURLOBJ.href;
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .get(url.format(theURLOBJ))
       .expect(200)
       .then((response) => {
@@ -123,7 +123,7 @@ export const checkPostRequiredParam = (paramName: string, validUrl: string, body
     delete theURLOBJ.search;
     delete theURLOBJ.path;
     delete theURLOBJ.href;
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .post(url.format(theURLOBJ))
       .send(body)
       .expect(200)
@@ -137,7 +137,7 @@ export const checkPostRequiredParam = (paramName: string, validUrl: string, body
 // export const checkString = (paramName: string, baseUrl: string, constraints: {min?: number, max?: number }, validString: string) => {
 //   if (typeof(constraints.min) !== 'undefined') {
 //     it(`should throw if ${paramName} is a string long ${constraints.min} is given`, async () => {
-//       return supertest(initializer.appManager.expressApp)
+//       return supertest(initializer.apiExpress)
 //         .get(`${baseUrl}?${paramName}=${validString.substr(0, constraints.min)}`)
 //         .expect(500)
 //         .then((response) => {
@@ -157,7 +157,7 @@ export const checkIntParam = (paramName: string, validURL: string, constraints: 
     delete theURLOBJ.path;
     delete theURLOBJ.href;
     theURLOBJ.query[paramName] = 'ahah';
-    return supertest(initializer.appManager.expressApp)
+    return supertest(initializer.apiExpress)
       .get(url.format(theURLOBJ))
       .expect(200)
       .then((response) => {
@@ -174,7 +174,7 @@ export const checkIntParam = (paramName: string, validURL: string, constraints: 
       delete theURLOBJ.path;
       delete theURLOBJ.href;
       theURLOBJ.query[paramName] = `${constraints.min - 1}`;
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get(url.format(theURLOBJ))
         .expect(200)
         .then((response) => {
@@ -193,7 +193,7 @@ export const checkIntParam = (paramName: string, validURL: string, constraints: 
       delete theURLOBJ.path;
       delete theURLOBJ.href;
       theURLOBJ.query[paramName] = outOfRangeValue;
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get(url.format(theURLOBJ))
         .expect(200)
         .then((response) => {

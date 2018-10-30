@@ -47,7 +47,7 @@ export class SignHooksListener extends ExtendableClass {
   public add2ndSignatureToAccount(accData: any, model: AccountsModelWith2ndSign) {
     return {
       ...accData,
-      secondPublicKey     : model.secondPublicKey,
+      secondPublicKey     : model.secondPublicKey ? model.secondPublicKey.toString('hex') : null,
       secondSignature     : model.secondSignature,
       unconfirmedSignature: model.u_secondSignature,
     };

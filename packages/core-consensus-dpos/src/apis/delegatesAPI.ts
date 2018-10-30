@@ -12,7 +12,7 @@ import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/c
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
-import { inject, injectable, named } from 'inversify';
+import { inject, injectable, named, postConstruct } from 'inversify';
 import * as pgp from 'pg-promise';
 import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
 import * as sequelize from 'sequelize';
@@ -65,6 +65,11 @@ export class DelegatesAPI {
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.roundsFees)
   private RoundsFeesModel: typeof RoundsFeesModel;
+
+  @postConstruct()
+  public postConstruct() {
+    schema.getDelegates.properties.limit.maximum = this.dposConstants.activeDelegates;
+  }
 
   @Get('/')
   @ValidateSchema()

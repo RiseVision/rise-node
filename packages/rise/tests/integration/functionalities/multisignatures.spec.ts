@@ -3,18 +3,6 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { CreateSignatureTx, LiskWallet, MultiSignatureTx, SendTx } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
-import {
-  IAccountsModule,
-  IBlocksModule,
-  IBlocksModuleChain,
-  IMultisignaturesModule,
-  ISystemModule,
-  ITransactionsModule
-} from '../../../src/ioc/interfaces/modules';
-import { Symbols } from '../../../src/ioc/symbols';
-import { TransactionsModel } from '../../../src/models';
-import { createSendTransaction, toBufferedTransaction } from '../../utils/txCrafter';
 import initializer from '../common/init';
 import {
   createMultiSignAccount,
@@ -25,6 +13,21 @@ import {
   createSendTransaction as createAndConfirmSendTransaction,
   getRandomDelegateWallet
 } from '../common/utils';
+import { BlocksModule, BlocksModuleChain, BlocksSymbols } from '@risevision/core-blocks';
+import {
+  PoolManager,
+  TransactionLogic,
+  TransactionPool,
+  TransactionsModel,
+  TransactionsModule, TXSymbols
+} from '@risevision/core-transactions';
+import { createSendTransaction, toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
+import { AccountsSymbols } from '@risevision/core-accounts';
+import { SystemModule } from '@risevision/core';
+import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
+import { MultisignaturesModule, MultisigSymbols } from '@risevision/core-multisignature';
+import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
+import { ModelSymbols } from '@risevision/core-models';
 
 chai.use(chaiAsPromised);
 // tslint:disable no-unused-expression no-big-function no-identical-function
@@ -34,29 +37,31 @@ describe('functionalities.multisignature', () => {
   initializer.autoRestoreEach();
   let wallet: LiskWallet;
 
-  let accountsModule: IAccountsModule;
-  let blocksModule: IBlocksModule;
-  let blocksSubChainModule: IBlocksModuleChain;
-  let txModule: ITransactionsModule;
-  let multisigModule: IMultisignaturesModule;
-  let systemModule: ISystemModule;
-  let txPool: ITransactionPoolLogic;
-  let txLogic: ITransactionLogic;
+  let accountsModule: IAccountsModule<AccountsModelWithMultisig>;
+  let blocksModule: BlocksModule;
+  let blocksSubChainModule: BlocksModuleChain;
+  let txModule: TransactionsModule;
+  let multisigModule: MultisignaturesModule;
+  let systemModule: SystemModule;
+  let txPool: TransactionPool;
+  let poolManager: PoolManager;
+  let txLogic: TransactionLogic;
 
   let TxModel: typeof TransactionsModel;
   beforeEach(async () => {
     const { wallet: w } = await createRandomAccountWithFunds(1e10);
     wallet              = w;
 
-    TxModel              = initializer.appManager.container.get(Symbols.models.transactions);
-    accountsModule       = initializer.appManager.container.get(Symbols.modules.accounts);
-    blocksModule         = initializer.appManager.container.get(Symbols.modules.blocks);
-    blocksSubChainModule = initializer.appManager.container.get(Symbols.modules.blocksSubModules.chain);
-    multisigModule       = initializer.appManager.container.get(Symbols.modules.multisignatures);
-    txModule             = initializer.appManager.container.get(Symbols.modules.transactions);
+    TxModel              = initializer.appManager.container.getNamed(ModelSymbols.model, TXSymbols.model);
+    accountsModule       = initializer.appManager.container.get(AccountsSymbols.module);
+    blocksModule         = initializer.appManager.container.get(BlocksSymbols.modules.blocks);
+    blocksSubChainModule = initializer.appManager.container.get(BlocksSymbols.modules.chain);
+    multisigModule       = initializer.appManager.container.get(MultisigSymbols.module);
+    txModule             = initializer.appManager.container.get(TXSymbols.module);
     systemModule         = initializer.appManager.container.get(Symbols.modules.system);
-    txLogic              = initializer.appManager.container.get(Symbols.logic.transaction);
-    txPool               = initializer.appManager.container.get(Symbols.logic.transactionPool);
+    txLogic              = initializer.appManager.container.get(TXSymbols.logic);
+    txPool               = initializer.appManager.container.get(TXSymbols.pool);
+    poolManager          = initializer.appManager.container.get(TXSymbols.poolManager);
   });
   it('should create a multisig account', async () => {
     const { keys, tx } = await createMultiSignAccount(
@@ -121,7 +126,7 @@ describe('functionalities.multisignature', () => {
     multisigTx.signatures = keys.map((k) => k.account.getSignatureOfTransaction(multisigTx));
 
     await expect(initializer.rawMineBlockWithTxs([toBufferedTransaction(multisigTx)]))
-      .rejectedWith('Failed to verify second signature');
+      .rejectedWith('Missing second signature');
 
     // With second signature but old signatures that do not account the secondSignature
     multisigTx.signSignature = secondWallet.getSignatureOfTransaction(multisigTx);
@@ -195,25 +200,24 @@ describe('functionalities.multisignature', () => {
         );
 
         const bufTx = toBufferedTransaction(tx);
-        await txModule.processUnconfirmedTransaction(bufTx, false);
-        await txPool.processBundled();
-        await txModule.fillPool();
+        await txModule.processIncomingTransactions([bufTx], null);
+        await poolManager.processPool();
 
         // just the new keys. should keep readyness to false.
-        for (const signature of signatures) {
-          await multisigModule.processSignature({ signature, transaction: tx.id });
-          expect(txPool.multisignature.getPayload(bufTx).ready).false;
+        for (const signature of signatures.map((s) => Buffer.from(s, 'hex'))) {
+          await multisigModule.onNewSignature({ signature, transaction: tx.id, relays: 3 });
+          expect(txPool.pending.getPayload(bufTx).ready).false;
         }
 
         // add the missing keys[1] and should change to readyness true
-        await multisigModule.processSignature({
-          signature  : keys[1]
-            .getSignatureOfTransaction(tx),
+        await multisigModule.onNewSignature({
+          signature  : Buffer.from(keys[1]
+            .getSignatureOfTransaction(tx), 'hex'),
           transaction: bufTx.id,
+          relays: 3,
         });
-        expect(txPool.multisignature.getPayload(bufTx).ready).true;
-        await txPool.processBundled();
-        await txModule.fillPool();
+        expect(txPool.pending.getPayload(bufTx).ready).true;
+        await poolManager.processPool();
 
         await initializer.rawMineBlocks(1);
 
@@ -250,17 +254,17 @@ describe('functionalities.multisignature', () => {
         const bufTx      = toBufferedTransaction(tx);
         bufTx.signatures = [];
         for (const signature of signatures) {
-          bufTx.signatures.push(signature);
+          bufTx.signatures.push(Buffer.from(signature, 'hex'));
           await expect(initializer.rawMineBlockWithTxs([bufTx]))
-            .rejectedWith(`Transaction ${tx.id} is not ready`);
+            .rejectedWith(`MultiSig Transaction ${tx.id} is not ready`);
         }
         // try fake signature from randomWallet
-        bufTx.signatures.push(createRandomWallet().getSignatureOfTransaction(tx));
+        bufTx.signatures.push(Buffer.from(createRandomWallet().getSignatureOfTransaction(tx), 'hex'));
         await expect(initializer.rawMineBlockWithTxs([bufTx]))
           .rejectedWith('Failed to verify multisignature');
 
         // try to include valid signatures with an external ^^ wallet.
-        bufTx.signatures.push(keys[1].getSignatureOfTransaction(tx));
+        bufTx.signatures.push(Buffer.from(keys[1].getSignatureOfTransaction(tx), 'hex'));
         await expect(initializer.rawMineBlockWithTxs([bufTx]))
           .rejectedWith('Failed to verify multisignature');
 
@@ -277,7 +281,7 @@ describe('functionalities.multisignature', () => {
         await createAndConfirmSendTransaction(1, 1e9, getRandomDelegateWallet(), newWallets[0].address);
 
         // Craft base tx using newWallets[0] as requesterPublicKey
-        const tx = newWallets[0].signTransaction(new MultiSignatureTx({
+        const tx    = newWallets[0].signTransaction(new MultiSignatureTx({
             multisignature: {
               keysgroup: newKeys.map((k) => `+${k.publicKey}`),
               lifetime : 49,
@@ -289,7 +293,7 @@ describe('functionalities.multisignature', () => {
             .set('senderPublicKey', wallet.publicKey)
             .set('timestamp', 1)
         );
-        tx.senderId   = wallet.address;
+        tx.senderId = wallet.address;
 
         // Sign only with the new Keys (missing keys[1]) should fail
         tx.signatures = newKeys.map((k) => k.getSignatureOfTransaction(tx));
@@ -316,7 +320,7 @@ describe('functionalities.multisignature', () => {
         const db = await TxModel.findById(tx.id);
         expect(db).exist;
         await txLogic.attachAssets([db]);
-        expect(db.toTransport(blocksModule)).deep.eq({
+        expect(db.toTransport()).deep.eq({
           ...tx,
           height       : b.height,
           rowId        : db.rowId,
@@ -349,7 +353,8 @@ describe('functionalities.multisignature', () => {
           );
           const bufTx              = toBufferedTransaction(tx);
           bufTx.signatures         = signatures
-            .concat(keys.map((k) => k.getSignatureOfTransaction(tx)));
+            .concat(keys.map((k) => k.getSignatureOfTransaction(tx)))
+            .map((s) => Buffer.from(s, 'hex'));
           const b                  = await initializer.rawMineBlockWithTxs([bufTx]);
           expect(b.numberOfTransactions).eq(1);
         });
@@ -500,7 +505,7 @@ describe('functionalities.multisignature', () => {
           await expect(initializer.rawMineBlockWithTxs([toBufferedTransaction(tx)]))
             .rejectedWith('Account does not belong to multisignature group');
         });
-        it('should be rejected if requesterPublicKey has second signature enabled and not provided', async () => {
+        it('should not get rejected if requesterPublicKey has second signature enabled and not provided', async () => {
           const secondWallet = createRandomWallet();
           // Send money to requester so that it can register second sign tx
           await createAndConfirmSendTransaction(1, 1e10, getRandomDelegateWallet(), keysOther[0].address);
@@ -512,16 +517,16 @@ describe('functionalities.multisignature', () => {
             keysOther[1].getSignatureOfTransaction(tx),
           ];
           await expect(initializer.rawMineBlockWithTxs([toBufferedTransaction(tx)]))
-            .rejectedWith('Missing requester second signature');
-
-          // add second signature and recompute multisignature signers's signature.
-          tx.signSignature = secondWallet.getSignatureOfTransaction(tx);
-          tx.signatures = [
-            keysOther[0].getSignatureOfTransaction(tx),
-            keysOther[1].getSignatureOfTransaction(tx),
-          ];
-          await expect(initializer.rawMineBlockWithTxs([toBufferedTransaction(tx)]))
             .not.rejected;
+          //
+          // // add second signature and recompute multisignature signers's signature.
+          // tx.signSignature = secondWallet.getSignatureOfTransaction(tx);
+          // tx.signatures    = [
+          //   keysOther[0].getSignatureOfTransaction(tx),
+          //   keysOther[1].getSignatureOfTransaction(tx),
+          // ];
+          // await expect(initializer.rawMineBlockWithTxs([toBufferedTransaction(tx)]))
+          //   .not.rejected;
         });
       });
 
