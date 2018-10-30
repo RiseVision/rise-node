@@ -56,7 +56,7 @@ describe('apis/delegatesAPI', () => {
     slots                   = container.get(dPoSSymbols.helpers.slots);
     system                  = container.get(Symbols.modules.system);
     accounts2delegatesModel = container.getNamed(ModelSymbols.model, dPoSSymbols.models.accounts2Delegates);
-    instance                = container.getNamed(APISymbols.api, dPoSSymbols.delegatesAPI);
+    instance                = container.getNamed(APISymbols.class, dPoSSymbols.delegatesAPI);
   });
 
   afterEach(() => {

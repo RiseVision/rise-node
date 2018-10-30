@@ -7,6 +7,7 @@ import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { p2pSymbols, PeersModule } from '../../../src/';
 import { PeerState } from '@risevision/core-types';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { APISymbols } from '@risevision/core-apis';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -29,13 +30,13 @@ describe('apis/peersAPI', () => {
   beforeEach(async () => {
     container    = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     sandbox = sinon.createSandbox();
-    container.bind(Symbols.generic.versionBuild).toConstantValue(versionBuild);
+    container.rebind(Symbols.generic.versionBuild).toConstantValue(versionBuild);
     peersModuleStub = container.get(Symbols.modules.peers);
     systemModuleStub = container.get(Symbols.modules.system);
 
     getMinVersionStub = sandbox.stub(systemModuleStub, 'getMinVersion').returns('1.0');
     getByFilterStub = sandbox.stub(peersModuleStub, 'getByFilter').returns([{object: () => ({ hello: 'world' })}]);
-    instance = container.getNamed(p2pSymbols.controller, p2pSymbols.api.peersAPI);
+    instance = container.getNamed(APISymbols.class, p2pSymbols.api.peersAPI);
   });
 
   afterEach(() => {
@@ -140,7 +141,7 @@ describe('apis/peersAPI', () => {
     it('should return an object with the properties: build, minVersion and version', async () => {
       result = await instance.version();
       expect(result).to.deep.equal({
-        build: 'test',
+        build: '1.2.3',
         minVersion: '1.0',
         version: '0.1.0',
       });

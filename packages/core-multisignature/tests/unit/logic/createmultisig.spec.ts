@@ -727,11 +727,18 @@ describe('logic/transactions/createmultisig', () => {
     describe('account already multisig', () => {
       beforeEach(() => {
         sender                 = new AccountsModel(sender);
-        sender.multisignatures = ['aaaa', 'bbbb'];
+        sender.multisignatures = [
+          `${new Array(64).fill('a').join('')}`,
+          `${new Array(64).fill('b').join('')}`
+        ];
         sender.multilifetime   = 72;
         sender.multimin        = 2;
 
-        tx.asset.multisignature.keysgroup = ['+cc', '+dd', '+ee'];
+        tx.asset.multisignature.keysgroup = [
+          `+${new Array(64).fill('d').join('')}`,
+          `+${new Array(64).fill('e').join('')}`,
+          `+${new Array(64).fill('f').join('')}`
+        ];
       });
       it('should false if no 5 sigs provided', async () => {
         tx.signatures = new Array(4).fill('a');
@@ -740,8 +747,11 @@ describe('logic/transactions/createmultisig', () => {
         expect(await instance.ready(tx, sender)).true;
       });
       it('should return true if 3 sigs when keysgroup overlap', async () => {
-        sender.multisignatures            = ['cc', 'ee'];
-        tx.asset.multisignature.keysgroup = ['+cc', '+dd', '+ee'];
+        tx.asset.multisignature.keysgroup = [
+          `+${new Array(64).fill('b').join('')}`,
+          `+${new Array(64).fill('c').join('')}`,
+          `+${new Array(64).fill('a').join('')}`,
+        ];
         tx.signatures                     = [];
         expect(await instance.ready(tx, sender)).false;
         tx.signatures.push('a');
@@ -755,7 +765,11 @@ describe('logic/transactions/createmultisig', () => {
     describe('account not being multisig', async () => {
       beforeEach(() => {
         sender                            = new AccountsModel(sender);
-        tx.asset.multisignature.keysgroup = ['+cc', '+dd', '+ee'];
+        tx.asset.multisignature.keysgroup = [
+          `+${new Array(64).fill('d').join('')}`,
+          `+${new Array(64).fill('e').join('')}`,
+          `+${new Array(64).fill('f').join('')}`
+        ];
       });
       it('should require account 3 sigs', async () => {
         tx.signatures = ['1', '2', '3'];
@@ -774,4 +788,8 @@ describe('logic/transactions/createmultisig', () => {
     });
   });
 
+});
+process.on('unhandledRejection', error => {
+  // Will print "unhandledRejection err is not defined"
+  console.log('unhandledRejection', error);
 });

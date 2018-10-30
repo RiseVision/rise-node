@@ -32,10 +32,10 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     this.container.bind(APISymbols.class)
       .to(APISuccessInterceptor).inSingletonScope().whenTargetNamed(APISymbols.successInterceptor);
     this.container
-      .bind(Symbols.class)
+      .bind(APISymbols.class)
       .to(PrivateApisGuard).inSingletonScope().whenTargetNamed(APISymbols.privateApiGuard);
     this.container
-      .bind(Symbols.class)
+      .bind(APISymbols.class)
       .toConstantValue(limitsMiddleware).whenTargetNamed(APISymbols.applyLimitsMiddleware);
 
     this.container

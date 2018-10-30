@@ -56,7 +56,7 @@ describe('logic/round', () => {
         BlocksModel  : blocksModel
       },
       round         : 10,
-      roundDelegates: [{}],
+      roundDelegates: [Buffer.from('aabbcc', 'hex')],
       roundFees     : {},
       roundOutsiders: ['1', '2', '3'],
       roundRewards  : {},
@@ -201,7 +201,7 @@ describe('logic/round', () => {
     beforeEach(() => {
       const rc = container.get<typeof RoundChanges>(dPoSSymbols.helpers.roundChanges);
       at = sandbox.stub(rc.prototype, 'at');
-    })
+    });
 
     it('should apply round changes to each delegate, with backwards false and fees > 0', async () => {
       at.returns({
@@ -223,14 +223,14 @@ describe('logic/round', () => {
         changes : {
           feesRemaining: 10,
         },
-        delegate: {},
+        delegate: 'aabbcc',
       });
       expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
         'Fees remaining'
       );
       expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
-        delegate: {},
+        delegate: 'aabbcc',
         fees    : 10,
         index   : 0,
       });

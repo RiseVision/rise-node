@@ -29,6 +29,7 @@ describe('apis/accountsAPI', () => {
       'core-helpers',
     ]);
 
+    instance = container.getNamed(APISymbols.class, AccountsSymbols.api);
   });
 
   afterEach(() => {
@@ -37,7 +38,6 @@ describe('apis/accountsAPI', () => {
 
   describe('getAccount', () => {
     it('should validate schema', async () => {
-      instance = container.getNamed(APISymbols.api, AccountsSymbols.api);
       await expect(instance.getAccount({ address: 'meow' })).rejectedWith('address - Object didn\'t pass');
       await expect(instance.getAccount({ publicKey: 'meow' })).rejectedWith('publicKey - Object didn\'t pass');
       await expect(instance.getAccount({} as any)).rejectedWith('Missing required property: address or publicKey');
@@ -48,7 +48,6 @@ describe('apis/accountsAPI', () => {
     });
 
     it('should validate against generated address if both pubKey and address are provided', async () => {
-      instance = container.getNamed(APISymbols.api, AccountsSymbols.api);
       await expect(instance.getAccount({
         address  : '1R',
         publicKey: '69bcf81be8a34393507d3d371c551325a8d48f6e92284633bd7043030f5c6a26'
@@ -57,7 +56,6 @@ describe('apis/accountsAPI', () => {
 
     it('should query accountsModule', async () => {
       const accModule = container.get<AccountsModule>(AccountsSymbols.module);
-      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
       const stub      = sandbox.stub(accModule, 'getAccount').resolves(null);
       await expect(instance.getAccount({ address: '1R' })).rejectedWith('Account not found');
 
@@ -90,7 +88,6 @@ describe('apis/accountsAPI', () => {
       await filterInstance.hookMethods();
 
       const accModule = container.get<AccountsModule>(AccountsSymbols.module);
-      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
       sandbox.stub(accModule, 'getAccount').resolves({
         address     : '1R',
         balance     : 10,
@@ -111,13 +108,11 @@ describe('apis/accountsAPI', () => {
   });
   describe('getBalance', () => {
     it('should reject if input does not pass validation schema', async () => {
-      instance = container.getNamed(APISymbols.api, AccountsSymbols.api);
       await expect(instance.getBalance({ address: 'meow' })).to.rejectedWith('address - Object didn\'t pass validation');
 
     });
     it('should query accountsModule and return balance and unconfirmedBalance', async () => {
       const accModule = container.get<AccountsModule>(AccountsSymbols.module);
-      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
       const stub      = sandbox.stub(accModule, 'getAccount').resolves({
         address     : '1R',
         balance     : 10,
@@ -130,20 +125,17 @@ describe('apis/accountsAPI', () => {
     });
     it('should throw if accountsModule throws', async () => {
       const accModule = container.get<AccountsModule>(AccountsSymbols.module);
-      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
       sandbox.stub(accModule, 'getAccount').rejects(new Error('hey'));
       await expect(instance.getBalance({ address: '1R' })).to.rejectedWith('hey');
     });
   });
   describe('getPublicKey', () => {
     it('should reject if input does not pass validation schema', async () => {
-      instance = container.getNamed(APISymbols.api, AccountsSymbols.api);
       await expect(instance.getPublickey({ address: 'meow' })).to.rejectedWith('address - Object didn\'t pass validation');
 
     });
     it('should query accountsModule and return hexPublicKey', async () => {
       const accModule     = container.get<AccountsModule>(AccountsSymbols.module);
-      instance            = container.getNamed(APISymbols.api, AccountsSymbols.api);
       const AccountsModel = container.getNamed<any>(ModelSymbols.model, AccountsSymbols.model);
       const stub          = sandbox.stub(accModule, 'getAccount').resolves(new AccountsModel({
         publicKey: Buffer.alloc(32).fill(0xaa),
@@ -154,12 +146,10 @@ describe('apis/accountsAPI', () => {
     });
     it('should throw if accountsModule throws', async () => {
       const accModule = container.get<AccountsModule>(AccountsSymbols.module);
-      instance        = container.getNamed(APISymbols.api, AccountsSymbols.api);
       sandbox.stub(accModule, 'getAccount').rejects(new Error('hey'));
       await expect(instance.getPublickey({ address: '1R' })).to.rejectedWith('hey');
     });
   });
-
 
   describe('topAccounts', () => {
     let appConfig: AppConfig;
@@ -171,8 +161,6 @@ describe('apis/accountsAPI', () => {
       const accountsModule  = container.get<AccountsModule>(AccountsSymbols.module);
       getAccountsStub       = sinon.stub(accountsModule, 'getAccounts');
       AccountsModel         = container.getNamed<any>(ModelSymbols.model, AccountsSymbols.model);
-      ;
-      instance = container.getNamed(APISymbols.api, AccountsSymbols.api);
     });
 
     it('should reject with appConfig.topAccounts not defined', async () => {

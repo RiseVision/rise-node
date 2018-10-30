@@ -54,7 +54,7 @@ describe('apis/transactionsAPI', () => {
     sandbox   = sinon.createSandbox();
     txModule  = container.get(TXSymbols.module);
 
-    instance          = container.getNamed(APISymbols.api, TXSymbols.api.api);
+    instance          = container.getNamed(APISymbols.class, TXSymbols.api.api);
     TransactionsModel = container.getNamed(ModelSymbols.model, Symbols.models.transactions);
     blocksModule      = container.get<IBlocksModule>(Symbols.modules.blocks);
     txLogic           = container.get(Symbols.logic.transaction);

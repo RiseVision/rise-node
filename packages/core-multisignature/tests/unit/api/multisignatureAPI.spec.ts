@@ -50,7 +50,7 @@ describe('apis/multisignatureAPI', () => {
     container = await createContainer(['core-multisignature', 'core', 'core-helpers']);
 
     sandbox                       = sinon.createSandbox();
-    instance                      = container.getNamed(APISymbols.api, MultisigSymbols.api);
+    instance                      = container.getNamed(APISymbols.class, MultisigSymbols.api);
     accounts2multisignaturesModel = container.getNamed(ModelSymbols.model, MultisigSymbols.models.accounts2Multi);
     accountsModule                = container.get(Symbols.modules.accounts);
     AccountsModel                 = container.getNamed(ModelSymbols.model, Symbols.models.accounts);

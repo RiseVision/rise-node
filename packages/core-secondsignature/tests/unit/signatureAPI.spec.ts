@@ -28,7 +28,7 @@ describe('apis/signatureAPI', () => {
     sandbox = sinon.createSandbox();
     systemModule = container.get(Symbols.modules.system);
 
-    instance = container.getNamed(APISymbols.api, SigSymbols.api);
+    instance = container.getNamed(APISymbols.class, SigSymbols.api);
   });
 
   afterEach(() => {

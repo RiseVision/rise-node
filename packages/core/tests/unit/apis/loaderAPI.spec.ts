@@ -39,7 +39,7 @@ describe('apis/loaderAPI', () => {
     // loaderModule.loaded    = true;
     blocksModule.lastBlock = { height: 1 } as any;
 
-    instance = container.getNamed(APISymbols.api, CoreSymbols.api.loader);
+    instance = container.getNamed(APISymbols.class, CoreSymbols.api.loader);
   });
 
   afterEach(() => {

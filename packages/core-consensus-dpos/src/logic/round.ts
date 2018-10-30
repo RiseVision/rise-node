@@ -186,7 +186,7 @@ export class RoundLogic {
       const feesRemaining = (this.scope.backwards ? -remainderChanges.feesRemaining : remainderChanges.feesRemaining);
 
       this.scope.library.logger.trace('Fees remaining', {
-        delegate: remainderDelegate,
+        delegate: remainderDelegate.toString('hex'),
         fees    : feesRemaining,
         index   : remainderIndex,
       });

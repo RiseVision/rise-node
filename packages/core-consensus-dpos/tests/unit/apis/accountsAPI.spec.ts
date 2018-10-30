@@ -33,9 +33,8 @@ describe('apis/accountsAPI', function () {
     accounts        = container.get(Symbols.modules.accounts);
     delegatesModule = container.get(dPoSSymbols.modules.delegates);
     system          = container.get(Symbols.modules.system);
-    instance        = container.getNamed(APISymbols.api, dPoSSymbols.accountsAPI);
+    instance        = container.getNamed(APISymbols.class, dPoSSymbols.accountsAPI);
   });
-
 
   afterEach(() => {
     sandbox.restore();

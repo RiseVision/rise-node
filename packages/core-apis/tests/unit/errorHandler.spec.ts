@@ -33,7 +33,7 @@ describe('apis/utils/errorHandler', () => {
 
   beforeEach(async () => {
     container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers']);
-    instance  = container.getNamed(p2pSymbols.middleware, APISymbols.errorHandler);
+    instance  = container.getNamed(APISymbols.class, APISymbols.errorHandler);
 
     sandbox           = sinon.createSandbox();
     sendSpy           = { send: sandbox.spy() };

@@ -23,7 +23,7 @@ describe('apis/utils/privateApisWatchGuard', () => {
   let container: Container;
   beforeEach(async () => {
     container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers']);
-    instance  = container.getNamed(Symbols.class, APISymbols.privateApiGuard);
+    instance  = container.getNamed(APISymbols.class, APISymbols.privateApiGuard);
     next      = sinon.stub();
   });
   describe('use()', () => {
