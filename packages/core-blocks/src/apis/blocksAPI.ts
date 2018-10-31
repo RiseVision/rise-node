@@ -19,7 +19,7 @@ import {
   ValidateSchema,
   WrapInDBSequence
 } from '@risevision/core-utils';
-import { inject, injectable, named } from 'inversify';
+import { inject, injectable, named, postConstruct } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
@@ -63,6 +63,12 @@ export class BlocksAPI {
   @inject(ModelSymbols.model)
   @named(ModelSymbols.names.transactions)
   private TransactionsModel: typeof ITransactionsModel;
+
+  @postConstruct()
+  private postConstruct() {
+    blocksSchema.getBlocks.properties.totalAmount.maximum = this.constants.maxAmount;
+    blocksSchema.getBlocks.properties.totalFee.maximum = this.constants.maxAmount;
+  }
 
   @Get('/')
   @ValidateSchema()

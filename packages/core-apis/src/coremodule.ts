@@ -112,6 +112,8 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
 
   public async teardown() {
     await this.container.get<SocketIOAPI>(APISymbols.socketIOAPI).unHook();
+    return cbToPromise((cb) => this.srv.close(cb))
+      .catch((e) => void 0);
   }
 
   public async boot() {

@@ -3,15 +3,21 @@ import * as supertest from 'supertest';
 import initializer from '../common/init';
 import { checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
 import {
-  createMultiSignTransaction, createRandomAccountWithFunds, createRandomWallet, enqueueAndProcessBundledTransaction
+  createMultiSignTransaction,
+  createRandomAccountWithFunds,
+  createRandomWallet,
+  enqueueAndProcessTransactions,
+  getSelfTransportPeer
 } from '../common/utils';
-import { Symbols } from '../../../src/ioc/symbols';
 import { LiskWallet } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { ITransactionsModule, ITransportModule } from '../../../src/ioc/interfaces/modules';
-import { toBufferedTransaction } from '../../utils/txCrafter';
-import { Ed } from '../../../src/helpers';
-import { ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
+import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { Crypto } from '@risevision/core-helpers';
+import { MultisigSymbols, PostSignaturesRequest } from '@risevision/core-multisignature';
+import { p2pSymbols } from '@risevision/core-p2p';
+import { BlocksModule } from '@risevision/core-blocks';
+import { PoolManager, TXSymbols } from '@risevision/core-transactions';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/multisignatures', () => {
@@ -23,10 +29,11 @@ describe('api/multisignatures', () => {
     checkPubKey('publicKey', '/api/multisignatures/accounts');
     checkReturnObjKeyVal('accounts', [], '/api/multisignatures/accounts?publicKey=e0f1c6cca365cd61bbb01cfb454828a698fa4b7170e85a597dde510567f9dda5');
     it('should return correct accounts info if account is, indeed a multisig account', async () => {
-      const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-      const txPool = initializer.appManager.container.get<ITransactionPoolLogic>(Symbols.logic.transactionPool);
-      const transportModule = initializer.appManager.container.get<ITransportModule>(Symbols.modules.transport);
-      const ed = initializer.appManager.container.get<Ed>(Symbols.helpers.crypto);
+      const postsignRequest = initializer.appManager
+          .container.getNamed<PostSignaturesRequest>(p2pSymbols.transportMethod, MultisigSymbols.p2p.postSignatures);
+      const poolManager = initializer.appManager.container.get<PoolManager>(TXSymbols.poolManager);
+      const blocksModule = initializer.appManager.container.get<BlocksModule>(Symbols.modules.blocks);
+      const ed = initializer.appManager.container.get<Crypto>(Symbols.generic.crypto);
       const txLogic = initializer.appManager.container.get<ITransactionLogic>(Symbols.logic.transaction);
       const senderData = await createRandomAccountWithFunds(5000000000);
       const sender = senderData.wallet;
@@ -34,9 +41,7 @@ describe('api/multisignatures', () => {
       const signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
       // await initializer.rawMineBlockWithTxs([toBufferedTransaction(signedTx)]))
 
-      await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false);
-      await txPool.processBundled();
-      await txModule.fillPool();
+      await enqueueAndProcessTransactions([signedTx]);
 
       await initializer.rawMineBlocks(1);
       const signatures = keys.map((k) => ed.sign(
@@ -45,16 +50,25 @@ describe('api/multisignatures', () => {
           privateKey: Buffer.from(k.privKey, 'hex'),
           publicKey : Buffer.from(k.publicKey, 'hex'),
         }
-      ).toString('hex'));
+      ));
 
-      await transportModule.receiveSignatures(signatures.map((sig) => ({
-        signature  : sig,
-        transaction: signedTx.id,
-      })));
+      await getSelfTransportPeer().makeRequest(postsignRequest, {
+        body: {
+          signatures: signatures.map((s) => {
+            return {
+              relays: 3,
+              signature: s,
+              transaction: signedTx.id,
+            };
+          }),
+        },
+      });
+      await poolManager.processPool();
       // initializer.appManager.container.get(Symbols.generic.sequelize).options.logging = true;
       await initializer.rawMineBlocks(1);
+
       // initializer.appManager.container.get(Symbols.generic.sequelize).options.logging = false;
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/multisignatures/accounts?publicKey=' + keys[0].publicKey)
         .expect(200)
         .then((response) => {
@@ -86,15 +100,13 @@ describe('api/multisignatures', () => {
     checkReturnObjKeyVal('transactions', [], '/api/multisignatures/pending?publicKey=e0f1c6cca365cd61bbb01cfb454828a698fa4b7170e85a597dde510567f9dda5');
 
     it('should have pending transactions object if any missing pending tx is available', async () => {
-      const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
       const senderData = await createRandomAccountWithFunds(5000000000);
       sender = senderData.wallet;
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
-      await enqueueAndProcessBundledTransaction(signedTx);
-      //await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
+      await enqueueAndProcessTransactions([signedTx]);
       await initializer.rawMineBlocks(1);
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/multisignatures/pending?publicKey=' + sender.publicKey)
         .expect(200)
         .then((response) => {
@@ -106,18 +118,15 @@ describe('api/multisignatures', () => {
     });
 
     it('should have a min, max, lifetime, signed info for each pending tx', async () => {
-      const txModule = initializer.appManager.container.get<ITransactionsModule>(Symbols.modules.transactions);
-      const transportModule = initializer.appManager.container.get<ITransportModule>(Symbols.modules.transport);
-      const ed = initializer.appManager.container.get<Ed>(Symbols.helpers.crypto);
+      const ed = initializer.appManager.container.get<Crypto>(Symbols.generic.crypto);
       const txLogic = initializer.appManager.container.get<ITransactionLogic>(Symbols.logic.transaction);
       const senderData = await createRandomAccountWithFunds(5000000000);
       sender = senderData.wallet;
       const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
       signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
-      await enqueueAndProcessBundledTransaction(signedTx);
-      //await txModule.processUnconfirmedTransaction(toBufferedTransaction(signedTx), false, false);
+      await enqueueAndProcessTransactions([signedTx]);
       await initializer.rawMineBlocks(1);
-      return supertest(initializer.appManager.expressApp)
+      return supertest(initializer.apiExpress)
         .get('/api/multisignatures/pending?publicKey=' + sender.publicKey)
         .expect(200)
         .then(async (response) => {
@@ -135,35 +144,23 @@ describe('api/multisignatures', () => {
               privateKey: Buffer.from(k.privKey, 'hex'),
               publicKey : Buffer.from(k.publicKey, 'hex'),
             }
-          ).toString('hex'));
-          await transportModule.receiveSignatures(signatures.map((sig) => ({
-            signature  : sig,
-            transaction: signedTx.id,
-          })));
+          ));
+          const postsignRequest = initializer.appManager
+            .container.getNamed<PostSignaturesRequest>(p2pSymbols.transportMethod, MultisigSymbols.p2p.postSignatures);
+          await getSelfTransportPeer().makeRequest(postsignRequest, {
+            body: {
+              signatures: signatures.map((s) => {
+                return {
+                  relays: 3,
+                  signature: s,
+                  transaction: signedTx.id,
+                };
+              }),
+            },
+          });
 
           await initializer.rawMineBlocks(1);
-        });
-    });
-  });
 
-  describe('/sign', () => {
-    it('should return deprecated', () => {
-      return supertest(initializer.appManager.expressApp)
-        .post('/api/multisignatures/sign')
-        .expect(500)
-        .then((response) => {
-          expect(response.body.error).is.eq('Method is deprecated');
-        });
-    });
-  });
-
-  describe('[PUT] /', () => {
-    it('should return deprecated', () => {
-      return supertest(initializer.appManager.expressApp)
-        .put('/api/multisignatures/')
-        .expect(500)
-        .then((response) => {
-          expect(response.body.error).is.eq('Method is deprecated');
         });
     });
   });
