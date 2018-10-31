@@ -146,7 +146,7 @@ describe('HooksListener', () => {
       const ttx = signMultiSigTxRequester(multisigners[0]);
       ttx.signatures.splice(0, 2);
       await expect(txLogic.verify(ttx, sender, requester, 1))
-        .to.rejectedWith('MultiSig Transaction is not ready');
+        .to.rejectedWith(`MultiSig Transaction ${ttx.id} is not ready`);
     });
     it('should reject tx if requesetPublicKey and account is not multisign', async () => {
       sender.multilifetime = 0;
