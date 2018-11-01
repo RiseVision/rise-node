@@ -1,11 +1,12 @@
 import { expect } from 'chai';
 import * as chai from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
+import * as chaiAsPromised from 'chai-as-promised';
+import * as supersha from 'supersha';
 import {Container} from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
 import { Op } from 'sequelize';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import * as helpers from '../../../src/helpers';
 import {Symbols} from '../../../src/ioc/symbols';
@@ -21,7 +22,6 @@ import {
   SlotsStub,
   ZSchemaStub
 } from '../../stubs';
-import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
 import { createContainer } from '../../utils/containerCreator';
 
@@ -44,7 +44,7 @@ describe('modules/delegates', () => {
   let blocksModel: typeof BlocksModel;
   let accountsModel: typeof AccountsModel;
 
-  let createHashSpy: CreateHashSpy;
+  let sha256Spy: SinonSpy;
 
   let pubKey: string;
   let votes: string[];
@@ -85,7 +85,7 @@ describe('modules/delegates', () => {
       '+73e57c9637af3eede22c25bcd696b94a3f4b017fdc681d714e275427a5112c28',
     ];
 
-    createHashSpy                                     = new CreateHashSpy(crypto, sandbox);
+    sha256Spy = sandbox.spy(supersha, 'sha256');
     const lastBlock                                   = {
       blockSignature      : Buffer.from('blockSignature'),
       generatorPublicKey  : Buffer.from('genPublicKey'),
@@ -174,34 +174,32 @@ describe('modules/delegates', () => {
       expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(height);
     });
 
-    it('should call crypto.createHash and Hash.update with the round string as seedSource', async () => {
+    it('should call supersha.sha256 with the round string as seedSource', async () => {
       await instance.generateDelegateList(height);
-      expect(createHashSpy.spies.createHash.called).to.be.true;
-      expect(createHashSpy.spies.createHash.firstCall.args[0]).to.be.equal('sha256');
-      expect(createHashSpy.spies.update[0].called).to.be.true;
-      expect(createHashSpy.spies.update[0].firstCall.args[0]).to.be.equal('123');
+      expect(sha256Spy.called).to.be.true;
+      expect(sha256Spy.firstCall.args[0]).to.be.deep.equal(Buffer.from('123', 'utf-8'));
     });
 
-    it('should call crypto.createHash every 5 keys, after the first time', async () => {
+    it('should call supersha.sha256 every 5 keys, after the first time', async () => {
       const expectedCount = 1 + Math.ceil(testAccounts.length / 5);
       await instance.generateDelegateList(height);
-      expect(createHashSpy.spies.createHash.callCount).to.be.equal(expectedCount);
+      expect(sha256Spy.callCount).to.be.equal(expectedCount);
     });
 
     it('should call hash.update with the previous hash buffer every 5 keys, after the first time', async () => {
       const expectedCount = 1 + Math.ceil(testAccounts.length / 5);
       await instance.generateDelegateList(height);
-      expect(createHashSpy.spies.update.length).to.be.equal(expectedCount);
+      expect(sha256Spy.callCount).to.be.equal(expectedCount);
       const expectedSeeds = [];
-      expectedSeeds.push('123');
-      let currentSeed = createHashSpy.realCreateHash('sha256').update(expectedSeeds[0], 'utf8').digest();
+      expectedSeeds.push(Buffer.from('123', 'utf-8'));
+      let currentSeed = crypto.createHash('sha256').update(expectedSeeds[0], 'utf8').digest();
       for (let i = 0; i < expectedCount - 1; i++) {
-        expectedSeeds.push(currentSeed.toString('hex'));
-        currentSeed = createHashSpy.realCreateHash('sha256').update(currentSeed).digest();
+        expectedSeeds.push(currentSeed);
+        currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
       }
       const returnedSeeds = [];
-      createHashSpy.spies.update.forEach((spy) => {
-        returnedSeeds.push(spy.firstCall.args[0].toString('hex'));
+      sha256Spy.getCalls().forEach((call) => {
+        returnedSeeds.push(call.args[0]);
       });
       expect(returnedSeeds).to.be.deep.equal(expectedSeeds);
     });
@@ -269,7 +267,7 @@ describe('modules/delegates', () => {
 
       it('should include at least once most delegates with vote > 0 in pool, in a long streak of rounds', async function() {
         this.timeout(100000);
-        createHashSpy.restore();
+        sha256Spy.restore();
         slotsStub.delegates = 101;
         // 1 year...
         const numRounds = 10407;

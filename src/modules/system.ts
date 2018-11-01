@@ -1,7 +1,7 @@
-import * as crypto from 'crypto';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
 import * as semver from 'semver';
+import * as supersha from 'supersha';
 import { constants as constantType } from '../helpers/';
 import { IBlocksModule, ISystemModule } from '../ioc/interfaces/modules/';
 import { Symbols } from '../ioc/symbols';
@@ -175,7 +175,7 @@ export class SystemModule implements ISystemModule {
 
     const seed = rows.map((r) => r.id).join('');
 
-    const hash = crypto.createHash('sha256').update(seed, 'utf8').digest();
+    const hash = supersha.sha256(Buffer.from(seed, 'utf8'));
     return hash.toString('hex');
   }
 

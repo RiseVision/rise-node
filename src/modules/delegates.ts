@@ -1,7 +1,7 @@
-import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
 import { Op } from 'sequelize';
+import * as supersha from 'supersha';
 import * as z_schema from 'z-schema';
 import {
   constants as constantsType, ExceptionsList, ExceptionsManager,
@@ -106,7 +106,7 @@ export class DelegatesModule implements IDelegatesModule {
     }
 
     // Shuffle the delegates.
-    let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
+    let currentSeed  = supersha.sha256(Buffer.from(seedSource, 'utf8'));
 
     for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
       for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
@@ -115,7 +115,7 @@ export class DelegatesModule implements IDelegatesModule {
         delegates[newIndex] = delegates[i];
         delegates[i]        = b;
       }
-      currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
+      currentSeed = supersha.sha256(currentSeed);
     }
 
     return delegates.slice(0, this.slots.delegates).map((d) => d.publicKey);
@@ -347,9 +347,9 @@ export class DelegatesModule implements IDelegatesModule {
 
     // Hash the Block ID several times. This is here to discourage attempts to alter block ID by forgers to get a
     // higher chance to get forging in the next round.
-    let seedSource = crypto.createHash('sha256').update(block.id, 'utf8').digest();
+    let seedSource = supersha.sha256(Buffer.from(block.id, 'utf8'));
     for (let i = 0; i < 10000; i++) {
-      seedSource = crypto.createHash('sha256').update(seedSource).digest();
+      seedSource = supersha.sha256(seedSource);
     }
 
     // Convert the sha256 buffer to an array of 32-bit unsigned integers
