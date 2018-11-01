@@ -1,5 +1,4 @@
 import BigNumber from 'bignumber.js';
-import { Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import { IKeypair } from '../../../helpers';
 import { SignedBlockType } from '../../../logic';
@@ -38,13 +37,13 @@ export interface ITransactionLogic {
    * Creates and returns signature
    * @returns {string} signature
    */
-  sign(keypair: IKeypair, tx: IBaseTransaction<any>): void;
+  sign(keypair: IKeypair, tx: IBaseTransaction<any>): string;
 
   /**
    * Creates a signature based on multisignatures
    * @returns {string} signature
    */
-  multiSign(keypair: IKeypair, tx: IBaseTransaction<any>): void;
+  multiSign(keypair: IKeypair, tx: IBaseTransaction<any>): string;
 
   /**
    * Calculate tx id

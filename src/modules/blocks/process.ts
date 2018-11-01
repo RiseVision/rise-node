@@ -6,7 +6,7 @@ import { CommonBlockRequest } from '../../apis/requests/CommonBlockRequest';
 import { GetBlocksRequest } from '../../apis/requests/GetBlocksRequest';
 import { RequestFactoryType } from '../../apis/requests/requestFactoryType';
 import { requestSymbols } from '../../apis/requests/requestSymbols';
-import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { constants, ForkType, IKeypair, ILogger, Sequence, TransactionType } from '../../helpers/';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
 import {
@@ -314,6 +314,14 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     }
 
+    // Add the round seed transaction
+    const round = this.roundsLogic.calcRound(previousBlock.height + 1)
+    const isLastInRound = previousBlock.height + 1 === this.roundsLogic.lastInRound(round);
+    if (isLastInRound && previousBlock.height > constants.dposv2.firstBlock) {
+      const roundSeedTx = this.getRoundSeedTransaction(keypair, timestamp);
+      ready.push(roundSeedTx);
+    }
+
     const block = this.blockLogic.create({
       keypair,
       previousBlock,
@@ -462,5 +470,22 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         throw err;
       }
     }
+  }
+
+  private getRoundSeedTransaction(keyPair: IKeypair, timestamp: number): IBaseTransaction<any> {
+    const tx: IBaseTransaction<any> = {
+      amount: 0,
+      fee: 0,
+      id: '',
+      recipientId: null,
+      senderPublicKey: keyPair.publicKey,
+      signature: null,
+      timestamp,
+      type: TransactionType.ROUNDSEED,
+    };
+    tx.signature = Buffer.from(this.transactionLogic.sign(keyPair, tx), 'hex');
+    // No way to add the signSignature, will need to handle this exception elsewehere.
+    tx.id = this.transactionLogic.getId(tx);
+    return tx;
   }
 }

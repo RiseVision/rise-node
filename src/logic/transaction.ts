@@ -14,7 +14,7 @@ import {
   ExceptionsManager,
   IKeypair,
   ILogger,
-  Slots
+  Slots, TransactionType
 } from '../helpers/';
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from '../ioc/interfaces/logic/';
@@ -372,34 +372,36 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Failed to verify signature');
     }
 
-    if (sender.secondSignature) {
-      if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, VerificationType.SECOND_SIGNATURE)) {
-        throw new Error('Failed to verify second signature');
-      }
-    }
-
-    // In multisig accounts
-    if (Array.isArray(tx.signatures) && tx.signatures.length > 0) {
-      // check that signatures are unique.
-      const duplicatedSignatures = tx.signatures.filter((sig, idx, arr) => arr.indexOf(sig) !== idx);
-      if (duplicatedSignatures.length > 0) {
-        throw new Error('Encountered duplicate signature in transaction');
+    if (tx.type !== TransactionType.ROUNDSEED) {
+      if (sender.secondSignature) {
+        if (!this.verifySignature(tx, sender.secondPublicKey, tx.signSignature, VerificationType.SECOND_SIGNATURE)) {
+          throw new Error('Failed to verify second signature');
+        }
       }
 
-      // Verify multisignatures are valid and belong to some of prev. calculated multisignature publicKey
-      for (const sig of tx.signatures) {
-        let valid = false;
-        for (let s = 0; s < multisignatures.length && !valid; s++) {
-          valid = this.verifySignature(
-            tx,
-            Buffer.from(multisignatures[s], 'hex'),
-            Buffer.from(sig, 'hex'),
-            VerificationType.ALL
-          );
+      // In multisig accounts
+      if (Array.isArray(tx.signatures) && tx.signatures.length > 0) {
+        // check that signatures are unique.
+        const duplicatedSignatures = tx.signatures.filter((sig, idx, arr) => arr.indexOf(sig) !== idx);
+        if (duplicatedSignatures.length > 0) {
+          throw new Error('Encountered duplicate signature in transaction');
         }
 
-        if (!valid) {
-          throw new Error('Failed to verify multisignature');
+        // Verify multisignatures are valid and belong to some of prev. calculated multisignature publicKey
+        for (const sig of tx.signatures) {
+          let valid = false;
+          for (let s = 0; s < multisignatures.length && !valid; s++) {
+            valid = this.verifySignature(
+              tx,
+              Buffer.from(multisignatures[s], 'hex'),
+              Buffer.from(sig, 'hex'),
+              VerificationType.ALL
+            );
+          }
+
+          if (!valid) {
+            throw new Error('Failed to verify multisignature');
+          }
         }
       }
     }

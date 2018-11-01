@@ -7,4 +7,5 @@ export enum TransactionType {
   // DAPP         = 5,
   // IN_TRANSFER  = 6,
   // OUT_TRANSFER = 7,
+  ROUNDSEED    = 8,
 }
