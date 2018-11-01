@@ -64,7 +64,8 @@ export class TransactionsAPI {
     `
   })
   @ResponseSchema('responses.transactions.getTransactions')
-  public async getTransactions(@QueryParams() body: any) {
+  public async getTransactions(@SchemaValid(schema.getTransactions)
+                               @QueryParams() body: any) {
     const pattern = /(and|or){1}:/i;
 
     _.each(body, (value, key) => {
