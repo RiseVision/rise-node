@@ -37,7 +37,9 @@ describe('api/multisignatures', () => {
       const txLogic = initializer.appManager.container.get<ITransactionLogic>(Symbols.logic.transaction);
       const senderData = await createRandomAccountWithFunds(5000000000);
       const sender = senderData.wallet;
-      const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()];
+      const keys = [createRandomWallet(), createRandomWallet(), createRandomWallet()]
+        .sort((a, b) => b.publicKey.localeCompare(a.publicKey));
+
       const signedTx = createMultiSignTransaction(sender, 3, keys.map((k) => '+' + k.publicKey));
       // await initializer.rawMineBlockWithTxs([toBufferedTransaction(signedTx)]))
 

@@ -267,7 +267,7 @@ export class BlocksModuleProcess {
   }
 
   /**
-   * Generates a new block
+   * Generates a new block with txs from pool.
    * @param {IKeypair} keypair
    * @param {number} timestamp
    * @return {Promise<void>}
@@ -307,12 +307,22 @@ export class BlocksModuleProcess {
       }
 
     }
+    return this.generateBlockWithTransactions(keypair, timestamp, ready);
+  }
 
+  /**
+   * Generate a block with the given transactions
+   * @param keypair
+   * @param timestamp
+   * @param txs
+   */
+  public async generateBlockWithTransactions(keypair: IKeypair, timestamp: number, txs: Array<IBaseTransaction<any>>): Promise<SignedAndChainedBlockType> {
+    const previousBlock = this.blocksModule.lastBlock;
     return this.blockLogic.create({
       keypair,
       previousBlock,
       timestamp,
-      transactions: ready,
+      transactions: txs,
     });
   }
 

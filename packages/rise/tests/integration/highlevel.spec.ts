@@ -310,7 +310,6 @@ describe('highlevel checks', function () {
         expect(await accModule.getAccount({username: 'meow'})).is.undefined;
         expect(blocksModule.lastBlock.transactions.length).is.eq(1);
 
-        expect(txModule.transactionInPool(txs[1].id)).is.true;
         // PoolManager should kill the invalid transaction now.
         await txPoolManager.processPool();
         // Both transactions should not be in pool

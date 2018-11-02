@@ -196,13 +196,24 @@ describe('apis/multisignatureAPI', () => {
       expect(getAccountsStub.callCount).to.equal(3);
       expect(getAccountsStub.args[0][0]).to.deep.equal({
         address: { $in: ['1', '2', '3'] },
-        sort   : 'balance',
+        sort   : {
+          balance: -1,
+          publicKey: -1,
+        },
       });
       expect(getAccountsStub.args[1][0]).to.deep.equal({
         address: { $in: [1000, 1000, 1000] },
+        sort   : {
+          balance: -1,
+          publicKey: -1,
+        },
       });
       expect(getAccountsStub.args[1][0]).to.deep.equal({
         address: { $in: [1000, 1000, 1000] },
+        sort   : {
+          balance: -1,
+          publicKey: -1,
+        },
       });
     });
   });

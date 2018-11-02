@@ -64,7 +64,12 @@ export class MultiSignaturesApi {
     const accountIds = rows.map((r) => r.accountId);
 
     // Get all multisignature accounts associated to that have that publicKey as a signer.
-    const accounts = await this.accounts.getAccounts({ address: { $in: accountIds }, sort: 'balance' });
+    const accounts = await this.accounts.getAccounts({
+      address: { $in: accountIds }, sort: {
+        balance  : -1,
+        publicKey: -1,
+      },
+    });
 
     const items = [];
     for (const account of accounts) {
@@ -73,6 +78,10 @@ export class MultiSignaturesApi {
       const multisigaccounts = await this.accounts.getAccounts(
         {
           address: { $in: addresses },
+          sort: {
+            balance  : -1,
+            publicKey: -1,
+          },
         });
       items.push({
         ...filterObject(
