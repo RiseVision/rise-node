@@ -22,7 +22,7 @@ describe('apis/utils/privateApisWatchGuard', () => {
   const response = {};
   let container: Container;
   beforeEach(async () => {
-    container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers']);
+    container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers', 'core-crypto']);
     instance  = container.getNamed(APISymbols.class, APISymbols.privateApiGuard);
     next      = sinon.stub();
   });

@@ -28,7 +28,7 @@ describe('apis/loaderAPI', () => {
 
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core', 'core-helpers', 'core-accounts']);
+    container = await createContainer(['core', 'core-helpers', 'core-crypto', 'core-accounts']);
 
     appState     = container.get(Symbols.logic.appState);
     blocksModule = container.get(Symbols.modules.blocks);

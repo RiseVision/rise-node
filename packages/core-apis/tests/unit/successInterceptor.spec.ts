@@ -18,7 +18,7 @@ describe('apis/utils/attachPeerHeaders', () => {
   let result: any;
 
   beforeEach(async () => {
-    container = await createContainer(['core-apis', 'core', 'core-helpers', 'core-accounts']);
+    container = await createContainer(['core-apis', 'core', 'core-helpers', 'core-crypto', 'core-accounts']);
     container.bind(APISymbols.successInterceptor).to(APISuccessInterceptor);
     instance = container.get(APISymbols.successInterceptor);
   });

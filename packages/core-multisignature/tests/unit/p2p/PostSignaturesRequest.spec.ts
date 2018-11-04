@@ -28,7 +28,7 @@ describe('apis/requests/PostSignaturesRequest', () => {
   let txs: Array<IBaseTransaction<any>>;
   before(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions', 'core-multisignature']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions', 'core-multisignature']);
   });
 
   beforeEach(() => {

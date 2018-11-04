@@ -30,7 +30,7 @@ describe('apis/requests/BaseTransportMethod', () => {
 
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     container.bind(p2pSymbols.transportMethod).to(TestRequest).inSingletonScope().whenTargetNamed(testSymbol);
     container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
     protoBufStub = container.get(p2pSymbols.helpers.protoBuf);

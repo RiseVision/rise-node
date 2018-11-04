@@ -22,7 +22,7 @@ describe('accounts/hooks/loaderSubscriber', () => {
   let hookSystem: WordPressHookSystem;
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-accounts', 'core-helpers']);
+    container = await createContainer(['core-accounts', 'core-helpers', 'core-crypto']);
     accModel  = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
     hookSystem  = new WordPressHookSystem(new InMemoryFilterModel());
     instance  = container.get(AccountsSymbols.__internal.loaderHooks);

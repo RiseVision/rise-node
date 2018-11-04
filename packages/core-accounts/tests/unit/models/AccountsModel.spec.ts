@@ -13,7 +13,7 @@ describe('AccountsModel', () => {
   let container: Container;
   beforeEach(async () => {
     sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-accounts', 'core-helpers']);
+    container     = await createContainer(['core-accounts', 'core-helpers', 'core-crypto']);
     AccountsModel = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
   });
 

@@ -42,7 +42,7 @@ describe('apis/delegatesAPI', () => {
   let accountsModel: typeof AccountsModelForDPOS;
   let accounts2delegatesModel: typeof Accounts2DelegatesModel;
   before(async () => {
-    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
   });
   beforeEach(async () => {
     sandbox                 = sinon.createSandbox();

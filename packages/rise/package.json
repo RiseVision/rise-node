@@ -20,6 +20,7 @@
     "@risevision/core-apis": "^1.0.0",
     "@risevision/core-exceptions": "^1.0.0",
     "@risevision/core-helpers": "^1.0.0",
+    "@risevision/core-crypto": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-models": "^1.0.0",

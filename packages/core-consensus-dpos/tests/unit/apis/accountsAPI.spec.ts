@@ -28,7 +28,7 @@ describe('apis/accountsAPI', function () {
   let system: ISystemModule;
   before(async () => {
     sandbox         = sinon.createSandbox();
-    container       = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container       = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
     accountsModel   = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     accounts        = container.get(Symbols.modules.accounts);
     delegatesModule = container.get(dPoSSymbols.modules.delegates);

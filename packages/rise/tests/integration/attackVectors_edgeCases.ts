@@ -24,7 +24,7 @@ import { AccountsSymbols } from '@risevision/core-accounts';
 import { SystemModule } from '@risevision/core';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
-import { Crypto } from '@risevision/core-helpers';
+import { Crypto } from '@risevision/core-crypto';
 import { ModelSymbols } from '@risevision/core-models';
 import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
 import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';

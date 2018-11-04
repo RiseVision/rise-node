@@ -57,7 +57,7 @@ describe('logic/transactions/createmultisig', () => {
   let sig2Wallet: LiskWallet;
 
   before(async () => {
-    container = await createContainer(['core-multisignature', 'core', 'core-helpers']);
+    container = await createContainer(['core-multisignature', 'core', 'core-helpers', 'core-crypto']);
     container.getNamed(TXSymbols.transaction, MultisigSymbols.tx);
     container.rebind(TXSymbols.transaction).to(MultiSignatureTransaction).whenTargetNamed(MultisigSymbols.tx);
   });

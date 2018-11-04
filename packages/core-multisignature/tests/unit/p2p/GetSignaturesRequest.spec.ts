@@ -23,7 +23,7 @@ describe('apis/requests/GetSignaturesRequest', () => {
   let txPool: ITransactionPool;
   before(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions', 'core-multisignature']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions', 'core-multisignature']);
   });
   beforeEach(() => {
     sandbox.restore();

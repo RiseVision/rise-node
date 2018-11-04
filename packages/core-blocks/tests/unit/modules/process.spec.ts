@@ -40,7 +40,7 @@ describe('modules/blocks/process', () => {
   let AccountsModel: typeof IAccountsModel;
   beforeEach(async () => {
     sandbox           = sinon.createSandbox();
-    container         = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container         = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
     accountsModule    = container.get(Symbols.modules.accounts);
     instance          = container.get(BlocksSymbols.modules.process);
     txModule          = container.get(Symbols.modules.transactions);

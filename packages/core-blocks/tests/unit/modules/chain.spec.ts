@@ -29,7 +29,7 @@ describe('modules/blocks/chain', () => {
 
   beforeEach(async () => {
     sandbox      = sinon.createSandbox();
-    container    = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container    = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
     accModule    = container.get(Symbols.modules.accounts);
     instance     = container.get(BlocksSymbols.modules.chain);
     blocksModule = container.get(BlocksSymbols.modules.blocks);

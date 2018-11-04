@@ -19,7 +19,7 @@ import { DelegatesModule, dPoSSymbols, RoundsLogic, RoundsModule } from '@risevi
 import { AccountsModule } from '@risevision/core-accounts';
 import { TransactionLogic, TransactionPool, TransactionsModule, TXSymbols } from '@risevision/core-transactions';
 import { SystemModule } from '@risevision/core';
-import { Crypto } from '@risevision/core-helpers';
+import { Crypto } from '@risevision/core-crypto';
 import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 

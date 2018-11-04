@@ -25,7 +25,7 @@ describe('apis/utils/attachPeerHeaders', () => {
   let container: Container;
 
   beforeEach(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     sandbox = sinon.createSandbox();
     response = {set: () => true};
     responseSpy = sandbox.spy(response, 'set');

@@ -21,7 +21,7 @@ let curContainer: Container = new Container();
 curContainer.snapshot();
 curContainer.bind<Array<ICoreModule<any>>>('__test__modules').toConstantValue([]);
 
-export async function createContainer(modules: string[]                = ['core', 'core-accounts', 'core-blocks', 'core-p2p', 'core-helpers', 'core-transactions', 'core-accounts'],
+export async function createContainer(modules: string[]                = ['core', 'core-accounts', 'core-blocks', 'core-p2p', 'core-helpers', 'core-crypto', 'core-crypto', 'core-transactions', 'core-accounts'],
                                       config: any                      = JSON.parse(fs.readFileSync(`${__dirname}/../assets/config.json`, 'utf8')),
                                       block: SignedAndChainedBlockType = JSON.parse(fs.readFileSync(`${__dirname}/../assets/genesisBlock.json`, 'utf8'))): Promise<Container> {
 

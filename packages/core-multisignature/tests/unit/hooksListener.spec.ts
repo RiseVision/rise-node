@@ -39,7 +39,7 @@ describe('HooksListener', () => {
   let multisigners: LiskWallet[];
   beforeEach(async () => {
     sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-multisignature', 'core', 'core-helpers']);
+    container     = await createContainer(['core-multisignature', 'core', 'core-helpers', 'core-crypto']);
     instance      = container.get(MultisigSymbols.hooksListener);
     hookSystem    = container.get(Symbols.generic.hookSystem);
     utils         = container.get(MultisigSymbols.utils);

@@ -16,7 +16,7 @@ describe('logic/blockReward', () => {
   let constants: any;
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
     instance  = container.get(BlocksSymbols.logic.blockReward);
     constants = container.get(Symbols.generic.constants);
   });

@@ -43,7 +43,7 @@ describe('modules/transactions', () => {
   let txLogic: ITransactionLogic;
 
   before(async () => {
-    container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+    container = await createContainer(['core-transactions', 'core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts']);
     container.rebind(Symbols.logic.txpool).to(StubTxPool);
 
   });

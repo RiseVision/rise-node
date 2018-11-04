@@ -5,7 +5,6 @@ import { AppConfig } from '@risevision/core-types';
 import { loggerCreator, z_schema } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
 import { AppState } from './appState';
-import { Crypto } from './crypto';
 import { HelpersSymbols } from './helpersSymbols';
 import { JobsQueue } from './jobsQueue';
 import { Migrator } from './migrator';
@@ -16,7 +15,6 @@ export class CoreModule extends BaseCoreModule<AppConfig> implements ICoreModule
   public constants    = {};
 
   public addElementsToContainer(): void {
-    this.container.bind(HelpersSymbols.crypto).toConstantValue(new Crypto());
     this.container.bind(HelpersSymbols.appState).to(AppState).inSingletonScope();
     this.container.bind(HelpersSymbols.jobsQueue).to(JobsQueue).inSingletonScope();
     let logger;

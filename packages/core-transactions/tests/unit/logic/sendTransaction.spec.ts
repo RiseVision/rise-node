@@ -35,7 +35,7 @@ describe('logic/transactions/send', () => {
 
   beforeEach(async () => {
     sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+    container     = await createContainer(['core-transactions', 'core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts']);
     instance      = container.getNamed(TXSymbols.transaction, TXSymbols.sendTX);
     accountLogic  = container.get(Symbols.logic.account);
     AccountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);

@@ -15,7 +15,7 @@ describe('helpers/protobuf', () => {
   let fakeLogger: LoggerStub;
   let container: Container;
   before(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts']);
     container.get(p2pSymbols.helpers.protoBuf);
     // allow non singletonness
     container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper);

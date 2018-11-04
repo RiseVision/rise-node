@@ -27,6 +27,7 @@ describe('apis/accountsAPI', () => {
       'core-accounts',
       'core',
       'core-helpers',
+      'core-crypto',
     ]);
 
     instance = container.getNamed(APISymbols.class, AccountsSymbols.api);

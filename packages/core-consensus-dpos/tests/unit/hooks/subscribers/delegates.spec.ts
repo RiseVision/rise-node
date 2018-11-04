@@ -24,7 +24,7 @@ describe('hooks/subscribers/delegates', () => {
   let delegatesModel: typeof DelegatesModel;
   before(async () => {
     sandbox        = sinon.createSandbox();
-    container      = await createContainer(['core-consensus-dpos', 'core-transactions', 'core', 'core-helpers']);
+    container      = await createContainer(['core-consensus-dpos', 'core-transactions', 'core', 'core-helpers', 'core-crypto']);
     instance       = container.get(dPoSSymbols.hooksSubscribers.delegates);
     wphooksystem   = new WordPressHookSystem(new InMemoryFilterModel());
     accountsModel  = container.getNamed(ModelSymbols.model, AccountsSymbols.model);

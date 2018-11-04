@@ -1,5 +1,5 @@
 {
-  "name": "@risevision/core-multisignature",
+  "name": "@risevision/core-crypto",
   "rise_vision": {
     "module": true
   },
@@ -15,28 +15,25 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@risevision/core": "^1.0.0",
-    "@risevision/core-apis": "^1.0.0",
-    "@risevision/core-accounts": "^1.0.0",
-    "@risevision/core-helpers": "^1.0.0",
-    "@risevision/core-crypto": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
-    "@risevision/core-launchpad": "^1.0.0",
-    "@risevision/core-transactions": "^1.0.0",
-    "@risevision/core-models": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
-    "@risevision/core-p2p": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
-    "sequelize": "=4.38.0",
-    "inversify": "=4.13.0",
-    "sequelize-typescript": "=0.6.6-beta.1",
-    "z-schema": "=3.22.0"
+    "@risevision/core-launchpad": "^1.0.0",
+    "sodium-native": "^2.2.2"
   },
   "devDependencies": {
-    "shx": "=0.3.2",
+    "@types/chai": "=4.1.4",
+    "@types/chai-arrays": "^1.0.2",
+    "@types/chai-as-promised": "^7.1.0",
     "@types/node": "^9.6.0",
-    "ts-node": "=7.0.0",
+    "@types/sinon": "=5.0.1",
+    "chai": "=4.1.2",
+    "chai-arrays": "=2.0.0",
+    "chai-as-promised": "^7.1.1",
+    "chai-sorted": "^0.2.0",
     "mocha": "=5.2.0",
+    "shx": "=0.3.2",
+    "ts-node": "=7.0.0",
     "typescript": "=2.9.2"
   }
 }

@@ -32,7 +32,7 @@ describe('logic/broadcaster', () => {
   let container: Container;
 
   before(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox({

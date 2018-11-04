@@ -25,7 +25,7 @@ describe('modules/system', () => {
   let sandbox: SinonSandbox;
   let blocksModule: IBlocksModule;
   before(async () => {
-    container = await createContainer(['core', 'core-helpers', 'core-accounts']);
+    container = await createContainer(['core', 'core-helpers', 'core-crypto', 'core-accounts']);
     constants = {
       fees      : [
         { height: 1, fees: { send: 1 } },

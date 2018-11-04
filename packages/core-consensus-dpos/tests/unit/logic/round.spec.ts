@@ -26,7 +26,7 @@ describe('logic/round', () => {
   let roundLogic: typeof RoundLogic;
   beforeEach(async () => {
     sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-consensus-dpos', 'core-helpers']);
+    container     = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto']);
     accountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     blocksModel   = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
     roundLogic    = container.get(dPoSSymbols.logic.round);

@@ -49,7 +49,7 @@ describe('modules/multisignatures', () => {
   let getAccountStub: SinonStub;
 
   before(async () => {
-    container = await createContainer(['core-multisignature', 'core', 'core-helpers']);
+    container = await createContainer(['core-multisignature', 'core', 'core-helpers', 'core-crypto']);
 
   });
 

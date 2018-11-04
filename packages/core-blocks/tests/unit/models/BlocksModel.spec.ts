@@ -10,7 +10,7 @@ describe('BlocksModel', () => {
   let container: Container;
   let BlocksModel: typeof IBlocksModel;
   beforeEach(async () => {
-    container   = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container   = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
     BlocksModel = container.getNamed(ModelSymbols.model, BlocksSymbols.model);
   });
 

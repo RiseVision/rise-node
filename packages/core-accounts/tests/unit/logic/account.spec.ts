@@ -29,6 +29,7 @@ describe('logic/account', () => {
       'core-accounts',
       'core',
       'core-helpers',
+      'core-crypto',
     ]);
   });
   beforeEach(async () => {

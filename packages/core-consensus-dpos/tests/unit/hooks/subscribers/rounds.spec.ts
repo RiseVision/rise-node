@@ -25,7 +25,7 @@ describe('hooks/subscribers/rounds', () => {
   let sandbox: SinonSandbox;
   before(async () => {
     sandbox      = sinon.createSandbox();
-    container    = await createContainer(['core-consensus-dpos', 'core-transactions', 'core', 'core-helpers']);
+    container    = await createContainer(['core-consensus-dpos', 'core-transactions', 'core', 'core-helpers', 'core-crypto']);
     instance     = container.get(dPoSSymbols.hooksSubscribers.rounds);
     wphooksystem = new WordPressHookSystem(new InMemoryFilterModel());
     roundsModule = container.get(dPoSSymbols.modules.rounds);

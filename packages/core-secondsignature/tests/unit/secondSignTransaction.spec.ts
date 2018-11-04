@@ -32,7 +32,7 @@ describe('logic/transactions/secondSignature', () => {
   let block: any;
 
   before(async () => {
-    container          = await createContainer(['core-secondsignature', 'core', 'core-helpers']);
+    container          = await createContainer(['core-secondsignature', 'core', 'core-helpers', 'core-crypto']);
   });
   beforeEach(async () => {
     sandbox            = sinon.createSandbox();

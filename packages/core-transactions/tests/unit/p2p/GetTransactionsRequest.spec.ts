@@ -17,7 +17,7 @@ describe('apis/requests/GetTransactionsRequest', () => {
 
   let txPool: TransactionPool;
   beforeEach(async () => {
-    container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+    container = await createContainer(['core-transactions', 'core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts']);
     instance  = container.getNamed(p2pSymbols.transportMethod, TXSymbols.p2p.getTransactions);
     txPool    = container.get(TXSymbols.pool);
     peer      = createFakePeer();

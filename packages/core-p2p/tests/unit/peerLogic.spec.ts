@@ -22,7 +22,7 @@ describe('logic/peer', () => {
   let transportModule: TransportModule;
   let sandbox: SinonSandbox;
   beforeEach(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     container.rebind(p2pSymbols.logic.peerLogic).to(ProxyPeerLogic.Peer);
     instance        = container.get(p2pSymbols.logic.peerLogic);
     transportModule = container.get(p2pSymbols.modules.transport);

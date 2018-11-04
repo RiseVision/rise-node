@@ -1,5 +1,5 @@
 import * as dposTXCrafter from '@risevision/core-consensus-dpos/tests/utils/tx';
-import { Crypto } from '@risevision/core-helpers';
+import { Crypto } from '@risevision/core-crypto';
 import { IAccountsModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { MultisignaturesModule, MultisigSymbols } from '@risevision/core-multisignature';
 import * as multiTXCrafter from '@risevision/core-multisignature/tests/utils/tx';

@@ -4,21 +4,23 @@ import { expect } from 'chai';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
-import * as sodium from 'sodium';
-import { Crypto } from '../../src';
+import * as sodium from 'sodium-native';
+import { Crypto } from '../../src/crypto_sodium_native';
 
 const realCrypto      = new Crypto();
 const sodiumStub: any = {};
 
 // tslint:disable no-unused-expression
-describe('helpers/crypto', () => {
+describe('helpers/crypto(sodium-native)', () => {
   let proxiedInst: Crypto;
-  const ProxiedEd = proxyquire('../../src/crypto', {
+  const ProxiedEd = proxyquire('../../src/crypto_sodium_native', {
     sodium: sodiumStub,
   });
 
   beforeEach(() => {
-    sodiumStub.api = sodium.api;
+    sodiumStub.crypto_sign_seed_keypair = sodium.crypto_sign_seed_keypair;
+    sodiumStub.crypto_sign_detached = sodium.crypto_sign_detached;
+    sodiumStub.crypto_sign_verify_detached = sodium.crypto_sign_verify_detached;
     proxiedInst    = new ProxiedEd.Crypto();
   });
 
@@ -29,16 +31,16 @@ describe('helpers/crypto', () => {
   });
 
   describe('makeKeyPair', () => {
-    const oldImplementation = sodium.api.crypto_sign_seed_keypair;
+    const oldImplementation = sodium.crypto_sign_seed_keypair;
     let stub: SinonStub;
 
     beforeEach(() => {
-      stub = sinon.stub(sodium.api, 'crypto_sign_seed_keypair')
+      stub = sinon.stub(sodium, 'crypto_sign_seed_keypair')
         .returns({ secretKey: 'a', publicKey: 'b' });
     });
 
     afterEach(() => {
-      sodium.api.crypto_sign_seed_keypair = oldImplementation;
+      sodium.crypto_sign_seed_keypair = oldImplementation;
     });
 
     it('should return object', () => {
@@ -51,17 +53,27 @@ describe('helpers/crypto', () => {
       expect(stub.called).is.true;
     });
 
+    it('should pass empty buffers as first 2 parameters to sodium.crypto_sign_seed_keypair', () => {
+      const publicKey = Buffer.alloc(sodium.crypto_sign_PUBLICKEYBYTES);
+      const privateKey = Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES);
+      const hash = new Buffer('aaaa');
+      proxiedInst.makeKeyPair(hash);
+      expect(stub.firstCall.args[0]).to.be.deep.eq(publicKey);
+      expect(stub.firstCall.args[1]).to.be.deep.eq(privateKey);
+    });
+
     it('should pass hash to sodium.crypto_sign_seed_keypair', () => {
       const hash = new Buffer('aaaa');
       proxiedInst.makeKeyPair(hash);
-      expect(stub.firstCall.args[0]).to.be.deep.eq(hash);
+      expect(stub.firstCall.args[2]).to.be.deep.eq(hash);
     });
 
     it('should use sodium output to build return value', () => {
-      stub.returns({ secretKey: 'privASD', publicKey: 'pubASD' });
-      const expectedReturn = { privateKey: 'privASD', publicKey: 'pubASD' };
-      const retval         = proxiedInst.makeKeyPair(new Buffer('aaaa'));
-      expect(retval).to.be.deep.eq(expectedReturn);
+      stub.restore();
+      const spy = sinon.spy(sodium, 'crypto_sign_seed_keypair');
+      const retval         = proxiedInst.makeKeyPair(new Buffer('12345678901234567890123456789012'));
+      expect(retval).to.be.deep.eq({ publicKey: spy.firstCall.args[0], privateKey: spy.firstCall.args[1] });
+      spy.restore();
     });
   });
 
@@ -70,14 +82,14 @@ describe('helpers/crypto', () => {
     const hashBuf           = new Buffer('hash');
     const outBuf            = new Buffer('output');
     const keyPair           = realCrypto.makeKeyPair(new Buffer('12345678901234567890123456789012'));
-    const oldImplementation = sodium.api.crypto_sign_detached;
+    const oldImplementation = sodium.crypto_sign_detached;
 
     beforeEach(() => {
-      stub = sinon.stub(sodium.api, 'crypto_sign_detached').returns(outBuf);
+      stub = sinon.stub(sodium, 'crypto_sign_detached').returns(outBuf);
     });
 
     afterEach(() => {
-      sodium.api.crypto_sign_detached = oldImplementation;
+      sodium.crypto_sign_detached = oldImplementation;
     });
 
     it('should call sodium.crypto_sign_detached', () => {
@@ -87,27 +99,30 @@ describe('helpers/crypto', () => {
 
     it('should pass hash and keypair to sodium.crypto_sign_detached', () => {
       proxiedInst.sign(hashBuf, keyPair);
-      expect(stub.firstCall.args[0]).to.be.deep.equal(hashBuf);
-      expect(stub.firstCall.args[1]).to.be.deep.equal(keyPair.privateKey);
+      expect(stub.firstCall.args[1]).to.be.deep.equal(hashBuf);
+      expect(stub.firstCall.args[2]).to.be.deep.equal(keyPair.privateKey);
     });
 
     it('should return the result of sodium.crypto_sign_detached', () => {
+      stub.restore();
+      const spy = sinon.spy(sodium, 'crypto_sign_detached');
       const retVal = proxiedInst.sign(hashBuf, keyPair);
-      expect(retVal).to.be.deep.equal(outBuf);
+      expect(retVal).to.be.deep.equal(spy.firstCall.args[0]);
+      spy.restore();
     });
   });
 
   describe('verify', () => {
     let stub: SinonStub;
     const args              = [new Buffer('hash'), new Buffer('signature'), new Buffer('publicKey')];
-    const oldImplementation = sodium.api.crypto_sign_verify_detached;
+    const oldImplementation = sodium.crypto_sign_verify_detached;
 
     beforeEach(() => {
-      stub = sinon.stub(sodium.api, 'crypto_sign_verify_detached').returns(true);
+      stub = sinon.stub(sodium, 'crypto_sign_verify_detached').returns(true);
     });
 
     afterEach(() => {
-      sodium.api.crypto_sign_verify_detached = oldImplementation;
+      sodium.crypto_sign_verify_detached = oldImplementation;
     });
 
     it('should call sodium.crypto_sign_verify_detached', () => {

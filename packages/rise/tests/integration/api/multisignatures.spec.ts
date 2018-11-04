@@ -13,7 +13,7 @@ import { LiskWallet } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { Crypto } from '@risevision/core-helpers';
+import { Crypto } from '@risevision/core-crypto';
 import { MultisigSymbols, PostSignaturesRequest } from '@risevision/core-multisignature';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { BlocksModule } from '@risevision/core-blocks';

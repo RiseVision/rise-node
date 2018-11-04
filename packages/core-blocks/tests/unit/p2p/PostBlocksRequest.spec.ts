@@ -26,7 +26,7 @@ describe('apis/requests/PostBlockRequest', () => {
   let bpOnReceiveBlockStub: SinonStub;
   before(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
   });
   beforeEach(() => {
     sandbox.restore();

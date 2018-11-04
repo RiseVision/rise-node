@@ -2,7 +2,6 @@ import { Symbols } from '@risevision/core-interfaces';
 
 export const HelpersSymbols = {
   appState: Symbols.logic.appState,
-  crypto: Symbols.generic.crypto,
   jobsQueue: Symbols.helpers.jobsQueue,
   migrator: Symbol.for('rise.utils.migrator'),
   names: {

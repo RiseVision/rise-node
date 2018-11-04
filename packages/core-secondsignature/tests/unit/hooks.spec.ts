@@ -21,7 +21,7 @@ describe('secondSignHooks', () => {
   let secondSignWallet: LiskWallet;
   let AccountsModel: typeof AccountsModelWith2ndSign;
   beforeEach(async () => {
-    container = await createContainer(['core-secondsignature', 'core', 'core-helpers']);
+    container = await createContainer(['core-secondsignature', 'core', 'core-helpers', 'core-crypto']);
     AccountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
     senderWallet = new LiskWallet(uuid.v4(), 'R');
     secondSignWallet = new LiskWallet(uuid.v4(), 'R');

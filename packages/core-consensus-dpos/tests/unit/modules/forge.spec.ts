@@ -51,7 +51,7 @@ describe('modules/forge', () => {
     sandbox = sinon.createSandbox();
   });
   beforeEach(async () => {
-    container                                             = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container                                             = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
     fakeConfig                                            = { forging: { secret: ['secret1', 'secret2'] } };
     container.get<any>(Symbols.generic.appConfig).forging = fakeConfig.forging;
     logger                                                = container.get(Symbols.helpers.logger);

@@ -17,7 +17,7 @@ describe('apis/requests/PostTransactionsRequest', () => {
   let instance: PostTransactionsRequest;
   before(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
   });
   beforeEach(async () => {
     txLogic  = container.get(TXSymbols.logic);

@@ -46,7 +46,7 @@ describe('modules/rounds', () => {
       return roundLogicStub;
     };
     sandbox                   = sinon.createSandbox();
-    container                 = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container                 = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
     const BlocksModel         = container.getNamed<typeof IBlocksModel>(ModelSymbols.model, BlocksSymbols.model);
     block                     = new BlocksModel(createFakeBlock(container));
     previousBlock             = new BlocksModel(createFakeBlock(container));

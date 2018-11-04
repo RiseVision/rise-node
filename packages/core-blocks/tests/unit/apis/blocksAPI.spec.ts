@@ -29,6 +29,7 @@ describe('apis/blocksAPI', () => {
     container = await createContainer([
       'core-blocks',
       'core-helpers',
+      'core-crypto',
       'core',
       'core-accounts',
       'core-apis',

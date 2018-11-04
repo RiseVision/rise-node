@@ -52,7 +52,7 @@ describe('modules/delegates', () => {
 
   beforeEach(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
 
     dposConstants  = container.get(dPoSSymbols.constants);
     constants      = container.get(Symbols.generic.constants);

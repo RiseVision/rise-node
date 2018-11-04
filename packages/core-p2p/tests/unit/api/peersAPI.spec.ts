@@ -28,7 +28,7 @@ describe('apis/peersAPI', () => {
   let getByFilterStub: SinonStub;
   let getMinVersionStub: SinonStub;
   beforeEach(async () => {
-    container    = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container    = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
     sandbox = sinon.createSandbox();
     container.rebind(Symbols.generic.versionBuild).toConstantValue(versionBuild);
     peersModuleStub = container.get(Symbols.modules.peers);

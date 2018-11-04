@@ -32,7 +32,7 @@ describe('logic/transactions/delegate', () => {
   let getFeesStub: SinonStub;
 
   before(async () => {
-    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
   });
 
   beforeEach(async () => {

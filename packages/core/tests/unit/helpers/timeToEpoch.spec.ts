@@ -14,7 +14,7 @@ describe('timeToEpoch', () => {
   let constants: ConstantsType;
   before(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core', 'core-helpers', 'core-accounts']);
+    container = await createContainer(['core', 'core-helpers', 'core-crypto', 'core-accounts']);
     constants = container.get(Symbols.generic.constants);
     instance  = container.get(Symbols.helpers.timeToEpoch);
   });

@@ -42,7 +42,7 @@ describe('src/modules/transport.ts', () => {
 
   before(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
 
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.rebind(Symbols.modules.transport).to(proxyTransportModule.TransportModule);

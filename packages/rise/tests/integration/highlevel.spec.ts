@@ -35,7 +35,7 @@ import { IBytesBlock } from '@risevision/core-types';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
 import { TransportModule } from '@risevision/core-p2p';
-import { Crypto } from '@risevision/core-helpers';
+import { Crypto } from '@risevision/core-crypto';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { ModelSymbols } from '@risevision/core-models';
 import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';

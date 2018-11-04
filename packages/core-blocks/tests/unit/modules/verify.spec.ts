@@ -49,7 +49,7 @@ describe('modules/blocks/verify', () => {
   let sandbox: SinonSandbox;
 
   before(async () => {
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
     const b   = container.get<BlocksModuleVerify>(BlocksSymbols.modules.verify); // should not throw as it should be included
     await b.cleanup(); // clean up this instance
     container.rebind(BlocksSymbols.modules.verify).to(BlocksModuleVerify); // Force recreation of module at each instance.

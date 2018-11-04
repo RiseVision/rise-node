@@ -50,7 +50,7 @@ describe('apis/transactionsAPI', () => {
   let blocksModule: IBlocksModule;
 
   beforeEach(async () => {
-    container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts']);
+    container = await createContainer(['core-transactions', 'core-helpers', 'core-blocks', 'core', 'core-accounts', 'core-crypto']);
     sandbox   = sinon.createSandbox();
     txModule  = container.get(TXSymbols.module);
 

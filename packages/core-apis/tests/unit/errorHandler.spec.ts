@@ -32,7 +32,7 @@ describe('apis/utils/errorHandler', () => {
   let sendSpy: any;
 
   beforeEach(async () => {
-    container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers']);
+    container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers', 'core-crypto']);
     instance  = container.getNamed(APISymbols.class, APISymbols.errorHandler);
 
     sandbox           = sinon.createSandbox();

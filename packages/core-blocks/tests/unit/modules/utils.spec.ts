@@ -27,7 +27,7 @@ describe('modules/utils', () => {
   let inst: BlocksModuleUtils;
   let container: Container;
   beforeEach(async () => {
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
 
     inst = container.get(BlocksSymbols.modules.utils);
   });

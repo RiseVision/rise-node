@@ -15,7 +15,7 @@ describe('multisigUtils', () => {
   let container: Container;
   let instance: MultiSigUtils;
   beforeEach(async () => {
-    container = await createContainer(['core-multisignature', 'core', 'core-helpers']);
+    container = await createContainer(['core-multisignature', 'core', 'core-helpers', 'core-crypto']);
     instance  = container.get(MultisigSymbols.utils);
   });
 

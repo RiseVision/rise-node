@@ -39,7 +39,7 @@ describe('logic/block', () => {
   bb.flip();
   const buffer = bb.toBuffer();
   before(async () => {
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();

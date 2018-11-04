@@ -75,7 +75,7 @@ describe('modules/loader', () => {
       maxPeers       : 100,
       blockTime      : 30,
     } as any;
-    container        = await createContainer(['core', 'core-helpers', 'core-accounts']);
+    container        = await createContainer(['core', 'core-helpers', 'core-crypto', 'core-accounts']);
 
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container

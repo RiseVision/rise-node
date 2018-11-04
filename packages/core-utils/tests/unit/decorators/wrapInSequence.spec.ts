@@ -27,7 +27,7 @@ describe('helpers/decorators/wrapInSequence', () => {
   let sequenceStub: ISequence;
 
   before(async () => {
-    container = await createContainer(['core-helpers', 'core-blocks', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer(['core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts', 'core-transactions']);
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();

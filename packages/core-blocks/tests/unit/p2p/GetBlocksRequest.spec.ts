@@ -21,7 +21,7 @@ describe('apis/requests/GetBlocksRequest', () => {
   let blocksUtils: BlocksModuleUtils;
   before(async () => {
     sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer(['core-blocks', 'core-helpers', 'core', 'core-crypto', 'core-accounts', 'core-transactions']);
   });
   beforeEach(() => {
     sandbox.restore();

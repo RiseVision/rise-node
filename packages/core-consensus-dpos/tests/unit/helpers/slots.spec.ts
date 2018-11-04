@@ -19,7 +19,7 @@ describe('helpers/slots', () => {
 
   let testTimestamp: number;
   beforeEach(async () => {
-    const container = await createContainer(['core-consensus-dpos', 'core-helpers']);
+    const container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto']);
     instance        = container.get(dPoSSymbols.helpers.slots);
     constants       = container.get(Symbols.generic.constants);
     dposConstants   = container.get(dPoSSymbols.constants);

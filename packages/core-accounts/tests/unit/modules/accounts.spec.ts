@@ -22,7 +22,7 @@ describe('modules/accounts', () => {
   let accountLogic: AccountLogic;
   beforeEach(async () => {
     sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-accounts', 'core-helpers']);
+    container     = await createContainer(['core-accounts', 'core-helpers', 'core-crypto']);
     accountModule = container.get<any>(AccountsSymbols.module);
     accountLogic  = container.get<any>(AccountsSymbols.logic);
   });

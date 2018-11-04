@@ -47,7 +47,7 @@ describe('apis/multisignatureAPI', () => {
   let getAccountStub: SinonStub;
   let findAllStub: SinonStub;
   beforeEach(async () => {
-    container = await createContainer(['core-multisignature', 'core', 'core-helpers']);
+    container = await createContainer(['core-multisignature', 'core', 'core-helpers', 'core-crypto']);
 
     sandbox                       = sinon.createSandbox();
     instance                      = container.getNamed(APISymbols.class, MultisigSymbols.api);

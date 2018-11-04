@@ -17,7 +17,7 @@ describe('logic/rounds', () => {
 
   beforeEach(async () => {
     sandbox                 = sinon.createSandbox();
-    container               = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container               = await createContainer(['core-consensus-dpos', 'core-helpers', 'core', 'core-crypto']);
     slotsStub               = container.get(dPoSSymbols.helpers.slots);
     instance                = container.get(dPoSSymbols.logic.rounds);
   });

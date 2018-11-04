@@ -55,7 +55,7 @@ describe('logic/transactions/vote', () => {
   let accounts2DelegatesModel: typeof Accounts2DelegatesModel;
   let accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
   before(async () => {
-    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core']);
+    container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
 
   });
 
