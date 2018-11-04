@@ -1,13 +1,17 @@
 import { expect } from 'chai';
 import * as chai from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
+import * as chaiAsPromised from 'chai-as-promised';
+import * as supersha from 'supersha';
 import {Container} from 'inversify';
-import { SinonSandbox, SinonStub } from 'sinon';
+import * as MersenneTwister from 'mersenne-twister';
+import { Op } from 'sequelize';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import * as helpers from '../../../src/helpers';
 import {Symbols} from '../../../src/ioc/symbols';
 import { SignedBlockType } from '../../../src/logic';
+import { AccountsModel, BlocksModel } from '../../../src/models';
 import { DelegatesModule } from '../../../src/modules';
 import {
   AccountsModuleStub,
@@ -18,10 +22,8 @@ import {
   SlotsStub,
   ZSchemaStub
 } from '../../stubs';
-import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { generateAccounts } from '../../utils/accountsUtils';
 import { createContainer } from '../../utils/containerCreator';
-import { AccountsModel, BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -42,11 +44,13 @@ describe('modules/delegates', () => {
   let blocksModel: typeof BlocksModel;
   let accountsModel: typeof AccountsModel;
 
-  let createHashSpy: CreateHashSpy;
+  let sha256Spy: SinonSpy;
 
   let pubKey: string;
   let votes: string[];
   let testAccounts = generateAccounts(101 + Math.ceil(Math.random() * 200));
+  let findOneStub: SinonStub;
+
   // Add delegate-specific fields
   testAccounts     = testAccounts.map((el, k) => {
     (el as any).vote           = (1000 - k) * 100000;
@@ -81,7 +85,7 @@ describe('modules/delegates', () => {
       '+73e57c9637af3eede22c25bcd696b94a3f4b017fdc681d714e275427a5112c28',
     ];
 
-    createHashSpy                                     = new CreateHashSpy(crypto, sandbox);
+    sha256Spy = sandbox.spy(supersha, 'sha256');
     const lastBlock                                   = {
       blockSignature      : Buffer.from('blockSignature'),
       generatorPublicKey  : Buffer.from('genPublicKey'),
@@ -103,6 +107,8 @@ describe('modules/delegates', () => {
     blockRewardLogicStub.stubConfig.calcSupply.return = totalSupply;
     signedBlock                                       = Object.assign({}, lastBlock);
     signedBlock.height++;
+    slotsStub.stubs.getDelegatesPoolSize.returns(101);
+    findOneStub = sandbox.stub((blocksModel as any), 'findOne');
   });
 
   afterEach(() => {
@@ -152,6 +158,9 @@ describe('modules/delegates', () => {
       getKeysSortByVoteStub.resolves(keys);
       keysCopy = keys.slice();
       roundsLogicStub.stubs.calcRound.returns(123);
+      (instance as any).constants.dposv2.firstBlock = Number.MAX_SAFE_INTEGER;
+      slotsStub.delegates = 101;
+      roundsLogicStub.stubs.lastInRound.returns(19532);
     });
 
     it('should call getKeysSortByVote', async () => {
@@ -165,34 +174,32 @@ describe('modules/delegates', () => {
       expect(roundsLogicStub.stubs.calcRound.firstCall.args[0]).to.be.equal(height);
     });
 
-    it('should call crypto.createHash and Hash.update with the round string as seedSource', async () => {
+    it('should call supersha.sha256 with the round string as seedSource', async () => {
       await instance.generateDelegateList(height);
-      expect(createHashSpy.spies.createHash.called).to.be.true;
-      expect(createHashSpy.spies.createHash.firstCall.args[0]).to.be.equal('sha256');
-      expect(createHashSpy.spies.update[0].called).to.be.true;
-      expect(createHashSpy.spies.update[0].firstCall.args[0]).to.be.equal('123');
+      expect(sha256Spy.called).to.be.true;
+      expect(sha256Spy.firstCall.args[0]).to.be.deep.equal(Buffer.from('123', 'utf-8'));
     });
 
-    it('should call crypto.createHash every 5 keys, after the first time', async () => {
+    it('should call supersha.sha256 every 5 keys, after the first time', async () => {
       const expectedCount = 1 + Math.ceil(testAccounts.length / 5);
       await instance.generateDelegateList(height);
-      expect(createHashSpy.spies.createHash.callCount).to.be.equal(expectedCount);
+      expect(sha256Spy.callCount).to.be.equal(expectedCount);
     });
 
     it('should call hash.update with the previous hash buffer every 5 keys, after the first time', async () => {
       const expectedCount = 1 + Math.ceil(testAccounts.length / 5);
       await instance.generateDelegateList(height);
-      expect(createHashSpy.spies.update.length).to.be.equal(expectedCount);
+      expect(sha256Spy.callCount).to.be.equal(expectedCount);
       const expectedSeeds = [];
-      expectedSeeds.push('123');
-      let currentSeed = createHashSpy.realCreateHash('sha256').update(expectedSeeds[0], 'utf8').digest();
+      expectedSeeds.push(Buffer.from('123', 'utf-8'));
+      let currentSeed = crypto.createHash('sha256').update(expectedSeeds[0], 'utf8').digest();
       for (let i = 0; i < expectedCount - 1; i++) {
-        expectedSeeds.push(currentSeed.toString('hex'));
-        currentSeed = createHashSpy.realCreateHash('sha256').update(currentSeed).digest();
+        expectedSeeds.push(currentSeed);
+        currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
       }
       const returnedSeeds = [];
-      createHashSpy.spies.update.forEach((spy) => {
-        returnedSeeds.push(spy.firstCall.args[0].toString('hex'));
+      sha256Spy.getCalls().forEach((call) => {
+        returnedSeeds.push(call.args[0]);
       });
       expect(returnedSeeds).to.be.deep.equal(expectedSeeds);
     });
@@ -205,7 +212,7 @@ describe('modules/delegates', () => {
     });
 
     it('should return consistent data with precomputed i/o', async () => {
-      const pk = new Array(101).fill(null).map((a, idx) => (idx).toString(16));
+      const pk = new Array(101).fill(null).map((a, idx) => ({publicKey: idx.toString(16)}));
       getKeysSortByVoteStub.resolves(pk);
       expect(await instance.generateDelegateList(10)).to.be.deep.eq(
         // tslint:disable-next-line: max-line-length
@@ -215,6 +222,145 @@ describe('modules/delegates', () => {
         // tslint:disable-next-line: max-line-length
         ['41', '59', '2c', '1', '6', '20', '25', '1c', '5c', 'b', '26', '55', '60', '3a', '56', '3c', '1a', '24', '39', '13', '4c', '21', '4e', '35', '5b', '3e', '34', '9', '2a', '1d', '61', '8', '40', '15', '5d', '1e', '44', '37', '31', '64', '46', '4', '7', '22', '3f', '14', '28', '57', '51', 'a', '5', '27', '33', '36', '17', '4b', '19', '16', '48', '3b', '5a', '38', '30', '2', '32', '3', '11', 'f', '53', '45', '2e', '47', 'd', '49', '4a', '12', '2d', '58', '42', 'c', '50', '3d', '52', '2f', '54', '1f', 'e', '29', '62', '0', '43', '4d', '1b', '2b', '5e', '5f', '4f', '23', '18', '63', '10']
       );
+    });
+
+    describe('dposv2', () => {
+      let delegates;
+      let seedGenStub: SinonStub;
+      beforeEach(() => {
+        (instance as any).constants.dposv2.firstBlock = 0;
+        // we add delegate.id for easily mapping them
+        delegates = new Array(202).fill(null).map((a, idx) => ({
+          publicKey: Buffer.from(Math.ceil(10000000 * idx + Math.random() * 1000000) .toString(16), 'hex'),
+          vote: Math.ceil((201 - idx) * 10000 + Math.random() * 999),
+        }));
+        delegates[201].vote = 0;
+        getKeysSortByVoteStub.resolves(delegates);
+        roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / slotsStub.delegates));
+        roundsLogicStub.stubs.lastInRound.callsFake((r) => Math.ceil(r * 101));
+        findOneStub.returns({id: '1231352636353'});
+        seedGenStub = sandbox.stub(instance as any, 'calculateSafeRoundSeed').callsFake(() => {
+          const toRet = [];
+          for (let i = 0; i < 8; i++) {
+            toRet.push(Math.random() * Number.MAX_SAFE_INTEGER);
+          }
+          return toRet;
+        });
+      });
+      after(() => {
+        (instance as any).constants.dposv2.firstBlock = Number.MAX_SAFE_INTEGER;
+      });
+
+      afterEach(() => {
+        seedGenStub.restore();
+      });
+
+      it('should produce the same array, given the same round and delegates', async function() {
+        seedGenStub.restore();
+        this.timeout(10000);
+        slotsStub.delegates = 101;
+        const roundNum = Math.round(Math.random() * 1000000);
+        const list = await instance.generateDelegateList(roundNum);
+        const list2 = await instance.generateDelegateList(roundNum);
+        expect(list).to.be.deep.eq(list2);
+      });
+
+      it('should include at least once most delegates with vote > 0 in pool, in a long streak of rounds', async function() {
+        this.timeout(100000);
+        sha256Spy.restore();
+        slotsStub.delegates = 101;
+        // 1 year...
+        const numRounds = 10407;
+        let includedDelegates = 0;
+        const delegatesMap = {};
+        delegates.forEach((d) => {
+          const idx = d.publicKey.toString('hex');
+          delegatesMap[idx] = d;
+        });
+
+        for (let round = 0; round < numRounds; round ++) {
+          if (round % 1000 === 0) {
+            console.log(`${round} rounds done`);
+          }
+          const list = await instance.generateDelegateList(round * 101);
+          list.forEach((delegate) => {
+            const idx = delegate.toString('hex');
+            delegatesMap[idx].count = typeof delegatesMap[idx].count !== 'undefined' ? delegatesMap[idx].count + 1 : 1;
+          });
+          roundsLogicStub.stubs.calcRound.resetHistory();
+          getKeysSortByVoteStub.resetHistory();
+        }
+        const toSort = [];
+        Object.keys(delegatesMap).forEach((k) => {
+          const d = delegatesMap[k];
+          d.stringKey = d.publicKey.toString('hex');
+          toSort.push(d);
+        });
+        toSort.sort((a, b) => {
+          return b.vote - a.vote;
+        });
+        toSort.forEach((d, idx) => {
+          const count = d.count ? d.count : 0;
+          const percent = ((count * 100) / numRounds).toFixed(2);
+          console.log(`#${idx} vote: ${d.vote} inclusions: ${count} ${percent}%`);
+          if (count > 0) {
+            includedDelegates++;
+          }
+        });
+        // Only one delegate has zero vote, so it should never be included in round
+        expect(includedDelegates).to.be.eq(delegates.length - 1);
+      });
+
+      it('should include the top 101 delegates at least once in a short streak of rounds', async () => {
+        slotsStub.delegates = 101;
+        // 1 day
+        const numRounds = 28;
+        const inclusionCount = {};
+        for (let round = 0; round < numRounds; round ++) {
+          const list = await instance.generateDelegateList(round * 101);
+          list.forEach((delegate) => {
+            const idx = delegate.toString('hex');
+            inclusionCount[idx] = typeof inclusionCount[idx] !== 'undefined' ? inclusionCount[idx] + 1 : 1;
+          });
+        }
+        for (let i = 0; i < 101; i++) {
+          const idx = delegates[i].publicKey.toString('hex');
+          expect(inclusionCount[idx]).not.to.be.undefined;
+          expect(inclusionCount[idx]).to.be.gt(0);
+        }
+      });
+
+      it('should sort delegates by public Key if resulting weight is the same', async () => {
+        const oldRandom = MersenneTwister.prototype.random;
+        // We need to make sure to get the same weight for all delegates. (same vote, same random factor)
+        MersenneTwister.prototype.random = () => {
+          return 0.999;
+        };
+        for (let i = 0; i < delegates.length; i++) {
+          const k = new Buffer(1);
+          k.writeUInt8(i, 0);
+          delegates[i] = {
+            publicKey: k,
+            vote: 1000000000,
+          };
+        }
+        const list = await instance.generateDelegateList(32 * 101);
+        const stringList = list.map((k) => k.toString('hex'));
+        const excluded = delegates.length - slotsStub.delegates;
+        // Delegates with low-value publicKey are excluded
+        for (let i = 0; i < excluded; i++) {
+          const pk = new Buffer(1);
+          pk.writeUInt8(i, 0);
+          expect(stringList.indexOf(pk.toString('hex'))).to.be.equal(-1);
+        }
+        // Delegates with high-value publicKey are included
+        for (let i = excluded; i < delegates.length; i++) {
+          const pk = new Buffer(1);
+          pk.writeUInt8(i, 0);
+          expect(stringList.indexOf(pk.toString('hex'))).to.be.gte(0);
+        }
+        MersenneTwister.prototype.random = oldRandom;
+      });
     });
   });
 
@@ -235,7 +381,7 @@ describe('modules/delegates', () => {
         sort      : { vote: -1, publicKey: 1 },
       });
       expect(accountsModuleStub.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal([
-        'username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks',
+        'username', 'address', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks',
       ]);
     });
 
@@ -371,14 +517,15 @@ describe('modules/delegates', () => {
         limit     : 101,
         sort      : { vote: -1, publicKey: 1 },
       });
-      expect(accountsModuleStub.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal(['publicKey']);
+      expect(accountsModuleStub.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal(['publicKey', 'vote']);
     });
 
-    it('should return an array of publicKeys only', async () => {
+    it('should return an array of publicKeys and votes', async () => {
       const retVal = await (instance as any).getKeysSortByVote();
       expect(Array.isArray(retVal)).to.be.true;
       retVal.forEach((el, k) => {
-        expect(el).to.be.equal(testAccounts[k].publicKey);
+        expect(el.vote).to.be.equal((testAccounts[k] as any).vote);
+        expect(el.publicKey).to.be.equal(testAccounts[k].publicKey);
       });
     });
   });
@@ -453,6 +600,69 @@ describe('modules/delegates', () => {
       const wrongVotes = ['+deleg1', '+deleg2'];
       await expect((instance as any).checkDelegates(theAccount.publicKey, wrongVotes, 'confirmed')).to.be.
         rejectedWith('Maximum number of 1 votes exceeded (1 too many)');
+    });
+  });
+
+  describe('calculateSafeRoundSeed', async () => {
+    const height = 129353456;
+    beforeEach(() => {
+      // Make sure cache is clean
+      (instance as any).roundSeeds = {};
+      roundsLogicStub.stubs.calcRound.callsFake((h) => Math.ceil(h / 101));
+      roundsLogicStub.stubs.lastInRound.callsFake((r) => Math.ceil(r * 101));
+      findOneStub.resolves({id: '1231352636353'});
+    });
+
+    it('should query the db for the right block', async function() {
+      this.timeout(50000);
+      const seed = await (instance as any).calculateSafeRoundSeed(height);
+      expect(findOneStub.calledOnce).to.be.true;
+      expect(findOneStub.firstCall.args).to.be.deep
+        .equal([
+          {
+            attributes: ['id'],
+            limit     : 1,
+            where     : { height: { [Op.eq]: (Math.ceil(height / 101) - 1) * 101 } },
+          }
+        ]);
+    });
+
+    it('should return a predictable seed given a specific height', async function() {
+      this.timeout(50000);
+      const seed = await (instance as any).calculateSafeRoundSeed(height);
+      expect(seed).to.be.deep.equal([
+        3474557505,
+        1689392474,
+        2466231691,
+        2060924045,
+        3067574310,
+        4198023853,
+        1557267628,
+        4254844739,
+      ]);
+    });
+
+    it('should return different seeds given different rounds', async function() {
+      this.timeout(50000);
+      const seed1 = await (instance as any).calculateSafeRoundSeed(height);
+      findOneStub.resolves({id: '987654321'} );
+      const seed2 = await (instance as any).calculateSafeRoundSeed(height + 102);
+      expect(seed1).not.to.be.deep.equal(seed2);
+    });
+
+    it('should cache the result', async function() {
+      this.timeout(50000);
+      expect((instance as any).roundSeeds[Math.ceil(height / 101)]).to.be.undefined;
+      const seed = await (instance as any).calculateSafeRoundSeed(height);
+      expect((instance as any).roundSeeds[Math.ceil(height / 101)]).to.be.deep.equal(seed);
+    });
+
+    it('should execute in more than 40ms', async function() {
+      this.timeout(50000);
+      const start = Date.now();
+      await (instance as any).calculateSafeRoundSeed(height);
+      const elapsed = Date.now() - start;
+      expect(elapsed).to.be.gte(40);
     });
   });
 });

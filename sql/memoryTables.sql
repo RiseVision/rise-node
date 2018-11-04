@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS "mem_accounts"(
   "missedblocks" int DEFAULT 0,
   "fees" BIGINT DEFAULT 0,
   "rewards" BIGINT DEFAULT 0,
-  "virgin" SMALLINT DEFAULT 1
+  "virgin" SMALLINT DEFAULT 1,
+  "votesWeight" BIGINT DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS "mem_accounts_balance" ON "mem_accounts"("balance");

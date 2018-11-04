@@ -114,7 +114,7 @@ describe('modules/blocks/chain', () => {
       });
       findStub = sandbox.stub(blocksModel, 'findById');
       findStub.onCall(0).resolves(blocksModule.lastBlock);
-      findStub.onCall(1).resolves({ id: 'previousBlock' });
+      findStub.onCall(1).resolves({toJSON() { return { id: 'previousBlock' }}});
 
       const accountsModel = container.get<any>(Symbols.models.accounts);
       accountsFindStub    = sandbox.stub().returns('senderAccount');

@@ -120,4 +120,9 @@ export default {
       maxItems: 15,
     },
   },
+  dposv2: {
+    firstBlock: 123456789,   // Block height from which the fair delegates system will be enabled.
+    minForged: 200,          // Enable productivity-based vote weight after a delegate has forged  at least # blocks
+    delegatesPoolSize: 202,  // Total number of delegates to choose forgers from, when dposv2 is on. -1 for no limit.
+  },
 };

@@ -16,12 +16,32 @@ declare const gc; // garbage collection if exposed.
 
 // tslint:disable-next-line
 const packageJson          = require('../package.json');
-const versionBuild: string = fs.readFileSync(`${__dirname}/../build`, 'utf8');
+const versionBuild: string = '';
 
 // if gc is exposed call it every minute
 if (typeof(gc) !== 'undefined') {
   setInterval(gc, 60000);
 }
+
+const overrideFn = (opt, opts) => {
+  if (typeof(opts) === 'undefined') {
+    opts = [];
+  }
+  const [path, val] = opt.split('=');
+  if (typeof(path) === 'undefined' || typeof(val) === 'undefined') {
+    // tslint:disable-next-line
+    console.warn('Invalid format for invalid config. Correct is -> jsonpath=value');
+    return opts;
+  }
+  try {
+    jp.parse(path);
+  } catch (e) {
+    // tslint:disable-next-line
+    console.warn('JSONPath is invalid', e);
+  }
+  opts.push({ path, val });
+  return opts;
+};
 
 program
   .version(packageJson)
@@ -33,25 +53,8 @@ program
   .option('-s, --snapshot [round]', 'verify snapshot')
   .option('-c, --config <path>', 'custom config path')
   .option('-e, --extra-config <path>', 'partial override config path')
-  .option('-o, --override-config <item>', 'Override single config item', (opt, opts) => {
-    if (typeof(opts) === 'undefined') {
-      opts = [];
-    }
-    const [path, val] = opt.split('=');
-    if (typeof(path) === 'undefined' || typeof(val) === 'undefined') {
-      // tslint:disable-next-line
-      console.warn('Invalid format for invalid config. Correct is -> jsonpath=value');
-      return opts;
-    }
-    try {
-      jp.parse(path);
-    } catch (e) {
-      // tslint:disable-next-line
-      console.warn('JSONPath is invalid', e);
-    }
-    opts.push({ path, val });
-    return opts;
-  })
+  .option('-o, --override-config <item>', 'Override single config item', overrideFn)
+  .option('-C --override-constant <item>', 'Override constants for testing purposes', overrideFn)
   .parse(process.argv);
 
 // tslint:disable-next-line
@@ -90,6 +93,24 @@ if (program.overrideConfig) {
     }
     // tslint:disable-next-line
     console.warn(`Replaced config ${item.path}: ${oldValue} -> ${item.val}`);
+  }
+}
+
+const appConstants = {...constantsType};
+
+// Override constants
+if (program.overrideConstant && (process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
+  for (const item of program.overrideConstant as Array<{ path: string, val: string }>) {
+    const oldValue = jp.value(appConstants, item.path);
+    if (typeof(oldValue) === 'number') {
+      jp.value(appConstants, item.path, parseFloat(item.val));
+    } else if (typeof(oldValue) === 'object') {
+      jp.value(appConstants, item.path, JSON.parse(item.val));
+    } else {
+      jp.value(appConstants, item.path, item.val);
+    }
+    // tslint:disable-next-line
+    console.warn(`Replaced constant ${item.path}: ${oldValue} -> ${item.val}`);
   }
 }
 
@@ -145,7 +166,7 @@ exitHook.unhandledRejectionHandler((err) => {
   logger.fatal('Unhandled Promise rejection', err);
 });
 
-boot(constantsType)
+boot(appConstants)
   .catch((err) => {
     logger.fatal('Error when instantiating');
     logger.fatal(err);

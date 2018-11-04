@@ -70,6 +70,7 @@ export class RoundsModule implements IRoundsModule {
    * @param {Transaction} transaction
    */
   public backwardTick(block: BlocksModel, previousBlock: SignedBlockType, transaction: Transaction) {
+    this.bus.message('roundBackwardTick', block);
     return this.innerTick(block,  transaction, true, async (roundLogicScope) => {
       this.logger.debug('Performing backward tick');
 

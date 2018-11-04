@@ -1,13 +1,14 @@
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as crypto from 'crypto';
 import {Container} from 'inversify';
 import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import * as supersha from 'supersha';
 import * as helpers from '../../../src/helpers';
 import { catchToLoggerAndRemapError, constants } from '../../../src/helpers';
 import {Symbols} from '../../../src/ioc/symbols';
+import { BlocksModel } from '../../../src/models';
 import { ForgeModule } from '../../../src/modules';
 import {
   AccountsModuleStub,
@@ -22,9 +23,7 @@ import {
   SlotsStub,
   TransactionsModuleStub
 } from '../../stubs';
-import { CreateHashSpy } from '../../stubs/utils/CreateHashSpy';
 import { createContainer } from '../../utils/containerCreator';
-import { BlocksModel } from '../../../src/models';
 
 chai.use(chaiAsPromised);
 
@@ -48,7 +47,7 @@ describe('modules/forge', () => {
   let transactionsModuleStub: TransactionsModuleStub;
   let blocksProcessModuleStub: BlocksSubmoduleProcessStub;
 
-  let createHashSpy: CreateHashSpy;
+  let sha256Spy: SinonSpy;
   let loadKeypairs: () => void;
 
   beforeEach(() => {
@@ -95,7 +94,7 @@ describe('modules/forge', () => {
     instance.transactionsModule  = transactionsModuleStub;
     instance.blocksProcessModule = blocksProcessModuleStub;
 
-    createHashSpy              = new CreateHashSpy(crypto, sandbox);
+    sha256Spy              = sandbox.spy(supersha, 'sha256');
     blocksModuleStub.lastBlock = BlocksModel.classFromPOJO({
       blockSignature      : Buffer.from('blockSignature'),
       generatorPublicKey  : Buffer.from('pubKey'),
@@ -572,20 +571,20 @@ describe('modules/forge', () => {
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Loading 2 delegates from config');
     });
 
-    it('should call crypto.createhash(sha256).update.digest', async () => {
+    it('should call supersha.sha256', async () => {
       await instance.loadDelegates();
-      expect(createHashSpy.callCount).to.be.equal(2);
-      expect(createHashSpy.spies.update[0].firstCall.args[0]).to.be.equal('secret1');
-      expect(createHashSpy.spies.update[1].firstCall.args[0]).to.be.equal('secret2');
+      expect(sha256Spy.callCount).to.be.equal(2);
+      expect(sha256Spy.getCall(0).args[0]).to.be.deep.equal(Buffer.from('secret1', 'utf-8'));
+      expect(sha256Spy.getCall(1).args[0]).to.be.deep.equal(Buffer.from('secret2', 'utf-8'));
     });
 
     it('should call ed.makeKeypair with the hash', async () => {
       await instance.loadDelegates();
       expect(edStub.stubs.makeKeypair.callCount).to.be.equal(2);
       expect(edStub.stubs.makeKeypair.firstCall.args[0]).to.be.deep.
-        equal(createHashSpy.spies.digest[0].firstCall.returnValue);
+        equal(sha256Spy.firstCall.returnValue);
       expect(edStub.stubs.makeKeypair.secondCall.args[0]).to.be.deep.
-        equal(createHashSpy.spies.digest[1].firstCall.returnValue);
+        equal(sha256Spy.secondCall.returnValue);
     });
 
     it('should call accountsModule.getAccount', async () => {

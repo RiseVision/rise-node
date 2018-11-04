@@ -36,4 +36,8 @@ export class CreateHashSpy {
     });
     inst.spies.createHash = createHashStub;
   }
+
+  public restore() {
+    this.spies.createHash.restore();
+  }
 }

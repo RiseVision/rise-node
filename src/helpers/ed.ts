@@ -1,4 +1,4 @@
-import {api as sodium} from 'sodium';
+import * as sodium from 'sodium-native';
 
 export interface IKeypair {
   publicKey: Buffer;
@@ -7,25 +7,25 @@ export interface IKeypair {
 
 export class Ed {
   public makeKeypair(hash: Buffer): IKeypair {
-    const keypair = sodium.crypto_sign_seed_keypair(hash);
-
-    return {
-      privateKey: keypair.secretKey,
-      publicKey : keypair.publicKey,
-    };
+    const publicKey = Buffer.alloc(sodium.crypto_sign_PUBLICKEYBYTES);
+    const privateKey = Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES);
+    sodium.crypto_sign_seed_keypair(publicKey, privateKey, hash);
+    return { privateKey, publicKey };
   }
 
   /**
    * Creates a signature based on a hash and a keypair.
    */
-  public sign(hash: string | Buffer, keypair: IKeypair): Buffer {
-    return sodium.crypto_sign_detached(hash, keypair.privateKey);
+  public sign(hash: Buffer, keypair: IKeypair): Buffer {
+    const signature = Buffer.alloc(sodium.crypto_sign_BYTES);
+    sodium.crypto_sign_detached(signature, hash, keypair.privateKey);
+    return signature;
   }
 
   /**
    * Verifies a signature based on a hash and a publicKey.
    */
-  public verify(hash: string | Buffer, signature: Buffer, publicKey: Buffer): boolean {
+  public verify(hash: Buffer, signature: Buffer, publicKey: Buffer): boolean {
     return sodium.crypto_sign_verify_detached(signature, hash, publicKey);
   }
 

@@ -1,7 +1,7 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as crypto from 'crypto';
+import * as supersha from 'supersha';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
@@ -220,17 +220,17 @@ describe('logic/transaction', () => {
   });
 
   describe('getHash', () => {
-    it('should call crypto.createHash', () => {
-      const createHashSpy = sandbox.spy(crypto, 'createHash');
-      instance.getHash(tx);
-      expect(createHashSpy.calledOnce).to.be.true;
-      expect(createHashSpy.firstCall.args.length).to.be.equal(1);
-      expect(createHashSpy.firstCall.args[0]).to.be.equal('sha256');
+    it('should call supersha.createHash', () => {
+      const res = instance.getHash(tx);
+      expect(res.toString('hex'))
+        .eq('4af0aeaca885950b772ab72dbef751519a8adcf5091e833742f6372356c7e7a2');
     });
 
     it('should call this.getBytes', () => {
       const getBytesSpy = sandbox.spy(instance, 'getBytes');
-      instance.getHash(tx, true, false);
+      const res = instance.getHash(tx, true, false);
+      expect(res.toString('hex'))
+        .eq('0889b07dad6d7afdc5e66ffd6d108514011d32381ca0fc0397915875748da5f1');
       expect(getBytesSpy.calledOnce).to.be.true;
       expect(getBytesSpy.firstCall.args[0]).to.be.deep.equal(tx);
       expect(getBytesSpy.firstCall.args[1]).to.be.deep.equal(true);

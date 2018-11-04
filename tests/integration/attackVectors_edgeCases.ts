@@ -37,6 +37,7 @@ describe('attackVectors/edgeCases', () => {
   const funds = Math.pow(10, 11);
   let senderAccount: LiskWallet;
   let blocksModule: IBlocksModule;
+
   let accModule: IAccountsModule;
   let txModule: ITransactionsModule;
   let txPool: ITransactionPoolLogic;

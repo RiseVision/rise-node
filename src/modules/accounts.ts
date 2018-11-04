@@ -37,27 +37,51 @@ export class AccountsModule implements IAccountsModule {
   }
 
   public async resolveAccountsForTransactions(txs: Array<IBaseTransaction<any>>): Promise<{ [address: string]: AccountsModel }> {
-    const allSenders: Array<{ publicKey: Buffer, address: string }> = [];
-    txs.forEach((tx) => {
-      if (!allSenders.find((item) => item.address === tx.senderId)) {
-        allSenders.push({ address: tx.senderId, publicKey: tx.senderPublicKey });
+    // tslint:disable-next-line
+    type senderType = { publicKey: Buffer, address: string };
+    const chunkSize = 400;
+    const chunked: senderType[][] = [];
+    const curChunk: senderType[] = [];
+    const allSenders: senderType[] = [];
+
+    // push method to enqueue requests on multiple vars.
+    const push = (w: senderType) => {
+      allSenders.push(w);
+      curChunk.push(w);
+      if (curChunk.length === chunkSize) {
+        chunked.push(curChunk.splice(0, chunkSize));
+      }
+    };
+
+    const queuedSenders: {[address: string]: true} = {};
+    for (const tx of txs) {
+      if (!queuedSenders[tx.senderId]) {
+        queuedSenders[tx.senderId] = true;
+        push({ address: tx.senderId, publicKey: tx.senderPublicKey });
       }
       if (tx.requesterPublicKey) {
         const requesterAddress = this.accountLogic.generateAddressByPublicKey(tx.requesterPublicKey);
-        if (!allSenders.find((item) => item.address === requesterAddress)) {
-          allSenders.push({ address: requesterAddress, publicKey: tx.requesterPublicKey });
+        if (!queuedSenders[requesterAddress]) {
+          queuedSenders[requesterAddress] = true;
+          push({ address: requesterAddress, publicKey: tx.requesterPublicKey });
         }
       }
-    });
+    }
+    chunked.push(curChunk);
 
-    const senderAccounts = await this.AccountsModel.scope('full')
-        .findAll({where: {address: allSenders.map((s) => s.address)}});
+    // Query accounts in chunks and then merge. PostGres will take care of parallelism.
+    const senderAccounts = await Promise.all(
+      chunked.map((chunk) => this.AccountsModel.scope('full')
+        .findAll({where: {address: chunk.map((s) => s.address)}})
+      )
+    ).then((results) => [].concat(...results));
 
     const sendersMap: { [address: string]: AccountsModel } = {};
     for (const senderAccount of senderAccounts) {
       sendersMap[senderAccount.address] = senderAccount;
     }
 
+    // Perform checks on resulting objects
     await Promise.all(allSenders.map(async ({ address, publicKey }) => {
       if (!sendersMap[address]) {
         throw new Error(`Account ${address} not found in db.`);

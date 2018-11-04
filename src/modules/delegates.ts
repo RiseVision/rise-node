@@ -1,5 +1,7 @@
-import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
+import * as MersenneTwister from 'mersenne-twister';
+import { Op } from 'sequelize';
+import * as supersha from 'supersha';
 import * as z_schema from 'z-schema';
 import {
   constants as constantsType, ExceptionsList, ExceptionsManager,
@@ -10,12 +12,13 @@ import {
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAppState, IRoundsLogic, } from '../ioc/interfaces/logic';
 import {
-  IAccountsModule, IBlocksModule, IDelegatesModule, ITransactionsModule,
+  IAccountsModule, IBlocksModule, IDelegatesModule,
 } from '../ioc/interfaces/modules';
 import { Symbols } from '../ioc/symbols';
-import { BlockRewardLogic, SignedBlockType } from '../logic/';
-import { AccountsModel } from '../models';
+import { AccountFilterData, BlockRewardLogic, SignedAndChainedBlockType, SignedBlockType } from '../logic/';
+import { AccountsModel, BlocksModel, TransactionsModel } from '../models';
 import { publicKey } from '../types/sanityTypes';
+import { FieldsInModel } from '../types/utils';
 
 @injectable()
 export class DelegatesModule implements IDelegatesModule {
@@ -44,13 +47,19 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.logic.rounds)
   private roundsLogic: IRoundsLogic;
 
+  // Models
+  @inject(Symbols.models.blocks)
+  private BlocksModel: typeof BlocksModel;
+  @inject(Symbols.models.transactions)
+  private TransactionsModel: typeof TransactionsModel;
+
   // Modules
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
-  @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
+
+  private roundSeeds: {[seed: number]: number[]} = {};
 
   public async checkConfirmedDelegates(account: AccountsModel, votes: string[]) {
     return this.checkDelegates(account, votes, 'confirmed');
@@ -66,22 +75,50 @@ export class DelegatesModule implements IDelegatesModule {
    * @return {Promise<publicKey[]>}
    */
   public async generateDelegateList(height: number): Promise<Buffer[]> {
-    const pkeys      = await this.getKeysSortByVote();
+    let delegates  = await this.getKeysSortByVote();
     const seedSource = this.roundsLogic.calcRound(height).toString();
-    let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
-    // Shuffle public keys.
-    for (let i = 0, delegatesCount = pkeys.length; i < delegatesCount; i++) {
-      for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
-        const newIndex  = currentSeed[x] % delegatesCount;
-        const b         = pkeys[newIndex];
-        pkeys[newIndex] = pkeys[i];
-        pkeys[i]        = b;
-      }
-      currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
+    // If dposv2 is on, do a Weighted Random Selection of the round forgers.
+    if (height >= this.constants.dposv2.firstBlock) {
+      let pool: Array<{publicKey: Buffer, vote: number, weight?: number}>;
+
+      // Initialize source random numbers that will generate a predictable sequence, given the seed.
+      const generator = new MersenneTwister(await this.calculateSafeRoundSeed(height));
+
+      // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
+      pool = delegates.map((delegate) => {
+        const rand = generator.random(); // 0 >= rand < 1
+        return {
+          ...delegate,
+          weight: rand ** ( 1 / delegate.vote ), // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
+        };
+      });
+
+      // Sort by weight
+      pool.sort((a, b) => {
+        // If two elements have the same weight, publicKey defines the position (higher value first)
+        if (a.weight === b.weight) {
+          return Buffer.compare(b.publicKey, a.publicKey);
+        }
+        return a.weight > b.weight ? -1 : 1;
+      });
+      delegates = pool.slice(0, this.constants.activeDelegates);
     }
 
-    return pkeys;
+    // Shuffle the delegates.
+    let currentSeed  = supersha.sha256(Buffer.from(seedSource, 'utf8'));
+
+    for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
+      for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
+        const newIndex  = currentSeed[x] % delegatesCount;
+        const b         = delegates[newIndex];
+        delegates[newIndex] = delegates[i];
+        delegates[i]        = b;
+      }
+      currentSeed = supersha.sha256(currentSeed);
+    }
+
+    return delegates.slice(0, this.slots.delegates).map((d) => d.publicKey);
   }
 
   /**
@@ -101,15 +138,17 @@ export class DelegatesModule implements IDelegatesModule {
     if (!query) {
       throw new Error('Missing query argument');
     }
-
+    const sort: {vote?: 1|-1, votesWeight?: 1|-1, publicKey: 1|-1} =
+            this.blocksModule.lastBlock.height < this.constants.dposv2.firstBlock ?
+              {vote: -1, publicKey: 1} : {votesWeight: -1, publicKey: 1};
     const delegates = await this.accountsModule.getAccounts({
         isDelegate: 1,
-        sort      : {vote: -1, publicKey: 1},
+        sort,
       },
-      ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks']
+      ['username', 'address', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks']
     );
 
-    const limit  = Math.min(this.constants.activeDelegates, query.limit || this.constants.activeDelegates);
+    const limit  = Math.min(this.slots.getDelegatesPoolSize(), query.limit || this.slots.getDelegatesPoolSize());
     const offset = query.offset || 0;
 
     const count     = delegates.length;
@@ -181,16 +220,37 @@ export class DelegatesModule implements IDelegatesModule {
     return this.loaded;
   }
 
+  public onRoundBackwardTick(block: SignedAndChainedBlockType) {
+    // Delete round seed cache for this round
+    delete this.roundSeeds[this.roundsLogic.calcRound(block.height)];
+  }
+
   /**
    * Get delegates public keys sorted by descending vote.
    */
-  private async getKeysSortByVote(): Promise<Buffer[]> {
-    const rows = await this.accountsModule.getAccounts({
+  private async getKeysSortByVote(): Promise<Array<{publicKey: Buffer, vote: number}>> {
+    const fields: FieldsInModel<AccountsModel> = ['publicKey'];
+    let sort: string | { [k: string]: -1 | 1 };
+    if (this.blocksModule.lastBlock.height < this.constants.dposv2.firstBlock) {
+      sort = {vote: -1, publicKey: 1};
+      fields.push('vote');
+    } else {
+      sort = {votesWeight: -1, publicKey: 1};
+      fields.push('votesWeight');
+    }
+    const filter: AccountFilterData = {
       isDelegate: 1,
-      limit     : this.slots.delegates,
-      sort      : {vote: -1, publicKey: 1},
-    }, ['publicKey']);
-    return rows.map((r) => r.publicKey);
+      sort,
+    };
+    const poolSize = this.slots.getDelegatesPoolSize();
+    if (poolSize !== -1) {
+      filter.limit = poolSize;
+    }
+    const rows = await this.accountsModule.getAccounts(filter, fields);
+    return rows.map((r) => ({
+      publicKey: r.publicKey,
+      vote: typeof r.votesWeight !== 'undefined' ? r.votesWeight : r.vote,
+    }));
   }
 
   /**
@@ -248,5 +308,62 @@ export class DelegatesModule implements IDelegatesModule {
       const exceeded = total - this.constants.maximumVotes;
       throw new Error(`Maximum number of ${this.constants.maximumVotes} votes exceeded (${exceeded} too many)`);
     }
+  }
+
+  /**
+   * Generates an array of 8 32-bit unsigned integers, to be used as seed for the Mersenne Twister PRNG
+   * The ID of the last block of the previous round is used as a source, then hashed multiple times and converted to
+   * an array of numbers.
+   * @param {number} height
+   * @returns {Promise<number[]>}
+   */
+  // TODO: Maybe separate cache from calculation logic ?
+  private async calculateSafeRoundSeed(height: number): Promise<number[]> {
+    const currentRound = this.roundsLogic.calcRound(height);
+    // Calculation is expensive, let's keep a cache of seeds
+    if (typeof this.roundSeeds[currentRound] !== 'undefined') {
+      // Return from cache if found
+      return this.roundSeeds[currentRound];
+    } else {
+      // Make sure cache has max 100 elements
+      const keys = Object.keys(this.roundSeeds);
+      if (keys.length >= 100) {
+        for (let i = 0; i <= keys.length - 100; i++) {
+          delete this.roundSeeds[keys[0]];
+        }
+      }
+    }
+    const previousRoundLastBlockHeight = this.roundsLogic.lastInRound(currentRound - 1);
+    // Get the last block of previous round from database
+    const block = await this.BlocksModel.findOne({
+      attributes: ['id'],
+      limit     : 1,
+      where     : { height: { [Op.eq]: previousRoundLastBlockHeight } },
+    });
+
+    if (block === null) {
+      throw new Error(`Error in Round Seed calculation, block ${previousRoundLastBlockHeight} not found`);
+    }
+
+    // Hash the Block ID several times. This is here to discourage attempts to alter block ID by forgers to get a
+    // higher chance to get forging in the next round.
+    let seedSource = supersha.sha256(Buffer.from(block.id, 'utf8'));
+    for (let i = 0; i < 10000; i++) {
+      seedSource = supersha.sha256(seedSource);
+    }
+
+    // Convert the sha256 buffer to an array of 32-bit unsigned integers
+    const seed: number[] = [];
+    for (let i = 0; i < seedSource.length; i += 4) {
+      const chunk = seedSource.slice(i, i + 4);
+      // Reverse for little-endianness
+      chunk.reverse();
+      const u32 = new Uint32Array(new Uint8Array(chunk).buffer);
+      seed.push(u32[0]);
+    }
+
+    // Save in cache
+    this.roundSeeds[currentRound] = seed;
+    return seed;
   }
 }

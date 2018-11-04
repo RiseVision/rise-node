@@ -1,10 +1,10 @@
-import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
+import * as supersha from 'supersha';
 import * as z_schema from 'z-schema';
 import { BigNum, catchToLoggerAndRemapError, constants, ILogger } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
@@ -23,7 +23,6 @@ import { accountsModelCreator } from './models/account';
 import { IModelField, IModelFilter } from './models/modelField';
 
 import { AccountDiffType } from '../ioc/interfaces/logic';
-import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 
 // tslint:disable-next-line
 export type OptionalsMemAccounts = {
@@ -39,6 +38,7 @@ export type OptionalsMemAccounts = {
   balance?: number;
   u_balance?: number;
   vote?: number;
+  votesWeight?: number;
   rate?: number;
   delegates?: string;
   u_delegates?: string;
@@ -69,6 +69,7 @@ export type MemAccountsData = OptionalsMemAccounts & {
   balance: number;
   u_balance: number;
   vote: string;
+  votesWeight: number;
   rate: number;
   delegates: string[];
   u_delegates: string[];
@@ -421,12 +422,11 @@ export class AccountLogic implements IAccountLogic {
   public generateAddressByPublicKey(publicKey: string|Buffer): string {
     this.assertPublicKey(publicKey, false);
 
-    const hash = crypto.createHash('sha256')
-      .update(Buffer.isBuffer(publicKey)
+    const hash = supersha.sha256(
+      Buffer.isBuffer(publicKey)
         ? publicKey
         : new Buffer(publicKey, 'hex')
-      )
-      .digest();
+    );
 
     const tmp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
