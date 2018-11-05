@@ -10,14 +10,14 @@ import {
   ITransactionLogic,
   ITransactionPool,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   ForkType,
   SignedAndChainedBlockType,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
@@ -91,7 +91,7 @@ export class BlocksModuleVerify {
       this.verifyVersion(block),
       this.verifyReward(block),
       this.verifyId(block),
-      this.verifyPayload(block)
+      this.verifyPayload(block),
     ]
       .reduce((a, b) => a.concat(b))
       .reverse();
@@ -100,7 +100,7 @@ export class BlocksModuleVerify {
       VerifyReceipt.name,
       {
         errors,
-        verified: errors.length === 0
+        verified: errors.length === 0,
       },
       block
     );
@@ -121,14 +121,14 @@ export class BlocksModuleVerify {
       this.verifyReward(block),
       this.verifyId(block),
       this.verifyPayload(block),
-      await this.verifyForkOne(block, lastBlock)
+      await this.verifyForkOne(block, lastBlock),
     ].reduce((a, b) => a.concat(b));
 
     return this.hookSystem.apply_filters(
       VerifyBlock.name,
       {
         errors,
-        verified: errors.length === 0
+        verified: errors.length === 0,
       },
       block,
       lastBlock
@@ -141,7 +141,7 @@ export class BlocksModuleVerify {
       attributes: ['id'],
       limit: this.constants.blockSlotWindow,
       order: [['height', 'desc']],
-      raw: true
+      raw: true,
     });
     this.lastNBlockIds = blocks.map((b) => b.id);
   }
@@ -290,7 +290,7 @@ export class BlocksModuleVerify {
       return [
         `Invalid previous block: ${block.previousBlock} expected ${
           lastBlock.id
-        }`
+        }`,
       ];
     }
     return [];

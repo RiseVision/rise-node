@@ -3,7 +3,7 @@ import {
   IBaseTransaction,
   IConfirmedTransaction,
   SignedBlockType,
-  TransactionType
+  TransactionType,
 } from '@risevision/core-types';
 import { Model } from 'sequelize-typescript';
 import { IAccountsModel } from '../models';

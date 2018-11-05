@@ -10,7 +10,7 @@ import {
   IBlocksModel,
   ISequence,
   ITransactionLogic,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { BlocksModule, BlocksModuleUtils, BlocksSymbols } from '../../../src';
@@ -27,7 +27,14 @@ describe('modules/utils', () => {
   let inst: BlocksModuleUtils;
   let container: Container;
   beforeEach(async () => {
-    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
 
     inst = container.get(BlocksSymbols.modules.utils);
   });
@@ -47,23 +54,28 @@ describe('modules/utils', () => {
   beforeEach(() => {
     blocksModule = container.get(Symbols.modules.blocks);
     genesisBlock = container.get(Symbols.generic.genesisBlock);
-    dbSequence   = container.getNamed(
+    dbSequence = container.getNamed(
       Symbols.helpers.sequence,
       Symbols.names.helpers.dbSequence
     );
 
     blockLogic = container.get(Symbols.logic.block);
-    txLogic    = container.get(Symbols.logic.transaction);
+    txLogic = container.get(Symbols.logic.transaction);
 
-    accountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
-    blocksModel   = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
-    sandbox       = sinon.createSandbox();
+    accountsModel = container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.accounts
+    );
+    blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    sandbox = sinon.createSandbox();
   });
   afterEach(() => sandbox.restore());
 
   describe('loadBlocksPart', () => {
     it('should call loadBlocksData with given filter and pass result to readDbRows', async () => {
-      const loadBlocksStub = sandbox.stub(inst, 'loadBlocksData').resolves(['1', '2', '3']);
+      const loadBlocksStub = sandbox
+        .stub(inst, 'loadBlocksData')
+        .resolves(['1', '2', '3']);
 
       const res = await inst.loadBlocksPart({ limit: 1, id: 'id' });
       expect(loadBlocksStub.calledOnce).is.true;
@@ -75,7 +87,7 @@ describe('modules/utils', () => {
   describe('loadLastBlock', () => {
     let findOneStub: SinonStub;
     beforeEach(() => {
-      findOneStub               = sandbox.stub(blocksModel, 'findOne').resolves({});
+      findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({});
       inst['TransactionsModel'] = 'txModel' as any; // useful for chai deep equality.
     });
     it('should query db', async () => {
@@ -83,8 +95,8 @@ describe('modules/utils', () => {
       expect(findOneStub.called).is.true;
       expect(findOneStub.firstCall.args[0]).deep.eq({
         include: ['txModel'],
-        order  : [['height', 'DESC']],
-        limit  : 1
+        order: [['height', 'DESC']],
+        limit: 1,
       });
     });
     it('should call txLogic.attachAssets over block txs', async () => {
@@ -97,7 +109,10 @@ describe('modules/utils', () => {
     it('should set blocksModule.lastBlock to lastloadedBlock', async () => {
       findOneStub.resolves({ id: '1', transactions: [] });
       await inst.loadLastBlock();
-      expect(blocksModule.lastBlock).to.be.deep.eq({ id: '1', transactions: [] });
+      expect(blocksModule.lastBlock).to.be.deep.eq({
+        id: '1',
+        transactions: [],
+      });
     });
   });
 
@@ -107,7 +122,9 @@ describe('modules/utils', () => {
     let heightsToQueryStub: SinonStub;
 
     class HookedClass extends WPHooksSubscriber(Object) {
-      public hookSystem = container.get<WordPressHookSystem>(Symbols.generic.hookSystem);
+      public hookSystem = container.get<WordPressHookSystem>(
+        Symbols.generic.hookSystem
+      );
 
       @CommonHeightsToQuery()
       public commonHeights(heights: number[], height: number) {
@@ -117,9 +134,9 @@ describe('modules/utils', () => {
 
     let hC: HookedClass;
     beforeEach(async () => {
-      dbReturn           = [{ id: '2', height: 3 }];
-      findAllStub        = sandbox.stub(blocksModel, 'findAll').resolves(dbReturn);
-      hC                 = new HookedClass();
+      dbReturn = [{ id: '2', height: 3 }];
+      findAllStub = sandbox.stub(blocksModel, 'findAll').resolves(dbReturn);
+      hC = new HookedClass();
       heightsToQueryStub = sandbox.stub();
       await hC.hookMethods();
     });
@@ -133,39 +150,47 @@ describe('modules/utils', () => {
       expect(findAllStub.called).is.true;
       expect(findAllStub.firstCall.args[0]).deep.eq({
         attributes: ['id', 'height'],
-        order     : [['height', 'DESC']],
-        raw       : true,
-        where     : {
+        order: [['height', 'DESC']],
+        raw: true,
+        where: {
           height: [1, 2, 3, 4, 5],
         },
       });
     });
     it('should throw error if theres no result for such height', async () => {
       findAllStub.resolves([]);
-      await expect(inst.getIdSequence(10)).to.be.rejectedWith('Failed to get id sequence for height 10');
+      await expect(inst.getIdSequence(10)).to.be.rejectedWith(
+        'Failed to get id sequence for height 10'
+      );
     });
     it('should prepend lastblockid', async () => {
       blocksModule.lastBlock = { id: '123', height: 50 } as any;
-      const res              = await inst.getIdSequence(10);
+      const res = await inst.getIdSequence(10);
       expect(res.ids[0]).to.be.eq('123');
     });
     it('should append genesisblock', async () => {
-      const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
-      blocksModule.lastBlock                   = { id: '123', height: 50 } as any;
-      const res                                = await inst.getIdSequence(10);
+      const genesis: SignedAndChainedBlockType = container.get(
+        Symbols.generic.genesisBlock
+      );
+      blocksModule.lastBlock = { id: '123', height: 50 } as any;
+      const res = await inst.getIdSequence(10);
       expect(res.ids[2]).to.be.eq(genesis.id);
     });
 
     it('should not prepend twice lastblockid if already from sql', async () => {
-      const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
-      blocksModule.lastBlock                   = { id: '123', height: 50 } as any;
+      const genesis: SignedAndChainedBlockType = container.get(
+        Symbols.generic.genesisBlock
+      );
+      blocksModule.lastBlock = { id: '123', height: 50 } as any;
       dbReturn.push(blocksModule.lastBlock);
       const res = await inst.getIdSequence(10);
       expect(res.ids).to.be.deep.eq(['2', '123', genesis.id]);
     });
     it('should not append genesis if already from sql', async () => {
-      const genesis: SignedAndChainedBlockType = container.get(Symbols.generic.genesisBlock);
-      blocksModule.lastBlock                   = { id: '123', height: 50 } as any;
+      const genesis: SignedAndChainedBlockType = container.get(
+        Symbols.generic.genesisBlock
+      );
+      blocksModule.lastBlock = { id: '123', height: 50 } as any;
       dbReturn.push(genesisBlock);
       const res = await inst.getIdSequence(10);
       expect(res.ids).to.be.deep.eq(['123', '2', genesis.id]);
@@ -176,45 +201,50 @@ describe('modules/utils', () => {
     let findAllStub: SinonStub;
     let dbSequenceStub: SinonStub;
     beforeEach(() => {
-      findOneStub               = sandbox.stub(blocksModel, 'findOne').resolves({ height: 10 });
-      findAllStub               = sandbox.stub(blocksModel, 'findAll').resolves([{ height: 11 }, { height: 12 }]);
-      dbSequenceStub            = sandbox.stub(dbSequence, 'addAndPromise').callsFake((b) => b());
+      findOneStub = sandbox
+        .stub(blocksModel, 'findOne')
+        .resolves({ height: 10 });
+      findAllStub = sandbox
+        .stub(blocksModel, 'findAll')
+        .resolves([{ height: 11 }, { height: 12 }]);
+      dbSequenceStub = sandbox
+        .stub(dbSequence, 'addAndPromise')
+        .callsFake((b) => b());
       inst['TransactionsModel'] = 'txModel' as any;
     });
     it('should disallow passing both id and lastId', async () => {
-      await expect(inst.loadBlocksData({ id: '1', lastId: '2' }))
-        .to.be.rejectedWith('Invalid filter');
+      await expect(
+        inst.loadBlocksData({ id: '1', lastId: '2' })
+      ).to.be.rejectedWith('Invalid filter');
     });
     it('should wrap queries within dbSequence', async () => {
       await inst.loadBlocksData({ id: '1' });
       expect(dbSequenceStub.called).is.true;
-      expect(dbSequenceStub.calledBefore(
-        findOneStub
-      )).is.true;
-      expect(dbSequenceStub.calledBefore(
-        findAllStub
-      )).is.true;
+      expect(dbSequenceStub.calledBefore(findOneStub)).is.true;
+      expect(dbSequenceStub.calledBefore(findAllStub)).is.true;
     });
     it('should query height by id.', async () => {
       await inst.loadBlocksData({ id: '1' });
       expect(findOneStub.firstCall.args[0]).to.be.deep.eq({
         include: ['txModel'],
-        where  : { id: '1' },
+        where: { id: '1' },
       });
     });
     it('should query db correctly based on input and height output', async () => {
       await inst.loadBlocksData({ lastId: '1', limit: 2 });
       expect(findAllStub.firstCall.args[0]).to.be.deep.eq({
         include: ['txModel'],
-        order  : ['height', 'rowId'],
-        where  : { height: { [Op.gt]: 10, [Op.lt]: 10 + 2 } },
+        order: ['height', 'rowId'],
+        where: { height: { [Op.gt]: 10, [Op.lt]: 10 + 2 } },
       });
       expect(findAllStub.firstCall.args[0].where.height[Op.gt]).eq(10);
       expect(findAllStub.firstCall.args[0].where.height[Op.lt]).eq(10 + 2);
     });
     it('should remap error to Blocks#loadBlockData error', async () => {
       findAllStub.rejects(new Error('meow'));
-      await expect(inst.loadBlocksData({ lastId: '1' })).to.be.rejectedWith('Blocks#loadBlockData error');
+      await expect(inst.loadBlocksData({ lastId: '1' })).to.be.rejectedWith(
+        'Blocks#loadBlockData error'
+      );
     });
   });
 
@@ -287,5 +317,4 @@ describe('modules/utils', () => {
   //       .to.be.rejectedWith('Account not found or is not a delegate');
   //   });
   // });
-
 });

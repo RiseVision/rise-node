@@ -1,4 +1,7 @@
-import { ExceptionsManager, setupExceptionOnInstance } from '@risevision/core-exceptions';
+import {
+  ExceptionsManager,
+  setupExceptionOnInstance,
+} from '@risevision/core-exceptions';
 import { Container } from 'inversify';
 import { DelegatesModule, dPoSSymbols } from '@risevision/core-consensus-dpos';
 import { excSymbols } from './symbols';
@@ -7,7 +10,10 @@ import { IExceptionHandler } from '@risevision/core-exceptions';
 import { ITransactionLogic } from '@risevision/core-interfaces';
 import { TXSymbols } from '@risevision/core-transactions';
 
-export async function registerExceptions(excManager: ExceptionsManager, container: Container) {
+export async function registerExceptions(
+  excManager: ExceptionsManager,
+  container: Container
+) {
   const dm: DelegatesModule = container.get(dPoSSymbols.modules.delegates);
   setupExceptionOnInstance(
     excManager,
@@ -29,12 +35,7 @@ export async function registerExceptions(excManager: ExceptionsManager, containe
   await tx5557619371011868150(excManager);
   await tx10425551571020716913(excManager);
 
-  setupExceptionOnInstance(
-    excManager,
-    tl,
-    'apply',
-    excSymbols.txlogic_apply
-  );
+  setupExceptionOnInstance(excManager, tl, 'apply', excSymbols.txlogic_apply);
   setupExceptionOnInstance(
     excManager,
     tl,
@@ -42,7 +43,6 @@ export async function registerExceptions(excManager: ExceptionsManager, containe
     excSymbols.txlogic_applyUnconfirmed
   );
   await tx14712341342146176146(excManager);
-
 }
 
 function block_127765(excManager: ExceptionsManager) {
@@ -55,10 +55,15 @@ function block_127765(excManager: ExceptionsManager) {
       },
       handle(obj: any /*DelegatesModule*/, signedBlock: SignedBlockType) {
         // tslint:disable-next-line
-        if (signedBlock.generatorPublicKey.toString('hex') === 'c7fc699fa4feabb3709f12c08121ee890ec30ffa379eaa248827a8c4d30bdef7') {
+        if (
+          signedBlock.generatorPublicKey.toString('hex') ===
+          'c7fc699fa4feabb3709f12c08121ee890ec30ffa379eaa248827a8c4d30bdef7'
+        ) {
           return Promise.resolve();
         }
-        return Promise.reject('[block_127765] Exception handling error should\'ve been a different generator');
+        return Promise.reject(
+          "[block_127765] Exception handling error should've been a different generator"
+        );
       },
     }
   );
@@ -73,11 +78,20 @@ function block_127765(excManager: ExceptionsManager) {
  */
 function tx1563714189640390961(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
-    canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance' | 'u_balance', tx: IBaseTransaction<void>) {
-      return tx.id === '1563714189640390961' &&
-        tx.senderPublicKey.toString('hex') === '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
+    canHandle(
+      obj: ITransactionLogic,
+      amount: number,
+      balanceKey: 'balance' | 'u_balance',
+      tx: IBaseTransaction<void>
+    ) {
+      return (
+        tx.id === '1563714189640390961' &&
+        tx.senderPublicKey.toString('hex') ===
+          '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
         // tslint:disable-next-line
-        tx.signature.toString('hex') === '23453a9979ab97b20523acfab3ecd2dd3e9d5decaf6412d34bd9e4da3841ba6f81e6172dd560d113e64184f179b3de2e97d7d62d8daab04271b992b8e4fceb0e';
+        tx.signature.toString('hex') ===
+          '23453a9979ab97b20523acfab3ecd2dd3e9d5decaf6412d34bd9e4da3841ba6f81e6172dd560d113e64184f179b3de2e97d7d62d8daab04271b992b8e4fceb0e'
+      );
     },
     handle() {
       return { error: false, exceeded: false };
@@ -91,9 +105,9 @@ function tx1563714189640390961(excManager: ExceptionsManager) {
   );
   return excManager.createOrUpdateDBExceptions([
     {
-      address : '15844723232461775384R',
+      address: '15844723232461775384R',
       maxCount: 4, // Will also handle tx 5557619371011868150,
-      type    : 'account',
+      type: 'account',
     },
   ]);
 }
@@ -106,11 +120,20 @@ function tx1563714189640390961(excManager: ExceptionsManager) {
  */
 function tx5557619371011868150(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
-    canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance'|'u_balance', tx: IBaseTransaction<void>) {
-      return tx.id === '5557619371011868150' &&
-        tx.senderPublicKey.toString('hex') === '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
+    canHandle(
+      obj: ITransactionLogic,
+      amount: number,
+      balanceKey: 'balance' | 'u_balance',
+      tx: IBaseTransaction<void>
+    ) {
+      return (
+        tx.id === '5557619371011868150' &&
+        tx.senderPublicKey.toString('hex') ===
+          '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
         // tslint:disable-next-line
-        tx.signature.toString('hex') === '74a014e909a532fc07f98ec4afe5f353ef274ac0bcda71308f06acbf434d60b0ff197eb9bb01b4360d34cbbb2e292842c6a6f7792089f58c2f5ea8578a10eb0c';
+        tx.signature.toString('hex') ===
+          '74a014e909a532fc07f98ec4afe5f353ef274ac0bcda71308f06acbf434d60b0ff197eb9bb01b4360d34cbbb2e292842c6a6f7792089f58c2f5ea8578a10eb0c'
+      );
     },
     handle() {
       return { error: false, exceeded: false };
@@ -135,10 +158,19 @@ function tx5557619371011868150(excManager: ExceptionsManager) {
  */
 function tx10425551571020716913(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
-    canHandle(obj: ITransactionLogic, amount: number, balanceKey: 'balance' | 'u_balance', tx: IBaseTransaction<void>) {
-      return tx.id === '10425551571020716913' &&
-        tx.senderPublicKey.toString('hex') === 'bcbdeb90a958880088465bc0614d8b877214a33284d460a917208730399f4140' &&
-        tx.signature.toString('hex') === '48bb8adfc375378af8b2dc873595905fe910711b93a71ed5548ffcaa39194e7bb470ea15b5398ed016ddc6d37eee7c62c6e67ba627d5037eee76030e7f1bfe0c';;
+    canHandle(
+      obj: ITransactionLogic,
+      amount: number,
+      balanceKey: 'balance' | 'u_balance',
+      tx: IBaseTransaction<void>
+    ) {
+      return (
+        tx.id === '10425551571020716913' &&
+        tx.senderPublicKey.toString('hex') ===
+          'bcbdeb90a958880088465bc0614d8b877214a33284d460a917208730399f4140' &&
+        tx.signature.toString('hex') ===
+          '48bb8adfc375378af8b2dc873595905fe910711b93a71ed5548ffcaa39194e7bb470ea15b5398ed016ddc6d37eee7c62c6e67ba627d5037eee76030e7f1bfe0c'
+      );
     },
     handle() {
       return { error: false, exceeded: false };
@@ -150,13 +182,14 @@ function tx10425551571020716913(excManager: ExceptionsManager) {
     handler
   );
 
-  return excManager.createOrUpdateDBExceptions([{
-    address: '9518100838820316713R',
-    maxCount: 4,
-    type: 'account',
-  }]);
+  return excManager.createOrUpdateDBExceptions([
+    {
+      address: '9518100838820316713R',
+      maxCount: 4,
+      type: 'account',
+    },
+  ]);
 }
-
 
 /**
  * This transaction was broadcasted with 14572759844663166621 in the same
@@ -171,10 +204,14 @@ function tx10425551571020716913(excManager: ExceptionsManager) {
 function tx14712341342146176146(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
     canHandle(obj: ITransactionLogic, tx: IBaseTransaction<any>) {
-      return tx.id === '14712341342146176146' &&
-        tx.senderPublicKey.toString('hex') === '505a860f782db11937a1183732770878c45215567856670a9219c27ada80f22e' &&
+      return (
+        tx.id === '14712341342146176146' &&
+        tx.senderPublicKey.toString('hex') ===
+          '505a860f782db11937a1183732770878c45215567856670a9219c27ada80f22e' &&
         // tslint:disable-next-line
-        tx.signature.toString('hex') === '75ded480d00179b80ae975d91189c2d68fb474b95cd09c1769b2ea693eaa0e502bffe958c8c8bed39b025926b4e7e6ac766f3c82d569a178bc5dd40b7ee2c303';
+        tx.signature.toString('hex') ===
+          '75ded480d00179b80ae975d91189c2d68fb474b95cd09c1769b2ea693eaa0e502bffe958c8c8bed39b025926b4e7e6ac766f3c82d569a178bc5dd40b7ee2c303'
+      );
     },
     handle() {
       return Promise.resolve([]);

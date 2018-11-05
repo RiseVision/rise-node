@@ -4,7 +4,7 @@ import {
   IBytesTransaction,
   IConfirmedTransaction,
   ITransportTransaction,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 import BigNumber from 'bignumber.js';
 import { Model } from 'sequelize-typescript';
@@ -26,7 +26,7 @@ export enum VerificationType {
   /**
    * Check if signature is a valid secondsign
    */
-  SECOND_SIGNATURE
+  SECOND_SIGNATURE,
 }
 export interface ITransactionLogic {
   attachAssetType<K, M extends Model<any>>(

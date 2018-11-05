@@ -1,12 +1,21 @@
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
-import { checkIntParam, checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
+import {
+  checkIntParam,
+  checkPubKey,
+  checkRequiredParam,
+  checkReturnObjKeyVal,
+} from './utils';
 import {
   createRandomAccountsWithFunds,
-  createRandomAccountWithFunds, createRandomWallet, createRegDelegateTransaction, createSecondSignTransaction,
+  createRandomAccountWithFunds,
+  createRandomWallet,
+  createRegDelegateTransaction,
+  createSecondSignTransaction,
   createSendTransaction,
-  createVoteTransaction, getRandomDelegateWallet
+  createVoteTransaction,
+  getRandomDelegateWallet,
 } from '../common/utils';
 import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import { BlocksModule } from '@risevision/core-blocks';
@@ -14,7 +23,6 @@ import { Symbols } from '@risevision/core-interfaces';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/blocks', () => {
-
   initializer.setup();
   initializer.autoRestoreEach();
   let blocksModule: BlocksModule;
@@ -24,9 +32,15 @@ describe('api/blocks', () => {
   describe('/', () => {
     describe('validation', () => {
       describe('integers', () => {
-        checkIntParam('totalAmount', '/api/blocks/', { min: 0, max: '10999999991000001' });
+        checkIntParam('totalAmount', '/api/blocks/', {
+          min: 0,
+          max: '10999999991000001',
+        });
         checkIntParam('limit', '/api/blocks/', { min: 1, max: 100 });
-        checkIntParam('totalFee', '/api/blocks/', { min: 0, max: '10999999991000001' });
+        checkIntParam('totalFee', '/api/blocks/', {
+          min: 0,
+          max: '10999999991000001',
+        });
         checkIntParam('height', '/api/blocks/', { min: 1 });
         checkIntParam('offset', '/api/blocks/', { min: 0 });
       });
@@ -79,15 +93,26 @@ describe('api/blocks', () => {
       it('should filter block by totalFee');
       it('should filter block by generatorPublicKey');
 
-      it('should return block\'s transactions with assets per each tx', async () => {
+      it("should return block's transactions with assets per each tx", async () => {
         const data = await createRandomAccountsWithFunds(4, 1e10);
         const txs = [
           await createSendTransaction(0, 1, data[0].account, '1R'),
-          await createSecondSignTransaction(0, data[3].account, createRandomWallet().publicKey),
+          await createSecondSignTransaction(
+            0,
+            data[3].account,
+            createRandomWallet().publicKey
+          ),
           await createRegDelegateTransaction(0, data[2].account, 'meoaaw'),
-          await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
+          await createVoteTransaction(
+            0,
+            data[1].account,
+            getRandomDelegateWallet().publicKey,
+            true
+          ),
         ];
-        await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
+        await initializer.rawMineBlockWithTxs(
+          txs.map((t) => toBufferedTransaction(t))
+        );
         const { body } = await supertest(initializer.apiExpress)
           .get('/api/blocks/?limit=1&orderBy=height:desc')
           .expect(200);
@@ -121,15 +146,26 @@ describe('api/blocks', () => {
         });
     });
 
-    it('should return block\'s transactions with assets per each tx', async () => {
+    it("should return block's transactions with assets per each tx", async () => {
       const data = await createRandomAccountsWithFunds(4, 1e10);
       const txs = [
         await createSendTransaction(0, 1, data[0].account, '1R'),
-        await createSecondSignTransaction(0, data[3].account, createRandomWallet().publicKey),
+        await createSecondSignTransaction(
+          0,
+          data[3].account,
+          createRandomWallet().publicKey
+        ),
         await createRegDelegateTransaction(0, data[2].account, 'meoaaw'),
-        await createVoteTransaction(0, data[1].account, getRandomDelegateWallet().publicKey, true),
+        await createVoteTransaction(
+          0,
+          data[1].account,
+          getRandomDelegateWallet().publicKey,
+          true
+        ),
       ];
-      const b = await initializer.rawMineBlockWithTxs(txs.map((t) => toBufferedTransaction(t)));
+      const b = await initializer.rawMineBlockWithTxs(
+        txs.map((t) => toBufferedTransaction(t))
+      );
       const { body } = await supertest(initializer.apiExpress)
         .get(`/api/blocks/get?id=${b.id}`)
         .expect(200);
@@ -138,15 +174,10 @@ describe('api/blocks', () => {
       expect(body.block.transactions[2].asset).deep.eq(txs[2].asset);
       expect(body.block.transactions[3].asset).deep.eq(txs[3].asset);
     });
-
   });
 
   describe('/getHeight', () => {
-    checkReturnObjKeyVal(
-      'height',
-      1,
-      '/api/blocks/getHeight'
-    );
+    checkReturnObjKeyVal('height', 1, '/api/blocks/getHeight');
     it('should return corret height', async () => {
       await initializer.rawMineBlocks(10);
       return supertest(initializer.apiExpress)
@@ -170,8 +201,9 @@ describe('api/blocks', () => {
         .get('/api/blocks/getBroadhash')
         .expect(200)
         .then((response) => {
-          expect(response.body.broadhash)
-            .to.be.eq('f68c3359a8cc863e5f4bf8aee984022e1e5faf74dc4f3c12c5ae922ce7b078a9');
+          expect(response.body.broadhash).to.be.eq(
+            'f68c3359a8cc863e5f4bf8aee984022e1e5faf74dc4f3c12c5ae922ce7b078a9'
+          );
         });
     });
   });
@@ -256,11 +288,7 @@ describe('api/blocks', () => {
   });
 
   describe('/getMilestone', () => {
-    checkReturnObjKeyVal(
-      'milestone',
-      0,
-      '/api/blocks/getMilestone'
-    );
+    checkReturnObjKeyVal('milestone', 0, '/api/blocks/getMilestone');
   });
 
   describe('/getReward', () => {
@@ -277,26 +305,35 @@ describe('api/blocks', () => {
       10999999991000000, // height 1 - 10 has reward 0
       '/api/blocks/getSupply'
     );
-    it('should calc supply correctly for height 100', async function (){
+    it('should calc supply correctly for height 100', async function() {
       this.timeout(20000);
       await initializer.rawMineBlocks(99); // 1 is already mined
       return supertest(initializer.apiExpress)
         .get('/api/blocks/getSupply')
         .expect(200)
         .then((response) => {
-          expect(response.body.supply).to.be.eq(10999999991000000
-            + (100 - 13  + 1) * 1500000000 // blocks 13- 100
-            + 20000000 // block 12
-            + 30000000 // block 11
-            + 1500000000 // block 10
+          expect(response.body.supply).to.be.eq(
+            10999999991000000 +
+            (100 - 13 + 1) * 1500000000 + // blocks 13- 100
+            20000000 + // block 12
+            30000000 + // block 11
+              1500000000 // block 10
           );
         });
     });
   });
 
   describe('/getStatus', () => {
-    checkReturnObjKeyVal('nethash', 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6', '/api/blocks/getStatus');
-    checkReturnObjKeyVal('broadhash', 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6', '/api/blocks/getStatus');
+    checkReturnObjKeyVal(
+      'nethash',
+      'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+      '/api/blocks/getStatus'
+    );
+    checkReturnObjKeyVal(
+      'broadhash',
+      'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+      '/api/blocks/getStatus'
+    );
     checkReturnObjKeyVal('fee', 10000000, '/api/blocks/getStatus');
     checkReturnObjKeyVal('height', 1, '/api/blocks/getStatus');
     checkReturnObjKeyVal('milestone', 0, '/api/blocks/getStatus');

@@ -1,72 +1,72 @@
 {
   "config": {
-    "id"        : "appCon",
-    "type"      : "object",
+    "id": "appCon",
+    "type": "object",
     "properties": {
-      "port"           : {
-        "type"   : "integer",
+      "port": {
+        "type": "integer",
         "minimum": 1,
         "maximum": 65535
       },
-      "address"        : {
-        "type"  : "string",
+      "address": {
+        "type": "string",
         "format": "ip"
       },
-      "version"        : {
-        "type"     : "string",
-        "format"   : "version",
+      "version": {
+        "type": "string",
+        "format": "version",
         "minLength": 5,
         "maxLength": 12
       },
-      "fileLogLevel"   : {
+      "fileLogLevel": {
         "type": "string"
       },
-      "logFileName"    : {
+      "logFileName": {
         "type": "string"
       },
       "consoleLogLevel": {
         "type": "string"
       },
-      "trustProxy"     : {
+      "trustProxy": {
         "type": "boolean"
       },
-      "cacheEnabled"   : {
+      "cacheEnabled": {
         "type": "boolean"
       },
-      "db"             : {
-        "type"      : "object",
+      "db": {
+        "type": "object",
         "properties": {
-          "host"              : {
+          "host": {
             "type": "string"
           },
-          "port"              : {
-            "type"   : "integer",
+          "port": {
+            "type": "integer",
             "minimum": 1,
             "maximum": 65535
           },
-          "database"          : {
+          "database": {
             "type": "string"
           },
-          "user"              : {
+          "user": {
             "type": "string"
           },
-          "password"          : {
+          "password": {
             "type": "string"
           },
-          "poolSize"          : {
+          "poolSize": {
             "type": "integer"
           },
-          "poolIdleTimeout"   : {
+          "poolIdleTimeout": {
             "type": "integer"
           },
           "reapIntervalMillis": {
             "type": "integer"
           },
-          "logEvents"         : {
+          "logEvents": {
             "type": "array"
           }
         },
-        "required"  : [
+        "required": [
           "host",
           "port",
           "database",
@@ -79,99 +79,83 @@
         ]
       },
 
-
-      "peers"          : {
-        "type"      : "object",
+      "peers": {
+        "type": "object",
         "properties": {
           "enabled": {
             "type": "boolean"
           },
-          "list"   : {
+          "list": {
             "type": "array"
           },
-          "access" : {
-            "type"      : "object",
+          "access": {
+            "type": "object",
             "properties": {
               "blackList": {
                 "type": "array"
               }
             },
-            "required"  : [
-              "blackList"
-            ]
+            "required": ["blackList"]
           },
           "options": {
             "properties": {
-              "limits" : {
-                "type"      : "object",
+              "limits": {
+                "type": "object",
                 "properties": {
-                  "max"       : {
+                  "max": {
                     "type": "integer"
                   },
-                  "delayMs"   : {
+                  "delayMs": {
                     "type": "integer"
                   },
                   "delayAfter": {
                     "type": "integer"
                   },
-                  "windowMs"  : {
+                  "windowMs": {
                     "type": "integer"
                   }
                 },
-                "required"  : [
-                  "max",
-                  "delayMs",
-                  "delayAfter",
-                  "windowMs"
-                ]
+                "required": ["max", "delayMs", "delayAfter", "windowMs"]
               },
               "timeout": {
                 "type": "integer"
               }
             },
-            "required"  : [
-              "limits",
-              "timeout"
-            ]
+            "required": ["limits", "timeout"]
           }
         },
-        "required"  : [
-          "enabled",
-          "list",
-          "access",
-          "options"
-        ]
+        "required": ["enabled", "list", "access", "options"]
       },
-      "broadcasts"     : {
-        "type"      : "object",
+      "broadcasts": {
+        "type": "object",
         "properties": {
           "broadcastInterval": {
-            "type"   : "integer",
+            "type": "integer",
             "minimum": 1000,
             "maximum": 60000
           },
-          "broadcastLimit"   : {
-            "type"   : "integer",
+          "broadcastLimit": {
+            "type": "integer",
             "minimum": 1,
             "maximum": 100
           },
-          "parallelLimit"    : {
-            "type"   : "integer",
+          "parallelLimit": {
+            "type": "integer",
             "minimum": 1,
             "maximum": 100
           },
-          "releaseLimit"     : {
-            "type"   : "integer",
+          "releaseLimit": {
+            "type": "integer",
             "minimum": 1,
             "maximum": 25
           },
-          "relayLimit"       : {
-            "type"   : "integer",
+          "relayLimit": {
+            "type": "integer",
             "minimum": 1,
             "maximum": 100
           }
         },
-        "required"  : [
+        "required": [
           "broadcastInterval",
           "broadcastLimit",
           "parallelLimit",
@@ -179,80 +163,69 @@
           "relayLimit"
         ]
       },
-      "transactions"   : {
-        "type"          : "object",
+      "transactions": {
+        "type": "object",
         "maxTxsPerQueue": {
-          "type"   : "integer",
+          "type": "integer",
           "minimum": 100,
           "maximum": 5000
         },
-        "required"      : [
-          "maxTxsPerQueue"
-        ]
+        "required": ["maxTxsPerQueue"]
       },
-      "forging"        : {
-        "type"      : "object",
+      "forging": {
+        "type": "object",
         "properties": {
-          "force"              : {
+          "force": {
             "type": "boolean"
           },
-          "secret"             : {
+          "secret": {
             "type": "array"
           },
-          "access"             : {
-            "type"      : "object",
+          "access": {
+            "type": "object",
             "properties": {
               "whiteList": {
                 "type": "array"
               }
             },
-            "required"  : [
-              "whiteList"
-            ]
+            "required": ["whiteList"]
           },
           "transactionsPolling": {
             "type": "boolean"
           },
-          "pollingInterval"    : {
+          "pollingInterval": {
             "type": "number"
           }
         },
-        "required"  : [
-          "force",
-          "secret",
-          "access"
-        ]
+        "required": ["force", "secret", "access"]
       },
-      "loading"        : {
-        "type"      : "object",
+      "loading": {
+        "type": "object",
         "properties": {
-          "verifyOnLoading" : {
+          "verifyOnLoading": {
             "type": "boolean"
           },
           "loadPerIteration": {
-            "type"   : "integer",
+            "type": "integer",
             "minimum": 1,
             "maximum": 5000
           }
         },
-        "required"  : [
-          "verifyOnLoading",
-          "loadPerIteration"
-        ]
+        "required": ["verifyOnLoading", "loadPerIteration"]
       },
-      "nethash"        : {
-        "type"  : "string",
+      "nethash": {
+        "type": "string",
         "format": "hex"
       },
       "modules": {
         "type": "array",
         "uniqueItems": true,
-        "items"      : {
+        "items": {
           "type": "string"
         }
       }
     },
-    "required"  : [
+    "required": [
       "port",
       "address",
       "version",

@@ -1,105 +1,84 @@
 {
-  "type"      : "object",
+  "type": "object",
   "properties": {
-    "peers"     : {
-      "type"      : "object",
+    "peers": {
+      "type": "object",
       "properties": {
         "trustProxy": {
-          "type" : "boolean"
+          "type": "boolean"
         },
-        "list"   : {
-          "type"       : "array",
+        "list": {
+          "type": "array",
           "uniqueItems": true,
-          "items"      : {
-            "type"      : "object",
+          "items": {
+            "type": "object",
             "properties": {
-              "ip"  : {
-                "type"  : "string",
+              "ip": {
+                "type": "string",
                 "format": "ip"
               },
               "port": {
-                "type"    : "integer",
+                "type": "integer",
                 "minValue": 1,
                 "maxValue": 65535
               }
             },
-            "required"  : [
-              "ip",
-              "port"
-            ]
+            "required": ["ip", "port"]
           }
         },
-        "access" : {
-          "type"      : "object",
+        "access": {
+          "type": "object",
           "properties": {
             "blackList": {
               "type": "array",
               "items": {
-                "type"  : "string",
+                "type": "string",
                 "format": "ip"
               }
             }
           },
-          "required"  : [
-            "blackList"
-          ]
+          "required": ["blackList"]
         },
         "options": {
-          "type"      : "object",
+          "type": "object",
           "properties": {
-            "limits" : {
-              "type"      : "object",
+            "limits": {
+              "type": "object",
               "properties": {
-                "max"       : {
+                "max": {
                   "$comment": "Maximum number of requests per timeframe",
-                  "type"    : "integer",
+                  "type": "integer",
                   "minValue": 0
                 },
-                "delayMs"   : {
+                "delayMs": {
                   "$comment": "Delay in ms after 'delayAfter' - 0 to fullspeed",
-                  "type"    : "integer",
+                  "type": "integer",
                   "minValue": 0
                 },
                 "delayAfter": {
                   "$comment": "Begins slowing down responses after this number of requests within windowMs",
-                  "type"    : "integer",
+                  "type": "integer",
                   "minValue": 0
                 },
-                "windowMs"  : {
+                "windowMs": {
                   "$comment": "Window in ms where limits above apply.",
-                  "type"    : "integer",
+                  "type": "integer",
                   "minValue": 0
                 }
               },
-              "required"  : [
-                "max",
-                "delayMs",
-                "delayAfter",
-                "windowMs"
-              ]
+              "required": ["max", "delayMs", "delayAfter", "windowMs"]
             },
             "timeout": {
               "$comment": "Timeout in ms for a peer-to-peer request after which the peer is considered dead",
-              "type"    : "integer",
+              "type": "integer",
               "minValue": 1000
             }
           },
-          "required"  : [
-            "limits",
-            "timeout"
-          ]
+          "required": ["limits", "timeout"]
         }
       },
-      "required"  : [
-        "trustProxy",
-        "list",
-        "options",
-        "access"
-      ]
+      "required": ["trustProxy", "list", "options", "access"]
     }
   },
-  "required"  : [
-    "peers",
-    "broadcasts"
-  ]
+  "required": ["peers", "broadcasts"]
 }

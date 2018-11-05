@@ -3,18 +3,18 @@ import {
   IBlocksModel,
   ITransactionLogic,
   ITransactionsModel,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseProtobufTransportMethod,
   P2PConstantsType,
   p2pSymbols,
-  SingleTransportPayload
+  SingleTransportPayload,
 } from '@risevision/core-p2p';
 import {
   ConstantsType,
-  SignedAndChainedBlockType
+  SignedAndChainedBlockType,
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
@@ -40,7 +40,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
 
   protected readonly protoResponse = {
     messageType: 'transportBlocks',
-    namespace: 'blocks.transport'
+    namespace: 'blocks.transport',
   };
 
   @inject(Symbols.logic.block)
@@ -72,13 +72,13 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     // Get the block by ID
     const lastBlock = await this.BlocksModel.findOne({
       raw: true,
-      where: { id: lastBlockId }
+      where: { id: lastBlockId },
     });
     if (lastBlock != null) {
       const blocksToLoad = await this.calcNumBlocksToLoad(lastBlock);
       const blocks = await this.blocksModuleUtils.loadBlocksData({
         lastId: lastBlockId,
-        limit: blocksToLoad
+        limit: blocksToLoad,
       });
       return { blocks };
     } else {
@@ -88,7 +88,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
 
   protected encodeResponse(data: GetBlocksRequestDataType): Promise<Buffer> {
     return super.encodeResponse({
-      blocks: data.blocks.map((b) => this.blockLogic.toProtoBuffer(b)) as any
+      blocks: data.blocks.map((b) => this.blockLogic.toProtoBuffer(b)) as any,
     });
   }
 
@@ -99,7 +99,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     return {
       blocks: (d.blocks || []).map((b) =>
         this.blockLogic.fromProtoBuffer(b as any)
-      )
+      ),
     };
   }
 
@@ -130,10 +130,10 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
         height: {
           [Op.and]: {
             [Op.gt]: lastBlock.height,
-            [Op.lte]: lastBlock.height + maxHeightDelta
-          }
-        }
-      }
+            [Op.lte]: lastBlock.height + maxHeightDelta,
+          },
+        },
+      },
     });
 
     // Calculate the number of blocks to load

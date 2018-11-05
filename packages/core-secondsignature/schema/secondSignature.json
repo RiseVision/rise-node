@@ -1,11 +1,11 @@
 {
-  "id"        : "Signature",
-  "object"    : true,
+  "id": "Signature",
+  "object": true,
   "properties": {
     "publicKey": {
       "format": "publicKey",
-      "type"  : "string"
+      "type": "string"
     }
   },
-  "required"  : ["publicKey"]
+  "required": ["publicKey"]
 }

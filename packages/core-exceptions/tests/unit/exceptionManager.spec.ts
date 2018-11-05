@@ -13,7 +13,7 @@ const getTestHandler = () => {
     },
   };
 };
-const exceptionType  = Symbol('tests');
+const exceptionType = Symbol('tests');
 
 describe('helpers/exceptionManager', () => {
   describe('registerExceptionHandler', () => {
@@ -31,14 +31,20 @@ describe('helpers/exceptionManager', () => {
   describe('handlersForKey', () => {
     it('should return an array of handlers for the passed exception type', () => {
       const expectedHandlers = [];
-      const excManager       = new ExceptionsManager();
+      const excManager = new ExceptionsManager();
       for (let i = 0; i < 3; i++) {
         const handler = getTestHandler();
         expectedHandlers.push(handler);
         // This time we use a different key for each handler
-        excManager.registerExceptionHandler(exceptionType, 'test_' + i, handler);
+        excManager.registerExceptionHandler(
+          exceptionType,
+          'test_' + i,
+          handler
+        );
       }
-      expect(excManager.handlersForKey(exceptionType)).to.be.deep.eq(expectedHandlers);
+      expect(excManager.handlersForKey(exceptionType)).to.be.deep.eq(
+        expectedHandlers
+      );
     });
 
     it('should return an empty array if no handler for exception type exists', () => {

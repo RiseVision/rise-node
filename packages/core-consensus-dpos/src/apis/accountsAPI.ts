@@ -2,13 +2,13 @@ import { DeprecatedAPIError } from '@risevision/core-apis';
 import {
   IAccountsModule,
   ISystemModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import {
   HTTPError,
   IoCSymbol,
   SchemaValid,
-  ValidateSchema
+  ValidateSchema,
 } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import {
@@ -16,7 +16,7 @@ import {
   JsonController,
   Post,
   Put,
-  QueryParams
+  QueryParams,
 } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
@@ -52,7 +52,7 @@ export class AccountsAPI {
     }
     if (account.delegates) {
       const { delegates } = await this.delegatesModule.getDelegates({
-        orderBy: 'rank:desc'
+        orderBy: 'rank:desc',
       });
       return {
         delegates: delegates
@@ -69,8 +69,8 @@ export class AccountsAPI {
             rate: d.info.rank,
             rank: d.info.rank,
             approval: d.info.approval,
-            productivity: d.info.productivity
-          }))
+            productivity: d.info.productivity,
+          })),
       };
     }
     return { publicKey: account.publicKey };
@@ -79,14 +79,14 @@ export class AccountsAPI {
   @Get('/delegates/fee')
   @ValidateSchema()
   public async getDelegatesFee(@SchemaValid(schema.getDelegatesFee, {
-    castNumbers: true
+    castNumbers: true,
   })
   @QueryParams()
   params: {
     height: number;
   }) {
     return {
-      fee: this.system.getFees(params.height).fees.delegate
+      fee: this.system.getFees(params.height).fees.delegate,
     };
   }
 

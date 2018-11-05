@@ -7,17 +7,17 @@ export const MultisigSymbols = {
   models: {
     accounts2Multi: Symbol.for('rise.multisig.accounts2Multi'),
     accounts2U_Multi: Symbol.for('rise.multisig.accounts2U_Multi'),
-    model: Symbol.for('rise.multisig.multisigModel')
+    model: Symbol.for('rise.multisig.multisigModel'),
   },
   multiSigTransport: Symbol.for('rise.multisig.transport'),
   utils: Symbol.for('rise.multisig.utils'),
   p2p: {
     getSignatures: Symbol.for('rise.multisig.req.getSignatures'),
-    postSignatures: Symbol.for('rise.multisig.req.postSignatures')
+    postSignatures: Symbol.for('rise.multisig.req.postSignatures'),
   },
   _internal_: {
     onSignatureListener: Symbol.for(
       'rise.multisig.internal.onSignatureListener'
-    )
-  }
+    ),
+  },
 };

@@ -5,7 +5,7 @@ import {
   DataType,
   Model,
   PrimaryKey,
-  Table
+  Table,
 } from 'sequelize-typescript';
 
 @Table({ tableName: 'forks_stat' })

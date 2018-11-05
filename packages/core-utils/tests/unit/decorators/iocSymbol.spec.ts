@@ -36,9 +36,7 @@ describe('helpers/decorators/iocSymbol', () => {
       expect(defineMetadataSpy.called).to.be.false;
       const result = decorator(target);
       expect(defineMetadataSpy.calledOnce).to.be.true;
-      expect(defineMetadataSpy.args[0][0]).to.equal(
-        UtilsSymbols.classSymbol
-      );
+      expect(defineMetadataSpy.args[0][0]).to.equal(UtilsSymbols.classSymbol);
       expect(defineMetadataSpy.args[0][1]).to.equal(symbol);
       expect(defineMetadataSpy.args[0][2]).to.be.an.instanceof(Function);
       expect(target()).to.be.equal(result());

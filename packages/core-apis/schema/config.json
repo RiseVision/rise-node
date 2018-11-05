@@ -1,8 +1,8 @@
 {
-  "type"      : "object",
+  "type": "object",
   "properties": {
     "api": {
-      "type"      : "object",
+      "type": "object",
       "properties": {
         "enabled": {
           "type": "boolean"
@@ -15,16 +15,16 @@
           "minimum": 1,
           "maximum": 65535
         },
-        "access" : {
-          "type"      : "object",
+        "access": {
+          "type": "object",
           "properties": {
-            "public"   : {
+            "public": {
               "type": "boolean"
             },
             "whiteList": {
               "type": "array",
               "items": {
-                "type"  : "string",
+                "type": "string",
                 "format": "ip"
               }
             },
@@ -32,55 +32,39 @@
               "$comment": "Whitelist for restricted/secure APIs",
               "type": "array",
               "items": {
-                "type"  : "string",
+                "type": "string",
                 "format": "ip"
               }
             }
           },
-          "required"  : [
-            "public",
-            "whiteList",
-            "restrictedAPIwhiteList"
-          ]
+          "required": ["public", "whiteList", "restrictedAPIwhiteList"]
         },
         "options": {
-          "type"      : "object",
+          "type": "object",
           "properties": {
             "limits": {
-              "type"      : "object",
+              "type": "object",
               "properties": {
-                "max"       : {
+                "max": {
                   "type": "integer"
                 },
-                "delayMs"   : {
+                "delayMs": {
                   "type": "integer"
                 },
                 "delayAfter": {
                   "type": "integer"
                 },
-                "windowMs"  : {
+                "windowMs": {
                   "type": "integer"
                 }
               },
-              "required"  : [
-                "max",
-                "delayMs",
-                "delayAfter",
-                "windowMs"
-              ]
+              "required": ["max", "delayMs", "delayAfter", "windowMs"]
             }
           },
-          "required"  : [
-            "limits"
-          ]
+          "required": ["limits"]
         }
       },
-      "required"  : [
-        "port",
-        "enabled",
-        "access",
-        "options"
-      ]
+      "required": ["port", "enabled", "access", "options"]
     }
   }
 }

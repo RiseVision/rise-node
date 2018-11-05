@@ -7,16 +7,16 @@ import {
   ISequence,
   ITransactionLogic,
   ITransactionsModel,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
-  SignedAndChainedBlockType
+  SignedAndChainedBlockType,
 } from '@risevision/core-types';
 import {
   BlockProgressLogger,
-  catchToLoggerAndRemapError
+  catchToLoggerAndRemapError,
 } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -82,7 +82,7 @@ export class BlocksModuleUtils {
     const b = await this.BlocksModel.findOne({
       include: [this.TransactionsModel],
       order: [['height', 'DESC']],
-      limit: 1
+      limit: 1,
     });
     // attach transaction assets
     await this.transactionLogic.attachAssets(b.transactions);
@@ -113,7 +113,7 @@ export class BlocksModuleUtils {
       attributes: ['id', 'height'],
       order: [['height', 'DESC']],
       raw: true,
-      where: { height: heightsToQuery }
+      where: { height: heightsToQuery },
     });
 
     if (blocks.length === 0) {
@@ -125,7 +125,7 @@ export class BlocksModuleUtils {
       if (!blocks.find((v) => v.id === this.genesisBlock.id)) {
         blocks.push({
           height: this.genesisBlock.height,
-          id: this.genesisBlock.id
+          id: this.genesisBlock.id,
         });
       }
     }
@@ -134,7 +134,7 @@ export class BlocksModuleUtils {
     if (lastBlock && !blocks.find((v) => v.id === lastBlock.id)) {
       blocks.unshift({
         height: lastBlock.height,
-        id: lastBlock.id
+        id: lastBlock.id,
       });
     }
 
@@ -161,7 +161,7 @@ export class BlocksModuleUtils {
       .addAndPromise<IBlocksModel[]>(async () => {
         const block = await this.BlocksModel.findOne({
           include: [this.TransactionsModel],
-          where: { id: filter.lastId || filter.id || null }
+          where: { id: filter.lastId || filter.id || null },
         });
 
         const height = block !== null ? block.height : 0;
@@ -172,7 +172,7 @@ export class BlocksModuleUtils {
           return await this.BlocksModel.findAll({
             include: [this.TransactionsModel],
             order: ['height', 'rowId'],
-            where: { height: { [Op.gt]: height, [Op.lt]: limit } }
+            where: { height: { [Op.gt]: height, [Op.lt]: limit } },
           });
         }
         return [block];

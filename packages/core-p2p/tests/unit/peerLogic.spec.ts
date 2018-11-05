@@ -11,7 +11,7 @@ import { PeerState, PeerType } from '@risevision/core-types';
 import { StubbedRequest } from './utils/StubbedRequest';
 import { createFakePeer } from './utils/fakePeersFactory';
 
-const expect         = chai.expect;
+const expect = chai.expect;
 const ProxyPeerLogic = proxyquire('../../src/peer.ts', { ip });
 
 chai.use(chaiAsPromised);
@@ -22,11 +22,19 @@ describe('logic/peer', () => {
   let transportModule: TransportModule;
   let sandbox: SinonSandbox;
   beforeEach(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
     container.rebind(p2pSymbols.logic.peerLogic).to(ProxyPeerLogic.Peer);
-    instance        = container.get(p2pSymbols.logic.peerLogic);
+    instance = container.get(p2pSymbols.logic.peerLogic);
     transportModule = container.get(p2pSymbols.modules.transport);
-    sandbox         = sinon.createSandbox();
+    sandbox = sinon.createSandbox();
   });
   afterEach(() => sandbox.restore());
 
@@ -62,7 +70,6 @@ describe('logic/peer', () => {
         'height',
         'nonce',
       ]);
-
     });
   });
 
@@ -76,7 +83,6 @@ describe('logic/peer', () => {
         'clock',
         'updated',
       ]);
-
     });
   });
 
@@ -102,7 +108,7 @@ describe('logic/peer', () => {
     });
 
     it('should set instance.string to ip:port string', () => {
-      peer.ip   = '127.0.0.1';
+      peer.ip = '127.0.0.1';
       peer.port = 1010;
       instance.accept(peer);
       expect(instance.string).to.deep.equal('127.0.0.1:1010');
@@ -110,8 +116,8 @@ describe('logic/peer', () => {
 
     it('should call ip.fromLong and set instance.string to ip:port from a long ip', () => {
       const fromLongSpy = sinon.spy(ip, 'fromLong');
-      peer.ip           = '2130706433';
-      peer.port         = 1010;
+      peer.ip = '2130706433';
+      peer.port = 1010;
       instance.accept(peer);
       expect(fromLongSpy.called).to.be.true;
       expect(instance.string).to.deep.equal('127.0.0.1:1010');
@@ -137,15 +143,15 @@ describe('logic/peer', () => {
     beforeEach(() => {
       peer = {
         broadhash: '',
-        clock    : '',
-        height   : '',
-        ip       : '127.0.0.1',
-        nonce    : '',
-        os       : '',
-        port     : '1010',
-        state    : '2',
-        updated  : '',
-        version  : '',
+        clock: '',
+        height: '',
+        ip: '127.0.0.1',
+        nonce: '',
+        os: '',
+        port: '1010',
+        state: '2',
+        updated: '',
+        version: '',
       };
       instance.accept(peer);
       parseIntSpy = sinon.spy(instance, 'parseInt');
@@ -158,15 +164,15 @@ describe('logic/peer', () => {
     it('should call parseInt correctly when no height and dappid are passed', () => {
       const expectedPeer = {
         broadhash: '',
-        clock    : '',
-        height   : '',
-        ip       : '127.0.0.1',
-        nonce    : '',
-        os       : '',
-        port     : 1010,
-        state    : 2,
-        updated  : '',
-        version  : '',
+        clock: '',
+        height: '',
+        ip: '127.0.0.1',
+        nonce: '',
+        os: '',
+        port: 1010,
+        state: 2,
+        updated: '',
+        version: '',
       };
 
       const normalized = instance.normalize(Object.assign({}, peer));
@@ -184,15 +190,15 @@ describe('logic/peer', () => {
     it('should call parseInt correctly when no height is passed', () => {
       const expectedPeer = {
         broadhash: '',
-        clock    : '',
-        height   : '',
-        ip       : '127.0.0.1',
-        nonce    : '',
-        os       : '',
-        port     : 1010,
-        state    : 2,
-        updated  : '',
-        version  : '',
+        clock: '',
+        height: '',
+        ip: '127.0.0.1',
+        nonce: '',
+        os: '',
+        port: 1010,
+        state: 2,
+        updated: '',
+        version: '',
       };
 
       const normalized = instance.normalize(Object.assign({}, peer));
@@ -210,16 +216,16 @@ describe('logic/peer', () => {
     it('should return unmuted dappIds array in peer obj without height', () => {
       const expectedPeer = {
         broadhash: '',
-        clock    : '',
-        dappid   : ['dappId', 'dappId2'],
-        height   : '',
-        ip       : '127.0.0.1',
-        nonce    : '',
-        os       : '',
-        port     : 1010,
-        state    : 2,
-        updated  : '',
-        version  : '',
+        clock: '',
+        dappid: ['dappId', 'dappId2'],
+        height: '',
+        ip: '127.0.0.1',
+        nonce: '',
+        os: '',
+        port: 1010,
+        state: 2,
+        updated: '',
+        version: '',
       };
 
       peer.dappid = ['dappId', 'dappId2'];
@@ -239,19 +245,19 @@ describe('logic/peer', () => {
     it('should return unmuted dappIds array in peer obj with height', () => {
       const expectedPeer = {
         broadhash: '',
-        clock    : '',
-        dappid   : ['dappId', 'dappId2'],
-        height   : 50,
-        ip       : '127.0.0.1',
-        nonce    : '',
-        os       : '',
-        port     : 1010,
-        state    : 2,
-        updated  : '',
-        version  : '',
+        clock: '',
+        dappid: ['dappId', 'dappId2'],
+        height: 50,
+        ip: '127.0.0.1',
+        nonce: '',
+        os: '',
+        port: 1010,
+        state: 2,
+        updated: '',
+        version: '',
       };
-      peer.dappid        = ['dappId', 'dappId2'];
-      peer.height        = '50';
+      peer.dappid = ['dappId', 'dappId2'];
+      peer.height = '50';
 
       const normalized = instance.normalize(Object.assign({}, peer));
 
@@ -277,7 +283,7 @@ describe('logic/peer', () => {
 
     it('should parse integer from string', () => {
       const parseIntSpy = sinon.spy(global, 'parseInt');
-      const retVal      = instance.parseInt('200' as any, 100);
+      const retVal = instance.parseInt('200' as any, 100);
       expect(retVal).to.equal(200);
       expect(parseIntSpy.called).to.be.true;
       parseIntSpy.restore();
@@ -285,7 +291,7 @@ describe('logic/peer', () => {
 
     it('should parse integer from float', () => {
       const parseIntSpy = sinon.spy(global, 'parseInt');
-      const retVal      = instance.parseInt(2.2, 100);
+      const retVal = instance.parseInt(2.2, 100);
       expect(retVal).to.equal(2);
       expect(parseIntSpy.called).to.be.true;
       parseIntSpy.restore();
@@ -298,7 +304,7 @@ describe('logic/peer', () => {
 
     beforeEach(() => {
       normalizeSpy = sinon.spy(instance, 'normalize');
-      updateSpy    = sinon.spy(instance, 'update');
+      updateSpy = sinon.spy(instance, 'update');
     });
 
     afterEach(() => {
@@ -325,16 +331,16 @@ describe('logic/peer', () => {
   describe('update', () => {
     const initialPeerObj = {
       broadhash: '',
-      clock    : 1,
-      dappid   : '',
-      height   : 9999,
-      ip       : '1.2.3.4',
-      nonce    : 'nonce',
-      os       : 'ubuntu',
-      port     : 5555,
-      state    : PeerState.CONNECTED,
-      updated  : 0,
-      version  : '1.0',
+      clock: 1,
+      dappid: '',
+      height: 9999,
+      ip: '1.2.3.4',
+      nonce: 'nonce',
+      os: 'ubuntu',
+      port: 5555,
+      state: PeerState.CONNECTED,
+      updated: 0,
+      version: '1.0',
     };
     beforeEach(() => {
       instance.accept(initialPeerObj);
@@ -342,7 +348,7 @@ describe('logic/peer', () => {
 
     it('should not update null or undefined properties', () => {
       instance.update({
-        os     : undefined,
+        os: undefined,
         version: null,
       } as any);
       expect(instance.os).to.be.equal(initialPeerObj.os);
@@ -351,7 +357,7 @@ describe('logic/peer', () => {
 
     it('should update non-null, non-undefined and non-immutable properties', () => {
       instance.update({
-        os     : 'newOs',
+        os: 'newOs',
         version: 'newVersion',
       } as any);
       expect(instance.os).to.be.equal('newOs');
@@ -360,19 +366,21 @@ describe('logic/peer', () => {
 
     it('should not update immutable properties', () => {
       instance.update({
-        ip    : '255.255.255.255',
-        port  : '9876',
+        ip: '255.255.255.255',
+        port: '9876',
         string: '1.1.1.1:80',
       } as any);
       expect(instance.ip).to.be.equal(initialPeerObj.ip);
       expect(instance.port).to.be.equal(initialPeerObj.port);
-      expect(instance.string).to.be.equal(initialPeerObj.ip + ':' + initialPeerObj.port);
+      expect(instance.string).to.be.equal(
+        initialPeerObj.ip + ':' + initialPeerObj.port
+      );
     });
 
     it('should call normalize', () => {
       const normalizeSpy = sinon.spy(instance, 'normalize');
       instance.update({
-        os     : 'newOs',
+        os: 'newOs',
         version: 'newVersion',
       } as any);
       expect(normalizeSpy.called).to.be.true;
@@ -382,15 +390,15 @@ describe('logic/peer', () => {
 
   describe('object', () => {
     it('returns only supported properties', () => {
-      const peer         = {
-        broadhash : 'some',
-        clock     : 'some',
-        dappid    : 'some',
-        excluded  : true, // <- this field shouldn't show in the result
-        height    : 'some',
-        ip        : '127.0.0.1',
-        nonce     : 'some',
-        nullable  : [
+      const peer = {
+        broadhash: 'some',
+        clock: 'some',
+        dappid: 'some',
+        excluded: true, // <- this field shouldn't show in the result
+        height: 'some',
+        ip: '127.0.0.1',
+        nonce: 'some',
+        nullable: [
           'os',
           'version',
           'dappid',
@@ -399,8 +407,8 @@ describe('logic/peer', () => {
           'clock',
           'updated',
         ],
-        os        : 'some',
-        port      : '1010',
+        os: 'some',
+        port: '1010',
         properties: [
           'ip',
           'port',
@@ -414,22 +422,22 @@ describe('logic/peer', () => {
           'updated',
           'nonce',
         ],
-        state     : '2',
-        updated   : 'some',
-        version   : 'some',
+        state: '2',
+        updated: 'some',
+        version: 'some',
       };
       const expectedPeer = {
         broadhash: 'some',
-        clock    : 'some',
-        dappid   : 'some',
-        height   : 'some',
-        ip       : '127.0.0.1',
-        nonce    : 'some',
-        os       : 'some',
-        port     : '1010',
-        state    : '2',
-        updated  : 'some',
-        version  : 'some',
+        clock: 'some',
+        dappid: 'some',
+        height: 'some',
+        ip: '127.0.0.1',
+        nonce: 'some',
+        os: 'some',
+        port: '1010',
+        state: '2',
+        updated: 'some',
+        version: 'some',
       };
 
       const retVal = instance.object.call(peer);
@@ -445,11 +453,22 @@ describe('logic/peer', () => {
     let getFromPeerStub: SinonStub;
     beforeEach(async () => {
       requestHandlerStub = new StubbedRequest();
-      reqData            = { data: { transactions: [] }, method: 'GET', url: '/peer/height' };
-      getFromPeerStub    = sandbox.stub(transportModule, 'getFromPeer').resolves(response);
+      reqData = {
+        data: { transactions: [] },
+        method: 'GET',
+        url: '/peer/height',
+      };
+      getFromPeerStub = sandbox
+        .stub(transportModule, 'getFromPeer')
+        .resolves(response);
 
-      const tw      = container.get<TransportWrapper>(p2pSymbols.utils.transportWrapper);
-      response.body = await tw.wrapResponse({ success: true, wrappedResponse: Buffer.from('aa', 'hex') });
+      const tw = container.get<TransportWrapper>(
+        p2pSymbols.utils.transportWrapper
+      );
+      response.body = await tw.wrapResponse({
+        success: true,
+        wrappedResponse: Buffer.from('aa', 'hex'),
+      });
     });
     it('should return a promise', () => {
       const retVal = instance.makeRequest(requestHandlerStub);
@@ -459,10 +478,12 @@ describe('logic/peer', () => {
     it('should call reqHandler.makeRequest', async () => {
       const result = await instance.makeRequest(requestHandlerStub);
       expect(requestHandlerStub.stubs.handleResponse.calledOnce).to.be.true;
-      expect(requestHandlerStub.stubs.handleResponse.firstCall.args[0]).to.be.deep
-        .eq(instance);
-      expect(requestHandlerStub.stubs.handleResponse.firstCall.args[1]).to.be.deep
-        .eq(Buffer.from('aa', 'hex'));
+      expect(
+        requestHandlerStub.stubs.handleResponse.firstCall.args[0]
+      ).to.be.deep.eq(instance);
+      expect(
+        requestHandlerStub.stubs.handleResponse.firstCall.args[1]
+      ).to.be.deep.eq(Buffer.from('aa', 'hex'));
     });
   });
 
@@ -471,15 +492,19 @@ describe('logic/peer', () => {
     let makeRequestStub: SinonStub;
     beforeEach(() => {
       instance.version = '1.0.0';
-      getFromPeerStub  = sandbox.stub(transportModule, 'getFromPeer').resolves({ body: '1' });
-      makeRequestStub  = sinon.stub(instance, 'makeRequest');
+      getFromPeerStub = sandbox
+        .stub(transportModule, 'getFromPeer')
+        .resolves({ body: '1' });
+      makeRequestStub = sinon.stub(instance, 'makeRequest');
       makeRequestStub.resolves('1');
     });
     it('should call makeRequest', () => {
       let p;
       p = instance.pingAndUpdate();
       expect(makeRequestStub.calledOnce).to.be.true;
-      expect(makeRequestStub.firstCall.args[0].baseUrl).to.be.eq('/v2/peer/ping');
+      expect(makeRequestStub.firstCall.args[0].baseUrl).to.be.eq(
+        '/v2/peer/ping'
+      );
       expect(p).to.be.fulfilled;
     });
 

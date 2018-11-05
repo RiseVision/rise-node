@@ -1,7 +1,7 @@
 import {
   BasePeerType,
   IBaseTransaction,
-  IConfirmedTransaction
+  IConfirmedTransaction,
 } from '@risevision/core-types';
 import { IAccountsModel } from '../models';
 

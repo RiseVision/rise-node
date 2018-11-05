@@ -10,7 +10,7 @@ const buildArrayArgAttribute = function(table: string): any {
     sequelize.literal(
       `(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`
     ),
-    table
+    table,
   ];
 };
 
@@ -22,8 +22,8 @@ const buildArrayArgAttribute = function(table: string): any {
     'u_isDelegate',
     'vote',
     buildArrayArgAttribute('delegates'),
-    buildArrayArgAttribute('u_delegates')
-  ]
+    buildArrayArgAttribute('u_delegates'),
+  ],
 })
 export class AccountsModelForDPOS extends IAccountsModel {
   @Column

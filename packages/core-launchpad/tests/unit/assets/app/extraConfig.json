@@ -1,8 +1,8 @@
 {
-  "extra"  : "config",
+  "extra": "config",
   "address": "extra-config-address",
-  "db"     : {
+  "db": {
     "database": "extra-config-db",
-    "host"    : "myhost"
+    "host": "myhost"
   }
 }

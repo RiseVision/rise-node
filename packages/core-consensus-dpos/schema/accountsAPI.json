@@ -1,5 +1,4 @@
 {
-
   "addDelegates": {
     "id": "accounts.addDelegates",
     "type": "object",
@@ -20,27 +19,27 @@
       }
     }
   },
-  "getDelegatesFee"  : {
-    "id"        : "accounts.getDelegatesFee",
-    "type"      : "object",
+  "getDelegatesFee": {
+    "id": "accounts.getDelegatesFee",
+    "type": "object",
     "properties": {
       "height": {
-        "type"   : "integer",
+        "type": "integer",
         "minimum": 1
       }
     }
   },
-  "getDelegates"     : {
-    "id"        : "accounts.getDelegates",
-    "type"      : "object",
+  "getDelegates": {
+    "id": "accounts.getDelegates",
+    "type": "object",
     "properties": {
       "address": {
-        "type"     : "string",
-        "format"   : "address",
+        "type": "string",
+        "format": "address",
         "minLength": 1,
         "maxLength": 22
       }
     },
-    "required"  : ["address"]
+    "required": ["address"]
   }
 }

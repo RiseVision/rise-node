@@ -16,9 +16,16 @@ describe('modules/blocks', () => {
   let sandbox: SinonSandbox;
 
   beforeEach(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
-    instance  = container.get(BlocksSymbols.modules.blocks);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
+    instance = container.get(BlocksSymbols.modules.blocks);
   });
 
   afterEach(() => {

@@ -4,7 +4,12 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { BlocksModule, BlocksModuleChain, BlocksModuleVerify, BlocksSymbols } from '../../../src';
+import {
+  BlocksModule,
+  BlocksModuleChain,
+  BlocksModuleVerify,
+  BlocksSymbols,
+} from '../../../src';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import {
   IAccountsModel,
@@ -15,14 +20,14 @@ import {
   IForkModule,
   ITransactionLogic,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 import { ForkType, SignedBlockType } from '@risevision/core-types';
 import {
   createRandomTransactions,
-  toBufferedTransaction
+  toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { VerifyReceipt } from '../../../src/hooks';
@@ -49,27 +54,37 @@ describe('modules/blocks/verify', () => {
   let sandbox: SinonSandbox;
 
   before(async () => {
-    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
-    const b   = container.get<BlocksModuleVerify>(BlocksSymbols.modules.verify); // should not throw as it should be included
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
+    const b = container.get<BlocksModuleVerify>(BlocksSymbols.modules.verify); // should not throw as it should be included
     await b.cleanup(); // clean up this instance
     container.rebind(BlocksSymbols.modules.verify).to(BlocksModuleVerify); // Force recreation of module at each instance.
   });
   beforeEach(async () => {
     inst = container.get(BlocksSymbols.modules.verify);
 
-    sandbox        = sinon.createSandbox();
-    blocksModule   = container.get(Symbols.modules.blocks);
-    blocksChain    = container.get(BlocksSymbols.modules.chain);
-    forkModule     = container.get(Symbols.modules.fork);
-    txModule       = container.get(Symbols.modules.transactions);
+    sandbox = sinon.createSandbox();
+    blocksModule = container.get(Symbols.modules.blocks);
+    blocksChain = container.get(BlocksSymbols.modules.chain);
+    forkModule = container.get(Symbols.modules.fork);
+    txModule = container.get(Symbols.modules.transactions);
     accountsModule = container.get(Symbols.modules.accounts);
 
-    blockLogic       = container.get(Symbols.logic.block);
+    blockLogic = container.get(Symbols.logic.block);
     blockRewardLogic = container.get(Symbols.logic.blockReward);
-    txLogic          = container.get(Symbols.logic.transaction);
+    txLogic = container.get(Symbols.logic.transaction);
 
-    AccountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
-    blocksModel   = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    AccountsModel = container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.accounts
+    );
+    blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
   });
 
   afterEach(() => sandbox.restore());
@@ -82,15 +97,19 @@ describe('modules/blocks/verify', () => {
       }
       // all first contants.blockSlotWindow indexes will be removed
       // tslint:disable-next-line: no-string-literal
-      expect(inst['lastNBlockIds']).to.be.deep.eq(new Array(constants.blockSlotWindow)
-        .fill(null)
-        .map((a, idx) => `${constants.blockSlotWindow + idx }`));
+      expect(inst['lastNBlockIds']).to.be.deep.eq(
+        new Array(constants.blockSlotWindow)
+          .fill(null)
+          .map((a, idx) => `${constants.blockSlotWindow + idx}`)
+      );
     });
   });
 
   describe('onBlockchainReady', () => {
     it('should initialize [private].lastNBlockIds with the last blockSlotWindow block ids from db', async () => {
-      sandbox.stub(blocksModel, 'findAll').resolves([{ id: '1' }, { id: '2' }, { id: '3' }]);
+      sandbox
+        .stub(blocksModel, 'findAll')
+        .resolves([{ id: '1' }, { id: '2' }, { id: '3' }]);
       await inst.onBlockchainReady();
       // tslint:disable-next-line: no-string-literalahusdhuahsud
       expect(inst['lastNBlockIds']).to.be.deep.eq(['1', '2', '3']);
@@ -106,10 +125,10 @@ describe('modules/blocks/verify', () => {
   describe('verifyReceipt & verifyBlock', () => {
     let block: SignedBlockType;
     beforeEach(() => {
-      const constants        = container.get<any>(Symbols.generic.constants);
-      block                  = createFakeBlock(container, {
+      const constants = container.get<any>(Symbols.generic.constants);
+      block = createFakeBlock(container, {
         previousBlock: { id: '1', height: 100 } as any,
-        timestamp    : 101 * constants.blockTime,
+        timestamp: 101 * constants.blockTime,
       });
       blocksModule.lastBlock = { id: '1', height: 100 } as any;
 
@@ -127,27 +146,35 @@ describe('modules/blocks/verify', () => {
           expect(res.errors).is.empty;
         });
         it('should fail for invalid id', async () => {
-          block.id  = '1';
+          block.id = '1';
           const res = await inst[what](block);
           expect(res.verified).is.false;
           expect(res.errors[0]).matches(/^BlockID: Expected .*? - Received 1/);
         });
         it('error if signature is invalid', async () => {
-          block.blockSignature = Buffer.from(new Array(64).fill(null).map(() => 'aa').join(''), 'hex');
-          block.id             = blockLogic.getId(block);
-          const res            = await inst[what](block);
-          expect(res.errors).to.be.deep.eq(['Failed to verify block signature']);
+          block.blockSignature = Buffer.from(
+            new Array(64)
+              .fill(null)
+              .map(() => 'aa')
+              .join(''),
+            'hex'
+          );
+          block.id = blockLogic.getId(block);
+          const res = await inst[what](block);
+          expect(res.errors).to.be.deep.eq([
+            'Failed to verify block signature',
+          ]);
           expect(res.verified).is.false;
         });
         it('error if previousBlock is not set', async () => {
           block.previousBlock = null;
-          const res           = await inst[what](block);
+          const res = await inst[what](block);
           expect(res.errors).to.contain('Invalid previous block');
           expect(res.verified).is.false;
         });
         it('error if version is > 0', async () => {
           block.version = 1;
-          const res     = await inst[what](block);
+          const res = await inst[what](block);
           expect(res.errors).to.contain('Invalid block version');
           expect(res.verified).is.false;
         });
@@ -162,32 +189,39 @@ describe('modules/blocks/verify', () => {
             block.numberOfTransactions = block.numberOfTransactions + 1;
 
             const res = await inst[what](block);
-            expect(res.errors).to.contain('Included transactions do not match block transactions count');
+            expect(res.errors).to.contain(
+              'Included transactions do not match block transactions count'
+            );
           });
           it('error if transactions.length exceeds maxTxsPerBlock', async () => {
             block.transactions = new Array(100).fill(null);
 
             const res = await inst[what](block);
-            expect(res.errors).to.contain('Number of transactions exceeds maximum per block');
+            expect(res.errors).to.contain(
+              'Number of transactions exceeds maximum per block'
+            );
           });
           it('error if duplicate transaction', async () => {
             const txs = createRandomTransactions(10);
-            block     = createFakeBlock(container, {
+            block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
-              timestamp    : block.timestamp,
-              transactions : txs.concat([txs[0]]).map((t) => toBufferedTransaction(t)),
+              timestamp: block.timestamp,
+              transactions: txs
+                .concat([txs[0]])
+                .map((t) => toBufferedTransaction(t)),
             });
             sandbox.stub(txLogic, 'getBytes').returns(Buffer.alloc(10));
             const res = await inst[what](block);
-            expect(res.errors).to.contain(`Encountered duplicate transaction: ${txs[0].id}`);
+            expect(res.errors).to.contain(
+              `Encountered duplicate transaction: ${txs[0].id}`
+            );
           });
           it('error if tx.getBytes returns error', async () => {
-
-            const txs          = createRandomTransactions(10);
-            block              = createFakeBlock(container, {
+            const txs = createRandomTransactions(10);
+            block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
-              timestamp    : block.timestamp,
-              transactions : txs.map((t) => toBufferedTransaction(t)),
+              timestamp: block.timestamp,
+              transactions: txs.map((t) => toBufferedTransaction(t)),
             });
             const getBytesStub = sandbox.stub(txLogic, 'getBytes');
             getBytesStub.returns(Buffer.alloc(10));
@@ -197,11 +231,11 @@ describe('modules/blocks/verify', () => {
             expect(res.errors).to.contain('Error: meow');
           });
           it('error if computed payload hex is diff from advertised block.payloadHash', async () => {
-            const txs          = createRandomTransactions(10);
-            block              = createFakeBlock(container, {
+            const txs = createRandomTransactions(10);
+            block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
-              timestamp    : block.timestamp,
-              transactions : txs.map((t) => toBufferedTransaction(t)),
+              timestamp: block.timestamp,
+              transactions: txs.map((t) => toBufferedTransaction(t)),
             });
             const getBytesStub = sandbox.stub(txLogic, 'getBytes');
             getBytesStub.returns(Buffer.alloc(10));
@@ -211,28 +245,28 @@ describe('modules/blocks/verify', () => {
           it('should return error computed totalAmount differs block.totalAmount', async () => {
             const getBytesStub = sandbox.stub(txLogic, 'getBytes');
             getBytesStub.returns(Buffer.alloc(10));
-            const txs         = createRandomTransactions(10);
-            block             = createFakeBlock(container, {
+            const txs = createRandomTransactions(10);
+            block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
-              timestamp    : block.timestamp,
-              transactions : txs.map((t) => toBufferedTransaction(t)),
+              timestamp: block.timestamp,
+              transactions: txs.map((t) => toBufferedTransaction(t)),
             });
             block.totalAmount = block.totalAmount + 1;
-            const res         = await inst[what](block);
+            const res = await inst[what](block);
             expect(res.errors).to.contain('Invalid total amount');
           });
           it('should return error if computed totalFee differs block.totalFee', async () => {
             const getBytesStub = sandbox.stub(txLogic, 'getBytes');
 
             getBytesStub.returns(Buffer.alloc(10));
-            const txs      = createRandomTransactions(10);
-            block          = createFakeBlock(container, {
+            const txs = createRandomTransactions(10);
+            block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
-              timestamp    : block.timestamp,
-              transactions : txs.map((t) => toBufferedTransaction(t)),
+              timestamp: block.timestamp,
+              transactions: txs.map((t) => toBufferedTransaction(t)),
             });
             block.totalFee = block.totalFee + 1;
-            const res      = await inst[what](block);
+            const res = await inst[what](block);
             expect(res.errors).to.contain('Invalid total fee');
           });
         });
@@ -243,16 +277,18 @@ describe('modules/blocks/verify', () => {
   describe('verifyReceipt', () => {
     let block: SignedBlockType;
     beforeEach(() => {
-      const constants        = container.get<any>(Symbols.generic.constants);
-      block                  = createFakeBlock(container, {
+      const constants = container.get<any>(Symbols.generic.constants);
+      block = createFakeBlock(container, {
         previousBlock: { id: '1', height: 100 } as any,
-        timestamp    : 101 * constants.blockTime,
+        timestamp: 101 * constants.blockTime,
       });
       blocksModule.lastBlock = { id: '1', height: 100 } as any;
     });
     it('should trigger Filter', async () => {
-      const hookSystem = container.get<WordPressHookSystem>(Symbols.generic.hookSystem);
-      const stub       = sandbox.stub();
+      const hookSystem = container.get<WordPressHookSystem>(
+        Symbols.generic.hookSystem
+      );
+      const stub = sandbox.stub();
 
       class Test extends WPHooksSubscriber(Object) {
         public hookSystem = hookSystem;
@@ -276,23 +312,23 @@ describe('modules/blocks/verify', () => {
       expect(res.verified).is.false;
       expect(res.errors).to.contain('Block Already exists in the chain');
     });
-
   });
 
   describe('verifyBlock', () => {
     let block: SignedBlockType;
     beforeEach(() => {
-      const constants        = container.get<any>(Symbols.generic.constants);
-      block                  = createFakeBlock(container, {
+      const constants = container.get<any>(Symbols.generic.constants);
+      block = createFakeBlock(container, {
         previousBlock: { id: '2', height: 100 } as any,
-        timestamp    : 101 * constants.blockTime,
+        timestamp: 101 * constants.blockTime,
       });
       blocksModule.lastBlock = { id: '1', height: 100 } as any;
-
     });
     it('should trigger Filter', async () => {
-      const hookSystem = container.get<WordPressHookSystem>(Symbols.generic.hookSystem);
-      const stub       = sandbox.stub();
+      const hookSystem = container.get<WordPressHookSystem>(
+        Symbols.generic.hookSystem
+      );
+      const stub = sandbox.stub();
 
       class Test extends WPHooksSubscriber(Object) {
         public hookSystem = hookSystem;
@@ -312,12 +348,11 @@ describe('modules/blocks/verify', () => {
     });
     it('error if block is in fork 1', async () => {
       const forkStub = sandbox.stub(forkModule, 'fork');
-      const res      = await inst.verifyBlock(block);
+      const res = await inst.verifyBlock(block);
       expect(res.verified).is.false;
       expect(res.errors).to.contain('Invalid previous block: 2 expected 1');
       expect(forkStub.calledOnce).is.true;
       expect(forkStub.calledWith(block, ForkType.TYPE_1)).is.true;
-
     });
     // it('error if slotNumber is in the future', async () => {
     //   slots.enqueueResponse('getTime', 0);

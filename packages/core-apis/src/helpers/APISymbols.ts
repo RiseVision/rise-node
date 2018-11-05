@@ -7,5 +7,5 @@ export const APISymbols = {
   middleware: Symbol.for('rise.api.middleware'),
   privateApiGuard: Symbol.for('rise.api.privateAPIGuard'),
   socketIOAPI: Symbol.for('rise.api.socketIOAPI'),
-  successInterceptor: Symbol.for('rise.api.successInterceptor')
+  successInterceptor: Symbol.for('rise.api.successInterceptor'),
 };

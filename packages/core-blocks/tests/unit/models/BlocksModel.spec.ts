@@ -10,7 +10,14 @@ describe('BlocksModel', () => {
   let container: Container;
   let BlocksModel: typeof IBlocksModel;
   beforeEach(async () => {
-    container   = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
     BlocksModel = container.getNamed(ModelSymbols.model, BlocksSymbols.model);
   });
 
@@ -34,7 +41,7 @@ describe('BlocksModel', () => {
   // });
   describe('toStringBlockType', () => {
     it('should convert buffers to strings', () => {
-      const b  = new BlocksModel(createFakeBlock(container));
+      const b = new BlocksModel(createFakeBlock(container));
       const sb = BlocksModel.toStringBlockType(b);
       expect(sb.blockSignature).is.an('string');
       expect(sb.generatorPublicKey).is.an('string');

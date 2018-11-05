@@ -8,7 +8,7 @@ import { loggerCreator } from '../../src';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
-const expect       = chai.expect;
+const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
@@ -22,12 +22,12 @@ describe('helpers/logger', () => {
   let consoleLogSpy: any;
 
   beforeEach(() => {
-    sandbox           = sinon.createSandbox();
-    logFileFake       = {};
+    sandbox = sinon.createSandbox();
+    logFileFake = {};
     logFileFake.write = () => true;
-    logFileWriteSpy   = sandbox.spy(logFileFake, 'write');
-    fsStub            = sandbox.stub(fs, 'createWriteStream').returns(logFileFake);
-    consoleLogSpy     = sandbox.spy(console, 'log');
+    logFileWriteSpy = sandbox.spy(logFileFake, 'write');
+    fsStub = sandbox.stub(fs, 'createWriteStream').returns(logFileFake);
+    consoleLogSpy = sandbox.spy(console, 'log');
   });
 
   afterEach(() => {
@@ -284,16 +284,23 @@ describe('helpers/logger', () => {
       expect(logFileWriteSpy.calledOnce).to.be.true;
       expect(logFileWriteSpy.args[0][0]).contains('FTL');
       expect(logFileWriteSpy.args[0][0]).contains('Message fatal');
-      expect(logFileWriteSpy.args[0][0]).contains('{"message":"MyError","error":"Error: MyError');
+      expect(logFileWriteSpy.args[0][0]).contains(
+        '{"message":"MyError","error":"Error: MyError'
+      );
       expect(consoleLogSpy.calledOnce).to.be.true;
       expect(consoleLogSpy.args[0].join(' ')).contains('FTL');
       expect(consoleLogSpy.args[0].join(' ')).contains('Message fatal');
-      expect(consoleLogSpy.args[0].join(' ')).contains('{"message":"MyError","error":"Error: MyError');
+      expect(consoleLogSpy.args[0].join(' ')).contains(
+        '{"message":"MyError","error":"Error: MyError'
+      );
     });
 
     it('Receiving an object with toLogObj() function', () => {
       instance = loggerCreator({ echo: 'fatal', errorLevel: 'fatal' });
-      instance.fatal('Message fatal', { foo: 'bar', toLogObj: () => ({ abc: 123 }) });
+      instance.fatal('Message fatal', {
+        foo: 'bar',
+        toLogObj: () => ({ abc: 123 }),
+      });
       expect(logFileWriteSpy.calledOnce).to.be.true;
       expect(logFileWriteSpy.args[0][0]).contains('FTL');
       expect(logFileWriteSpy.args[0][0]).contains('Message fatal');
@@ -364,9 +371,9 @@ describe('helpers/logger', () => {
   describe('Checking fs.createWriteStream() call', () => {
     it('Setting a filename', () => {
       instance = loggerCreator({
-        echo      : 'fatal',
+        echo: 'fatal',
         errorLevel: 'fatal',
-        filename  : 'my.log',
+        filename: 'my.log',
       });
       instance.fatal('Message fatal', { foo: 'bar', secret: '1234' });
       expect(fsStub.calledOnce).to.be.true;

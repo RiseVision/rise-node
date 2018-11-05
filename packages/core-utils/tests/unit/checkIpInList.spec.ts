@@ -19,7 +19,8 @@ describe('helpers/checkIpInList', () => {
     expect(checkIpInList(list, '::ffff:127.0.0.1')).to.be.true;
   });
   it('should throw error if one of list"s ip has invalid subnet', () => {
-    expect(() => checkIpInList(['10.0.0.0/24/', '127.0.0.1'], '127.0.0.1'))
-      .to.throw('Address 10.0.0.0/24/ is neither v4 or v6');
+    expect(() =>
+      checkIpInList(['10.0.0.0/24/', '127.0.0.1'], '127.0.0.1')
+    ).to.throw('Address 10.0.0.0/24/ is neither v4 or v6');
   });
 });

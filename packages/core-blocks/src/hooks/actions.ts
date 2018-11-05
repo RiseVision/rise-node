@@ -5,7 +5,7 @@ import { Transaction } from 'sequelize';
 import {
   IConfirmedTransaction,
   SignedAndChainedBlockType,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 
 /**

@@ -5,7 +5,9 @@ export interface ISpiedInstance {
   spies: { [T in keyof this]: SinonSpy };
 }
 
-export function SpiedInstance<T extends { new(...args: any[]): {} }>(constructor: T) {
+export function SpiedInstance<T extends { new (...args: any[]): {} }>(
+  constructor: T
+) {
   return class __SpiedInstance__ extends constructor implements ISpiedInstance {
     public spies: { [X in keyof this]: SinonSpy } = {} as any;
     public sandbox = sinon.createSandbox();
@@ -21,7 +23,9 @@ export function SpiedInstance<T extends { new(...args: any[]): {} }>(constructor
         Object.getOwnPropertyNames(proto)
           .filter((pn) => pn !== 'constructor')
           .filter((pn) => !this.spies[pn])
-          .forEach((pn) => this.spies[pn] = this.sandbox.spy(this, pn as any));
+          .forEach(
+            (pn) => (this.spies[pn] = this.sandbox.spy(this, pn as any))
+          );
 
         proto = Object.getPrototypeOf(proto);
         ended = proto.constructor.name === 'Object';
@@ -34,8 +38,11 @@ export interface IStubbedInstance<X> {
   stubs: { [T in keyof X]: SinonStub };
 }
 
-export function StubbedInstance<T extends ({ new(...args: any[]): any })>(Base: T) {
-  const thaClass = class __StubbedInstance__ extends Base implements IStubbedInstance<InstanceType<T>> {
+export function StubbedInstance<T extends { new (...args: any[]): any }>(
+  Base: T
+) {
+  const thaClass = class __StubbedInstance__ extends Base
+    implements IStubbedInstance<InstanceType<T>> {
     public static instances: Array<IStubbedInstance<InstanceType<T>>> = [];
     public static constructorCalls: any[][] = [];
     public stubs: { [Y in keyof InstanceType<T>]: SinonStub } = {} as any;
@@ -54,13 +61,12 @@ export function StubbedInstance<T extends ({ new(...args: any[]): any })>(Base: 
         Object.getOwnPropertyNames(proto)
           .filter((pn) => pn !== 'constructor')
           .filter((pn) => !this.stubs[pn])
-          .forEach((pn) => this.stubs[pn] = this.sandbox.stub(this, pn));
+          .forEach((pn) => (this.stubs[pn] = this.sandbox.stub(this, pn)));
 
         proto = Object.getPrototypeOf(proto);
         ended = proto.constructor.name === 'Object';
       }
     }
-
   };
   return thaClass;
 }

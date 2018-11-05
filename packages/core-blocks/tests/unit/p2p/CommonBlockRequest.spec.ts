@@ -18,18 +18,31 @@ describe('apis/requests/CommonBlockRequest', () => {
   let container: Container;
   let instance: CommonBlockRequest;
   before(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
   });
   beforeEach(() => {
     sandbox.restore();
-    instance = container.getNamed(p2pSymbols.transportMethod, BlocksSymbols.p2p.commonBlocks);
+    instance = container.getNamed(
+      p2pSymbols.transportMethod,
+      BlocksSymbols.p2p.commonBlocks
+    );
   });
 
   describe('in/out', () => {
     let sequelizeQueryStub: SinonStub;
     beforeEach(() => {
-      const BM = container.getNamed<typeof BlocksModel>(ModelSymbols.model, BlocksSymbols.model);
+      const BM = container.getNamed<typeof BlocksModel>(
+        ModelSymbols.model,
+        BlocksSymbols.model
+      );
 
       sequelizeQueryStub = sandbox.stub(BM.sequelize, 'query');
     });
@@ -40,20 +53,34 @@ describe('apis/requests/CommonBlockRequest', () => {
     }
 
     it('should fail if request is invalid', async () => {
-      await expect(createRequest({ ids: null })).rejectedWith('query/ids - Expected type');
-      await expect(createRequest({})).rejectedWith('query - Missing required property');
-      await expect(createRequest({ ids: 'a,b' })).rejectedWith('Invalid block id sequence');
-      await expect(createRequest({ ids: '' })).rejectedWith('Invalid block id sequence');
-      await expect(createRequest({ ids: '1,2,3,4,5,6,7,8,9,0,1' })).rejectedWith('Invalid block id sequence');
+      await expect(createRequest({ ids: null })).rejectedWith(
+        'query/ids - Expected type'
+      );
+      await expect(createRequest({})).rejectedWith(
+        'query - Missing required property'
+      );
+      await expect(createRequest({ ids: 'a,b' })).rejectedWith(
+        'Invalid block id sequence'
+      );
+      await expect(createRequest({ ids: '' })).rejectedWith(
+        'Invalid block id sequence'
+      );
+      await expect(
+        createRequest({ ids: '1,2,3,4,5,6,7,8,9,0,1' })
+      ).rejectedWith('Invalid block id sequence');
     });
     it('should return common: null and properly call database', async () => {
       sequelizeQueryStub.resolves(null);
       const res = await createRequest({ ids: '1,2,3' });
       expect(res).deep.eq({ common: null });
       expect(sequelizeQueryStub.calledOnce).is.true;
-      expect(sequelizeQueryStub.firstCall.args[1].where).contain("IN ('1', '2', '3')");
+      expect(sequelizeQueryStub.firstCall.args[1].where).contain(
+        "IN ('1', '2', '3')"
+      );
       expect(sequelizeQueryStub.firstCall.args[1].limit).eq(1);
-      expect(sequelizeQueryStub.firstCall.args[0]).contain('ORDER BY "BlocksModel"."height" DESC');
+      expect(sequelizeQueryStub.firstCall.args[0]).contain(
+        'ORDER BY "BlocksModel"."height" DESC'
+      );
     });
     it('should return proper encoded data', async () => {
       const block = createFakeBlock(container);

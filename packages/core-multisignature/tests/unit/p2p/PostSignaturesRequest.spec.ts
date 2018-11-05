@@ -6,14 +6,14 @@ import {
   MultisigSymbols,
   MultisigTransportModule,
   PostSignaturesRequest,
-  PostSignaturesRequestDataType
+  PostSignaturesRequestDataType,
 } from '../../../src';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { Container } from 'inversify';
 import {
   createRandomTransaction,
-  toBufferedTransaction
+  toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { generateAccount } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
 import { IBaseTransaction } from '@risevision/core-types';
@@ -27,16 +27,28 @@ describe('apis/requests/PostSignaturesRequest', () => {
   let multiTransport: MultisigTransportModule;
   let txs: Array<IBaseTransaction<any>>;
   before(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions', 'core-multisignature']);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+      'core-multisignature',
+    ]);
   });
 
   beforeEach(() => {
     sandbox.restore();
-    instance       = container.getNamed(p2pSymbols.transportMethod, MultisigSymbols.p2p.postSignatures);
-    multiModule    = container.get(MultisigSymbols.module);
+    instance = container.getNamed(
+      p2pSymbols.transportMethod,
+      MultisigSymbols.p2p.postSignatures
+    );
+    multiModule = container.get(MultisigSymbols.module);
     multiTransport = container.get(MultisigSymbols.multiSigTransport);
-    txs            = new Array(5).fill(null)
+    txs = new Array(5)
+      .fill(null)
       .map(() => createRandomTransaction())
       .map((t, indx) => {
         t.signatures = [];
@@ -49,7 +61,7 @@ describe('apis/requests/PostSignaturesRequest', () => {
   });
 
   async function createRequest(body: PostSignaturesRequestDataType) {
-    const r    = await instance.createRequestOptions({ body });
+    const r = await instance.createRequestOptions({ body });
     const resp = await instance.handleRequest(r.data, r.query);
     return instance.handleResponse(null, resp);
   }
@@ -59,18 +71,17 @@ describe('apis/requests/PostSignaturesRequest', () => {
     await createRequest({
       signatures: [
         {
-          relays     : 1,
-          signature  : txs[1].signatures[0],
-          transaction: txs[1].id
+          relays: 1,
+          signature: txs[1].signatures[0],
+          transaction: txs[1].id,
         },
       ],
     });
     expect(spy.called).true;
     expect(spy.firstCall.args[0]).deep.eq({
-      relays     : 1,
-      signature  : txs[1].signatures[0],
-      transaction: txs[1].id
+      relays: 1,
+      signature: txs[1].signatures[0],
+      transaction: txs[1].id,
     });
-
   });
 });

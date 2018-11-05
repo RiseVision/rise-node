@@ -4,7 +4,7 @@ import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
-  SingleTransportPayload
+  SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { TXSymbols } from '../txSymbols';
 import { TransactionPool } from '../TransactionPool';
@@ -25,17 +25,17 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
 
   public protoResponse: ProtoIdentifier<GetTransactionsRequestDataType> = {
     messageType: 'transportTransactions',
-    namespace: 'transactions.transport'
+    namespace: 'transactions.transport',
   };
 
   public schemaResponse = {
     properties: {
       transactions: {
-        type: 'array'
-      }
+        type: 'array',
+      },
     },
     required: ['transactions'],
-    type: 'object'
+    type: 'object',
   };
 
   @inject(Symbols.logic.transaction)
@@ -71,7 +71,7 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
     return super.encodeResponse({
       transactions: data.transactions.map((tx) =>
         this.transactionLogic.toProtoBuffer(tx)
-      )
+      ),
     } as any);
   }
 
@@ -84,7 +84,7 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
     return {
       transactions: (superRes.transactions || []).map((bufTx) =>
         this.transactionLogic.fromProtoBuffer(bufTx)
-      )
+      ),
     };
   }
 }

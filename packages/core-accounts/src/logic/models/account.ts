@@ -31,276 +31,291 @@ import { ConstantsType } from '@risevision/core-types';
  * @property {number} rewards
  * @property {boolean} virgin
  */
-export const accountsModelCreator = (table: string, constants: ConstantsType): IModelField[] => [
+export const accountsModelCreator = (
+  table: string,
+  constants: ConstantsType
+): IModelField[] => [
   {
-    name     : 'username',
-    type     : 'String',
-    filter   : {
-      type     : 'string',
-      case     : 'lower',
+    name: 'username',
+    type: 'String',
+    filter: {
+      type: 'string',
+      case: 'lower',
       maxLength: 20,
-      minLength: 1
+      minLength: 1,
     },
-    conv     : String,
-    immutable: true
+    conv: String,
+    immutable: true,
   },
   {
-    name  : 'isDelegate',
-    type  : 'SmallInt',
+    name: 'isDelegate',
+    type: 'SmallInt',
     filter: {
-      type: 'boolean'
+      type: 'boolean',
     },
-    conv  : Boolean
+    conv: Boolean,
   },
   {
-    name  : 'u_isDelegate',
-    type  : 'SmallInt',
+    name: 'u_isDelegate',
+    type: 'SmallInt',
     filter: {
-      type: 'boolean'
+      type: 'boolean',
     },
-    conv  : Boolean
+    conv: Boolean,
   },
   {
-    name  : 'secondSignature',
-    type  : 'SmallInt',
+    name: 'secondSignature',
+    type: 'SmallInt',
     filter: {
-      type: 'boolean'
+      type: 'boolean',
     },
-    conv  : Boolean
+    conv: Boolean,
   },
   {
-    name  : 'u_secondSignature',
-    type  : 'SmallInt',
+    name: 'u_secondSignature',
+    type: 'SmallInt',
     filter: {
-      type: 'boolean'
+      type: 'boolean',
     },
-    conv  : Boolean
+    conv: Boolean,
   },
   {
-    name     : 'u_username',
-    type     : 'String',
-    filter   : {
-      type     : 'string',
-      case     : 'lower',
+    name: 'u_username',
+    type: 'String',
+    filter: {
+      type: 'string',
+      case: 'lower',
       maxLength: 20,
-      minLength: 1
-    },
-    conv     : String,
-    immutable: true
-  },
-  {
-    name      : 'address',
-    type      : 'String',
-    filter    : {
-      required : true,
-      type     : 'string',
-      case     : 'upper',
       minLength: 1,
-      maxLength: 22
     },
-    conv      : String,
-    immutable : true,
-    expression: 'UPPER("address")'
+    conv: String,
+    immutable: true,
   },
   {
-    name      : 'publicKey',
-    type      : 'Binary',
-    filter    : {
-      type  : 'string',
-      format: 'publicKey'
-    },
-    conv      : String,
-    immutable : true,
-    expression: 'ENCODE("publicKey", \'hex\')'
-  },
-  {
-    name      : 'secondPublicKey',
-    type      : 'Binary',
-    filter    : {
-      type  : 'string',
-      format: 'publicKey'
-    },
-    conv      : String,
-    immutable : true,
-    expression: 'ENCODE("secondPublicKey", \'hex\')'
-  },
-  {
-    name      : 'balance',
-    type      : 'BigInt',
-    filter    : {
+    name: 'address',
+    type: 'String',
+    filter: {
       required: true,
-      type    : 'integer',
-      minimum : 0,
-      maximum : constants.totalAmount
-    },
-    conv      : Number,
-    expression: '("balance")::bigint'
-  },
-  {
-    name      : 'u_balance',
-    type      : 'BigInt',
-    filter    : {
-      required: true,
-      type    : 'integer',
-      minimum : 0,
-      maximum : constants.totalAmount
-    },
-    conv      : Number,
-    expression: '("u_balance")::bigint'
-  },
-  {
-    name      : 'vote',
-    type      : 'BigInt',
-    filter    : {
-      type: 'integer'
-    },
-    conv      : Number,
-    expression: '("vote")::bigint'
-  },
-  {
-    name      : 'rate',
-    type      : 'BigInt',
-    filter    : {
-      type: 'integer'
-    },
-    conv      : Number,
-    expression: '("rate")::bigint'
-  },
-  {
-    name      : 'delegates',
-    type      : 'Text',
-    filter    : {
-      type       : 'array',
-      uniqueItems: true
-    },
-    conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2delegates WHERE "accountId" = a."address")'
-  },
-  {
-    name      : 'u_delegates',
-    type      : 'Text',
-    filter    : {
-      type       : 'array',
-      uniqueItems: true
-    },
-    conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2u_delegates WHERE "accountId" = a."address")'
-  },
-  {
-    name      : 'multisignatures',
-    type      : 'Text',
-    filter    : {
-      type       : 'array',
-      uniqueItems: true
-    },
-    conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2multisignatures WHERE "accountId" = a."address")'
-  },
-  {
-    name      : 'u_multisignatures',
-    type      : 'Text',
-    filter    : {
-      type       : 'array',
-      uniqueItems: true
-    },
-    conv      : Array,
-    expression: '(SELECT ARRAY_AGG("dependentId") FROM ' + table + '2u_multisignatures WHERE "accountId" = a."address")'
-  },
-  {
-    name  : 'multimin',
-    type  : 'SmallInt',
-    filter: {
-      type   : 'integer',
-      minimum: 0,
-      maximum: 17
-    },
-    conv  : Number
-  },
-  {
-    name  : 'u_multimin',
-    type  : 'SmallInt',
-    filter: {
-      type   : 'integer',
-      minimum: 0,
-      maximum: 17
-    },
-    conv  : Number
-  },
-  {
-    name  : 'multilifetime',
-    type  : 'SmallInt',
-    filter: {
-      type   : 'integer',
-      minimum: 1,
-      maximum: 72
-    },
-    conv  : Number
-  },
-  {
-    name  : 'u_multilifetime',
-    type  : 'SmallInt',
-    filter: {
-      type   : 'integer',
-      minimum: 1,
-      maximum: 72
-    },
-    conv  : Number
-  },
-  {
-    name  : 'blockId',
-    type  : 'String',
-    filter: {
-      type     : 'string',
+      type: 'string',
+      case: 'upper',
       minLength: 1,
-      maxLength: 20
+      maxLength: 22,
     },
-    conv  : String
+    conv: String,
+    immutable: true,
+    expression: 'UPPER("address")',
   },
   {
-    name  : 'producedblocks',
-    type  : 'Number',
+    name: 'publicKey',
+    type: 'Binary',
     filter: {
-      type   : 'integer',
-      minimum: -1,
-      maximum: 1
+      type: 'string',
+      format: 'publicKey',
     },
-    conv  : Number
+    conv: String,
+    immutable: true,
+    expression: 'ENCODE("publicKey", \'hex\')',
   },
   {
-    name  : 'missedblocks',
-    type  : 'Number',
+    name: 'secondPublicKey',
+    type: 'Binary',
     filter: {
-      type   : 'integer',
+      type: 'string',
+      format: 'publicKey',
+    },
+    conv: String,
+    immutable: true,
+    expression: 'ENCODE("secondPublicKey", \'hex\')',
+  },
+  {
+    name: 'balance',
+    type: 'BigInt',
+    filter: {
+      required: true,
+      type: 'integer',
+      minimum: 0,
+      maximum: constants.totalAmount,
+    },
+    conv: Number,
+    expression: '("balance")::bigint',
+  },
+  {
+    name: 'u_balance',
+    type: 'BigInt',
+    filter: {
+      required: true,
+      type: 'integer',
+      minimum: 0,
+      maximum: constants.totalAmount,
+    },
+    conv: Number,
+    expression: '("u_balance")::bigint',
+  },
+  {
+    name: 'vote',
+    type: 'BigInt',
+    filter: {
+      type: 'integer',
+    },
+    conv: Number,
+    expression: '("vote")::bigint',
+  },
+  {
+    name: 'rate',
+    type: 'BigInt',
+    filter: {
+      type: 'integer',
+    },
+    conv: Number,
+    expression: '("rate")::bigint',
+  },
+  {
+    name: 'delegates',
+    type: 'Text',
+    filter: {
+      type: 'array',
+      uniqueItems: true,
+    },
+    conv: Array,
+    expression:
+      '(SELECT ARRAY_AGG("dependentId") FROM ' +
+      table +
+      '2delegates WHERE "accountId" = a."address")',
+  },
+  {
+    name: 'u_delegates',
+    type: 'Text',
+    filter: {
+      type: 'array',
+      uniqueItems: true,
+    },
+    conv: Array,
+    expression:
+      '(SELECT ARRAY_AGG("dependentId") FROM ' +
+      table +
+      '2u_delegates WHERE "accountId" = a."address")',
+  },
+  {
+    name: 'multisignatures',
+    type: 'Text',
+    filter: {
+      type: 'array',
+      uniqueItems: true,
+    },
+    conv: Array,
+    expression:
+      '(SELECT ARRAY_AGG("dependentId") FROM ' +
+      table +
+      '2multisignatures WHERE "accountId" = a."address")',
+  },
+  {
+    name: 'u_multisignatures',
+    type: 'Text',
+    filter: {
+      type: 'array',
+      uniqueItems: true,
+    },
+    conv: Array,
+    expression:
+      '(SELECT ARRAY_AGG("dependentId") FROM ' +
+      table +
+      '2u_multisignatures WHERE "accountId" = a."address")',
+  },
+  {
+    name: 'multimin',
+    type: 'SmallInt',
+    filter: {
+      type: 'integer',
+      minimum: 0,
+      maximum: 17,
+    },
+    conv: Number,
+  },
+  {
+    name: 'u_multimin',
+    type: 'SmallInt',
+    filter: {
+      type: 'integer',
+      minimum: 0,
+      maximum: 17,
+    },
+    conv: Number,
+  },
+  {
+    name: 'multilifetime',
+    type: 'SmallInt',
+    filter: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 72,
+    },
+    conv: Number,
+  },
+  {
+    name: 'u_multilifetime',
+    type: 'SmallInt',
+    filter: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 72,
+    },
+    conv: Number,
+  },
+  {
+    name: 'blockId',
+    type: 'String',
+    filter: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 20,
+    },
+    conv: String,
+  },
+  {
+    name: 'producedblocks',
+    type: 'Number',
+    filter: {
+      type: 'integer',
       minimum: -1,
-      maximum: 1
+      maximum: 1,
     },
-    conv  : Number
+    conv: Number,
   },
   {
-    name      : 'fees',
-    type      : 'BigInt',
-    filter    : {
-      type: 'integer'
+    name: 'missedblocks',
+    type: 'Number',
+    filter: {
+      type: 'integer',
+      minimum: -1,
+      maximum: 1,
     },
-    conv      : Number,
-    expression: '("fees")::bigint'
+    conv: Number,
   },
   {
-    name      : 'rewards',
-    type      : 'BigInt',
-    filter    : {
-      type: 'integer'
+    name: 'fees',
+    type: 'BigInt',
+    filter: {
+      type: 'integer',
     },
-    conv      : Number,
-    expression: '("rewards")::bigint'
+    conv: Number,
+    expression: '("fees")::bigint',
   },
   {
-    name     : 'virgin',
-    type     : 'SmallInt',
-    filter   : {
-      type: 'boolean'
+    name: 'rewards',
+    type: 'BigInt',
+    filter: {
+      type: 'integer',
     },
-    conv     : Boolean,
-    immutable: true
-  }
+    conv: Number,
+    expression: '("rewards")::bigint',
+  },
+  {
+    name: 'virgin',
+    type: 'SmallInt',
+    filter: {
+      type: 'boolean',
+    },
+    conv: Boolean,
+    immutable: true,
+  },
 ];

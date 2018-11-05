@@ -7,7 +7,7 @@ import {
   RawFullBlockListType,
   SignedAndChainedBlockType,
   SignedAndChainedTransportBlockType,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 import { IBlocksModel } from '../models';
 

@@ -11,13 +11,13 @@
             "format": "csv"
           }
         },
-        "required": [ "ids" ]
+        "required": ["ids"]
       },
       "body": {
         "type": "null"
       }
     },
-    "required": [ "query", "body" ]
+    "required": ["query", "body"]
   },
   "getBlocks": {
     "id": "transport.blocks",
@@ -27,8 +27,8 @@
         "type": "object",
         "properties": {
           "lastBlockId": {
-            "type"     : "string",
-            "format"   : "id",
+            "type": "string",
+            "format": "id",
             "minLength": 1,
             "maxLength": 20
           }
@@ -39,6 +39,6 @@
         "type": "null"
       }
     },
-    "required": [ "query", "body"]
+    "required": ["query", "body"]
   }
 }

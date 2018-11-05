@@ -2,7 +2,7 @@ import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
-  SingleTransportPayload
+  SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
@@ -25,7 +25,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
 
   protected readonly protoRequest: ProtoIdentifier<any> = {
     messageType: 'transportBlock',
-    namespace: 'blocks.transport'
+    namespace: 'blocks.transport',
   };
 
   @inject(Symbols.logic.block)
@@ -38,7 +38,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
     data: PostBlockRequestDataType
   ): Promise<Buffer> {
     return super.encodeRequest({
-      block: this.blockLogic.toProtoBuffer(data.block) as any
+      block: this.blockLogic.toProtoBuffer(data.block) as any,
     });
   }
 
@@ -49,7 +49,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
     return {
       block: this.blockLogic.objectNormalize(
         this.blockLogic.fromProtoBuffer(data.block)
-      )
+      ),
     };
   }
 

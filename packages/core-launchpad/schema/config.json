@@ -1,73 +1,68 @@
 {
   "config": {
-    "id"        : "appCon",
-    "type"      : "object",
+    "id": "appCon",
+    "type": "object",
     "properties": {
-      "port"           : {
-        "type"   : "integer",
+      "port": {
+        "type": "integer",
         "minimum": 1,
         "maximum": 65535
       },
-      "address"        : {
-        "type"  : "string",
+      "address": {
+        "type": "string",
         "format": "ip"
       },
-      "version"        : {
-        "type"     : "string",
-        "format"   : "version",
+      "version": {
+        "type": "string",
+        "format": "version",
         "minLength": 5,
         "maxLength": 12
       },
-      "fileLogLevel"   : {
+      "fileLogLevel": {
         "type": "string"
       },
-      "logFileName"    : {
+      "logFileName": {
         "type": "string"
       },
       "consoleLogLevel": {
         "type": "string"
       },
-      "trustProxy"     : {
+      "trustProxy": {
         "type": "boolean"
       },
-      "cacheEnabled"   : {
+      "cacheEnabled": {
         "type": "boolean"
       },
-      "transactions"   : {
-        "type"          : "object",
+      "transactions": {
+        "type": "object",
         "maxTxsPerQueue": {
-          "type"   : "integer",
+          "type": "integer",
           "minimum": 100,
           "maximum": 5000
         },
-        "required"      : [
-          "maxTxsPerQueue"
-        ]
+        "required": ["maxTxsPerQueue"]
       },
 
-      "loading"        : {
-        "type"      : "object",
+      "loading": {
+        "type": "object",
         "properties": {
-          "verifyOnLoading" : {
+          "verifyOnLoading": {
             "type": "boolean"
           },
           "loadPerIteration": {
-            "type"   : "integer",
+            "type": "integer",
             "minimum": 1,
             "maximum": 5000
           }
         },
-        "required"  : [
-          "verifyOnLoading",
-          "loadPerIteration"
-        ]
+        "required": ["verifyOnLoading", "loadPerIteration"]
       },
-      "nethash"        : {
-        "type"  : "string",
+      "nethash": {
+        "type": "string",
         "format": "hex"
       }
     },
-    "required"  : [
+    "required": [
       "port",
       "address",
       "version",

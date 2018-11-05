@@ -2,7 +2,7 @@ import {
   IAccountsModel,
   IAccountsModule,
   ISystemModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
 import {
@@ -11,7 +11,7 @@ import {
   IBaseTransaction,
   IConfirmedTransaction,
   SignedBlockType,
-  TransactionType
+  TransactionType,
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
@@ -83,8 +83,8 @@ export class RegisterDelegateTransaction extends BaseTx<
     }
     return {
       delegate: {
-        username: bytes.toString('utf8')
-      }
+        username: bytes.toString('utf8'),
+      },
     };
   }
 
@@ -132,7 +132,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
     if (
       this.schema.validate(tx.asset.delegate.username.toUpperCase(), {
-        format: 'address'
+        format: 'address',
       })
     ) {
       throw new Error('Username can not be a potential address');
@@ -163,18 +163,18 @@ export class RegisterDelegateTransaction extends BaseTx<
       u_isDelegate: 1 as any,
       vote: 0,
       u_username: tx.asset.delegate.username,
-      username: tx.asset.delegate.username
+      username: tx.asset.delegate.username,
     };
     sender.applyValues(data);
     return [
       {
         model: this.AccountsModel,
         options: {
-          where: { address: sender.address }
+          where: { address: sender.address },
         },
         type: 'update',
-        values: data
-      }
+        values: data,
+      },
     ];
   }
 
@@ -189,18 +189,18 @@ export class RegisterDelegateTransaction extends BaseTx<
       u_isDelegate: 1 as 0 | 1,
       vote: 0,
       username: null,
-      u_username: tx.asset.delegate.username
+      u_username: tx.asset.delegate.username,
     };
     sender.applyValues(data);
     return [
       {
         model: this.AccountsModel,
         options: {
-          where: { address: sender.address }
+          where: { address: sender.address },
         },
         type: 'update',
-        values: data
-      }
+        values: data,
+      },
     ];
   }
 
@@ -215,7 +215,7 @@ export class RegisterDelegateTransaction extends BaseTx<
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
       username: null,
-      u_username: tx.asset.delegate.username
+      u_username: tx.asset.delegate.username,
     };
     if (sender.u_isDelegate === 1) {
       throw new Error('Account is already trying to be a delegate');
@@ -225,11 +225,11 @@ export class RegisterDelegateTransaction extends BaseTx<
       {
         model: this.AccountsModel,
         options: {
-          where: { address: sender.address }
+          where: { address: sender.address },
         },
         type: 'update',
-        values: data
-      }
+        values: data,
+      },
     ];
   }
 
@@ -241,18 +241,18 @@ export class RegisterDelegateTransaction extends BaseTx<
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 0 as 0 | 1,
       username: null,
-      u_username: null
+      u_username: null,
     };
     sender.applyValues(data);
     return [
       {
         model: this.AccountsModel,
         options: {
-          where: { address: sender.address }
+          where: { address: sender.address },
         },
         type: 'update',
-        values: data
-      }
+        values: data,
+      },
     ];
   }
 
@@ -281,8 +281,8 @@ export class RegisterDelegateTransaction extends BaseTx<
       // tslint:disable object-literal-sort-keys
       return {
         delegate: {
-          username: raw.d_username
-        }
+          username: raw.d_username,
+        },
       };
       // tslint:enable object-literal-sort-keys
     }
@@ -297,14 +297,14 @@ export class RegisterDelegateTransaction extends BaseTx<
       type: 'create',
       values: {
         transactionId: tx.id,
-        username: tx.asset.delegate.username
-      }
+        username: tx.asset.delegate.username,
+      },
     };
   }
 
   public async attachAssets(txs: Array<IConfirmedTransaction<DelegateAsset>>) {
     const res = await this.DelegatesModel.findAll({
-      where: { transactionId: txs.map((tx) => tx.id) }
+      where: { transactionId: txs.map((tx) => tx.id) },
     });
 
     const indexes = {};
@@ -317,8 +317,8 @@ export class RegisterDelegateTransaction extends BaseTx<
       const info = res[indexes[tx.id]];
       tx.asset = {
         delegate: {
-          username: info.username
-        }
+          username: info.username,
+        },
       };
     });
   }

@@ -2,7 +2,7 @@ import {
   IWPHookSubscriber,
   OnWPAction,
   OnWPFilter,
-  WordPressHookSystem
+  WordPressHookSystem,
 } from 'mangiafuoco';
 
 export interface ActionFilterDecoratorType<K = () => Promise<any>> {

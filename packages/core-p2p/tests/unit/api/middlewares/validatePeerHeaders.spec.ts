@@ -38,16 +38,32 @@ describe('apis/utils/validatePeerHeaders', () => {
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
     request = {
-      headers: { port: 5555, version: '1.0.0', nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6' },
+      headers: {
+        port: 5555,
+        version: '1.0.0',
+        nethash:
+          'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+      },
       ip: '80.1.2.3',
     };
     next = sandbox.spy();
 
     // Container
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     // Instance
-    instance = container.getNamed(p2pSymbols.transportMiddleware, p2pSymbols.transportMiddlewares.validatePeer);
+    instance = container.getNamed(
+      p2pSymbols.transportMiddleware,
+      p2pSymbols.transportMiddlewares.validatePeer
+    );
 
     // systemModuleStub
     systemModuleStub = container.get(Symbols.modules.system);
@@ -56,7 +72,9 @@ describe('apis/utils/validatePeerHeaders', () => {
     peersLogicStub = container.get(Symbols.logic.peers);
     fakePeer = createFakePeer();
     fakePeer.applyHeaders = sandbox.spy();
-    peersLogicCreateStub = sandbox.stub(peersLogicStub, 'create').returns(fakePeer);
+    peersLogicCreateStub = sandbox
+      .stub(peersLogicStub, 'create')
+      .returns(fakePeer);
     // peersLogicStub.enqueueResponse('upsert', true);
     // peersLogicStub.enqueueResponse('remove', true);
 
@@ -65,12 +83,16 @@ describe('apis/utils/validatePeerHeaders', () => {
     lastErrorStub = sandbox.stub(schemaStub, 'getLastError').returns({
       details: [{ path: '/foo/bar' }],
     });
-    getLastErrorsStub = sandbox.stub(schemaStub, 'getLastErrors').returns([{ message: 'Schema error' }]);
+    getLastErrorsStub = sandbox
+      .stub(schemaStub, 'getLastErrors')
+      .returns([{ message: 'Schema error' }]);
     validateStub = sandbox.stub(schemaStub, 'validate').returns(true);
 
     // peersModuleStub
     peersModuleStub = container.get(Symbols.modules.peers);
-    peersModuleUpdateStub = sandbox.stub(peersModuleStub, 'update').returns(true);
+    peersModuleUpdateStub = sandbox
+      .stub(peersModuleStub, 'update')
+      .returns(true);
     const blocksModule = container.get<any>(Symbols.modules.blocks);
     blocksModule.lastBlock = { height: 10 };
   });
@@ -88,7 +110,8 @@ describe('apis/utils/validatePeerHeaders', () => {
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
       expect(next.args[0][0]).to.deep.equal({
-        expected: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+        expected:
+          'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
         message: 'Request is made on the wrong network',
         received: 'zxy',
       });
@@ -117,7 +140,8 @@ describe('apis/utils/validatePeerHeaders', () => {
       });
       expect(fakePeer.applyHeaders.calledOnce).to.be.true;
       expect(fakePeer.applyHeaders.args[0][0]).to.deep.equal({
-        nethash: 'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+        nethash:
+          'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
         port: 5555,
         version: '1.0.0',
       });

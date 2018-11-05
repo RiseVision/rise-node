@@ -10,7 +10,7 @@ import { APIConfig } from '../../src';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
-const expect       = chai.expect;
+const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
@@ -18,17 +18,23 @@ chai.use(assertArrays);
 describe('apis/utils/privateApisWatchGuard', () => {
   let instance: PrivateApisGuard;
   let next: SinonStub;
-  const request  = { ip: '1.1.1.1' };
+  const request = { ip: '1.1.1.1' };
   const response = {};
   let container: Container;
   beforeEach(async () => {
-    container = await createContainer(['core-apis', 'core', 'core-accounts', 'core-helpers', 'core-crypto']);
-    instance  = container.getNamed(APISymbols.class, APISymbols.privateApiGuard);
-    next      = sinon.stub();
+    container = await createContainer([
+      'core-apis',
+      'core',
+      'core-accounts',
+      'core-helpers',
+      'core-crypto',
+    ]);
+    instance = container.getNamed(APISymbols.class, APISymbols.privateApiGuard);
+    next = sinon.stub();
   });
   describe('use()', () => {
     it('should call to next() without or with parameters depending on the ip check', () => {
-      const config                          = container.get<APIConfig>(Symbols.generic.appConfig);
+      const config = container.get<APIConfig>(Symbols.generic.appConfig);
       config.api.access.restrictedWhiteList = ['8.8.8.8'];
       instance.use({ ip: '8.8.8.8' } as any, response, next);
       expect(next.calledOnce).to.be.true;

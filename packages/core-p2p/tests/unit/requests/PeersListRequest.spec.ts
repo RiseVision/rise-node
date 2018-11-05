@@ -18,9 +18,12 @@ describe('apis/requests/PeersListRequest', () => {
   let peerRequestFactory: PeersListRequest;
   let sandbox: SinonSandbox;
   before(async () => {
-    container          = await createContainer();
-    sandbox            = sinon.createSandbox();
-    peerRequestFactory = container.getNamed(p2pSymbols.transportMethod, p2pSymbols.requests.peersList);
+    container = await createContainer();
+    sandbox = sinon.createSandbox();
+    peerRequestFactory = container.getNamed(
+      p2pSymbols.transportMethod,
+      p2pSymbols.requests.peersList
+    );
   });
   beforeEach(() => {
     peers = createFakePeers(10);
@@ -30,12 +33,15 @@ describe('apis/requests/PeersListRequest', () => {
   describe('round trip', () => {
     it('bau', async () => {
       const peersModule = container.get<PeersModule>(p2pSymbols.modules.peers);
-      const stub        = sandbox.stub(peersModule, 'list').resolves({ peers });
-      const buf         = await peerRequestFactory.handleRequest(null, null);
+      const stub = sandbox.stub(peersModule, 'list').resolves({ peers });
+      const buf = await peerRequestFactory.handleRequest(null, null);
       expect(buf.length).gte(10);
 
       // try decoding
-      const response = await peerRequestFactory.handleResponse(peers[0] as any, buf);
+      const response = await peerRequestFactory.handleResponse(
+        peers[0] as any,
+        buf
+      );
       expect(response).deep.eq({
         peers: peers.map((p) => {
           delete p.applyHeaders;
@@ -43,8 +49,6 @@ describe('apis/requests/PeersListRequest', () => {
           return p;
         }),
       });
-
     });
   });
-
 });

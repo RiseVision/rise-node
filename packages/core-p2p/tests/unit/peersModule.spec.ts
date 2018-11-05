@@ -26,13 +26,21 @@ describe('modules/peers', () => {
   };
   let sandbox: SinonSandbox;
   before(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container.rebind(p2pSymbols.modules.peers).to(PeersModule);
-    inst           = container.get(Symbols.modules.peers);
+    inst = container.get(Symbols.modules.peers);
     peersLogicStub = container.get(Symbols.logic.peers);
   });
   afterEach(() => {
@@ -61,16 +69,17 @@ describe('modules/peers', () => {
     let removeStub: SinonStub;
     beforeEach(() => {
       removeStub = sandbox.stub(peersLogicStub, 'remove').returns(false);
-
     });
     it('should remove peer evene if from config and return true', () => {
-      expect(inst.remove(appConfig.peers.list[0].ip, appConfig.peers.list[0].port)).is.false;
+      expect(
+        inst.remove(appConfig.peers.list[0].ip, appConfig.peers.list[0].port)
+      ).is.false;
       expect(removeStub.called).is.true;
     });
     it('should call peersLogic.remove with peerIP and port.', () => {
       inst.remove('ip', 1111);
       expect(removeStub.firstCall.args[0]).to.be.deep.eq({
-        ip  : 'ip',
+        ip: 'ip',
         port: 1111,
       });
     });
@@ -84,7 +93,16 @@ describe('modules/peers', () => {
     beforeEach(() => {
       listStub = sandbox.stub(peersLogicStub, 'list');
     });
-    const fields = ['ip', 'port', 'state', 'os', 'version', 'broadhash', 'height', 'nonce'];
+    const fields = [
+      'ip',
+      'port',
+      'state',
+      'os',
+      'version',
+      'broadhash',
+      'height',
+      'nonce',
+    ];
 
     it('should call peersLogic.list with false', async () => {
       listStub.returns([]);
@@ -96,20 +114,20 @@ describe('modules/peers', () => {
     for (const f of fields) {
       it(`should filter out peer if ${f} is undefined`, async () => {
         const p = createFakePeer();
-        p[f]    = undefined;
+        p[f] = undefined;
         listStub.returns([p]);
 
         const filter = {};
-        filter[f]    = undefined;
-        const res    = await inst.getByFilter(filter);
+        filter[f] = undefined;
+        const res = await inst.getByFilter(filter);
         expect(res).to.be.empty;
       });
       it(`should filter out peer if ${f} is != 'value'`, async () => {
         const p = createFakePeer();
         listStub.returns([p]);
         const filter = {};
-        filter[f]    = p[f] + 1;
-        const res    = await inst.getByFilter(filter);
+        filter[f] = p[f] + 1;
+        const res = await inst.getByFilter(filter);
         expect(res).to.be.empty;
       });
     }
@@ -160,36 +178,43 @@ describe('modules/peers', () => {
       });
 
       it('should order peers random if not provided', async () => {
-        const peers = Array.apply(null, new Array(20))
-          .map((id, idx) => createFakePeer({ height: idx }));
+        const peers = Array.apply(null, new Array(20)).map((id, idx) =>
+          createFakePeer({ height: idx })
+        );
         listStub.returns(peers);
         expect(await inst.getByFilter({})).to.not.be.deep.eq(peers);
       });
     });
 
     it('should trim results by using limits param', async () => {
-      const peers = Array.apply(null, new Array(20))
-        .map((id, idx) => createFakePeer({ height: idx }));
+      const peers = Array.apply(null, new Array(20)).map((id, idx) =>
+        createFakePeer({ height: idx })
+      );
       listStub.returns(peers);
       const res = await inst.getByFilter({ limit: 10 });
       expect(res.length).to.be.eq(10);
     });
     it('should offset results by using offset param', async () => {
-      const peers = Array.apply(null, new Array(20))
-        .map((id, idx) => createFakePeer({ height: idx }));
+      const peers = Array.apply(null, new Array(20)).map((id, idx) =>
+        createFakePeer({ height: idx })
+      );
       listStub.returns(peers);
       const res = await inst.getByFilter({ offset: 5, orderBy: 'height:asc' });
       expect(res[0].height).to.be.eq(5);
     });
     it('should offset & trim results by using offset & limit params', async () => {
-      const peers = Array.apply(null, new Array(20))
-        .map((id, idx) => createFakePeer({ height: idx }));
+      const peers = Array.apply(null, new Array(20)).map((id, idx) =>
+        createFakePeer({ height: idx })
+      );
       listStub.returns(peers);
-      const res = await inst.getByFilter({ limit: 10, offset: 5, orderBy: 'height:asc' });
+      const res = await inst.getByFilter({
+        limit: 10,
+        offset: 5,
+        orderBy: 'height:asc',
+      });
       expect(res[0].height).to.be.eq(5);
       expect(res.length).to.be.eq(10);
     });
-
   });
 
   describe('.list', () => {
@@ -199,18 +224,17 @@ describe('modules/peers', () => {
     let listStub: SinonStub;
     let acceptableStub: SinonStub;
     beforeEach(() => {
-      listStub              = sandbox.stub(peersLogicStub, 'list');
-      acceptableStub        = sandbox.stub(peersLogicStub, 'acceptable');
-      const blocksModel     = container.get<IBlocksModule>(Symbols.modules.blocks);
+      listStub = sandbox.stub(peersLogicStub, 'list');
+      acceptableStub = sandbox.stub(peersLogicStub, 'acceptable');
+      const blocksModel = container.get<IBlocksModule>(Symbols.modules.blocks);
       blocksModel.lastBlock = { height: 100 } as any;
-      getByFilterStub       = sandbox.stub(inst, 'getByFilter');
+      getByFilterStub = sandbox.stub(inst, 'getByFilter');
       getByFilterStub.onFirstCall().callsFake(() => firstPeers);
       getByFilterStub.onSecondCall().callsFake(() => secondPeers);
     });
 
-
     it('should return consensus number', async () => {
-      firstPeers  = [createFakePeer()];
+      firstPeers = [createFakePeer()];
       secondPeers = [];
       acceptableStub.returns(firstPeers);
       acceptableStub.onSecondCall().returns(secondPeers);
@@ -220,7 +244,7 @@ describe('modules/peers', () => {
       expect(target.consensus).to.be.deep.eq(100);
     });
     it('should return peers array', async () => {
-      firstPeers  = [createFakePeer()];
+      firstPeers = [createFakePeer()];
       secondPeers = [];
       acceptableStub.returns(firstPeers);
       acceptableStub.onSecondCall().returns(secondPeers);
@@ -229,7 +253,7 @@ describe('modules/peers', () => {
       expect(target.peers).to.be.an('array');
     });
     it('should not concat unmatchedbroadhash if limit is matching the matching peers length', async () => {
-      firstPeers  = createFakePeers(10);
+      firstPeers = createFakePeers(10);
       secondPeers = [createFakePeer()];
       acceptableStub.returns(firstPeers);
       const t = await inst.list({ limit: 10 });
@@ -238,26 +262,28 @@ describe('modules/peers', () => {
       expect(acceptableStub.calledOnce).is.true;
     });
     it('should call getByFilter with broadhash filter', async () => {
-      const systemModule             = container.get<SystemModule>(Symbols.modules.system);
+      const systemModule = container.get<SystemModule>(Symbols.modules.system);
       systemModule.headers.broadhash = 'broadhashhh';
-      firstPeers                     = [createFakePeer()];
-      secondPeers                    = [];
+      firstPeers = [createFakePeer()];
+      secondPeers = [];
       acceptableStub.returns(firstPeers);
       acceptableStub.onSecondCall().returns(secondPeers);
       await inst.list({});
       expect(getByFilterStub.called).is.true;
       expect(getByFilterStub.firstCall.args[0]).to.haveOwnProperty('broadhash');
-      expect(getByFilterStub.firstCall.args[0].broadhash).to.be.eq(systemModule.broadhash);
+      expect(getByFilterStub.firstCall.args[0].broadhash).to.be.eq(
+        systemModule.broadhash
+      );
     });
     it('should return only acceptable peers by calling peersLogic.acceptable.', async () => {
-      firstPeers  = [createFakePeer()];
+      firstPeers = [createFakePeer()];
       secondPeers = [createFakePeer()];
       acceptableStub.returns([]);
       const res = await inst.list({});
       expect(res.peers).to.be.empty;
     });
     it('should concat unmatched broadhash peers and truncate with limit.', async () => {
-      firstPeers  = createFakePeers(5);
+      firstPeers = createFakePeers(5);
       secondPeers = createFakePeers(10).map((item) => {
         item.broadhash = 'unmatched';
         return item;
@@ -277,21 +303,21 @@ describe('modules/peers', () => {
         expect(res.consensus).to.be.eq(0);
       });
       it('should return 100 if all matching broadhash', async () => {
-        firstPeers  = createFakePeers(20);
+        firstPeers = createFakePeers(20);
         secondPeers = [];
         acceptableStub.callsFake((w) => w);
         const res = await inst.list({});
         expect(res.consensus).to.be.eq(100);
       });
       it('should return 25 if 25 matched and 100 did not on limit 100', async () => {
-        firstPeers  = createFakePeers(25);
+        firstPeers = createFakePeers(25);
         secondPeers = createFakePeers(100);
         acceptableStub.callsFake((w) => w);
         const res = await inst.list({ limit: 100 });
         expect(res.consensus).to.be.eq(25);
       });
       it('should return 33.33 if 25 matched and 50 did not on limit 100', async () => {
-        firstPeers  = createFakePeers(25);
+        firstPeers = createFakePeers(25);
         secondPeers = createFakePeers(50);
         acceptableStub.callsFake((w) => w);
         const res = await inst.list({ limit: 100 });
@@ -308,11 +334,16 @@ describe('modules/peers', () => {
     let txStub: SinonStub;
     let listStub: SinonStub;
     beforeEach(() => {
-      const peersModel = container.getNamed<any>(ModelSymbols.model, Symbols.models.peers);
-      truncateStub     = sandbox.stub(peersModel, 'truncate');
-      bulkCreateStub   = sandbox.stub(peersModel, 'bulkCreate');
-      txStub           = sandbox.stub(peersModel.sequelize, 'transaction').callsFake((t) => t('tx'))
-      listStub         = sandbox.stub(peersLogicStub, 'list');
+      const peersModel = container.getNamed<any>(
+        ModelSymbols.model,
+        Symbols.models.peers
+      );
+      truncateStub = sandbox.stub(peersModel, 'truncate');
+      bulkCreateStub = sandbox.stub(peersModel, 'bulkCreate');
+      txStub = sandbox
+        .stub(peersModel.sequelize, 'transaction')
+        .callsFake((t) => t('tx'));
+      listStub = sandbox.stub(peersLogicStub, 'list');
     });
     it('should not save anything if no peers known', async () => {
       listStub.returns([]);
@@ -322,19 +353,23 @@ describe('modules/peers', () => {
     });
     it('should save peers to database with single tx after cleaning peers table', async () => {
       const loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
-      const fakePeers  = [createFakePeer(), createFakePeer()];
+      const fakePeers = [createFakePeer(), createFakePeer()];
       listStub.returns(fakePeers);
       await inst.cleanup();
       expect(truncateStub.called).is.true;
       expect(bulkCreateStub.called).is.true;
       expect(truncateStub.calledBefore(bulkCreateStub)).is.true;
-      expect(bulkCreateStub.firstCall.args[0]).to.be.deep.eq(fakePeers.map((p) => ({
-        ...p,
-        broadhash: Buffer.from(p.broadhash, 'hex')
-      })));
+      expect(bulkCreateStub.firstCall.args[0]).to.be.deep.eq(
+        fakePeers.map((p) => ({
+          ...p,
+          broadhash: Buffer.from(p.broadhash, 'hex'),
+        }))
+      );
       expect(loggerStub.stubs.info.calledOnce).to.be.true;
       expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal('Peers exported to database');
+      expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(
+        'Peers exported to database'
+      );
     });
     it('should NOT throw error if db query was rejected', async () => {
       const loggerStub = container.get<LoggerStub>(Symbols.helpers.logger);
@@ -343,10 +378,13 @@ describe('modules/peers', () => {
       await inst.cleanup();
       expect(loggerStub.stubs.error.calledOnce).to.be.true;
       expect(loggerStub.stubs.error.firstCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal('Export peers to database failed');
-      expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({ error: 'error' });
+      expect(loggerStub.stubs.error.firstCall.args[0]).to.be.equal(
+        'Export peers to database failed'
+      );
+      expect(loggerStub.stubs.error.firstCall.args[1]).to.be.deep.equal({
+        error: 'error',
+      });
     });
-
   });
 
   // describe('.onBlockchainReady', () => {
@@ -429,5 +467,4 @@ describe('modules/peers', () => {
   //   });
   //
   // });
-
 });

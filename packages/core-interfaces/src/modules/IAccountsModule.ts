@@ -2,7 +2,7 @@ import {
   DBOp,
   FieldsInModel,
   IBaseTransaction,
-  publicKey
+  publicKey,
 } from '@risevision/core-types';
 import { AccountDiffType, AccountFilterData } from '../logic';
 import { IAccountsModel } from '../models';

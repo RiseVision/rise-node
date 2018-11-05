@@ -5,7 +5,7 @@ import {
   Column,
   ForeignKey,
   PrimaryKey,
-  Table
+  Table,
 } from 'sequelize-typescript';
 
 @Table({ tableName: 'delegates' })

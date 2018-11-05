@@ -6,6 +6,4 @@ export class Meow extends BaseCoreModule {
   constants: any;
 }
 
-export class CoreModuleStub extends StubbedInstance(Meow) {
-
-}
+export class CoreModuleStub extends StubbedInstance(Meow) {}

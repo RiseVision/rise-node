@@ -12,12 +12,17 @@ describe('helpers/jobsQueue', () => {
   let jobsQueue: IJobsQueue;
   // before(() => tearDownContainer());
   // after(() => createContainer([]));
-  beforeEach(() => { jobsQueue = new JobsQueue(); });
+  beforeEach(() => {
+    jobsQueue = new JobsQueue();
+  });
 
   describe('register', () => {
-
     it('should return the non-null reference of setImmediate / setTimeout for this job', () => {
-      const retVal = jobsQueue.register('test1', () => waitingPromise(10), 1000000);
+      const retVal = jobsQueue.register(
+        'test1',
+        () => waitingPromise(10),
+        1000000
+      );
       // tslint:disable no-unused-expression
       expect(retVal).to.be.not.null;
     });
@@ -70,7 +75,5 @@ describe('helpers/jobsQueue', () => {
       expect(runCount).to.be.greaterThan(1);
       console.log(runCount);
     });
-
   });
-
 });

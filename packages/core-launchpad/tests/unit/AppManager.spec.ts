@@ -10,7 +10,7 @@ import { OnFinishBoot, OnInitContainer } from '../../src/hooks';
 import { CoreModuleStub } from './stubs/CoreModuleStub';
 
 const genesisBlock = require('./assets/genesisBlock.json');
-const config       = require('./assets/config.json');
+const config = require('./assets/config.json');
 describe('AppManager', () => {
   const sandbox: SinonSandbox = sinon.createSandbox();
   let instance: AppManager;
@@ -18,11 +18,19 @@ describe('AppManager', () => {
   afterEach(() => sandbox.restore());
 
   beforeEach(() => {
-    modules = [new CoreModuleStub(),
+    modules = [
       new CoreModuleStub(),
       new CoreModuleStub(),
-      new CoreModuleStub()];
-    instance = new AppManager({ ...config }, new LoggerStub(), null, genesisBlock, modules);
+      new CoreModuleStub(),
+      new CoreModuleStub(),
+    ];
+    instance = new AppManager(
+      { ...config },
+      new LoggerStub(),
+      null,
+      genesisBlock,
+      modules
+    );
   });
 
   describe('constructor', () => {
@@ -37,16 +45,28 @@ describe('AppManager', () => {
       expect(inst['isCleaning']).false;
     });
     it('should set nethash from genesisBlock', () => {
-      const inst = new AppManager({ ...config, nethash: 'ciao' }, null, null, genesisBlock, []);
-      expect(inst['appConfig'].nethash).deep.eq('e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6')
+      const inst = new AppManager(
+        { ...config, nethash: 'ciao' },
+        null,
+        null,
+        genesisBlock,
+        []
+      );
+      expect(inst['appConfig'].nethash).deep.eq(
+        'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6'
+      );
     });
   });
 
   describe('boot()', () => {
     it('should call initAppElements and then finishBoot', async () => {
-      const initAppStub    = sandbox.stub(instance, 'initAppElements').returns(wait(1000));
-      const finishBootStub = sandbox.stub(instance, 'finishBoot').returns(wait(1000));
-      const now            = Date.now();
+      const initAppStub = sandbox
+        .stub(instance, 'initAppElements')
+        .returns(wait(1000));
+      const finishBootStub = sandbox
+        .stub(instance, 'finishBoot')
+        .returns(wait(1000));
+      const now = Date.now();
       await instance.boot();
       expect(Date.now() - now).lt(2000);
       expect(finishBootStub.calledAfter(initAppStub));
@@ -83,7 +103,9 @@ describe('AppManager', () => {
       for (const m of modules) {
         expect(m.stubs.addElementsToContainer.calledOnce).true;
         expect(m.stubs.initAppElements.calledOnce).true;
-        expect(m.stubs.initAppElements.calledAfter(m.stubs.addElementsToContainer)).true;
+        expect(
+          m.stubs.initAppElements.calledAfter(m.stubs.addElementsToContainer)
+        ).true;
       }
     });
     it('should launch init/container action', async () => {
@@ -127,5 +149,4 @@ describe('AppManager', () => {
       expect(stub.calledOnce).is.true;
     });
   });
-
 });

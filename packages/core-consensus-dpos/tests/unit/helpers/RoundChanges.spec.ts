@@ -10,7 +10,7 @@ describe('helpers/RoundChanges', () => {
   const fullFees = 25 * 101 * 0.1; // 252.5 for a full round with 25 tx per block;
   const fullRewards = [];
 
-  for (let i = 0; i < 101; i++ ) {
+  for (let i = 0; i < 101; i++) {
     fullRewards.push(15.0);
   }
 
@@ -30,10 +30,10 @@ describe('helpers/RoundChanges', () => {
     };
     const rc = new RoundChanges(scope, slots);
     const situation = rc.at(50);
-    expect( situation.balance ).to.be.eq(16);
-    expect( situation.fees ).to.be.eq(1);
-    expect( situation.feesRemaining ).to.be.eq(1);
-    expect( situation.rewards ).to.be.eq(15);
+    expect(situation.balance).to.be.eq(16);
+    expect(situation.fees).to.be.eq(1);
+    expect(situation.feesRemaining).to.be.eq(1);
+    expect(situation.rewards).to.be.eq(15);
   });
 
   it('at() should hanndle empty round returning all zeroes', () => {
@@ -42,9 +42,9 @@ describe('helpers/RoundChanges', () => {
     };
     const rc = new RoundChanges(scope, slots);
     const situation = rc.at(50);
-    expect( situation.balance ).to.be.eq(0);
-    expect( situation.fees ).to.be.eq(0);
-    expect( situation.feesRemaining ).to.be.eq(0);
-    expect( situation.rewards ).to.be.eq(0);
+    expect(situation.balance).to.be.eq(0);
+    expect(situation.fees).to.be.eq(0);
+    expect(situation.feesRemaining).to.be.eq(0);
+    expect(situation.rewards).to.be.eq(0);
   });
 });

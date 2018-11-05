@@ -1,28 +1,24 @@
 {
-  "getAccounts"      : {
-    "id"        : "multisignatures.getAccounts",
-    "type"      : "object",
+  "getAccounts": {
+    "id": "multisignatures.getAccounts",
+    "type": "object",
     "properties": {
       "publicKey": {
-        "type"  : "string",
+        "type": "string",
         "format": "publicKey"
       }
     },
-    "required"  : [
-      "publicKey"
-    ]
+    "required": ["publicKey"]
   },
-  "pending"          : {
-    "id"        : "multisignatures.pending",
-    "type"      : "object",
+  "pending": {
+    "id": "multisignatures.pending",
+    "type": "object",
     "properties": {
       "publicKey": {
-        "type"  : "string",
+        "type": "string",
         "format": "publicKey"
       }
     },
-    "required"  : [
-      "publicKey"
-    ]
+    "required": ["publicKey"]
   }
 }

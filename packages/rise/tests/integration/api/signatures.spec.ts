@@ -5,7 +5,6 @@ import { checkIntParam, checkReturnObjKeyVal } from './utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/signatures', () => {
-
   initializer.setup();
 
   describe('/fee', () => {

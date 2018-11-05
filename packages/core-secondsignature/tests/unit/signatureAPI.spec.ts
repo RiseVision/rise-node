@@ -24,7 +24,12 @@ describe('apis/signatureAPI', () => {
   let result: any;
 
   beforeEach(async () => {
-    container = await createContainer(['core-secondsignature', 'core', 'core-helpers', 'core-crypto']);
+    container = await createContainer([
+      'core-secondsignature',
+      'core',
+      'core-helpers',
+      'core-crypto',
+    ]);
     sandbox = sinon.createSandbox();
     systemModule = container.get(Symbols.modules.system);
 

@@ -20,7 +20,7 @@ export class RoundsLogic {
   public heightFromRound(round: number): { first: number; last: number } {
     return {
       first: this.firstInRound(round),
-      last: this.lastInRound(round)
+      last: this.lastInRound(round),
     };
   }
 

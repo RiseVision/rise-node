@@ -9,7 +9,10 @@ import { p2pSymbols } from '@risevision/core-p2p';
 import { Container } from 'inversify';
 import { MultisigSymbols } from '../../../src';
 import { ITransactionPool } from '@risevision/core-interfaces';
-import { createRandomTransaction, toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import {
+  createRandomTransaction,
+  toBufferedTransaction,
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { generateAccount } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
 import { TXSymbols } from '@risevision/core-transactions';
 
@@ -22,25 +25,37 @@ describe('apis/requests/GetSignaturesRequest', () => {
   let instance: GetSignaturesRequest;
   let txPool: ITransactionPool;
   before(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions', 'core-multisignature']);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+      'core-multisignature',
+    ]);
   });
   beforeEach(() => {
     sandbox.restore();
-    instance = container.getNamed(p2pSymbols.transportMethod, MultisigSymbols.p2p.getSignatures);
-    txPool   = container.get(TXSymbols.pool);
+    instance = container.getNamed(
+      p2pSymbols.transportMethod,
+      MultisigSymbols.p2p.getSignatures
+    );
+    txPool = container.get(TXSymbols.pool);
     txPool.pending.list().forEach((a) => txPool.pending.remove(a.tx.id));
   });
 
   async function createRequest(query: any, body: null) {
-    const r    = await instance.createRequestOptions({ query, body });
+    const r = await instance.createRequestOptions({ query, body });
     const resp = await instance.handleRequest(r.data, r.query);
     return instance.handleResponse(null, resp);
   }
 
   describe('in/out', () => {
     it('should encode/decode data properly', async () => {
-      const txs = new Array(5).fill(null)
+      const txs = new Array(5)
+        .fill(null)
         .map(() => createRandomTransaction())
         .map((t, indx) => {
           t.signatures = [];
@@ -57,22 +72,31 @@ describe('apis/requests/GetSignaturesRequest', () => {
 
       const resp = await createRequest(null, null);
       expect(resp).deep.eq({
-        signatures: txs.slice(1).reverse().map((t) => ({ transaction: t.id, signatures: t.signatures })),
+        signatures: txs
+          .slice(1)
+          .reverse()
+          .map((t) => ({ transaction: t.id, signatures: t.signatures })),
       });
     });
   });
   it('should validate response', async () => {
-    txPool.pending.add({
-      id        : 'a',
-      signatures: [Buffer.from(new Array(128).fill('a').join(''), 'hex')],
-    } as any, { receivedAt: new Date(), ready: false });
+    txPool.pending.add(
+      {
+        id: 'a',
+        signatures: [Buffer.from(new Array(128).fill('a').join(''), 'hex')],
+      } as any,
+      { receivedAt: new Date(), ready: false }
+    );
     await expect(createRequest(null, null)).rejectedWith('format txId');
     txPool.removeFromPool('a');
 
-    txPool.pending.add({
-      id        : '123123123123',
-      signatures: [new Buffer('meow')],
-    } as any, { receivedAt: new Date(), ready: false });
+    txPool.pending.add(
+      {
+        id: '123123123123',
+        signatures: [new Buffer('meow')],
+      } as any,
+      { receivedAt: new Date(), ready: false }
+    );
     await expect(createRequest(null, null)).rejectedWith('signatureBuf');
   });
 });

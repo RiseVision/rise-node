@@ -13,7 +13,7 @@ import { ModelSymbols } from '@risevision/core-models';
 
 const expect = chai.expect;
 
-const pgpStub    = { as: undefined } as any;
+const pgpStub = { as: undefined } as any;
 
 // tslint:disable no-unused-expression
 describe('logic/round', () => {
@@ -25,41 +25,51 @@ describe('logic/round', () => {
   let blocksModel: typeof IBlocksModel;
   let roundLogic: typeof RoundLogic;
   beforeEach(async () => {
-    sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto']);
-    accountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
-    blocksModel   = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
-    roundLogic    = container.get(dPoSSymbols.logic.round);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-consensus-dpos',
+      'core-helpers',
+      'core-crypto',
+    ]);
+    accountsModel = container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.accounts
+    );
+    blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    roundLogic = container.get(dPoSSymbols.logic.round);
 
-    scope    = {
-      backwards     : false,
-      block         : {
-        generatorPublicKey: Buffer.from('9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f', 'hex'),
-        height            : 2,
-        id                : '1',
+    scope = {
+      backwards: false,
+      block: {
+        generatorPublicKey: Buffer.from(
+          '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
+          'hex'
+        ),
+        height: 2,
+        id: '1',
       },
-      library       : {
+      library: {
         logger: {
           debug: sandbox.stub(),
           trace: sandbox.stub(),
         },
         RoundChanges: container.get(dPoSSymbols.helpers.roundChanges),
       },
-      modules       : {
+      modules: {
         accounts: {
           generateAddressByPublicKey: sandbox.stub().returns(1),
-          mergeAccountAndGetOPs     : sandbox.stub().returns([]),
+          mergeAccountAndGetOPs: sandbox.stub().returns([]),
         },
       },
-      models        : {
+      models: {
         AccountsModel: accountsModel,
-        BlocksModel  : blocksModel
+        BlocksModel: blocksModel,
       },
-      round         : 10,
+      round: 10,
       roundDelegates: [Buffer.from('aabbcc', 'hex')],
-      roundFees     : {},
+      roundFees: {},
       roundOutsiders: ['1', '2', '3'],
-      roundRewards  : {},
+      roundRewards: {},
     };
     instance = new roundLogic(scope, container.get(dPoSSymbols.helpers.slots));
   });
@@ -70,7 +80,7 @@ describe('logic/round', () => {
 
   describe('constructor', () => {
     it('should throw an error when a property is missing', () => {
-      const scopeOriginal      = Object.assign({}, scope);
+      const scopeOriginal = Object.assign({}, scope);
       const requiredProperties = [
         'library',
         'modules',
@@ -91,8 +101,8 @@ describe('logic/round', () => {
     });
 
     it('should throw error if finishRound and missing requiredProperty', () => {
-      scope.finishRound        = true;
-      const scopeOriginal      = Object.assign({}, scope);
+      scope.finishRound = true;
+      const scopeOriginal = Object.assign({}, scope);
       const requiredProperties = [
         'library',
         'modules',
@@ -138,33 +148,38 @@ describe('logic/round', () => {
   describe('updateMissedBlocks', () => {
     it('should return null roundOutsiders is empty', async () => {
       scope.roundOutsiders = [];
-      const ar             = await instance.updateMissedBlocks();
+      const ar = await instance.updateMissedBlocks();
       expect(ar).to.be.null;
     });
 
     it('should return result from updateMissedBlocks', async () => {
-      const retVal             = await instance.updateMissedBlocks();
+      const retVal = await instance.updateMissedBlocks();
       expect(retVal.model).to.be.deep.eq(accountsModel);
       delete retVal.model; // causes memory issue
       expect(retVal).to.be.deep.eq({
         options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
-        type   : 'update',
-        values : { missedblocks: { val: 'missedblocks + 1' } },
+        type: 'update',
+        values: { missedblocks: { val: 'missedblocks + 1' } },
       });
 
       // chai does not support deep eq on obj with symbols
-      expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
+      expect(retVal.options.where.address[Op.in]).to.be.deep.eq(
+        scope.roundOutsiders
+      );
     });
   });
 
   describe('updateVotes', () => {
-
     it('should return custom DBOp with RoundsModel SQL', () => {
       scope.round = 10;
-      const ret   = instance.updateVotes();
+      const ret = instance.updateVotes();
       expect(ret.type).is.eq('custom');
       expect(ret.model).is.deep.eq(accountsModel);
-      expect(ret.query).is.deep.eq(fs.readFileSync(`${__dirname}/../../../sql/recalcVotes.sql`, {encoding: 'utf8'}));
+      expect(ret.query).is.deep.eq(
+        fs.readFileSync(`${__dirname}/../../../sql/recalcVotes.sql`, {
+          encoding: 'utf8',
+        })
+      );
     });
   });
 
@@ -183,9 +198,7 @@ describe('logic/round', () => {
       expect(res.type).to.be.eq('update');
       expect(res.values).to.be.deep.eq({ blockId: '0' });
     });
-
   });
-
 
   describe('restoreVotesSnapshot', () => {
     it('should return custom op over accountsModel', () => {
@@ -199,7 +212,9 @@ describe('logic/round', () => {
   describe('applyRound', () => {
     let at: SinonStub;
     beforeEach(() => {
-      const rc = container.get<typeof RoundChanges>(dPoSSymbols.helpers.roundChanges);
+      const rc = container.get<typeof RoundChanges>(
+        dPoSSymbols.helpers.roundChanges
+      );
       at = sandbox.stub(rc.prototype, 'at');
     });
 
@@ -220,7 +235,7 @@ describe('logic/round', () => {
         'Delegate changes'
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        changes : {
+        changes: {
           feesRemaining: 10,
         },
         delegate: 'aabbcc',
@@ -231,8 +246,8 @@ describe('logic/round', () => {
       );
       expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
         delegate: 'aabbcc',
-        fees    : 10,
-        index   : 0,
+        fees: 10,
+        index: 0,
       });
       expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
@@ -249,7 +264,10 @@ describe('logic/round', () => {
         fees: 5,
         rewards: 4,
       });
-      scope.roundDelegates = [Buffer.from('aa', 'hex'), Buffer.from('bb', 'hex')];
+      scope.roundDelegates = [
+        Buffer.from('aa', 'hex'),
+        Buffer.from('bb', 'hex'),
+      ];
 
       const retVal = await instance.applyRound();
 
@@ -259,7 +277,9 @@ describe('logic/round', () => {
       expect(at.thirdCall.args[0]).to.equal(1);
 
       expect(scope.modules.accounts.mergeAccountAndGetOPs.calledThrice).is.true;
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]).is.deep.eq({
+      expect(
+        scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]
+      ).is.deep.eq({
         balance: 10,
         blockId: '1',
         fees: 5,
@@ -267,9 +287,11 @@ describe('logic/round', () => {
         publicKey: Buffer.from('aa', 'hex'),
         rewards: 4,
         u_balance: 10,
-        round: 10
+        round: 10,
       });
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]).is.deep.eq({
+      expect(
+        scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]
+      ).is.deep.eq({
         balance: 10,
         blockId: '1',
         fees: 5,
@@ -277,29 +299,38 @@ describe('logic/round', () => {
         publicKey: Buffer.from('bb', 'hex'),
         rewards: 4,
         u_balance: 10,
-        round: 10
+        round: 10,
       });
       // Remainder of 1 feesRemaining
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]).is.deep.eq({
+      expect(
+        scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]
+      ).is.deep.eq({
         balance: 1,
         blockId: '1',
         fees: 1,
         publicKey: Buffer.from('bb', 'hex'),
         u_balance: 1,
-        round: 10
+        round: 10,
       });
 
       expect(retVal).to.be.deep.eq([]);
-
     });
   });
 
   describe('land', () => {
     it('should call correct methods', async () => {
-      const updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
-      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
-      const performVotesSnapshot = sandbox.stub(instance, 'performVotesSnapshot').returns({performVotesSnapshot: true});
-      const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
+      const updateVotes = sandbox
+        .stub(instance, 'updateVotes')
+        .returns({ updateVote: true });
+      const updateMissedBlocks = sandbox
+        .stub(instance, 'updateMissedBlocks')
+        .returns({ updateMissed: true });
+      const performVotesSnapshot = sandbox
+        .stub(instance, 'performVotesSnapshot')
+        .returns({ performVotesSnapshot: true });
+      const applyRound = sandbox
+        .stub(instance, 'applyRound')
+        .returns([{ apply: 1 }, { apply: 2 }]);
 
       const res = instance.land();
 
@@ -313,21 +344,26 @@ describe('logic/round', () => {
       applyRound.restore();
 
       expect(res).to.be.deep.eq([
-        { updateMissed: true},
-        { apply: 1},
-        { apply: 2},
-        { performVotesSnapshot: true},
-        { updateVote: true},
+        { updateMissed: true },
+        { apply: 1 },
+        { apply: 2 },
+        { performVotesSnapshot: true },
+        { updateVote: true },
       ]);
     });
-
   });
 
   describe('backwardLand', () => {
     it('should call correct methods', async () => {
-      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
-      const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
-      const restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').returns({restorevotes: true});
+      const updateMissedBlocks = sandbox
+        .stub(instance, 'updateMissedBlocks')
+        .returns({ updateMissed: true });
+      const applyRound = sandbox
+        .stub(instance, 'applyRound')
+        .returns([{ apply: 1 }, { apply: 2 }]);
+      const restoreVotesSnapshot = sandbox
+        .stub(instance, 'restoreVotesSnapshot')
+        .returns({ restorevotes: true });
 
       const res = instance.backwardLand();
 
@@ -340,13 +376,11 @@ describe('logic/round', () => {
       restoreVotesSnapshot.restore();
 
       expect(res).to.be.deep.eq([
-        { updateMissed: true},
-        { apply: 1},
-        { apply: 2},
-        { restorevotes: true},
+        { updateMissed: true },
+        { apply: 1 },
+        { apply: 2 },
+        { restorevotes: true },
       ]);
     });
-
   });
-
 });

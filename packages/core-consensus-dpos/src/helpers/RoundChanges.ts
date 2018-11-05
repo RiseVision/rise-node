@@ -41,7 +41,7 @@ export class RoundChanges {
       balance: Number(this.fees.plus(rewards).toFixed()),
       fees: Number(this.fees.toFixed()),
       feesRemaining: Number(this.feesRemaining.toFixed()),
-      rewards: Number(rewards.toFixed())
+      rewards: Number(rewards.toFixed()),
     };
   }
 }

@@ -19,12 +19,16 @@ describe('helpers/slots', () => {
 
   let testTimestamp: number;
   beforeEach(async () => {
-    const container = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto']);
-    instance        = container.get(dPoSSymbols.helpers.slots);
-    constants       = container.get(Symbols.generic.constants);
-    dposConstants   = container.get(dPoSSymbols.constants);
-    const testDate  = new Date(constants.epochTime.getTime() + 3 * 3600 * 1000);
-    testTimestamp   = testDate.getTime();
+    const container = await createContainer([
+      'core-consensus-dpos',
+      'core-helpers',
+      'core-crypto',
+    ]);
+    instance = container.get(dPoSSymbols.helpers.slots);
+    constants = container.get(Symbols.generic.constants);
+    dposConstants = container.get(dPoSSymbols.constants);
+    const testDate = new Date(constants.epochTime.getTime() + 3 * 3600 * 1000);
+    testTimestamp = testDate.getTime();
   });
 
   it('getTime() should return the number of seconds elapsed since epochTime to the passed timestamp', () => {
@@ -47,5 +51,4 @@ describe('helpers/slots', () => {
     const retVal = instance.getLastSlot(48804000000);
     expect(retVal).to.be.eq(48804000000 + dposConstants.activeDelegates);
   });
-
 });

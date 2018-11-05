@@ -2,7 +2,7 @@ import {
   IAccountLogic,
   IAccountsModel,
   ISystemModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
@@ -11,7 +11,7 @@ import {
   IBaseTransaction,
   IConfirmedTransaction,
   SignedBlockType,
-  TransactionType
+  TransactionType,
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
@@ -22,7 +22,7 @@ import {
   Accounts2DelegatesModel,
   Accounts2U_DelegatesModel,
   AccountsModelForDPOS,
-  VotesModel
+  VotesModel,
 } from '../models/';
 import { DelegatesModule } from '../modules/';
 import { RoundsLogic } from './rounds';
@@ -153,7 +153,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
         votesString
           .split('')
           .map((x, i) => (i % 65 ? [] : votesString.slice(i, i + 65)))
-      )
+      ),
     };
   }
 
@@ -274,8 +274,8 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
       type: 'create',
       values: {
         transactionId: tx.id,
-        votes: Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null
-      }
+        votes: Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
+      },
     };
   }
 
@@ -317,10 +317,10 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
           limit: removedPks.length,
           where: {
             accountId: senderAddress,
-            dependentId: removedPks
-          }
+            dependentId: removedPks,
+          },
         },
-        type: 'remove'
+        type: 'remove',
       });
     }
     // create new elements for each added pk.
@@ -330,8 +330,8 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
         type: 'bulkCreate',
         values: addedPks.map((pk) => ({
           dependentId: pk,
-          accountId: senderAddress
-        }))
+          accountId: senderAddress,
+        })),
       });
     }
 
@@ -340,7 +340,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
         model: this.AccountsModel,
         options: { where: { address: senderAddress } },
         type: 'update',
-        values: { blockId }
+        values: { blockId },
       });
     }
     return ops;
@@ -348,7 +348,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   public async attachAssets(txs: Array<IConfirmedTransaction<VoteAsset>>) {
     const res = await this.VotesModel.findAll({
-      where: { transactionId: txs.map((tx) => tx.id) }
+      where: { transactionId: txs.map((tx) => tx.id) },
     });
 
     const indexes = {};
@@ -360,7 +360,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
       }
       const info = res[indexes[tx.id]];
       tx.asset = {
-        votes: info.votes.split(',')
+        votes: info.votes.split(','),
       };
     });
   }

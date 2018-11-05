@@ -9,7 +9,7 @@ import {
   DataType,
   DefaultScope,
   PrimaryKey,
-  Table
+  Table,
 } from 'sequelize-typescript';
 import { Container } from 'inversify';
 import { BaseModel } from '@risevision/core-models';
@@ -25,8 +25,8 @@ import { BaseModel } from '@risevision/core-models';
     'fees',
     'rewards',
     'virgin',
-    'u_balance'
-  ].sort()
+    'u_balance',
+  ].sort(),
 })
 @Table({ tableName: 'mem_accounts' })
 export class AccountsModel extends BaseModel<AccountsModel>
@@ -144,7 +144,7 @@ export class AccountsModel extends BaseModel<AccountsModel>
         q: `%${q}%`,
         limit,
         orderBy,
-        orderHow
+        orderHow,
       }
     );
   }
@@ -156,7 +156,7 @@ export class AccountsModel extends BaseModel<AccountsModel>
           u_isDelegate: sequelize.col('isDelegate'),
           u_balance: sequelize.col('balance'),
           u_secondSignature: sequelize.col('secondSignature'),
-          u_username: sequelize.col('username')
+          u_username: sequelize.col('username'),
         },
         {
           where: {
@@ -164,9 +164,9 @@ export class AccountsModel extends BaseModel<AccountsModel>
               u_isDelegate: { [Op.ne]: sequelize.col('isDelegate') },
               u_balance: { [Op.ne]: sequelize.col('balance') },
               u_secondSignature: { [Op.ne]: sequelize.col('secondSignature') },
-              u_username: { [Op.ne]: sequelize.col('username') }
-            }
-          }
+              u_username: { [Op.ne]: sequelize.col('username') },
+            },
+          },
         }
       )
     );

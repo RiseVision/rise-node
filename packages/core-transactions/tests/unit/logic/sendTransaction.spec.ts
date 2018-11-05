@@ -14,7 +14,10 @@ import { SendTransaction } from '../../../src/sendTransaction';
 import { ModelSymbols } from '../../../../core-models/src/helpers';
 import { ISystemModule } from '../../../../core-interfaces/src/modules';
 import { SendTxApplyFilter, SendTxUndoFilter, TXSymbols } from '../../../src';
-import { createSendTransaction, toBufferedTransaction } from '../utils/txCrafter';
+import {
+  createSendTransaction,
+  toBufferedTransaction,
+} from '../utils/txCrafter';
 import { LiskWallet } from 'dpos-offline';
 import { IAccountLogic } from '../../../../core-interfaces/src/logic';
 
@@ -34,19 +37,33 @@ describe('logic/transactions/send', () => {
   let block: any;
 
   beforeEach(async () => {
-    sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-transactions', 'core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts']);
-    instance      = container.getNamed(TXSymbols.transaction, TXSymbols.sendTX);
-    accountLogic  = container.get(Symbols.logic.account);
-    AccountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-transactions',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core',
+      'core-accounts',
+    ]);
+    instance = container.getNamed(TXSymbols.transaction, TXSymbols.sendTX);
+    accountLogic = container.get(Symbols.logic.account);
+    AccountsModel = container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.accounts
+    );
 
     systemModule = container.get(Symbols.modules.system);
 
     sender = new AccountsModel({ publicKey: new Buffer('123') });
-    tx     = toBufferedTransaction(createSendTransaction(new LiskWallet('meow', 'R'), '1R', 10, { amount: 10 }));
-    block  = {
+    tx = toBufferedTransaction(
+      createSendTransaction(new LiskWallet('meow', 'R'), '1R', 10, {
+        amount: 10,
+      })
+    );
+    block = {
       height: 123456,
-      id    : 'blockId',
+      id: 'blockId',
     };
   });
 
@@ -56,8 +73,10 @@ describe('logic/transactions/send', () => {
 
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
-      const systemModuleStub = sandbox.stub(systemModule, 'getFees').returns({ fees: { send: 101 } });
-      const fee              = instance.calculateFee(tx, sender, 10);
+      const systemModuleStub = sandbox
+        .stub(systemModule, 'getFees')
+        .returns({ fees: { send: 101 } });
+      const fee = instance.calculateFee(tx, sender, 10);
       expect(systemModuleStub.calledOnce).to.be.true;
       expect(systemModuleStub.firstCall.args.length).to.equal(1);
       expect(systemModuleStub.firstCall.args[0]).to.equal(10);
@@ -67,12 +86,16 @@ describe('logic/transactions/send', () => {
 
   describe('verify', () => {
     it('should throw Missing recipient when !tx.recipientId', async () => {
-      await expect(instance.verify({} as any, sender)).to.be.rejectedWith('Missing recipient');
+      await expect(instance.verify({} as any, sender)).to.be.rejectedWith(
+        'Missing recipient'
+      );
     });
 
     it('throws Invalid transaction amount when tx.amount <= 0', async () => {
       tx.amount = 0;
-      await expect(instance.verify(tx, sender)).to.be.rejectedWith('Invalid transaction amount');
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith(
+        'Invalid transaction amount'
+      );
     });
 
     it('should resolce on successful execution', () => {
@@ -82,15 +105,17 @@ describe('logic/transactions/send', () => {
 
   describe('apply', () => {
     it('should return an array of objects', async () => {
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([{ foo: 'bar' }]);
-      const result           = await instance.apply(tx as any, block, sender);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'merge')
+        .returns([{ foo: 'bar' }]);
+      const result = await instance.apply(tx as any, block, sender);
       expect(result).to.be.an('array');
       expect(result[0]).to.deep.equal({ foo: 'bar' });
       expect(accountMergeStub.calledOnce).to.be.true;
       expect(accountMergeStub.args[0][0]).to.equal(tx.recipientId);
       expect(accountMergeStub.args[0][1]).to.deep.equal({
-        balance  : tx.amount,
-        blockId  : block.id,
+        balance: tx.amount,
+        blockId: block.id,
         u_balance: tx.amount,
       });
       // expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
@@ -101,14 +126,20 @@ describe('logic/transactions/send', () => {
 
       const error = new Error('Fake Error!');
       accountMergeStub.throws(error);
-      await expect(instance.apply(tx as any, block, sender)).to.be.rejectedWith(error);
+      await expect(instance.apply(tx as any, block, sender)).to.be.rejectedWith(
+        error
+      );
     });
     it('should go through SendTxUndoFilter', async () => {
       const stub = sandbox.stub();
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns(['a']);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'merge')
+        .returns(['a']);
 
       class A extends WPHooksSubscriber(Object) {
-        public hookSystem: WordPressHookSystem = container.get(Symbols.generic.hookSystem);
+        public hookSystem: WordPressHookSystem = container.get(
+          Symbols.generic.hookSystem
+        );
 
         @SendTxApplyFilter()
         public applyFilter(...args: any[]) {
@@ -125,22 +156,27 @@ describe('logic/transactions/send', () => {
       expect(stub.firstCall.args[2]).deep.eq(block);
       expect(stub.firstCall.args[3]).deep.eq(sender);
       await a.unHook();
-
     });
   });
 
   describe('undo', () => {
     it('should return an array of objects', async () => {
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([{foo: 'bar'}]);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'merge')
+        .returns([{ foo: 'bar' }]);
 
-      const result: DBUpsertOp<any> = await instance.undo(tx as any, block, sender) as any;
+      const result: DBUpsertOp<any> = (await instance.undo(
+        tx as any,
+        block,
+        sender
+      )) as any;
       expect(result).to.be.an('array');
       expect(result[0]).to.deep.equal({ foo: 'bar' });
       expect(accountMergeStub.calledOnce).to.be.true;
       expect(accountMergeStub.args[0][0]).to.equal(tx.recipientId);
       expect(accountMergeStub.args[0][1]).to.deep.equal({
-        balance  : -tx.amount,
-        blockId  : block.id,
+        balance: -tx.amount,
+        blockId: block.id,
         u_balance: -tx.amount,
       });
       // expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
@@ -148,17 +184,23 @@ describe('logic/transactions/send', () => {
 
     it('should to be rejected if accountLogic.merge() throws an error', async () => {
       const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
-      const error            = new Error('Fake Error!');
+      const error = new Error('Fake Error!');
       accountMergeStub.throws(error);
-      await expect(instance.undo(tx as any, block, sender)).to.be.rejectedWith(error);
+      await expect(instance.undo(tx as any, block, sender)).to.be.rejectedWith(
+        error
+      );
     });
 
     it('should go through SendTxUndoFilter', async () => {
       const stub = sandbox.stub();
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns(['a']);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'merge')
+        .returns(['a']);
 
       class A extends WPHooksSubscriber(Object) {
-        public hookSystem: WordPressHookSystem = container.get(Symbols.generic.hookSystem);
+        public hookSystem: WordPressHookSystem = container.get(
+          Symbols.generic.hookSystem
+        );
 
         @SendTxUndoFilter()
         public applyFilter(...args: any[]) {
@@ -175,7 +217,6 @@ describe('logic/transactions/send', () => {
       expect(stub.firstCall.args[2]).deep.eq(block);
       expect(stub.firstCall.args[3]).deep.eq(sender);
       await a.unHook();
-
     });
   });
 
@@ -190,5 +231,4 @@ describe('logic/transactions/send', () => {
       expect(instance.dbSave({} as any)).to.deep.equal(null);
     });
   });
-
 });

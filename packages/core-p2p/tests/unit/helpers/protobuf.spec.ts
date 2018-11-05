@@ -15,14 +15,21 @@ describe('helpers/protobuf', () => {
   let fakeLogger: LoggerStub;
   let container: Container;
   before(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts']);
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core',
+      'core-accounts',
+    ]);
     container.get(p2pSymbols.helpers.protoBuf);
     // allow non singletonness
     container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper);
   });
   beforeEach(() => {
-    sandbox   = sinon.createSandbox();
-    instance  = container.get(p2pSymbols.helpers.protoBuf);
+    sandbox = sinon.createSandbox();
+    instance = container.get(p2pSymbols.helpers.protoBuf);
     instance2 = container.get(p2pSymbols.helpers.protoBuf);
     instance.loadProto(`${__dirname}/test.proto`, 'test');
     instance2.loadProto(`${__dirname}/test.proto`, 'test');
@@ -37,8 +44,13 @@ describe('helpers/protobuf', () => {
   describe('encode/decodeToObj', () => {
     it('encode -> decodeToObj should result to the same object', async () => {
       const payload = { id: 12345, message: 'theMessage!', success: true };
-      const buffer  = instance.encode(payload, 'test', 'test2');
-      const decoded = instance.decodeToObj(buffer as Buffer, 'test', 'test2', {});
+      const buffer = instance.encode(payload, 'test', 'test2');
+      const decoded = instance.decodeToObj(
+        buffer as Buffer,
+        'test',
+        'test2',
+        {}
+      );
       expect(decoded).to.be.deep.equal(payload);
     });
   });
@@ -71,13 +83,15 @@ describe('helpers/protobuf', () => {
     it('should encode/decode properly', () => {
       const p = { test: 'hey brotha', success: true };
 
-      const buf     = instance.encode(p, 'test');
+      const buf = instance.encode(p, 'test');
       const decoded = instance.decode(buf, 'test');
       expect(decoded.test).deep.eq(p.test);
       expect(decoded.success).deep.eq(p.success);
     });
     it('decode should fail if msg is indecifrable', () => {
-      expect(() => instance.decode(new Buffer('hey'), 'test')).to.throw('ProtoBuf Wire format invalid');
+      expect(() => instance.decode(new Buffer('hey'), 'test')).to.throw(
+        'ProtoBuf Wire format invalid'
+      );
     });
   });
 
@@ -86,25 +100,26 @@ describe('helpers/protobuf', () => {
     it('should honorate conv options', () => {
       const buf = instance.encode(p, 'test');
 
-      expect(instance.decodeToObj(buf, 'test', 'test', { longs: Number }))
-        .deep.eq(p);
+      expect(
+        instance.decodeToObj(buf, 'test', 'test', { longs: Number })
+      ).deep.eq(p);
     });
     it('should convert longs to string', () => {
       const buf = instance.encode(p, 'test');
 
-      expect(instance.decodeToObj(buf, 'test', 'test', { longs: String }))
-        .deep.eq({ ...p, longnumber: '10000000' });
+      expect(
+        instance.decodeToObj(buf, 'test', 'test', { longs: String })
+      ).deep.eq({ ...p, longnumber: '10000000' });
     });
     it('should call postProcess over returning obj', () => {
       const buf = instance.encode(p, 'test');
 
-      expect(instance.decodeToObj(
-        buf,
-        'test',
-        'test',
-        { longs: String, postProcess: (o) => ({ ...o, cat: 'meow' }) })
-      )
-        .deep.eq({ ...p, longnumber: '10000000', cat: 'meow' });
+      expect(
+        instance.decodeToObj(buf, 'test', 'test', {
+          longs: String,
+          postProcess: (o) => ({ ...o, cat: 'meow' }),
+        })
+      ).deep.eq({ ...p, longnumber: '10000000', cat: 'meow' });
     });
   });
 });

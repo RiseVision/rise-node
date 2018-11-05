@@ -1,7 +1,7 @@
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
-  SingleTransportPayload
+  SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
@@ -35,7 +35,7 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<
 
   protected protoRequest = {
     messageType: 'postSignatures',
-    namespace: 'multisig'
+    namespace: 'multisig',
   };
 
   @inject(Symbols.helpers.logger)
@@ -60,9 +60,9 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<
           signatures: _.uniqBy(
             allSigs,
             (i) => `${i.transaction}_${i.signature.toString('hex')}`
-          )
-        }
-      }
+          ),
+        },
+      },
     ];
   }
 
@@ -76,7 +76,7 @@ export class PostSignaturesRequest extends BaseProtobufTransportMethod<
         const tx = {
           relays: sigEl.relays,
           signature: sigEl.signature,
-          transaction: sigEl.transaction
+          transaction: sigEl.transaction,
         };
         await this.onSignatureListener(tx);
       } catch (e) {

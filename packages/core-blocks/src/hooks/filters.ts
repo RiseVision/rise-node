@@ -2,7 +2,7 @@ import { createFilterDecorator } from '@risevision/core-utils';
 import {
   DBOp,
   SignedAndChainedBlockType,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 
 export const CommonHeightsToQuery = createFilterDecorator<

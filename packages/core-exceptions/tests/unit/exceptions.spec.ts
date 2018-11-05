@@ -59,10 +59,22 @@ describe('helpers/decorators/exceptions', () => {
 
     beforeEach(() => {
       sandbox = sinon.createSandbox();
-      handlerSpies.wrongValue.canHandle = sandbox.spy(mockHandlerWrongValue, 'canHandle');
-      handlerSpies.wrongValue.handle = sandbox.spy(mockHandlerWrongValue, 'handle');
-      handlerSpies.emptyString.canHandle = sandbox.spy(mockHandlerEmptyString, 'canHandle');
-      handlerSpies.emptyString.handle = sandbox.spy(mockHandlerEmptyString, 'handle');
+      handlerSpies.wrongValue.canHandle = sandbox.spy(
+        mockHandlerWrongValue,
+        'canHandle'
+      );
+      handlerSpies.wrongValue.handle = sandbox.spy(
+        mockHandlerWrongValue,
+        'handle'
+      );
+      handlerSpies.emptyString.canHandle = sandbox.spy(
+        mockHandlerEmptyString,
+        'canHandle'
+      );
+      handlerSpies.emptyString.handle = sandbox.spy(
+        mockHandlerEmptyString,
+        'handle'
+      );
       handlersForKeySpy = sandbox.spy(excManager, 'handlersForKey');
     });
 
@@ -99,7 +111,10 @@ describe('helpers/decorators/exceptions', () => {
     it('should call canHandle on all ExceptionHandlers when value is not an exception', () => {
       const test = new TestClass();
       test.decoratedFn('notAnException');
-      expect(handlerSpies.wrongValue.canHandle.called && handlerSpies.emptyString.canHandle.called).to.be.true;
+      expect(
+        handlerSpies.wrongValue.canHandle.called &&
+          handlerSpies.emptyString.canHandle.called
+      ).to.be.true;
     });
 
     it('should call handle when value passed to the decoratedFn function is an exception', () => {
@@ -113,7 +128,9 @@ describe('helpers/decorators/exceptions', () => {
       const test = new TestClass();
       // Testing with our second exception (emptyString)
       const retVal = test.decoratedFn('');
-      expect(handlerSpies.emptyString.handle.firstCall.returnValue).to.be.eq(retVal);
+      expect(handlerSpies.emptyString.handle.firstCall.returnValue).to.be.eq(
+        retVal
+      );
     });
 
     it('should call the original function with all arguments when no suitable handler is found', () => {

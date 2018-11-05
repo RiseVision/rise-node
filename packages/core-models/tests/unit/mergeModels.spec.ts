@@ -1,4 +1,10 @@
-import { Column, DefaultScope, PrimaryKey, Scopes, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DefaultScope,
+  PrimaryKey,
+  Scopes,
+  Table,
+} from 'sequelize-typescript';
 import { expect } from 'chai';
 import { mergeModels } from '../../src/helpers/utils';
 import { BaseModel } from '../../src/models';
@@ -30,7 +36,7 @@ describe('helpers/mergeModels', () => {
   });
   it('should merge scopes', () => {
     @Scopes({
-      both     : { attributes: ['a'] },
+      both: { attributes: ['a'] },
       only_in_a: { attributes: ['a'] },
     })
     @DefaultScope({
@@ -45,7 +51,7 @@ describe('helpers/mergeModels', () => {
     }
 
     @Scopes({
-      both     : { attributes: ['b'], },
+      both: { attributes: ['b'] },
       only_in_b: { attributes: ['b'] },
     })
     @DefaultScope({
@@ -71,11 +77,9 @@ describe('helpers/mergeModels', () => {
     expect(A.options.scopes.only_in_a).deep.eq({ attributes: ['a'] });
     expect(A.options.scopes.only_in_b).deep.eq({ attributes: ['b'] });
     expect(A.options.defaultScope).deep.eq({ attributes: ['a', 'b', 'c'] });
-
   });
 
   it('should merge methods', () => {
-
     @Table({ modelName: 'a' })
     class A extends BaseModel<A> {
       @Column

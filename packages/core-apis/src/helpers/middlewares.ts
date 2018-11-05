@@ -22,5 +22,5 @@ export const middleware = {
       res.setHeader(headerKey, headerValue);
       return next();
     };
-  }
+  },
 };

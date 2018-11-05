@@ -9,7 +9,13 @@ import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { SignedBlockType } from '@risevision/core-types';
 import { RoundLogic, RoundLogicScope } from '../../../src/logic/round';
-import { IAccountsModule, IAppState, IBlocksModel, IDBHelper, Symbols } from '@risevision/core-interfaces';
+import {
+  IAccountsModule,
+  IAppState,
+  IBlocksModel,
+  IDBHelper,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
 import { dPoSSymbols, Slots } from '../../../src/helpers';
 import { RoundsLogic } from '../../../src/logic/rounds';
@@ -20,7 +26,6 @@ chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('modules/rounds', () => {
-
   let instance: RoundsModule;
   let container: Container;
   let sandbox: SinonSandbox;
@@ -45,48 +50,61 @@ describe('modules/rounds', () => {
     roundLogicStubConstructor = () => {
       return roundLogicStub;
     };
-    sandbox                   = sinon.createSandbox();
-    container                 = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
-    const BlocksModel         = container.getNamed<typeof IBlocksModel>(ModelSymbols.model, BlocksSymbols.model);
-    block                     = new BlocksModel(createFakeBlock(container));
-    previousBlock             = new BlocksModel(createFakeBlock(container));
-    instance                  = container.get(dPoSSymbols.modules.rounds);
-    delegatesModuleStub       = container.get(dPoSSymbols.modules.delegates);
-    accountsModuleStub        = container.get(Symbols.modules.accounts);
-    loggerStub                = container.get(Symbols.helpers.logger);
-    slotsStub                 = container.get(dPoSSymbols.helpers.slots);
-    socketIOStub              = container.get(Symbols.generic.socketIO);
-    appStateStub              = container.get(Symbols.logic.appState);
-    roundsLogicStub           = container.get(dPoSSymbols.logic.rounds);
-    roundLogicStub            = container.get(dPoSSymbols.logic.round);
-
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-consensus-dpos',
+      'core-helpers',
+      'core-crypto',
+      'core',
+    ]);
+    const BlocksModel = container.getNamed<typeof IBlocksModel>(
+      ModelSymbols.model,
+      BlocksSymbols.model
+    );
+    block = new BlocksModel(createFakeBlock(container));
+    previousBlock = new BlocksModel(createFakeBlock(container));
+    instance = container.get(dPoSSymbols.modules.rounds);
+    delegatesModuleStub = container.get(dPoSSymbols.modules.delegates);
+    accountsModuleStub = container.get(Symbols.modules.accounts);
+    loggerStub = container.get(Symbols.helpers.logger);
+    slotsStub = container.get(dPoSSymbols.helpers.slots);
+    socketIOStub = container.get(Symbols.generic.socketIO);
+    appStateStub = container.get(Symbols.logic.appState);
+    roundsLogicStub = container.get(dPoSSymbols.logic.rounds);
+    roundLogicStub = container.get(dPoSSymbols.logic.round);
 
     roundLogicScope = {
-      backwards     : false,
-      block         : {
+      backwards: false,
+      block: {
         generatorPublicKey: block.generatorPublicKey,
-        height            : block.height,
-        id                : block.id,
+        height: block.height,
+        id: block.id,
       } as any,
-      finishRound   : false,
-      library       : {
-        logger      : {} as any,
-        RoundChanges: {} as any
+      finishRound: false,
+      library: {
+        logger: {} as any,
+        RoundChanges: {} as any,
       },
-      modules       : {
+      modules: {
         accounts: container.get(Symbols.modules.accounts),
       },
-      models        : {
-        AccountsModel: container.getNamed(ModelSymbols.model, Symbols.models.accounts),
-        BlocksModel  : container.getNamed(ModelSymbols.model, Symbols.models.blocks),
+      models: {
+        AccountsModel: container.getNamed(
+          ModelSymbols.model,
+          Symbols.models.accounts
+        ),
+        BlocksModel: container.getNamed(
+          ModelSymbols.model,
+          Symbols.models.blocks
+        ),
       },
-      round         : 12,
+      round: 12,
       roundDelegates: [],
-      roundFees     : 10.1,
+      roundFees: 10.1,
       roundOutsiders: [],
-      roundRewards  : [100],
+      roundRewards: [100],
     };
-    innerTickStub   = sandbox.stub(instance as any, 'innerTick');
+    innerTickStub = sandbox.stub(instance as any, 'innerTick');
     // Expose the passed txGenerator so we can test it
     innerTickStub.callsFake((blk, backwards, txGen) => {
       txGenerator = txGen;
@@ -133,7 +151,7 @@ describe('modules/rounds', () => {
         // roundLogicStub.stubs.mergeBlockGenerator.returns(['mergeBlockOp1', 'mergeBlockOp2']);
         // roundLogicStub.stubs.backwardLand.returns(['backwardLandOp1', 'backwardLandOp2']);
         // roundLogicStub.stubs.markBlockId.returns('markBlockIdOp');
-        dbHelpersStub  = container.get(Symbols.helpers.db);
+        dbHelpersStub = container.get(Symbols.helpers.db);
         performOPsStub = sandbox.stub(dbHelpersStub, 'performOps').resolves();
       });
 
@@ -146,7 +164,9 @@ describe('modules/rounds', () => {
         loggerStub.stubReset();
         await doCallBackwardTick();
         expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Performing backward tick');
+        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(
+          'Performing backward tick'
+        );
       });
 
       it('should instantiate a new RoundLogic', async () => {

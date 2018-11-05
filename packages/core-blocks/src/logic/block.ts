@@ -4,7 +4,7 @@ import {
   IBlocksModel,
   ICrypto,
   ITransactionLogic,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -17,7 +17,7 @@ import {
   RawFullBlockListType,
   SignedAndChainedBlockType,
   SignedAndChainedTransportBlockType,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
 import * as ByteBuffer from 'bytebuffer';
@@ -47,7 +47,7 @@ export class BlockLogic implements IBlockLogic {
     'payloadLength',
     'payloadHash',
     'generatorPublicKey',
-    'blockSignature'
+    'blockSignature',
   ];
   @inject(Symbols.generic.zschema)
   public zschema: z_schema;
@@ -134,7 +134,7 @@ export class BlockLogic implements IBlockLogic {
       totalAmount,
       totalFee,
       transactions: blockTransactions,
-      version: 0
+      version: 0,
     };
 
     block.blockSignature = this.sign(block, data.keypair);
@@ -177,7 +177,7 @@ export class BlockLogic implements IBlockLogic {
     return {
       model: this.BlocksModel,
       type: 'create',
-      values
+      values,
     };
   }
 
@@ -257,7 +257,7 @@ export class BlockLogic implements IBlockLogic {
         totalAmount: parseInt(`${rawBlock.b_totalAmount}`, 10),
         totalFee: parseInt(`${rawBlock.b_totalFee}`, 10),
         totalForged: '',
-        version: parseInt(`${rawBlock.b_version}`, 10)
+        version: parseInt(`${rawBlock.b_version}`, 10),
       };
       block.totalForged = new MyBigNumb(block.totalFee)
         .plus(new MyBigNumb(block.reward))
@@ -350,7 +350,7 @@ export class BlockLogic implements IBlockLogic {
       relays: Number.isInteger(block.relays) ? block.relays : 1,
       transactions: (block.transactions || []).map((tx) =>
         this.transaction.toProtoBuffer(tx)
-      )
+      ),
     };
     return this.protobufHelper.encode(blk, 'blocks.bytes', 'bytesBlock');
   }
@@ -404,7 +404,7 @@ export class BlockLogic implements IBlockLogic {
         height: blk.height,
         senderId: this.accountLogic.generateAddressByPublicKey(
           baseTx.senderPublicKey
-        )
+        ),
       };
     });
 
@@ -424,7 +424,7 @@ export class BlockLogic implements IBlockLogic {
       blockSignature,
       transactions,
       height: blk.height,
-      relays: blk.relays
+      relays: blk.relays,
     };
   }
 

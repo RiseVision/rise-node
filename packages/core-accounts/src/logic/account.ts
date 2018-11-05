@@ -5,7 +5,7 @@ import {
   IAccountLogic,
   IAccountsModel,
   ILogger,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
@@ -147,13 +147,13 @@ export class AccountLogic implements IAccountLogic {
       'isDelegate',
       'username',
       'address',
-      'publicKey'
+      'publicKey',
     ]);
     if (typeof filter.address === 'string') {
       condition.address = filter.address.toUpperCase();
     } else if (typeof filter.address !== 'undefined') {
       condition.address = {
-        [Op.in]: filter.address.$in.map((add) => add.toUpperCase())
+        [Op.in]: filter.address.$in.map((add) => add.toUpperCase()),
       };
     }
     // Remove fields = undefined (such as limit, offset and sort)
@@ -172,9 +172,9 @@ export class AccountLogic implements IAccountLogic {
             ? [[sort, 'ASC']]
             : Object.keys(sort).map((col) => [
                 col,
-                sort[col] === -1 ? 'DESC' : 'ASC'
+                sort[col] === -1 ? 'DESC' : 'ASC',
               ]),
-        where: condition
+        where: condition,
       })
     );
   }
@@ -237,10 +237,10 @@ export class AccountLogic implements IAccountLogic {
       model: this.AccountsModel,
       options: {
         limit: 1,
-        where: { address }
+        where: { address },
       },
       type: 'update',
-      values: update
+      values: update,
     });
 
     return dbOps;
@@ -253,7 +253,7 @@ export class AccountLogic implements IAccountLogic {
    */
   public async remove(address: string): Promise<number> {
     return await this.AccountsModel.destroy({
-      where: { address: address.toUpperCase() }
+      where: { address: address.toUpperCase() },
     });
   }
 

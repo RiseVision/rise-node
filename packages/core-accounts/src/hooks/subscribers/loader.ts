@@ -16,7 +16,6 @@ decorate(injectable(), DecoratedSubscriber);
 
 @injectable()
 export class AccountsLoaderSubscriber extends DecoratedSubscriber {
-
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
   @inject(ModelSymbols.model)
@@ -28,10 +27,14 @@ export class AccountsLoaderSubscriber extends DecoratedSubscriber {
 
   @RecreateAccountsTables()
   public async recreateTables(): Promise<void> {
-    await this.AccountsModel.drop({ cascade: true })
-      .catch(catchToLoggerAndRemapError('Account#removeTables error', this.logger));
+    await this.AccountsModel.drop({ cascade: true }).catch(
+      catchToLoggerAndRemapError('Account#removeTables error', this.logger)
+    );
     await this.AccountsModel.sequelize.query(
-      fs.readFileSync(path.join(__dirname, '..', '..', '..', 'sql', 'memoryTables.sql'), { encoding: 'utf8' })
+      fs.readFileSync(
+        path.join(__dirname, '..', '..', '..', 'sql', 'memoryTables.sql'),
+        { encoding: 'utf8' }
+      )
     );
   }
 
@@ -39,14 +42,21 @@ export class AccountsLoaderSubscriber extends DecoratedSubscriber {
   private async onLoadIntegrityChecks(b: number) {
     const orphanedMemAccounts = await this.AccountsModel.sequelize.query(
       fs.readFileSync(
-        path.join(__dirname, '..', '..', '..', 'sql', 'getOrphanedMemAccounts.sql'),
-        { encoding: 'utf8' }),
+        path.join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          'sql',
+          'getOrphanedMemAccounts.sql'
+        ),
+        { encoding: 'utf8' }
+      ),
       { type: sequelize.QueryTypes.SELECT }
     );
 
     if (orphanedMemAccounts.length > 0) {
       throw new Error('Detected orphaned blocks in mem_accounts');
     }
-
   }
 }

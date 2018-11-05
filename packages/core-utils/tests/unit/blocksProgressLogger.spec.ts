@@ -5,7 +5,6 @@ import { SinonSandbox } from 'sinon';
 import { BlockProgressLogger } from '../../src/';
 import { LoggerStub } from './stubs';
 
-
 // tslint:disable no-var-requires no-string-literal no-unused-expression
 const assertArrays = require('chai-arrays');
 const expect = chai.expect;

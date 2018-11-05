@@ -6,7 +6,7 @@ export const ModelSymbols = {
   sequelize: Symbol.for('models.sequelize'),
   sequelizeNamespace: Symbol.for('models.sequelizeNamespace'),
   helpers: {
-    db: Symbols.helpers.db
+    db: Symbols.helpers.db,
   },
   names: {
     accounts: Symbols.models.accounts,
@@ -15,6 +15,6 @@ export const ModelSymbols = {
     forkStats: Symbols.models.forkStats,
     info: Symbol.for('models.infoModel'),
     migrations: Symbol.for('models.migrationsModel'),
-    transactions: Symbols.models.transactions
-  }
+    transactions: Symbols.models.transactions,
+  },
 };

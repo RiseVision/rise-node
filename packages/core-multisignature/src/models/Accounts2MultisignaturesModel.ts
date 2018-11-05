@@ -3,7 +3,7 @@ import {
   ForeignKey,
   Model,
   PrimaryKey,
-  Table
+  Table,
 } from 'sequelize-typescript';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import { Symbols } from '@risevision/core-interfaces';

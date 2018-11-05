@@ -13,7 +13,7 @@ import { LiskWallet } from 'dpos-offline';
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
-const validPubKey  = Buffer.from(new Array(32).fill('aa').join(''), 'hex');
+const validPubKey = Buffer.from(new Array(32).fill('aa').join(''), 'hex');
 const validAddress = '2355684370867218400R';
 describe('modules/accounts', () => {
   let sandbox: SinonSandbox;
@@ -21,10 +21,14 @@ describe('modules/accounts', () => {
   let container: Container;
   let accountLogic: AccountLogic;
   beforeEach(async () => {
-    sandbox       = sinon.createSandbox();
-    container     = await createContainer(['core-accounts', 'core-helpers', 'core-crypto']);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-accounts',
+      'core-helpers',
+      'core-crypto',
+    ]);
     accountModule = container.get<any>(AccountsSymbols.module);
-    accountLogic  = container.get<any>(AccountsSymbols.logic);
+    accountLogic = container.get<any>(AccountsSymbols.logic);
   });
 
   afterEach(() => {
@@ -40,7 +44,9 @@ describe('modules/accounts', () => {
   describe('.getAccount', () => {
     let getStub: SinonStub;
     beforeEach(() => {
-      getStub = sandbox.stub(accountLogic, 'get').callsFake((filter) => Promise.resolve(filter));
+      getStub = sandbox
+        .stub(accountLogic, 'get')
+        .callsFake((filter) => Promise.resolve(filter));
     });
     it('should call accountLogic.get', async () => {
       await accountModule.getAccount({ address: '1L' });
@@ -56,7 +62,8 @@ describe('modules/accounts', () => {
   describe('.getAccounts', () => {
     let aLogicGetAllStub: SinonStub;
     beforeEach(() => {
-      aLogicGetAllStub = sandbox.stub(accountLogic, 'getAll')
+      aLogicGetAllStub = sandbox
+        .stub(accountLogic, 'getAll')
         .callsFake((query) => Promise.resolve(query));
     });
     it('should directly pass params to accountLogic.getAll', async () => {
@@ -67,45 +74,75 @@ describe('modules/accounts', () => {
     it('should return what accountLogic.getAll returns', async () => {
       const theRes = { cat: 'meows' };
       aLogicGetAllStub.resolves(theRes);
-      expect(await accountModule.getAccounts({ address: '1R' }))
-        .deep.eq(theRes);
+      expect(await accountModule.getAccounts({ address: '1R' })).deep.eq(
+        theRes
+      );
     });
   });
 
   describe('checkTXsAccountsMap', () => {
-
     let accountsModel: typeof IAccountsModel;
     let findAllStub: SinonStub;
     let assignPublicKeyToAccount: SinonStub;
     beforeEach(() => {
-      accountsModel            = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
-      findAllStub              = sandbox.stub(accountsModel, 'findAll').resolves([]);
-      assignPublicKeyToAccount = sandbox.stub(accountModule, 'assignPublicKeyToAccount')
-        .callsFake(
-          ({ publicKey }) => Promise
-            .resolve({ publicKey, address: `add${publicKey.toString('hex')}` })
+      accountsModel = container.getNamed(
+        ModelSymbols.model,
+        AccountsSymbols.model
+      );
+      findAllStub = sandbox.stub(accountsModel, 'findAll').resolves([]);
+      assignPublicKeyToAccount = sandbox
+        .stub(accountModule, 'assignPublicKeyToAccount')
+        .callsFake(({ publicKey }) =>
+          Promise.resolve({
+            publicKey,
+            address: `add${publicKey.toString('hex')}`,
+          })
         );
     });
     it('should throw if account is not found in db', async () => {
-      await expect(accountModule.checkTXsAccountsMap([
-        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
-      ], {})).rejectedWith('Account add11 not found in db');
+      await expect(
+        accountModule.checkTXsAccountsMap(
+          [
+            {
+              senderId: 'add11',
+              senderPublicKey: Buffer.from('11', 'hex'),
+            } as any,
+          ],
+          {}
+        )
+      ).rejectedWith('Account add11 not found in db');
     });
     it('should throw if account has diff publicKey in db', async () => {
-      await expect(accountModule.checkTXsAccountsMap([
-        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
-      ], { add11: { address: 'add11', publicKey: Buffer.from('22', 'hex') } } as any))
-        .rejectedWith('Stealing attempt type.2 for add11');
+      await expect(
+        accountModule.checkTXsAccountsMap(
+          [
+            {
+              senderId: 'add11',
+              senderPublicKey: Buffer.from('11', 'hex'),
+            } as any,
+          ],
+          {
+            add11: { address: 'add11', publicKey: Buffer.from('22', 'hex') },
+          } as any
+        )
+      ).rejectedWith('Stealing attempt type.2 for add11');
     });
     it('should setAccountAndGet if nopublickey set in db and throw if address does not match', async () => {
-      await expect(accountModule.checkTXsAccountsMap([
-          { senderId: 'add11', senderPublicKey: Buffer.from('22', 'hex') } as any
-        ],
-        { add11: { address: 'add11' } } as any
-      )).rejectedWith('Stealing attempt type.1 for add11');
+      await expect(
+        accountModule.checkTXsAccountsMap(
+          [
+            {
+              senderId: 'add11',
+              senderPublicKey: Buffer.from('22', 'hex'),
+            } as any,
+          ],
+          { add11: { address: 'add11' } } as any
+        )
+      ).rejectedWith('Stealing attempt type.1 for add11');
       expect(assignPublicKeyToAccount.called).is.true;
-      expect(assignPublicKeyToAccount.firstCall.args[0])
-        .is.deep.eq({ publicKey: Buffer.from('22', 'hex') });
+      expect(assignPublicKeyToAccount.firstCall.args[0]).is.deep.eq({
+        publicKey: Buffer.from('22', 'hex'),
+      });
     });
   });
 
@@ -114,12 +151,18 @@ describe('modules/accounts', () => {
     let findAllStub: SinonStub;
     let assignPublicKeyToAccount: SinonStub;
     beforeEach(() => {
-      accountsModel            = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
-      findAllStub              = sandbox.stub(accountsModel, 'findAll').resolves([]);
-      assignPublicKeyToAccount = sandbox.stub(accountModule, 'assignPublicKeyToAccount')
-        .callsFake(
-          ({ publicKey }) => Promise
-            .resolve({ publicKey, address: `add${publicKey.toString('hex')}` })
+      accountsModel = container.getNamed(
+        ModelSymbols.model,
+        AccountsSymbols.model
+      );
+      findAllStub = sandbox.stub(accountsModel, 'findAll').resolves([]);
+      assignPublicKeyToAccount = sandbox
+        .stub(accountModule, 'assignPublicKeyToAccount')
+        .callsFake(({ publicKey }) =>
+          Promise.resolve({
+            publicKey,
+            address: `add${publicKey.toString('hex')}`,
+          })
         );
     });
     it('shouldnt complain about empty txs array', async () => {
@@ -130,10 +173,9 @@ describe('modules/accounts', () => {
       expect(findAllStub.calledOnce).is.false;
     });
     it('should return empty object if account not in db', async () => {
-      const r = await accountModule
-        .txAccounts([
-          { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any
-        ]);
+      const r = await accountModule.txAccounts([
+        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any,
+      ]);
       expect(r).deep.eq({});
     });
 
@@ -143,18 +185,18 @@ describe('modules/accounts', () => {
         { address: 'add11', publicKey: Buffer.from('11', 'hex') },
         { address: 'add33', publicKey: Buffer.from('33', 'hex') },
       ]);
-      await accountModule.txAccounts([{
-        senderId          : 'add11',
-        senderPublicKey   : Buffer.from('11', 'hex'),
-        requesterPublicKey: Buffer.from('33', 'hex')
-      } as any
+      await accountModule.txAccounts([
+        {
+          senderId: 'add11',
+          senderPublicKey: Buffer.from('11', 'hex'),
+          requesterPublicKey: Buffer.from('33', 'hex'),
+        } as any,
       ]);
       expect(findAllStub.calledOnce).is.true;
       expect(findAllStub.firstCall.args[0]).is.deep.eq({
-        where: { address: ['add11', 'add33'] }
+        where: { address: ['add11', 'add33'] },
       });
     });
-
   });
 
   describe('.assignPublicKeyToAccount', () => {
@@ -165,40 +207,64 @@ describe('modules/accounts', () => {
       getStub = sandbox.stub(accountLogic, 'get').resolves();
     });
     it('should throw if no publicKey and address is provided', async () => {
-      await expect(accountModule.assignPublicKeyToAccount({ address: '1a', publicKey: null }))
-        .to.be.rejectedWith('Missing publicKey for 1a');
+      await expect(
+        accountModule.assignPublicKeyToAccount({
+          address: '1a',
+          publicKey: null,
+        })
+      ).to.be.rejectedWith('Missing publicKey for 1a');
     });
     it('should check address against publicKey', async () => {
-      await expect(accountModule.assignPublicKeyToAccount({ address: '1a', publicKey: validPubKey }))
-        .rejectedWith('Attempting to assign publicKey to non correct address 2355684370867218400R != 1a');
+      await expect(
+        accountModule.assignPublicKeyToAccount({
+          address: '1a',
+          publicKey: validPubKey,
+        })
+      ).rejectedWith(
+        'Attempting to assign publicKey to non correct address 2355684370867218400R != 1a'
+      );
     });
     it('should allow empty address', async () => {
       await accountModule.assignPublicKeyToAccount({ publicKey: validPubKey });
       expect(setStub.calledWith(validAddress, { publicKey: validPubKey })).true;
     });
     it('should accountLogi.get with address and return its value', async () => {
-      getStub.resolves('antani')
-      const toRet = await accountModule.assignPublicKeyToAccount({ address: validAddress, publicKey: validPubKey });
+      getStub.resolves('antani');
+      const toRet = await accountModule.assignPublicKeyToAccount({
+        address: validAddress,
+        publicKey: validPubKey,
+      });
       expect(getStub.calledWith({ address: validAddress })).true;
       expect(setStub.calledWith(validAddress, { publicKey: validPubKey })).true;
       expect(toRet).to.be.eq('antani');
     });
-
   });
   //
   describe('.mergeAccountAndGetOPs', () => {
     let mergeStub: SinonStub;
     beforeEach(() => {
-      mergeStub = sandbox.stub(container.get<any>(AccountsSymbols.logic), 'merge').returns(['one', 'two']);
+      mergeStub = sandbox
+        .stub(container.get<any>(AccountsSymbols.logic), 'merge')
+        .returns(['one', 'two']);
     });
     it('should throw if no publicKey and address is provided', async () => {
-      expect(() => accountModule.mergeAccountAndGetOPs({} as any))
-        .to.be.throw('Missing address and public key');
+      expect(() => accountModule.mergeAccountAndGetOPs({} as any)).to.be.throw(
+        'Missing address and public key'
+      );
     });
     it('should derive address from publicKey if not provided', () => {
-      const res = accountModule.mergeAccountAndGetOPs({ address: 'meow', publicKey: validPubKey, balance: 10 });
+      const res = accountModule.mergeAccountAndGetOPs({
+        address: 'meow',
+        publicKey: validPubKey,
+        balance: 10,
+      });
       expect(mergeStub.called).true;
-      expect(mergeStub.calledWith(validAddress, { publicKey: validPubKey, balance: 10 })).true;
+      expect(
+        mergeStub.calledWith(validAddress, {
+          publicKey: validPubKey,
+          balance: 10,
+        })
+      ).true;
       expect(res).deep.eq(['one', 'two']);
     });
   });
@@ -207,10 +273,12 @@ describe('modules/accounts', () => {
     it('should resolve pubkey and addresses correctly', () => {
       for (let i = 0; i < 100; i++) {
         const w = new LiskWallet(`a${i}`, 'R');
-        expect(accountModule.generateAddressByPublicKey(Buffer.from(w.publicKey, 'hex')))
-          .deep.eq(w.address);
+        expect(
+          accountModule.generateAddressByPublicKey(
+            Buffer.from(w.publicKey, 'hex')
+          )
+        ).deep.eq(w.address);
       }
     });
   });
-
 });

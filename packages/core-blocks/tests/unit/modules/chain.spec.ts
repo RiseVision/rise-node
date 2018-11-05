@@ -5,9 +5,19 @@ import { Container } from 'inversify';
 import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BlocksModel, BlocksModule, BlocksModuleChain, BlocksSymbols } from '../../../src';
+import {
+  BlocksModel,
+  BlocksModule,
+  BlocksModuleChain,
+  BlocksSymbols,
+} from '../../../src';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { IAccountsModule, IDBHelper, ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import {
+  IAccountsModule,
+  IDBHelper,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 
 chai.use(chaiAsPromised);
@@ -28,18 +38,25 @@ describe('modules/blocks/chain', () => {
   let destroyStub: SinonStub;
 
   beforeEach(async () => {
-    sandbox      = sinon.createSandbox();
-    container    = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
-    accModule    = container.get(Symbols.modules.accounts);
-    instance     = container.get(BlocksSymbols.modules.chain);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
+    accModule = container.get(Symbols.modules.accounts);
+    instance = container.get(BlocksSymbols.modules.chain);
     blocksModule = container.get(BlocksSymbols.modules.blocks);
-    blocksModel  = container.getNamed(ModelSymbols.model, BlocksSymbols.model);
-    dbHelper     = container.get(ModelSymbols.helpers.db);
-    txLogic      = container.get(Symbols.logic.transaction);
+    blocksModel = container.getNamed(ModelSymbols.model, BlocksSymbols.model);
+    dbHelper = container.get(ModelSymbols.helpers.db);
+    txLogic = container.get(Symbols.logic.transaction);
 
-    undoUnconfStub  = sandbox.stub(txLogic, 'undoUnconfirmed').resolves([]);
-    undoStub        = sandbox.stub(txLogic, 'undo').resolves([]);
-    destroyStub     = sandbox.stub(blocksModel, 'destroy');
+    undoUnconfStub = sandbox.stub(txLogic, 'undoUnconfirmed').resolves([]);
+    undoStub = sandbox.stub(txLogic, 'undo').resolves([]);
+    destroyStub = sandbox.stub(blocksModel, 'destroy');
     processExitStub = sinon.stub(process, 'exit');
   });
   afterEach(() => {
@@ -54,22 +71,23 @@ describe('modules/blocks/chain', () => {
     let performOpsStub: SinonStub;
     let resolveAccountsForTransactionStub: SinonStub;
     beforeEach(() => {
-      blocksModule.lastBlock            = {
-        height       : 10,
+      blocksModule.lastBlock = {
+        height: 10,
         previousBlock: 'previousBlock',
-        transactions : [
+        transactions: [
           { type: 0, senderPublicKey: 'first' },
           { type: 0, senderPublicKey: 'second' },
           { type: 0, senderPublicKey: 'third' },
         ],
-        destroy      : destroyStub,
+        destroy: destroyStub,
       } as any;
-      performOpsStub                    = sandbox.stub(dbHelper, 'performOps').resolves();
+      performOpsStub = sandbox.stub(dbHelper, 'performOps').resolves();
       // accountsModule.stubs.getAccount.callsFake((a) => a);
-      resolveAccountsForTransactionStub = sandbox.stub(accModule, 'txAccounts')
+      resolveAccountsForTransactionStub = sandbox
+        .stub(accModule, 'txAccounts')
         .callsFake((txs) => {
           const toRet = {};
-          txs.forEach((tx) => toRet[tx.senderId] = tx.senderId);
+          txs.forEach((tx) => (toRet[tx.senderId] = tx.senderId));
           return toRet;
         });
 
@@ -80,24 +98,33 @@ describe('modules/blocks/chain', () => {
       findStub.onFirstCall().resolves(blocksModule.lastBlock);
       findStub.onSecondCall().resolves({ id: 'previousBlock' });
 
-      const accountsModel = container.getNamed<any>(ModelSymbols.model, Symbols.models.accounts);
-      accountsFindStub    = sandbox.stub().returns('senderAccount');
-      accountsScopeStub   = sandbox.stub(accountsModel, 'scope').returns({
+      const accountsModel = container.getNamed<any>(
+        ModelSymbols.model,
+        Symbols.models.accounts
+      );
+      accountsFindStub = sandbox.stub().returns('senderAccount');
+      accountsScopeStub = sandbox.stub(accountsModel, 'scope').returns({
         find: accountsFindStub,
       });
     });
     it('should throw error if lastblock is height=1 (genesis)', async () => {
       blocksModule.lastBlock = { height: 1 } as any;
-      return expect(instance.deleteLastBlock()).to.be.rejectedWith('Cannot delete genesis block');
+      return expect(instance.deleteLastBlock()).to.be.rejectedWith(
+        'Cannot delete genesis block'
+      );
     });
     it('should throw error if curBlock cannot be found in db', async () => {
       findStub.onFirstCall().resolves(null);
-      await expect(instance.deleteLastBlock()).to.be.rejectedWith('curBlock is null');
+      await expect(instance.deleteLastBlock()).to.be.rejectedWith(
+        'curBlock is null'
+      );
       expect(findStub.called).is.true;
     });
     it('should throw error if prevBlock cannot be found in db', async () => {
       findStub.onSecondCall().resolves(null);
-      await expect(instance.deleteLastBlock()).to.be.rejectedWith('previousBlock is null');
+      await expect(instance.deleteLastBlock()).to.be.rejectedWith(
+        'previousBlock is null'
+      );
       expect(findStub.called).is.true;
     });
     it('should undo and undoUnconfirmed all included transactions', async () => {
@@ -105,7 +132,8 @@ describe('modules/blocks/chain', () => {
       expect(undoStub.callCount).to.be.eq(3);
       expect(undoUnconfStub.callCount).to.be.eq(3);
       for (let i = 0; i < 3; i++) {
-        expect(undoStub.getCall(i).calledBefore(undoUnconfStub.getCall(i))).is.true;
+        expect(undoStub.getCall(i).calledBefore(undoUnconfStub.getCall(i))).is
+          .true;
       }
     });
     // it('should call roundsModule backwardTick', async () => {
@@ -123,23 +151,28 @@ describe('modules/blocks/chain', () => {
       expect(blocksModule.lastBlock).to.be.deep.eq({ id: 'previousBlock' });
     });
     it('should return new lastblock', async () => {
-      expect(await instance.deleteLastBlock()).to.be.deep.eq({ id: 'previousBlock' });
+      expect(await instance.deleteLastBlock()).to.be.deep.eq({
+        id: 'previousBlock',
+      });
     });
-
   });
 
   describe('deleteAfterBlock', () => {
     it('should issue db query', async () => {
       await instance.deleteAfterBlock(11);
       expect(destroyStub.called).is.true;
-      expect(destroyStub.firstCall.args[0]).deep.eq({ where: { height: { [Op.gt]: 11 } } });
+      expect(destroyStub.firstCall.args[0]).deep.eq({
+        where: { height: { [Op.gt]: 11 } },
+      });
       expect(destroyStub.firstCall.args[0].where.height[Op.gt]).deep.eq(11);
     });
   });
 
   describe('recoverChain', () => {
     it('should call deleteLastBlock', async () => {
-      const delLasBloStub = sinon.stub(instance, 'deleteLastBlock').returns(Promise.resolve({}));
+      const delLasBloStub = sinon
+        .stub(instance, 'deleteLastBlock')
+        .returns(Promise.resolve({}));
       await instance.recoverChain();
       expect(delLasBloStub.called).is.true;
     });
@@ -566,5 +599,4 @@ describe('modules/blocks/chain', () => {
   //     timers.restore();
   //   });
   // });
-
 });

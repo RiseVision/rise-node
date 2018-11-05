@@ -5,7 +5,7 @@ import {
   IBlocksModel,
   IDBHelper,
   ILogger,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { address, DBOp, SignedBlockType } from '@risevision/core-types';
@@ -18,7 +18,7 @@ import {
   DposConstantsType,
   dPoSSymbols,
   RoundChanges,
-  Slots
+  Slots,
 } from '../helpers';
 import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
 import { RoundsLogic } from '../logic/rounds';
@@ -26,7 +26,7 @@ import { AccountsModelForDPOS } from '../models/';
 import { DelegatesModule } from './delegates';
 
 const sumRoundSQL = fs.readFileSync(`${__dirname}/../../sql/sumRound.sql`, {
-  encoding: 'utf8'
+  encoding: 'utf8',
 });
 
 @injectable()
@@ -127,7 +127,7 @@ export class RoundsModule {
         roundSums = {
           roundFees: 0,
           roundRewards: [0],
-          roundDelegates: [block.generatorPublicKey]
+          roundDelegates: [block.generatorPublicKey],
         };
       }
 
@@ -141,18 +141,18 @@ export class RoundsModule {
         finishRound,
         library: {
           RoundChanges: this.RoundChanges,
-          logger: this.logger
+          logger: this.logger,
         },
         models: {
           AccountsModel: this.AccountsModel,
-          BlocksModel: this.BlocksModel
+          BlocksModel: this.BlocksModel,
         },
         modules: {
-          accounts: this.accountsModule
+          accounts: this.accountsModule,
         },
         round,
         roundOutsiders,
-        ...roundSums
+        ...roundSums,
       };
       const r = await txGenerator(roundLogicScope);
       this.appStateLogic.set('rounds.isTicking', false);
@@ -209,9 +209,9 @@ export class RoundsModule {
         plain: true, // Returns single row.
         replacements: {
           activeDelegates: this.constants.activeDelegates,
-          round
+          round,
         },
-        type: sequelize.QueryTypes.SELECT
+        type: sequelize.QueryTypes.SELECT,
       }
     );
 

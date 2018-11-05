@@ -19,7 +19,6 @@ const table = 'mem_accounts';
 // tslint:disable no-unused-expression
 
 describe('logic/account', () => {
-
   let sandbox: SinonSandbox;
   let instance: AccountLogic;
   let container: Container;
@@ -110,8 +109,9 @@ describe('logic/account', () => {
     });
 
     it('publicKey is 64byte long but not hex', () => {
-      expect(() => instance.assertPublicKey(new Array(64).fill('g').join('')))
-        .to.throw('Invalid public key, must be a hex string');
+      expect(() =>
+        instance.assertPublicKey(new Array(64).fill('g').join(''))
+      ).to.throw('Invalid public key, must be a hex string');
     });
   });
   //
@@ -170,14 +170,15 @@ describe('logic/account', () => {
     });
 
     beforeEach(() => {
-      filter   = {
+      filter = {
         address: '2841811297332056155r',
-        limit  : 4,
-        offset : 2,
-        sort   : 'username',
+        limit: 4,
+        offset: 2,
+        sort: 'username',
       };
-      fields   = [];
-      sql      = 'select "username", "isDelegate", "u_isDelegate", "secondSignature", "u_secondSignature", ' +
+      fields = [];
+      sql =
+        'select "username", "isDelegate", "u_isDelegate", "secondSignature", "u_secondSignature", ' +
         '"u_username", UPPER("address") as "address", ENCODE("publicKey", \'hex\') as "publicKey", ' +
         'ENCODE("secondPublicKey", \'hex\') as "secondPublicKey", ("balance")::bigint as "balance", ' +
         '("u_balance")::bigint as "u_balance", ("vote")::bigint as "vote", ("rate")::bigint as "rate", ' +
@@ -190,26 +191,27 @@ describe('logic/account', () => {
         '"producedblocks", "missedblocks", ("fees")::bigint as "fees", ("rewards")::bigint as "rewards", ' +
         '"virgin" from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" limit' +
         ' 4 offset 2;';
-      shortSql = 'select * from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" ' +
+      shortSql =
+        'select * from "mem_accounts" as "a" where upper("address") = upper(${p1}) order by "username" ' +
         'limit 4 offset 2;';
-      rows     = [];
+      rows = [];
     });
 
     describe('queries', () => {
       it('should filter out non existing fields', async () => {
         await instance.getAll({
-          address   : '1',
-          publicKey : new Buffer('1'),
+          address: '1',
+          publicKey: new Buffer('1'),
           isDelegate: 1,
-          username  : 'user',
-          brother   : 'thers a place to rediscovar'
+          username: 'user',
+          brother: 'thers a place to rediscovar',
         } as any);
 
         expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
-          address   : '1',
-          publicKey : new Buffer('1'),
+          address: '1',
+          publicKey: new Buffer('1'),
           isDelegate: 1,
-          username  : 'user',
+          username: 'user',
         });
       });
       it('should uppercase address', async () => {
@@ -220,10 +222,9 @@ describe('logic/account', () => {
       });
       it('should uppercase addresses', async () => {
         await instance.getAll({ address: { $in: ['hey', 'brother'] } });
-        expect(findAllStub.firstCall.args[0].where.address[Op.in]).to.be.deep.eq([
-          'HEY',
-          'BROTHER',
-        ]);
+        expect(
+          findAllStub.firstCall.args[0].where.address[Op.in]
+        ).to.be.deep.eq(['HEY', 'BROTHER']);
       });
       it('should filter out undefined filter fields', async () => {
         await instance.getAll({ address: '1', publicKey: undefined });
@@ -252,16 +253,22 @@ describe('logic/account', () => {
 
       it('should allow string sort param', async () => {
         await instance.getAll({ address: '1', sort: 'username' });
-        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([['username', 'ASC']]);
+        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([
+          ['username', 'ASC'],
+        ]);
       });
 
       it('should allow array sort param', async () => {
-        await instance.getAll({ address: '1', sort: { username: 1, address: -1 } });
-        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([['username', 'ASC'], ['address', 'DESC']]);
+        await instance.getAll({
+          address: '1',
+          sort: { username: 1, address: -1 },
+        });
+        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([
+          ['username', 'ASC'],
+          ['address', 'DESC'],
+        ]);
       });
-
     });
-
   });
   //
   describe('account.set', () => {
@@ -274,17 +281,20 @@ describe('logic/account', () => {
       await instance.set('address', { balance: 10 });
       expect(upsertStub.firstCall.args[0]).to.be.deep.eq({
         address: 'ADDRESS',
-        balance: 10
+        balance: 10,
       });
     });
     it('should throw if publicKey is defined but invalid', async () => {
-      await expect(instance.set('address', { publicKey: new Buffer('a') })).to.be.rejected;
+      await expect(instance.set('address', { publicKey: new Buffer('a') })).to
+        .be.rejected;
     });
   });
 
   describe('account.merge', () => {
     it('should throw if not valid publicKey', () => {
-      expect(() => instance.merge('1R', { publicKey: new Buffer(1) })).to.throw();
+      expect(() =>
+        instance.merge('1R', { publicKey: new Buffer(1) })
+      ).to.throw();
     });
     it('should return empty array if no ops to be performed', () => {
       const ops: any = instance.merge('1R', {});
@@ -295,48 +305,59 @@ describe('logic/account', () => {
     });
     it('should allow only editable fields and discard the others', () => {
       const ops = instance.merge('1R', {
-        balance          : 11,
-        u_balance        : 12,
-        rate             : 13,
-        virgin           : 14,
-        rewards          : 15,
-        fees             : 16,
-        producedblocks   : 17,
-        publicKey        : Buffer.alloc(32).fill('a'),
-        secondSignature  : 19,
+        balance: 11,
+        u_balance: 12,
+        rate: 13,
+        virgin: 14,
+        rewards: 15,
+        fees: 16,
+        producedblocks: 17,
+        publicKey: Buffer.alloc(32).fill('a'),
+        secondSignature: 19,
         u_secondSignature: 20,
-        isDelegate       : 21,
-        u_isDelegate     : 22,
-        missedblocks     : 18,
-        blockId          : '1',
-        round            : 10,
-        vote             : 10, username: 'meow', u_username: 'meow', address: '2R', secondPublicKey: new Buffer('aa'),
+        isDelegate: 21,
+        u_isDelegate: 22,
+        missedblocks: 18,
+        blockId: '1',
+        round: 10,
+        vote: 10,
+        username: 'meow',
+        u_username: 'meow',
+        address: '2R',
+        secondPublicKey: new Buffer('aa'),
       } as any);
 
       const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({
-        vote          : { val: 'vote + 10' },
-        balance       : { val: 'balance + 11' },
-        u_balance     : { val: 'u_balance + 12' },
-        rate          : { val: 'rate + 13' },
-        rewards       : { val: 'rewards + 15' },
-        fees          : { val: 'fees + 16' },
+        vote: { val: 'vote + 10' },
+        balance: { val: 'balance + 11' },
+        u_balance: { val: 'u_balance + 12' },
+        rate: { val: 'rate + 13' },
+        rewards: { val: 'rewards + 15' },
+        fees: { val: 'fees + 16' },
         producedblocks: { val: 'producedblocks + 17' },
-        missedblocks  : { val: 'missedblocks + 18' },
-        blockId       : '1'
+        missedblocks: { val: 'missedblocks + 18' },
+        blockId: '1',
       });
     });
     it('should handle balance', () => {
-      const ops: any = instance.merge('1R', { balance: 10, blockId: '1', round: 1 });
-      expect((ops[0] as DBUpdateOp<any>).values).to.be.deep.eq({ balance: { val: 'balance + 10' }, blockId: '1' })
+      const ops: any = instance.merge('1R', {
+        balance: 10,
+        blockId: '1',
+        round: 1,
+      });
+      expect((ops[0] as DBUpdateOp<any>).values).to.be.deep.eq({
+        balance: { val: 'balance + 10' },
+        blockId: '1',
+      });
     });
 
     it('should remove account virginity on u_balance', () => {
       const ops: any = instance.merge('1R', { u_balance: -1 });
       expect(ops[0].values).to.be.deep.eq({
         u_balance: { val: 'u_balance - 1' },
-        virgin   : 0,
+        virgin: 0,
       });
     });
   });
@@ -365,9 +386,13 @@ describe('logic/account', () => {
   describe('generateAddressByPublicKey', () => {
     it('should return the address', () => {
       // tslint:disable max-line-length
-      const address = instance.generateAddressByPublicKey(Buffer.from('29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da', 'hex'));
+      const address = instance.generateAddressByPublicKey(
+        Buffer.from(
+          '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
+          'hex'
+        )
+      );
       expect(address).to.equal('2841811297332056155R');
     });
   });
-
 });

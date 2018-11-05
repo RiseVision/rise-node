@@ -2,11 +2,11 @@ import { FilterAPIGetAccount } from '@risevision/core-accounts';
 import {
   ITransactionLogic,
   Symbols,
-  VerificationType
+  VerificationType,
 } from '@risevision/core-interfaces';
 import {
   TxLogicStaticCheck,
-  TxLogicVerify
+  TxLogicVerify,
 } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
@@ -68,7 +68,7 @@ export class SignHooksListener extends ExtendableClass {
         ? model.secondPublicKey.toString('hex')
         : null,
       secondSignature: model.secondSignature,
-      unconfirmedSignature: model.u_secondSignature
+      unconfirmedSignature: model.u_secondSignature,
     };
   }
 }

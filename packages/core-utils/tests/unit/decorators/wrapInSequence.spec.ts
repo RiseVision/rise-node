@@ -1,13 +1,13 @@
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {Container, injectable} from 'inversify';
+import { Container, injectable } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
 import {
   WrapInBalanceSequence,
   WrapInDBSequence,
-  WrapInDefaultSequence
+  WrapInDefaultSequence,
 } from '../../../src/decorators';
 import { ISequence, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
@@ -27,13 +27,23 @@ describe('helpers/decorators/wrapInSequence', () => {
   let sequenceStub: ISequence;
 
   before(async () => {
-    container = await createContainer(['core-helpers', 'core-crypto', 'core-blocks', 'core', 'core-accounts', 'core-transactions']);
+    container = await createContainer([
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
     defineMetadataSpy = sandbox.spy(Reflect, 'defineMetadata');
     target = () => 123;
-    sequenceStub = container.getNamed(Symbols.helpers.sequence, Symbols.names.helpers.dbSequence);
+    sequenceStub = container.getNamed(
+      Symbols.helpers.sequence,
+      Symbols.names.helpers.dbSequence
+    );
   });
 
   afterEach(() => {

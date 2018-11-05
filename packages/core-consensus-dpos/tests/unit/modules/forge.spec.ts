@@ -12,10 +12,14 @@ import {
   ICrypto,
   ILogger,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { dPoSSymbols, Slots } from '../../../src/helpers';
-import { BroadcasterLogic, IPeersModule, p2pSymbols } from '@risevision/core-p2p';
+import {
+  BroadcasterLogic,
+  IPeersModule,
+  p2pSymbols,
+} from '@risevision/core-p2p';
 import { DelegatesModule, ForgeModule } from '../../../src/modules';
 import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
@@ -51,46 +55,49 @@ describe('modules/forge', () => {
     sandbox = sinon.createSandbox();
   });
   beforeEach(async () => {
-    container                                             = await createContainer(['core-consensus-dpos', 'core-helpers', 'core-crypto', 'core']);
-    fakeConfig                                            = { forging: { secret: ['secret1', 'secret2'] } };
+    container = await createContainer([
+      'core-consensus-dpos',
+      'core-helpers',
+      'core-crypto',
+      'core',
+    ]);
+    fakeConfig = { forging: { secret: ['secret1', 'secret2'] } };
     container.get<any>(Symbols.generic.appConfig).forging = fakeConfig.forging;
-    logger                                                = container.get(Symbols.helpers.logger);
-    constants                                             = container.get(Symbols.generic.constants);
-    jobsQueueStub                                         = container.get(Symbols.helpers.jobsQueue);
-    edStub                                                = container.get(Symbols.generic.crypto);
-    slotsStub                                             = container.get(dPoSSymbols.helpers.slots);
-    appStateStub                                          = container.get(Symbols.logic.appState);
-    peersModule                                           = container.get(p2pSymbols.modules.peers);
-    accountsModuleStub                                    = container.get(Symbols.modules.accounts);
-    blocksModuleStub                                      = container.get(Symbols.modules.blocks);
-    delegatesModuleStub                                   = container.get(dPoSSymbols.modules.delegates);
-    transactionsModuleStub                                = container.get(Symbols.modules.transactions);
-    blocksProcessModuleStub                               = container.get(BlocksSymbols.modules.process);
-    blocksModel                                           = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
-    instance                                              = container.get(dPoSSymbols.modules.forge);
-    sequenceStub                                          = {
+    logger = container.get(Symbols.helpers.logger);
+    constants = container.get(Symbols.generic.constants);
+    jobsQueueStub = container.get(Symbols.helpers.jobsQueue);
+    edStub = container.get(Symbols.generic.crypto);
+    slotsStub = container.get(dPoSSymbols.helpers.slots);
+    appStateStub = container.get(Symbols.logic.appState);
+    peersModule = container.get(p2pSymbols.modules.peers);
+    accountsModuleStub = container.get(Symbols.modules.accounts);
+    blocksModuleStub = container.get(Symbols.modules.blocks);
+    delegatesModuleStub = container.get(dPoSSymbols.modules.delegates);
+    transactionsModuleStub = container.get(Symbols.modules.transactions);
+    blocksProcessModuleStub = container.get(BlocksSymbols.modules.process);
+    blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    instance = container.get(dPoSSymbols.modules.forge);
+    sequenceStub = {
       addAndPromise: sandbox.spy((w) => {
-        return Promise.resolve(
-          w()
-        );
+        return Promise.resolve(w());
       }),
     };
-    blocksModuleStub.lastBlock                            = new blocksModel({
-      blockSignature      : Buffer.from('blockSignature'),
-      generatorPublicKey  : Buffer.from('pubKey'),
-      height              : 12422,
-      id                  : 'blockID',
+    blocksModuleStub.lastBlock = new blocksModel({
+      blockSignature: Buffer.from('blockSignature'),
+      generatorPublicKey: Buffer.from('pubKey'),
+      height: 12422,
+      id: 'blockID',
       numberOfTransactions: 0,
-      payloadHash         : Buffer.from('payload'),
-      payloadLength       : 0,
-      previousBlock       : 'previous',
-      reward              : 15,
-      timestamp           : Date.now(),
-      totalAmount         : 0,
-      totalFee            : 0,
-      version             : 1,
+      payloadHash: Buffer.from('payload'),
+      payloadLength: 0,
+      previousBlock: 'previous',
+      reward: 15,
+      timestamp: Date.now(),
+      totalAmount: 0,
+      totalFee: 0,
+      version: 1,
     });
-    loadKeypairs                                          = () => {
+    loadKeypairs = () => {
       instance.enabledKeys = {
         aaaa: true,
         bbbb: true,
@@ -115,7 +122,7 @@ describe('modules/forge', () => {
         key2: false,
         key3: true,
       } as any;
-      const retVal         = instance.getEnabledKeys();
+      const retVal = instance.getEnabledKeys();
       expect(retVal).to.be.deep.equal(['key1', 'key3']);
     });
   });
@@ -138,9 +145,9 @@ describe('modules/forge', () => {
 
     describe('when passed an object', () => {
       const hex = 'abcdef123456abcdef1234567891011123';
-      const pk  = {
+      const pk = {
         privateKey: Buffer.from('aaaa', 'hex'),
-        publicKey : Buffer.from(hex, 'hex'),
+        publicKey: Buffer.from(hex, 'hex'),
       };
 
       it('should store the keypair in this.keypairs', () => {
@@ -169,7 +176,7 @@ describe('modules/forge', () => {
         bbbb: false,
         cccc: true,
       } as any;
-      instance['keypairs']    = {
+      instance['keypairs'] = {
         aaaa: {},
         bbbb: {},
         cccc: {},
@@ -186,7 +193,10 @@ describe('modules/forge', () => {
     });
 
     it('should set the passed key to true in enabledKeys', () => {
-      instance.enableForge({ publicKey: Buffer.from('bbbb', 'hex'), privateKey: Buffer.from('0') });
+      instance.enableForge({
+        publicKey: Buffer.from('bbbb', 'hex'),
+        privateKey: Buffer.from('0'),
+      });
       expect(instance.enabledKeys).to.be.deep.equal({
         aaaa: false,
         bbbb: true,
@@ -195,7 +205,10 @@ describe('modules/forge', () => {
     });
 
     it('should store the passed key in keypairs', () => {
-      const kp = { publicKey: Buffer.from('dddd', 'hex'), privateKey: Buffer.from('0') };
+      const kp = {
+        publicKey: Buffer.from('dddd', 'hex'),
+        privateKey: Buffer.from('0'),
+      };
       instance.enableForge(kp);
       expect(instance['keypairs'].dddd).to.be.deep.equal(kp);
     });
@@ -237,10 +250,12 @@ describe('modules/forge', () => {
       loggerWarnStub = sandbox.stub(logger, 'warn').returns(null);
 
       // Immediately execute the jobsQueue Job for testing it
-      jobsRegister = sandbox.stub(jobsQueueStub, 'register').callsFake((k, t) => {
-        t();
-      });
-      forgeStub    = sandbox.stub(instance as any, 'forge');
+      jobsRegister = sandbox
+        .stub(jobsQueueStub, 'register')
+        .callsFake((k, t) => {
+          t();
+        });
+      forgeStub = sandbox.stub(instance as any, 'forge');
     });
 
     it('should call jobsQueue.register after 10 seconds', async () => {
@@ -287,7 +302,9 @@ describe('modules/forge', () => {
       clock.tick(500000);
       await p;
       expect(loggerWarnStub.calledOnce).to.be.true;
-      expect(loggerWarnStub.firstCall.args[0]).to.be.equal('Error in nextForge');
+      expect(loggerWarnStub.firstCall.args[0]).to.be.equal(
+        'Error in nextForge'
+      );
       expect(loggerWarnStub.firstCall.args[1]).to.be.deep.equal(expectedError);
     });
   });
@@ -299,9 +316,11 @@ describe('modules/forge', () => {
 
     beforeEach(() => {
       // We stub instance['loadDelegates'] to assert that function returns
-      loadDelegatesStub    = sandbox.stub(instance as any, 'loadDelegates');
-      appStateGetStub      = sandbox.stub(appStateStub, 'get');
-      getBlockSlotDataStub = sandbox.stub(instance as any, 'getBlockSlotData').resolves({ time: 11111, keypair: {} });
+      loadDelegatesStub = sandbox.stub(instance as any, 'loadDelegates');
+      appStateGetStub = sandbox.stub(appStateStub, 'get');
+      getBlockSlotDataStub = sandbox
+        .stub(instance as any, 'getBlockSlotData')
+        .resolves({ time: 11111, keypair: {} });
     });
 
     describe('When not ready to forge', () => {
@@ -309,12 +328,16 @@ describe('modules/forge', () => {
         appStateGetStub.returns(true);
         await instance['forge']();
         expect(appStateGetStub.calledOnce).to.be.true;
-        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        expect(appStateGetStub.firstCall.args[0]).to.be.equal(
+          'loader.isSyncing'
+        );
         appStateGetStub.resetHistory();
         appStateGetStub.returns(false);
         await instance['forge']();
         expect(appStateGetStub.calledTwice).to.be.true;
-        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
+        expect(appStateGetStub.firstCall.args[0]).to.be.equal(
+          'loader.isSyncing'
+        );
 
         appStateGetStub.resetHistory();
         appStateGetStub.onFirstCall().returns(false);
@@ -322,8 +345,12 @@ describe('modules/forge', () => {
 
         await instance['forge']();
         expect(appStateGetStub.calledTwice).to.be.true;
-        expect(appStateGetStub.firstCall.args[0]).to.be.equal('loader.isSyncing');
-        expect(appStateGetStub.secondCall.args[0]).to.be.equal('rounds.isTicking');
+        expect(appStateGetStub.firstCall.args[0]).to.be.equal(
+          'loader.isSyncing'
+        );
+        expect(appStateGetStub.secondCall.args[0]).to.be.equal(
+          'rounds.isTicking'
+        );
       });
 
       it('should call return if rounds is ticking', async () => {
@@ -344,7 +371,6 @@ describe('modules/forge', () => {
         await instance['forge']();
         expect(loadDelegatesStub.calledOnce).to.be.true;
       });
-
     });
 
     describe('When waiting for next delegate slot', () => {
@@ -353,7 +379,9 @@ describe('modules/forge', () => {
         appStateGetStub.onFirstCall().returns(false); // loader.isSyncing
         appStateGetStub.onSecondCall().returns(false); // rounds.isTicking
         loadKeypairs();
-        getSlotNumberStub = sandbox.stub(slotsStub, 'getSlotNumber').returns(100);
+        getSlotNumberStub = sandbox
+          .stub(slotsStub, 'getSlotNumber')
+          .returns(100);
         // we stub getBlockSlotDataStub to assert that function returns
       });
 
@@ -361,7 +389,9 @@ describe('modules/forge', () => {
         await instance['forge']();
         expect(getSlotNumberStub.calledTwice).to.be.true;
         expect(getSlotNumberStub.firstCall.args.length).to.be.equal(0);
-        expect(getSlotNumberStub.secondCall.args[0]).to.be.equal(blocksModuleStub.lastBlock.timestamp);
+        expect(getSlotNumberStub.secondCall.args[0]).to.be.equal(
+          blocksModuleStub.lastBlock.timestamp
+        );
       });
 
       it('should return if currentSlot is the same of last Block', async () => {
@@ -385,14 +415,15 @@ describe('modules/forge', () => {
         getSlotNumberStub.onCall(2).returns(99);
         getSlotNumberStub.onCall(3).returns(100);
         getSlotNumberStub.onCall(4).returns(100);
-
       });
 
       it('should call getBlockSlotData', async () => {
         await instance['forge']();
         expect(getBlockSlotDataStub.calledOnce).to.be.true;
         expect(getBlockSlotDataStub.firstCall.args[0]).to.be.equal(97);
-        expect(getBlockSlotDataStub.firstCall.args[1]).to.be.equal(blocksModuleStub.lastBlock.height + 1);
+        expect(getBlockSlotDataStub.firstCall.args[1]).to.be.equal(
+          blocksModuleStub.lastBlock.height + 1
+        );
       });
 
       it('should return if getBlockSlotData returns null', async () => {
@@ -407,7 +438,9 @@ describe('modules/forge', () => {
         expect(getSlotNumberStub.callCount).to.be.equal(5);
         expect(getSlotNumberStub.getCall(0).args.length).to.be.equal(0);
         expect(getSlotNumberStub.getCall(1).args.length).to.be.equal(1);
-        expect(getSlotNumberStub.getCall(1).args[0]).to.be.equal(blocksModuleStub.lastBlock.timestamp);
+        expect(getSlotNumberStub.getCall(1).args[0]).to.be.equal(
+          blocksModuleStub.lastBlock.timestamp
+        );
         expect(getSlotNumberStub.getCall(2).args.length).to.be.equal(1);
         expect(getSlotNumberStub.getCall(2).args[0]).to.be.equal(11111);
         expect(getSlotNumberStub.getCall(3).args.length).to.be.equal(0);
@@ -432,7 +465,9 @@ describe('modules/forge', () => {
         appStateGetStub.onSecondCall().returns(false); // rounds.isTicking
         appStateGetStub.onCall(2).returns(10); // node.consensus
         appStateGetStub.onCall(3).returns(10); // node.consensus
-        getComputedStub   = sandbox.stub(appStateStub, 'getComputed').returns(false); // node.poorConsensus
+        getComputedStub = sandbox
+          .stub(appStateStub, 'getComputed')
+          .returns(false); // node.poorConsensus
         getSlotNumberStub = sandbox.stub(slotsStub, 'getSlotNumber');
         loadKeypairs();
         // currentSlot must not be the same slot of lastBlock => This will pass
@@ -443,24 +478,32 @@ describe('modules/forge', () => {
         getSlotNumberStub.onCall(3).returns(100);
 
         getPeersStub = sandbox.stub(peersModule, 'getPeers').resolves();
-        genBlockStub = sandbox.stub(blocksProcessModuleStub, 'generateBlock').resolves();
+        genBlockStub = sandbox
+          .stub(blocksProcessModuleStub, 'generateBlock')
+          .resolves();
       });
 
       it('should call broadcasterLogic.getPeers (in sequence worker)', async () => {
         await instance['forge']();
         expect(getPeersStub.calledOnce).to.be.true;
-        expect(getPeersStub.firstCall.args[0]).to.be.deep.equal({ limit: constants.maxPeers });
+        expect(getPeersStub.firstCall.args[0]).to.be.deep.equal({
+          limit: constants.maxPeers,
+        });
       });
 
       it('should call appState.getComputed (in sequence worker)', async () => {
         await instance['forge']();
         expect(getComputedStub.calledOnce).to.be.true;
-        expect(getComputedStub.firstCall.args[0]).to.be.equal('node.poorConsensus');
+        expect(getComputedStub.firstCall.args[0]).to.be.equal(
+          'node.poorConsensus'
+        );
       });
 
       it('should throw if node has poor consensus (in sequence worker)', async () => {
         getComputedStub.returns(true);
-        await expect(instance['forge']()).to.be.rejectedWith('Inadequate broadhash consensus 10 %');
+        await expect(instance['forge']()).to.be.rejectedWith(
+          'Inadequate broadhash consensus 10 %'
+        );
       });
 
       it('should call blocksProcessModule.generateBlock (in sequence worker)', async () => {
@@ -472,7 +515,9 @@ describe('modules/forge', () => {
 
       it('should call catchToLoggerAndRemapError if addAndPromise promise is rejected', async () => {
         genBlockStub.rejects(new Error('hey'));
-        await expect(instance['forge']()).to.be.rejectedWith('Failed to generate block within delegate slot');
+        await expect(instance['forge']()).to.be.rejectedWith(
+          'Failed to generate block within delegate slot'
+        );
       });
     });
   });
@@ -481,19 +526,23 @@ describe('modules/forge', () => {
     let getAccountStub: SinonStub;
     let makeKeyPairStub: SinonStub;
     beforeEach(() => {
-      getAccountStub  = sandbox.stub(accountsModuleStub, 'getAccount').callsFake((filter) => {
-        return {
-          address   : 'addr_' + filter.publicKey,
-          isDelegate: true,
-          publicKey : filter.publicKey,
-        };
-      });
-      makeKeyPairStub = sandbox.stub(edStub, 'makeKeyPair').callsFake((hash) => {
-        return {
-          privateKey: 'pr' + hash.toString('hex'),
-          publicKey : 'pu' + hash.toString('hex'),
-        };
-      });
+      getAccountStub = sandbox
+        .stub(accountsModuleStub, 'getAccount')
+        .callsFake((filter) => {
+          return {
+            address: 'addr_' + filter.publicKey,
+            isDelegate: true,
+            publicKey: filter.publicKey,
+          };
+        });
+      makeKeyPairStub = sandbox
+        .stub(edStub, 'makeKeyPair')
+        .callsFake((hash) => {
+          return {
+            privateKey: 'pr' + hash.toString('hex'),
+            publicKey: 'pu' + hash.toString('hex'),
+          };
+        });
     });
 
     it('should return if no forging.secret or empty forging.secret', async () => {
@@ -506,24 +555,35 @@ describe('modules/forge', () => {
     it('should call ed.makeKeypair with the hash', async () => {
       await instance['loadDelegates']();
       expect(makeKeyPairStub.callCount).to.be.equal(2);
-      expect(makeKeyPairStub.firstCall.args[0].toString('hex')).to.be.deep.equal('5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6');
-      expect(makeKeyPairStub.secondCall.args[0].toString('hex')).to.be.deep.equal('35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2');
+      expect(
+        makeKeyPairStub.firstCall.args[0].toString('hex')
+      ).to.be.deep.equal(
+        '5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6'
+      );
+      expect(
+        makeKeyPairStub.secondCall.args[0].toString('hex')
+      ).to.be.deep.equal(
+        '35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2'
+      );
     });
 
     it('should call accountsModule.getAccount', async () => {
       await instance['loadDelegates']();
       expect(getAccountStub.callCount).to.be.equal(2);
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
-        publicKey: 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+        publicKey:
+          'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
       });
       expect(getAccountStub.secondCall.args[0]).to.be.deep.equal({
-        publicKey: 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+        publicKey:
+          'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
       });
     });
 
     it('should throw if account not found', async () => {
       getAccountStub.resolves(false);
-      const e = 'Account with publicKey: pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6 not found';
+      const e =
+        'Account with publicKey: pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6 not found';
       await expect(instance['loadDelegates']()).to.be.rejectedWith(e);
     });
 
@@ -531,19 +591,20 @@ describe('modules/forge', () => {
       let before = { ...instance['keypairs'] };
       await instance['loadDelegates']();
       expect(instance['keypairs']).to.be.deep.equal({
-          ...before,
-          pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2:
-            {
-              privateKey: 'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-              publicKey : 'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
-            },
-          pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6:
-            {
-              privateKey: 'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-              publicKey : 'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
-            },
-        }
-      );
+        ...before,
+        pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2: {
+          privateKey:
+            'pr35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+          publicKey:
+            'pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2',
+        },
+        pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6: {
+          privateKey:
+            'pr5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+          publicKey:
+            'pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6',
+        },
+      });
     });
 
     it('should call this.enableForge', async () => {
@@ -556,12 +617,12 @@ describe('modules/forge', () => {
   describe('getBlockSlotData', () => {
     const delegates = {
       puk1: {
-        publicKey : Buffer.from(new LiskWallet('puk1', 'R').publicKey, 'hex'),
-        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex')
+        publicKey: Buffer.from(new LiskWallet('puk1', 'R').publicKey, 'hex'),
+        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex'),
       },
       puk2: {
-        publicKey : Buffer.from(new LiskWallet('puk2', 'R').publicKey, 'hex'),
-        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex')
+        publicKey: Buffer.from(new LiskWallet('puk2', 'R').publicKey, 'hex'),
+        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex'),
       },
     };
 
@@ -569,10 +630,11 @@ describe('modules/forge', () => {
     let lastSlotStub: SinonStub;
     let getSlotTimeStub: SinonStub;
     beforeEach(() => {
-      generateDelegateListStub = sandbox.stub(delegatesModuleStub, 'generateDelegateList')
+      generateDelegateListStub = sandbox
+        .stub(delegatesModuleStub, 'generateDelegateList')
         .returns(Object.keys(delegates));
-      lastSlotStub             = sandbox.stub(slotsStub, 'getLastSlot').returns(2);
-      getSlotTimeStub          = sandbox.stub(slotsStub, 'getSlotTime').returns(1000);
+      lastSlotStub = sandbox.stub(slotsStub, 'getLastSlot').returns(2);
+      getSlotTimeStub = sandbox.stub(slotsStub, 'getSlotTime').returns(1000);
     });
 
     it('should call delegatesModule.generateDelegateList', async () => {
@@ -603,7 +665,7 @@ describe('modules/forge', () => {
         const retVal = await instance['getBlockSlotData'](0, 12345);
         expect(retVal).to.be.deep.eq({
           keypair: delegates.puk2,
-          time   : 1000,
+          time: 1000,
         });
       });
     });

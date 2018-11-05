@@ -5,20 +5,20 @@ import {
   IAccountsModel,
   IAccountsModule,
   ISystemModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
   AppConfig,
   ConstantsType,
   FieldsInModel,
-  publicKey
+  publicKey,
 } from '@risevision/core-types';
 import {
   HTTPError,
   IoCSymbol,
   SchemaValid,
-  ValidateSchema
+  ValidateSchema,
 } from '@risevision/core-utils';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
@@ -29,7 +29,7 @@ import {
   Get,
   JsonController,
   Post,
-  QueryParams
+  QueryParams,
 } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { AccountsSymbols } from '../symbols';
@@ -97,10 +97,10 @@ export class AccountsAPI {
           address: accData.address,
           balance: `${accData.balance}`,
           publicKey: accData.hexPublicKey,
-          unconfirmedBalance: `${accData.u_balance}`
+          unconfirmedBalance: `${accData.u_balance}`,
         },
         accData
-      )
+      ),
     };
   }
 
@@ -112,7 +112,7 @@ export class AccountsAPI {
     address: string;
   }) {
     const account = await this.accountsModule.getAccount({
-      address: params.address
+      address: params.address,
     });
     const balance = account ? `${account.balance}` : '0';
     const unconfirmedBalance = account ? `${account.u_balance}` : '0';
@@ -127,7 +127,7 @@ export class AccountsAPI {
     address: string;
   }) {
     const account = await this.accountsModule.getAccount({
-      address: params.address
+      address: params.address,
     });
     if (!account) {
       throw new HTTPError('Account not found', 200);
@@ -138,7 +138,7 @@ export class AccountsAPI {
   @Get('/top')
   @ValidateSchema()
   public async topAccounts(@SchemaValid(accountSchema.top, {
-    castNumbers: true
+    castNumbers: true,
   })
   @QueryParams()
   params: {
@@ -154,18 +154,18 @@ export class AccountsAPI {
     const returnFields: FieldsInModel<IAccountsModel> = [
       'address',
       'balance',
-      'publicKey'
+      'publicKey',
     ];
     const accs = await this.accountsModule.getAccounts({
       limit,
       offset,
-      sort: { balance: -1 }
+      sort: { balance: -1 },
     });
 
     return {
       accounts: accs
         .map((acc) => acc.toPOJO())
-        .map((acc) => filterObject(acc, returnFields))
+        .map((acc) => filterObject(acc, returnFields)),
     };
   }
 

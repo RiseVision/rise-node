@@ -8,9 +8,7 @@
           "type": "array"
         }
       },
-      "required": [
-        "peers"
-      ]
+      "required": ["peers"]
     },
     "peer": {
       "id": "peers.discover.peer",
@@ -51,10 +49,7 @@
           "minimum": 1
         }
       },
-      "required": [
-        "ip",
-        "port"
-      ]
+      "required": ["ip", "port"]
     }
   },
   "getPeers": {
@@ -123,10 +118,7 @@
         "maximum": 65535
       }
     },
-    "required": [
-      "ip",
-      "port"
-    ]
+    "required": ["ip", "port"]
   },
   "getMinVersion": {
     "id": "peer.getMinVersion",

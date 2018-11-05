@@ -3,12 +3,17 @@ import {
   ILogger,
   ISequence,
   ITimeToEpoch,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { IPeersModule, p2pSymbols, Peer } from '@risevision/core-p2p';
 import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
-import { OnWPAction, OnWPFilter, WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import {
+  OnWPAction,
+  OnWPFilter,
+  WordPressHookSystem,
+  WPHooksSubscriber,
+} from 'mangiafuoco';
 import * as promiseRetry from 'promise-retry';
 import { BlocksSymbols } from '../../blocksSymbols';
 import { BlocksModuleProcess, BlocksModuleUtils } from '../../modules';
@@ -19,7 +24,6 @@ decorate(injectable(), Extendable);
 
 @injectable()
 export class BlockLoader extends Extendable {
-
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
   @inject(Symbols.helpers.sequence)
@@ -60,7 +64,10 @@ export class BlockLoader extends Extendable {
   }
 
   @OnWPAction('core/loader/onSyncRequested')
-  public async onSyncRequested(what: string, peerProvider: () => Promise<Peer>) {
+  public async onSyncRequested(
+    what: string,
+    peerProvider: () => Promise<Peer>
+  ) {
     if (what !== 'blocks') {
       return;
     }
@@ -97,21 +104,22 @@ export class BlockLoader extends Extendable {
       loaded = await promiseRetry(
         (retry) => this.innerLoad(peerProvider).catch(retry),
         { retries: 3, maxTimeout: 50000 }
-      )
-        .catch((e) => {
-          this.logger.warn('Something went wrong when trying to sync block from network', e);
-          return true;
-        });
+      ).catch((e) => {
+        this.logger.warn(
+          'Something went wrong when trying to sync block from network',
+          e
+        );
+        return true;
+      });
     } while (!loaded);
-
   }
 
   private async innerLoad(peerProvider: () => Promise<Peer>) {
     let loaded = false;
 
     const randomPeer = await peerProvider();
-    const lastBlock  = this.blocksModule.lastBlock;
-    if (typeof(randomPeer) === 'undefined') {
+    const lastBlock = this.blocksModule.lastBlock;
+    if (typeof randomPeer === 'undefined') {
       await wait(1000);
       // This could happen when we received a block but we did not get the updated peer list.
       throw new Error('No random peer');
@@ -120,24 +128,32 @@ export class BlockLoader extends Extendable {
     if (lastBlock.height !== 1) {
       this.logger.info(`Looking for common block with: ${randomPeer.string}`);
       try {
-        const commonBlock = await this.blocksModuleProcess.getCommonBlock(randomPeer, lastBlock.height);
+        const commonBlock = await this.blocksModuleProcess.getCommonBlock(
+          randomPeer,
+          lastBlock.height
+        );
         if (!commonBlock) {
           throw new Error('Failed to find common block');
         }
       } catch (err) {
-        this.logger.error(`Failed to find common block with: ${randomPeer.string}`);
+        this.logger.error(
+          `Failed to find common block with: ${randomPeer.string}`
+        );
         throw err;
       }
     }
     // Now that we know that peer is reliable we can sync blocks with him!!
     // this.blocksToSync = randomPeer.height;
     try {
-      const lastValidBlock = await this.blocksModuleProcess.loadBlocksFromPeer(randomPeer);
+      const lastValidBlock = await this.blocksModuleProcess.loadBlocksFromPeer(
+        randomPeer
+      );
 
       loaded = lastValidBlock.id === lastBlock.id;
       // update blocksmodule last receipt with last block timestamp!
-      this.blocksModule.lastReceipt
-        .update(Math.floor(this.timeToEpoch.fromTimeStamp(lastValidBlock.timestamp)));
+      this.blocksModule.lastReceipt.update(
+        Math.floor(this.timeToEpoch.fromTimeStamp(lastValidBlock.timestamp))
+      );
     } catch (err) {
       this.logger.error(err.toString());
       this.logger.error('Failed to load blocks from: ' + randomPeer.string);
@@ -145,5 +161,4 @@ export class BlockLoader extends Extendable {
     }
     return loaded;
   }
-
 }

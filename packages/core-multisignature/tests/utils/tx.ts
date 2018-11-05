@@ -1,9 +1,13 @@
 import { dposOffline, LiskWallet } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
-export const createMultiSigTX = (from: LiskWallet, fee: number, obj: any = {}): ITransaction => {
+export const createMultiSigTX = (
+  from: LiskWallet,
+  fee: number,
+  obj: any = {}
+): ITransaction => {
   const t = new dposOffline.transactions.MultiSignatureTx(obj.asset)
-  // .withRecipientId(from.address)
+    // .withRecipientId(from.address)
     .withTimestamp(0);
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
   return from.signTransaction(t.withFees(fee));

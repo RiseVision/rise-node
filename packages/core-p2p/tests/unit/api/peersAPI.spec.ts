@@ -28,14 +28,28 @@ describe('apis/peersAPI', () => {
   let getByFilterStub: SinonStub;
   let getMinVersionStub: SinonStub;
   beforeEach(async () => {
-    container    = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
     sandbox = sinon.createSandbox();
-    container.rebind(Symbols.generic.versionBuild).toConstantValue(versionBuild);
+    container
+      .rebind(Symbols.generic.versionBuild)
+      .toConstantValue(versionBuild);
     peersModuleStub = container.get(Symbols.modules.peers);
     systemModuleStub = container.get(Symbols.modules.system);
 
-    getMinVersionStub = sandbox.stub(systemModuleStub, 'getMinVersion').returns('1.0');
-    getByFilterStub = sandbox.stub(peersModuleStub, 'getByFilter').returns([{object: () => ({ hello: 'world' })}]);
+    getMinVersionStub = sandbox
+      .stub(systemModuleStub, 'getMinVersion')
+      .returns('1.0');
+    getByFilterStub = sandbox
+      .stub(peersModuleStub, 'getByFilter')
+      .returns([{ object: () => ({ hello: 'world' }) }]);
     instance = container.getNamed(APISymbols.class, p2pSymbols.api.peersAPI);
   });
 
@@ -116,9 +130,7 @@ describe('apis/peersAPI', () => {
     it('should return an object with the properties: banned, connected and disconnected', async () => {
       getByFilterStub.onCall(0).returns([{ a: 1 }]);
       getByFilterStub.onCall(1).returns([{ a: 1 }, { b: 2 }]);
-      getByFilterStub
-        .onCall(2)
-        .returns([{ a: 1 }, { b: 2 }, { c: 3 }]);
+      getByFilterStub.onCall(2).returns([{ a: 1 }, { b: 2 }, { c: 3 }]);
       result = await instance.count();
       expect(result).to.deep.equal({
         banned: 3,

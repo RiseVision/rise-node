@@ -1,108 +1,100 @@
 {
-  "port"           : 5555,
-  "address"        : "0.0.0.0",
-  "version"        : "1.0.1",
-  "fileLogLevel"   : "info",
-  "logFileName"    : "logs/rise-master.log",
-              "consoleLogLevel": "info",
-  "trustProxy"     : false,
-  "topAccounts"    : false,
-  "cacheEnabled"   : false,
-  "db"             : {
-    "host"              : "localhost",
-    "port"              : 5432,
-    "database"          : "rise_db",
-    "user"              : "rise",
-    "password"          : "password",
-    "poolSize"          : 95,
-    "poolIdleTimeout"   : 30000,
+  "port": 5555,
+  "address": "0.0.0.0",
+  "version": "1.0.1",
+  "fileLogLevel": "info",
+  "logFileName": "logs/rise-master.log",
+  "consoleLogLevel": "info",
+  "trustProxy": false,
+  "topAccounts": false,
+  "cacheEnabled": false,
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "rise_db",
+    "user": "rise",
+    "password": "password",
+    "poolSize": 95,
+    "poolIdleTimeout": 30000,
     "reapIntervalMillis": 1000,
-    "logEvents"         : [
-      "error"
-    ]
+    "logEvents": ["error"]
   },
-  "redis"          : {
-    "host"    : "127.0.0.1",
-    "port"    : 6380,
-    "db"      : 0,
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6380,
+    "db": 0,
     "password": null
   },
-  "api"            : {
+  "api": {
     "enabled": true,
     "port": 5554,
-    "access" : {
-      "public"   : false,
-      "whiteList": [
-        "127.0.0.1"
-      ],
-      "restrictedAPIwhiteList": [
-        "127.0.0.1"
-      ]
+    "access": {
+      "public": false,
+      "whiteList": ["127.0.0.1"],
+      "restrictedAPIwhiteList": ["127.0.0.1"]
     },
     "options": {
       "limits": {
-        "max"       : 0,
-        "delayMs"   : 0,
+        "max": 0,
+        "delayMs": 0,
         "delayAfter": 0,
-        "windowMs"  : 60000
+        "windowMs": 60000
       }
     }
   },
-  "peers"          : {
+  "peers": {
     "enabled": true,
     "trustProxy": false,
-    "list"   : [
+    "list": [
       {
-        "ip"  : "45.32.136.66",
+        "ip": "45.32.136.66",
         "port": 5555
       },
       {
-        "ip"  : "45.76.36.14",
+        "ip": "45.76.36.14",
         "port": 5555
       },
       {
-        "ip"  : "212.24.96.99",
+        "ip": "212.24.96.99",
         "port": 5555
       }
     ],
-    "access" : {
+    "access": {
       "blackList": []
     },
     "options": {
-      "limits" : {
-        "max"       : 0,
-        "delayMs"   : 0,
+      "limits": {
+        "max": 0,
+        "delayMs": 0,
         "delayAfter": 0,
-        "windowMs"  : 60000
+        "windowMs": 60000
       },
       "timeout": 5000
     }
   },
-  "broadcasts"     : {
+  "broadcasts": {
     "broadcastInterval": 5000,
-    "broadcastLimit"   : 20,
-    "parallelLimit"    : 20,
-    "releaseLimit"     : 25,
-    "relayLimit"       : 2
+    "broadcastLimit": 20,
+    "parallelLimit": 20,
+    "releaseLimit": 25,
+    "relayLimit": 2
   },
-  "transactions"   : {
-    "maxTxsPerQueue"      : 1000,
+  "transactions": {
+    "maxTxsPerQueue": 1000,
     "processQueueInterval": 1000,
-    "expiryInterval"      : 60000,
-    "bundleLimit"         : 100
+    "expiryInterval": 60000,
+    "bundleLimit": 100
   },
-  "forging"        : {
-    "force" : false,
+  "forging": {
+    "force": false,
     "secret": [],
     "access": {
-      "whiteList": [
-        "127.0.0.1"
-      ]
+      "whiteList": ["127.0.0.1"]
     }
   },
-  "loading"        : {
-    "verifyOnLoading" : false,
+  "loading": {
+    "verifyOnLoading": false,
     "loadPerIteration": 5000
   },
-  "nethash"        : "cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5"
+  "nethash": "cd8171332c012514864edd8eb6f68fc3ea6cb2afbaf21c56e12751022684cea5"
 }

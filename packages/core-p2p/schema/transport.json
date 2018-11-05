@@ -40,17 +40,10 @@
       },
       "firewalled": {
         "type": "string",
-        "enum": [
-          "true",
-          "false"
-        ]
+        "enum": ["true", "false"]
       }
     },
-    "required": [
-      "port",
-      "version",
-      "nethash"
-    ]
+    "required": ["port", "version", "nethash"]
   },
   "signatures": {
     "id": "transport.signatures",
@@ -62,9 +55,7 @@
         "maxItems": 25
       }
     },
-    "required": [
-      "signatures"
-    ]
+    "required": ["signatures"]
   },
   "signature": {
     "id": "transport.signature",
@@ -81,9 +72,6 @@
         "format": "signature"
       }
     },
-    "required": [
-      "transaction",
-      "signature"
-    ]
+    "required": ["transaction", "signature"]
   }
 }

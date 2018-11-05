@@ -5,7 +5,7 @@ import {
   IBlocksModule,
   ILogger,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { publicKey, SignedBlockType } from '@risevision/core-types';
@@ -132,7 +132,7 @@ export class DelegatesModule {
 
     const delegates = await this.accountsModule.getAccounts({
       isDelegate: 1,
-      sort: { vote: -1, publicKey: 1 }
+      sort: { vote: -1, publicKey: 1 },
     });
 
     const limit = Math.min(
@@ -169,7 +169,7 @@ export class DelegatesModule {
 
       crunchedDelegates.push({
         delegate: delegates[i],
-        info: { rank, approval, productivity }
+        info: { rank, approval, productivity },
       });
     }
 
@@ -185,7 +185,7 @@ export class DelegatesModule {
       limit: realLimit,
       offset,
       sortField: orderBy.sortField,
-      sortMethod: orderBy.sortMethod
+      sortMethod: orderBy.sortMethod,
     };
   }
 
@@ -215,7 +215,7 @@ export class DelegatesModule {
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
       limit: this.slots.delegates,
-      sort: { vote: -1, publicKey: 1 }
+      sort: { vote: -1, publicKey: 1 },
     });
     return rows.map((r) => r.publicKey);
   }
@@ -277,7 +277,7 @@ export class DelegatesModule {
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
       const del = await this.accountsModule.getAccount({
         publicKey: new Buffer(curPK, 'hex'),
-        isDelegate: 1
+        isDelegate: 1,
       });
       if (!del) {
         throw new Error('Delegate not found');

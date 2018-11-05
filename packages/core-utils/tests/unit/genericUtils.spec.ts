@@ -1,10 +1,8 @@
-import {expect} from 'chai';
+import { expect } from 'chai';
 import { removeEmptyObjKeys } from '../../src';
 
 describe('genericUtils', () => {
-
   describe('removeEmptyObjKeys', () => {
-
     it('should remove *all* empty keys when recursive is true', () => {
       const input = {
         a: {

@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
 import { castFieldsToNumberUsingSchema, z_schema } from '../../src';
@@ -7,7 +7,7 @@ import { castFieldsToNumberUsingSchema, z_schema } from '../../src';
 describe('helpers/z_schema', () => {
   const validator = new z_schema({});
 
-  describe('Format "id"', ()  => {
+  describe('Format "id"', () => {
     const schema = { type: 'string', format: 'id' };
     // Y ?
     it('should accept an empty string', () => {
@@ -24,7 +24,7 @@ describe('helpers/z_schema', () => {
     });
   });
 
-  describe('Format "address"', ()  => {
+  describe('Format "address"', () => {
     const schema = { type: 'string', format: 'address' };
     // Y ?
     it('should NOT accept an empty string', () => {
@@ -44,7 +44,7 @@ describe('helpers/z_schema', () => {
     });
   });
 
-  describe('Format "username"', ()  => {
+  describe('Format "username"', () => {
     let schema = { type: 'string', format: 'username' };
     // Y ?
     it('should not accept an empty string', () => {
@@ -55,7 +55,10 @@ describe('helpers/z_schema', () => {
     });
     it('should accept all allowed characters', () => {
       expect(
-        validator.validate('abcdefghijklmnopqrstuvwxyxABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@$&_.', schema)
+        validator.validate(
+          'abcdefghijklmnopqrstuvwxyxABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@$&_.',
+          schema
+        )
       ).to.be.true;
     });
     it('should reject other characters', () => {
@@ -71,7 +74,7 @@ describe('helpers/z_schema', () => {
     });
   });
 
-  describe('Format "hex"', ()  => {
+  describe('Format "hex"', () => {
     const schema = { type: 'string', format: 'hex' };
     it('should accept an empty string', () => {
       expect(validator.validate('', schema)).to.be.true;
@@ -87,14 +90,17 @@ describe('helpers/z_schema', () => {
     });
   });
 
-  describe('Format "publicKey"', ()  => {
+  describe('Format "publicKey"', () => {
     const schema = { type: 'string', format: 'publicKey' };
     it('should NOT accept an empty string', () => {
       expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept a hex string 64 characters long', () => {
       expect(
-        validator.validate('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', schema)
+        validator.validate(
+          '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+          schema
+        )
       ).to.be.true;
     });
     it('should reject a shorter string', () => {
@@ -102,12 +108,15 @@ describe('helpers/z_schema', () => {
     });
     it('should reject other characters', () => {
       expect(
-        validator.validate('@588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', schema)
+        validator.validate(
+          '@588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+          schema
+        )
       ).to.be.false;
     });
   });
 
-  describe('Format "csv"', ()  => {
+  describe('Format "csv"', () => {
     let schema = { type: 'string', format: 'csv' };
     it('should accept an empty string', () => {
       expect(validator.validate('', schema)).to.be.true;
@@ -135,55 +144,60 @@ describe('helpers/z_schema', () => {
     });
   });
 
-  describe('Format "signature"', ()  => {
+  describe('Format "signature"', () => {
     const schema = { type: 'string', format: 'signature' };
     it('should not accept an empty string', () => {
       expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept a hex string of 64 bytes', () => {
-      const signatureHex  = 'b2c9aab1ee31cecfe2a0547fe9e70f4d89d505e3f05c0f777f32cdc3dbb79fcd' +
-                            '87afb70f2a3a04cae3d65b1a89b226d2974844f909686b125f0d07254961b104';
+      const signatureHex =
+        'b2c9aab1ee31cecfe2a0547fe9e70f4d89d505e3f05c0f777f32cdc3dbb79fcd' +
+        '87afb70f2a3a04cae3d65b1a89b226d2974844f909686b125f0d07254961b104';
       expect(validator.validate(signatureHex, schema)).to.be.true;
     });
     it('should reject non-hex strings', () => {
       expect(validator.validate('RISE', schema)).to.be.false;
     });
     it('should reject too short hex strings', () => {
-      expect(validator.validate('b2c9aab1ee31cecfe2a0547fe9e70f4d89d505', schema)).to.be.false;
+      expect(
+        validator.validate('b2c9aab1ee31cecfe2a0547fe9e70f4d89d505', schema)
+      ).to.be.false;
     });
   });
 
-  describe('Format "queryList"', ()  => {
+  describe('Format "queryList"', () => {
     const schema = { type: 'object', format: 'queryList' };
     it('should always return true when an object is passed', () => {
-      expect(validator.validate({a: 1}, schema)).to.be.true;
+      expect(validator.validate({ a: 1 }, schema)).to.be.true;
     });
     it('should add limit:100 to the passed object', () => {
-      const obj = {a: 1, limit: 10000};
+      const obj = { a: 1, limit: 10000 };
       validator.validate(obj, schema);
       expect(obj.limit).to.be.eq(100);
     });
   });
 
-  describe('Format "delegatesList"', ()  => {
+  describe('Format "delegatesList"', () => {
     const schema = { type: 'object', format: 'delegatesList' };
     it('should always return true when an object is passed', () => {
-      expect(validator.validate({a: 1}, schema)).to.be.true;
+      expect(validator.validate({ a: 1 }, schema)).to.be.true;
     });
     it('should add limit:100 to the passed object', () => {
-      const obj = {a: 1, limit: 10000};
+      const obj = { a: 1, limit: 10000 };
       validator.validate(obj, schema);
       expect(obj.limit).to.be.eq(101);
     });
   });
 
-  describe('Format "ip"', ()  => {
+  describe('Format "ip"', () => {
     const schema = { type: 'string', format: 'ip' };
     it('should accept a valid IPv4', () => {
       expect(validator.validate('127.0.0.1', schema)).to.be.true;
     });
     it('should reject an IPv6', () => {
-      expect(validator.validate('2001:0db8:0000:0000:0000:0000:1428:57ab', schema)).to.be.false;
+      expect(
+        validator.validate('2001:0db8:0000:0000:0000:0000:1428:57ab', schema)
+      ).to.be.false;
     });
     // THIS FAILS. Y?? bug in library?
     // it('should reject an invalid IPv4', () => {
@@ -194,14 +208,17 @@ describe('helpers/z_schema', () => {
     });
   });
 
-  describe('Format "os"', ()  => {
+  describe('Format "os"', () => {
     const schema = { type: 'string', format: 'os' };
     it('should reject an empty string', () => {
       expect(validator.validate('', schema)).to.be.false;
     });
     it('should accept all allowed characters', () => {
       expect(
-        validator.validate('abcdefghijklmnopqrstuvwxyxABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.+', schema)
+        validator.validate(
+          'abcdefghijklmnopqrstuvwxyxABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.+',
+          schema
+        )
       ).to.be.true;
     });
     it('should reject other characters', () => {
@@ -209,7 +226,7 @@ describe('helpers/z_schema', () => {
     });
   });
 
-  describe('Format "version"', ()  => {
+  describe('Format "version"', () => {
     const schema = { type: 'string', format: 'version' };
     it('should accept a 3-level version number with a final letter', () => {
       expect(validator.validate('111.222.333a', schema)).to.be.true;
@@ -241,14 +258,14 @@ describe('helpers/z_schema', () => {
 
     it('should return the object untouched if schema.type is not "integer" (on scalars)', () => {
       const schema = { type: 'string' };
-      const value  = '10000';
+      const value = '10000';
       const retVal = castFieldsToNumberUsingSchema(schema, value);
       expect(retVal).to.be.deep.eq(value);
     });
 
     it('should parse "integer" schema values to radix 10 integer', () => {
       const schema = { type: 'integer' };
-      const value  = '10000';
+      const value = '10000';
       const retVal = castFieldsToNumberUsingSchema(schema, value);
       expect(parseIntSpy.called).to.be.true;
       expect(retVal).to.be.eq(10000);
@@ -257,7 +274,7 @@ describe('helpers/z_schema', () => {
 
     it('should not try to cast undefined', () => {
       const schema = { type: 'integer' };
-      const value  = undefined;
+      const value = undefined;
       const retVal = castFieldsToNumberUsingSchema(schema, value);
       expect(retVal).to.be.eq(undefined);
       expect(parseIntSpy.called).to.be.false;
@@ -272,15 +289,15 @@ describe('helpers/z_schema', () => {
                 type: 'integer',
               },
             },
-            type      : 'object',
+            type: 'object',
           },
           value: {
             type: 'integer',
           },
         },
-        type      : 'object',
+        type: 'object',
       };
-      const value  = {
+      const value = {
         child: {
           value: '100',
         },
@@ -301,9 +318,9 @@ describe('helpers/z_schema', () => {
         items: {
           type: 'integer',
         },
-        type : 'array',
+        type: 'array',
       };
-      const value  = ['10', '1000', '99999', '-1'];
+      const value = ['10', '1000', '99999', '-1'];
       const retVal = castFieldsToNumberUsingSchema(schema, value);
       expect(retVal).to.be.deep.eq([10, 1000, 99999, -1]);
       expect(parseIntSpy.callCount).to.be.eq(4);

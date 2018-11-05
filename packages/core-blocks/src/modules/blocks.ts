@@ -2,7 +2,7 @@ import { IBlocksModule, ILogger, Symbols } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
   ConstantsType,
-  SignedAndChainedBlockType
+  SignedAndChainedBlockType,
 } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 
@@ -35,7 +35,7 @@ export class BlocksModule implements IBlocksModule {
       },
       update: (time: number = Math.floor(Date.now() / 1000)) => {
         this.internalLastReceipt = time;
-      }
+      },
     };
   }
 

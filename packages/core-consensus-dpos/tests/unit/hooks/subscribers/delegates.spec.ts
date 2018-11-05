@@ -23,12 +23,24 @@ describe('hooks/subscribers/delegates', () => {
   let accountsModel: typeof AccountsModel;
   let delegatesModel: typeof DelegatesModel;
   before(async () => {
-    sandbox        = sinon.createSandbox();
-    container      = await createContainer(['core-consensus-dpos', 'core-transactions', 'core', 'core-helpers', 'core-crypto']);
-    instance       = container.get(dPoSSymbols.hooksSubscribers.delegates);
-    wphooksystem   = new WordPressHookSystem(new InMemoryFilterModel());
-    accountsModel  = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
-    delegatesModel = container.getNamed(ModelSymbols.model, dPoSSymbols.models.delegates);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-consensus-dpos',
+      'core-transactions',
+      'core',
+      'core-helpers',
+      'core-crypto',
+    ]);
+    instance = container.get(dPoSSymbols.hooksSubscribers.delegates);
+    wphooksystem = new WordPressHookSystem(new InMemoryFilterModel());
+    accountsModel = container.getNamed(
+      ModelSymbols.model,
+      AccountsSymbols.model
+    );
+    delegatesModel = container.getNamed(
+      ModelSymbols.model,
+      dPoSSymbols.models.delegates
+    );
     await instance.unHook();
     delete instance.__wpuid;
     instance.hookSystem = wphooksystem;
@@ -39,14 +51,18 @@ describe('hooks/subscribers/delegates', () => {
   });
 
   it('should throw in OnCheckIntegrity if there is some unapplied round in db', async () => {
-    const queryStub = sandbox.stub(delegatesModel.sequelize, 'query').resolves([{ count: 1 }]);
-    const stub      = sandbox.stub(accountsModel, 'count').resolves(0);
-    await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1))
-      .rejectedWith('No delegates found');
+    const queryStub = sandbox
+      .stub(delegatesModel.sequelize, 'query')
+      .resolves([{ count: 1 }]);
+    const stub = sandbox.stub(accountsModel, 'count').resolves(0);
+    await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
+      'No delegates found'
+    );
 
     stub.resolves(1);
-    await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1))
-      .rejectedWith('Delegates table corrupted with duplicated entries');
+    await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
+      'Delegates table corrupted with duplicated entries'
+    );
 
     // all good
     queryStub.resolves([{ count: 0 }]);

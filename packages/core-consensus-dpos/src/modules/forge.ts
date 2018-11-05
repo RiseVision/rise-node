@@ -8,13 +8,13 @@ import {
   ILogger,
   IModule,
   ISequence,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
 import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import {
   catchToLoggerAndRemapError,
-  WrapInDefaultSequence
+  WrapInDefaultSequence,
 } from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
@@ -218,7 +218,7 @@ export class ForgeModule implements IModule {
           .digest()
       );
       const account = await this.accountsModule.getAccount({
-        publicKey: keypair.publicKey
+        publicKey: keypair.publicKey,
       });
       if (!account) {
         throw new Error(
@@ -259,7 +259,7 @@ export class ForgeModule implements IModule {
       if (delegId && this.enabledKeys[delegId.toString('hex')]) {
         return {
           keypair: this.keypairs[delegId.toString('hex')],
-          time: this.slots.getSlotTime(cs)
+          time: this.slots.getSlotTime(cs),
         };
       }
     }

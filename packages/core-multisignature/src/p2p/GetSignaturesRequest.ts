@@ -1,7 +1,7 @@
 import { ITransactionPool, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
-  SingleTransportPayload
+  SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { TXSymbols } from '@risevision/core-transactions';
 import { ConstantsType } from '@risevision/core-types';
@@ -26,7 +26,7 @@ export class GetSignaturesRequest extends BaseProtobufTransportMethod<
   public protoResponse = {
     converters: { longs: String },
     messageType: 'getSignaturesResponse',
-    namespace: 'multisig'
+    namespace: 'multisig',
   };
   // TODO: Add min and max items for the sign arrays with infos from constants.
   // tslint:disable object-literal-sort-keys
@@ -40,20 +40,20 @@ export class GetSignaturesRequest extends BaseProtobufTransportMethod<
           properties: {
             transaction: {
               type: 'string',
-              format: 'txId'
+              format: 'txId',
             },
             signatures: {
               type: 'array',
               items: {
                 type: 'object',
-                format: 'signatureBuf'
-              }
-            }
-          }
-        }
-      }
+                format: 'signatureBuf',
+              },
+            },
+          },
+        },
+      },
     },
-    required: ['signatures']
+    required: ['signatures'],
   };
   // tslint:enable object-literal-sort-keys
 
@@ -72,7 +72,7 @@ export class GetSignaturesRequest extends BaseProtobufTransportMethod<
       if (tx.signatures && tx.signatures.length > 0) {
         signatures.push({
           signatures: tx.signatures,
-          transaction: tx.id
+          transaction: tx.id,
         });
       }
     }

@@ -25,13 +25,24 @@ describe('apis/utils/attachPeerHeaders', () => {
   let container: Container;
 
   beforeEach(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
     sandbox = sinon.createSandbox();
-    response = {set: () => true};
+    response = { set: () => true };
     responseSpy = sandbox.spy(response, 'set');
     request = {};
     next = sandbox.spy();
-    instance = container.getNamed(p2pSymbols.transportMiddleware, p2pSymbols.transportMiddlewares.attachPeerHeaders);
+    instance = container.getNamed(
+      p2pSymbols.transportMiddleware,
+      p2pSymbols.transportMiddlewares.attachPeerHeaders
+    );
   });
 
   afterEach(() => {

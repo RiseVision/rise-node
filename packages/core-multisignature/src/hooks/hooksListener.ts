@@ -1,12 +1,12 @@
 import {
   ITransactionLogic,
   Symbols,
-  VerificationType
+  VerificationType,
 } from '@risevision/core-interfaces';
 import {
   TxLogicStaticCheck,
   TxLogicVerify,
-  TxReadyFilter
+  TxReadyFilter,
 } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
@@ -146,7 +146,7 @@ export class MultisigHooksListener extends ExtendableClass {
     return {
       ...what,
       multisignatures: accData.multisignatures,
-      u_multisignatures: accData.u_multisignatures
+      u_multisignatures: accData.u_multisignatures,
     };
   }
 }

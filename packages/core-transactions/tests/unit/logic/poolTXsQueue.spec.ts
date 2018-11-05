@@ -25,8 +25,8 @@ describe('logic/transactionPool - InnerTXQueue', () => {
 
   beforeEach(() => {
     instance = new InnerTXQueue('test');
-    sandbox  = sinon.createSandbox();
-    hasSpy   = sandbox.spy(instance, 'has');
+    sandbox = sinon.createSandbox();
+    hasSpy = sandbox.spy(instance, 'has');
   });
 
   afterEach(() => {
@@ -64,7 +64,10 @@ describe('logic/transactionPool - InnerTXQueue', () => {
       instance.remove('tx2');
       expect((instance as any).transactions).to.deep.eq([tx1, undefined, tx3]);
       expect((instance as any).index).to.be.deep.equal({ tx1: 0, tx3: 2 });
-      expect((instance as any).payload).to.be.deep.equal({ tx1: payload1, tx3: payload3 });
+      expect((instance as any).payload).to.be.deep.equal({
+        tx1: payload1,
+        tx3: payload3,
+      });
     });
   });
 
@@ -113,7 +116,7 @@ describe('logic/transactionPool - InnerTXQueue', () => {
     it('should return the right transaction', () => {
       addTransactions(instance);
       const retVal = instance.get('tx2');
-      expect(retVal).to.be.deep.equal({tx: tx2, payload: payload2});
+      expect(retVal).to.be.deep.equal({ tx: tx2, payload: payload2 });
     });
   });
 
@@ -146,34 +149,46 @@ describe('logic/transactionPool - InnerTXQueue', () => {
       addTransactions(instance);
       instance.remove('tx2');
       const retVal = instance.list();
-      expect(retVal).to.deep.eq([{tx: tx1, payload: payload1}, {tx: tx3, payload: payload3}]);
+      expect(retVal).to.deep.eq([
+        { tx: tx1, payload: payload1 },
+        { tx: tx3, payload: payload3 },
+      ]);
     });
 
     it('should call the filterFn if passed', () => {
       const filterFnSpy = sandbox.spy();
-      const filterFn    = (item) => {
+      const filterFn = (item) => {
         filterFnSpy(item);
         return item;
       };
       addTransactions(instance);
       instance.list({
         reverse: false,
-        limit  : 10,
-        filterFn
+        limit: 10,
+        filterFn,
       });
       expect(filterFnSpy.callCount).to.be.equal(3);
-      expect(filterFnSpy.firstCall.args[0]).to.be.deep.equal({tx: tx1, payload: payload1});
-      expect(filterFnSpy.secondCall.args[0]).to.be.deep.equal({tx: tx2, payload: payload2});
-      expect(filterFnSpy.thirdCall.args[0]).to.be.deep.equal({tx: tx3 , payload: payload3});
+      expect(filterFnSpy.firstCall.args[0]).to.be.deep.equal({
+        tx: tx1,
+        payload: payload1,
+      });
+      expect(filterFnSpy.secondCall.args[0]).to.be.deep.equal({
+        tx: tx2,
+        payload: payload2,
+      });
+      expect(filterFnSpy.thirdCall.args[0]).to.be.deep.equal({
+        tx: tx3,
+        payload: payload3,
+      });
     });
 
     it('should reverse the array if requested', () => {
       addTransactions(instance);
-      const retVal = instance.list({reverse: true});
+      const retVal = instance.list({ reverse: true });
       expect(retVal).to.deep.eq([
-        {tx: tx3, payload: payload3},
-        {tx: tx2, payload: payload2},
-        {tx: tx1, payload: payload1},
+        { tx: tx3, payload: payload3 },
+        { tx: tx2, payload: payload2 },
+        { tx: tx1, payload: payload1 },
       ]);
     });
 
@@ -181,16 +196,16 @@ describe('logic/transactionPool - InnerTXQueue', () => {
       addTransactions(instance);
       const retVal = instance.list();
       expect(retVal).to.deep.eq([
-        {tx: tx1, payload: payload1},
-        {tx: tx2, payload: payload2},
-        {tx: tx3, payload: payload3}
-        ]);
+        { tx: tx1, payload: payload1 },
+        { tx: tx2, payload: payload2 },
+        { tx: tx3, payload: payload3 },
+      ]);
     });
 
     it('should return no more than the number of transactions specified in limit', () => {
       addTransactions(instance);
       expect(instance.count).to.be.equal(3);
-      const retVal = instance.list({limit: 2});
+      const retVal = instance.list({ limit: 2 });
       expect(retVal.length).to.be.equal(2);
     });
 
@@ -204,12 +219,10 @@ describe('logic/transactionPool - InnerTXQueue', () => {
   describe('listWithPayload', () => {
     it('should call list() passing all args', () => {
       addTransactions(instance);
-      const listStub   = sandbox.spy(instance, 'list');
-      instance.txList({ahahahaha: true} as any);
+      const listStub = sandbox.spy(instance, 'list');
+      instance.txList({ ahahahaha: true } as any);
       expect(listStub.calledOnce).true;
-      expect(listStub.firstCall.args).deep.eq([{ahahahaha: true}]);
+      expect(listStub.firstCall.args).deep.eq([{ ahahahaha: true }]);
     });
-
   });
-
 });

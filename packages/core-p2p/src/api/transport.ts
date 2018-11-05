@@ -5,7 +5,7 @@ import {
   NextFunction,
   Request,
   RequestHandler,
-  Response
+  Response,
 } from 'express';
 import { inject, injectable, postConstruct } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
@@ -46,7 +46,7 @@ export class TransportAPI {
             const resp = await tm.handleRequest(req.body, req.query);
             const wrappedResp = await this.transportWrapper.wrapResponse({
               success: true,
-              wrappedResponse: resp
+              wrappedResponse: resp,
             });
             res
               .set('content-type', 'application/octet-stream')
@@ -57,7 +57,7 @@ export class TransportAPI {
         },
 
         // Error handler
-        this.handleError.bind(this)
+        this.handleError.bind(this),
       ];
 
       router[tm.method === 'GET' ? 'get' : 'post'](tm.baseUrl, handles);

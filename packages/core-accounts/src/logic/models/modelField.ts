@@ -1,19 +1,23 @@
-export type IModelFilter = ({
-  type: 'string',
-  case?: 'lower' | 'upper',
-  maxLength?: number,
-  minLength?: number,
-  format?: string
-} | {
-  type: 'boolean'
-} | {
-  type: 'integer',
-  minimum?: number,
-  maximum?: number,
-} | {
-  type: 'array',
-  uniqueItems: boolean
-}) & { required?: boolean };
+export type IModelFilter = (
+  | {
+      type: 'string';
+      case?: 'lower' | 'upper';
+      maxLength?: number;
+      minLength?: number;
+      format?: string;
+    }
+  | {
+      type: 'boolean';
+    }
+  | {
+      type: 'integer';
+      minimum?: number;
+      maximum?: number;
+    }
+  | {
+      type: 'array';
+      uniqueItems: boolean;
+    }) & { required?: boolean };
 
 export interface IModelField {
   name: string;

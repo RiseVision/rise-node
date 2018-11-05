@@ -8,10 +8,13 @@ import {
   P2PConstantsType,
   p2pSymbols,
   PeersLogic,
-  PeersModule
+  PeersModule,
 } from '../../src';
 import { IJobsQueue, Symbols } from '@risevision/core-interfaces';
-import { TransactionLogic, TransactionsModule } from '../../../core-transactions/src';
+import {
+  TransactionLogic,
+  TransactionsModule,
+} from '../../../core-transactions/src';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ConstantsType } from '@risevision/core-types';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
@@ -32,7 +35,15 @@ describe('logic/broadcaster', () => {
   let container: Container;
 
   before(async () => {
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox({
@@ -40,18 +51,23 @@ describe('logic/broadcaster', () => {
     });
 
     fakeAppState = { set: sandbox.stub() };
-    loggerStub   = new LoggerStub();
+    loggerStub = new LoggerStub();
     container.rebind(Symbols.logic.appState).toConstantValue(fakeAppState);
     container.rebind(Symbols.helpers.logger).toConstantValue(loggerStub);
-    await container.get<BroadcasterLogic>(p2pSymbols.logic.broadcaster).cleanup();
-    container.rebind(p2pSymbols.logic.broadcaster).to(BroadcasterLogic).inSingletonScope();
+    await container
+      .get<BroadcasterLogic>(p2pSymbols.logic.broadcaster)
+      .cleanup();
+    container
+      .rebind(p2pSymbols.logic.broadcaster)
+      .to(BroadcasterLogic)
+      .inSingletonScope();
 
     constants = container.get(Symbols.generic.constants);
     jobsQueue = container.get(Symbols.helpers.jobsQueue);
     jobsQueue.unregister('broadcasterNextRelease');
-    peersLogic         = container.get(Symbols.logic.peers);
-    transactionLogic   = container.get(Symbols.logic.transaction);
-    peersModule        = container.get(Symbols.modules.peers);
+    peersLogic = container.get(Symbols.logic.peers);
+    transactionLogic = container.get(Symbols.logic.transaction);
+    peersModule = container.get(Symbols.modules.peers);
     transactionsModule = container.get(Symbols.modules.transactions);
 
     // Dependency injection
@@ -63,23 +79,30 @@ describe('logic/broadcaster', () => {
   });
 
   describe('afterConstruct', () => {
-
     it('should call JobsQueue.register', () => {
-      const p2pConstants  = container.get<P2PConstantsType>(p2pSymbols.constants);
+      const p2pConstants = container.get<P2PConstantsType>(
+        p2pSymbols.constants
+      );
       const jobsQueuestub = sandbox.stub(jobsQueue, 'register');
       (instance as any).afterConstruct();
       expect(jobsQueuestub.calledOnce).to.be.true;
       expect(jobsQueuestub.firstCall.args.length).to.be.equal(3);
-      expect(jobsQueuestub.firstCall.args[0]).to.be.equal('broadcasterNextRelease');
+      expect(jobsQueuestub.firstCall.args[0]).to.be.equal(
+        'broadcasterNextRelease'
+      );
       expect(jobsQueuestub.firstCall.args[1]).to.be.a('function');
-      expect(jobsQueuestub.firstCall.args[2]).to.be.equal(p2pConstants.broadcastInterval);
+      expect(jobsQueuestub.firstCall.args[2]).to.be.equal(
+        p2pConstants.broadcastInterval
+      );
     });
 
     it('should call to releaseQueue()', async () => {
-      const jobsQueuestub      = sandbox.stub(jobsQueue, 'register').callsFake((name: string, job: () => Promise<any>) => {
-        return job();
-      });
-      const releaseQueueStub   = sandbox.stub().resolves(true);
+      const jobsQueuestub = sandbox
+        .stub(jobsQueue, 'register')
+        .callsFake((name: string, job: () => Promise<any>) => {
+          return job();
+        });
+      const releaseQueueStub = sandbox.stub().resolves(true);
       // tslint:disable-next-line no-string-literal
       instance['releaseQueue'] = releaseQueueStub;
       await instance.afterConstruct();
@@ -88,10 +111,12 @@ describe('logic/broadcaster', () => {
     });
 
     it('if releaseQueue() rejects should call to catch()', async () => {
-      const jobsQueuestub      = sandbox.stub(jobsQueue, 'register').callsFake((name: string, job: () => Promise<any>) => {
-        return job();
-      });
-      const releaseQueueStub   = sandbox.stub().rejects(new Error('Booo!'));
+      const jobsQueuestub = sandbox
+        .stub(jobsQueue, 'register')
+        .callsFake((name: string, job: () => Promise<any>) => {
+          return job();
+        });
+      const releaseQueueStub = sandbox.stub().rejects(new Error('Booo!'));
       // tslint:disable-next-line no-string-literal
       instance['releaseQueue'] = releaseQueueStub;
       await instance.afterConstruct();
@@ -163,7 +188,7 @@ describe('logic/broadcaster', () => {
     // tslint:disable-next-line
 
     beforeEach(() => {
-      params  = {};
+      params = {};
       options = {
         method: new StubbedRequest(),
       };
@@ -179,8 +204,8 @@ describe('logic/broadcaster', () => {
       expect(spy.firstCall.args[0]).to.be.deep.equal({
         options: {
           immediate: false,
-          method   : options.method,
-          payload  : { body: 'meow' }
+          method: options.method,
+          payload: { body: 'meow' },
         },
         filters: params,
       });
@@ -202,16 +227,16 @@ describe('logic/broadcaster', () => {
     let createPeerStub: SinonStub;
 
     beforeEach(() => {
-      filters      = {
+      filters = {
         broadhash: 'broadhash',
-        limit    : 100,
-        peers    : null,
+        limit: 100,
+        peers: null,
       };
-      options      = { method: new StubbedRequest() };
-      peers        = [{}, {}];
+      options = { method: new StubbedRequest() };
+      peers = [{}, {}];
       createdPeers = [
-        { string: 'first', makeRequest: sandbox.stub().resolves(), },
-        { string: 'second', makeRequest: sandbox.stub().resolves(), },
+        { string: 'first', makeRequest: sandbox.stub().resolves() },
+        { string: 'second', makeRequest: sandbox.stub().resolves() },
       ];
 
       getPeersStub = sandbox.stub(peersModule, 'getPeers');
@@ -245,16 +270,28 @@ describe('logic/broadcaster', () => {
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(peers.length + 2);
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Begin broadcast');
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(
+        'Begin broadcast'
+      );
 
       createdPeers.forEach((peer, index) => {
-        expect(loggerStub.stubs.debug.getCall(index + 1).args.length).to.be.equal(2);
-        expect(loggerStub.stubs.debug.getCall(index + 1).args[0]).to.be.equal(`Failed to broadcast to peer: ${peer.string}`);
-        expect(loggerStub.stubs.debug.getCall(index + 1).args[1]).to.be.equal(error);
+        expect(
+          loggerStub.stubs.debug.getCall(index + 1).args.length
+        ).to.be.equal(2);
+        expect(loggerStub.stubs.debug.getCall(index + 1).args[0]).to.be.equal(
+          `Failed to broadcast to peer: ${peer.string}`
+        );
+        expect(loggerStub.stubs.debug.getCall(index + 1).args[1]).to.be.equal(
+          error
+        );
       });
 
-      expect(loggerStub.stubs.debug.getCall(peers.length + 1).args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.getCall(peers.length + 1).args[0]).to.be.equal('End broadcast');
+      expect(
+        loggerStub.stubs.debug.getCall(peers.length + 1).args.length
+      ).to.be.equal(1);
+      expect(
+        loggerStub.stubs.debug.getCall(peers.length + 1).args[0]
+      ).to.be.equal('End broadcast');
     });
 
     it('should call peersLogic.create for each peer', async () => {
@@ -268,7 +305,7 @@ describe('logic/broadcaster', () => {
 
     it('should call peer.makeRequest per each created peer instance', async () => {
       createPeerStub.resetBehavior();
-      const stubs              = [];
+      const stubs = [];
       let makeRequestCallCount = 0;
       createPeerStub.callsFake((p) => {
         const peer = {
@@ -276,7 +313,7 @@ describe('logic/broadcaster', () => {
             makeRequestCallCount++;
             return Promise.resolve();
           }),
-          peer       : p,
+          peer: p,
         };
         stubs.push(peer);
         return peer;
@@ -286,7 +323,9 @@ describe('logic/broadcaster', () => {
       expect(makeRequestCallCount).to.be.equal(peers.length);
       peers.forEach((peer, index) => {
         expect(stubs[index].makeRequest.args.length).to.be.equal(1);
-        expect(stubs[index].makeRequest.firstCall.args[0]).to.be.deep.equal(options.method);
+        expect(stubs[index].makeRequest.firstCall.args[0]).to.be.deep.equal(
+          options.method
+        );
       });
     });
 
@@ -300,13 +339,14 @@ describe('logic/broadcaster', () => {
   });
 
   describe('maxRelays', () => {
-
     it('should return data from p2pConstants', () => {
-      const p2pConstants = container.get<P2PConstantsType>(p2pSymbols.constants);
-      const result       = instance.maxRelays();
+      const p2pConstants = container.get<P2PConstantsType>(
+        p2pSymbols.constants
+      );
+      const result = instance.maxRelays();
       expect(result).eq(p2pConstants.relayLimit);
 
-      const oldy              = p2pConstants.relayLimit;
+      const oldy = p2pConstants.relayLimit;
       p2pConstants.relayLimit = 15882;
       expect(instance.maxRelays()).eq(15882);
       p2pConstants.relayLimit = oldy;
@@ -322,7 +362,7 @@ describe('logic/broadcaster', () => {
       task = {
         options: {
           immediate: true,
-          method   : new StubbedRequest(),
+          method: new StubbedRequest(),
         },
       };
       instance.queue.push(task);
@@ -339,9 +379,13 @@ describe('logic/broadcaster', () => {
       await (instance as any).filterQueue();
       expect(loggerStub.stubs.debug.calledTwice).to.be.true;
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(`Broadcast before filtering: ${length}`);
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(
+        `Broadcast before filtering: ${length}`
+      );
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(`Broadcasts after filtering: ${instance.queue.length}`);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(
+        `Broadcasts after filtering: ${instance.queue.length}`
+      );
     });
 
     it('should behave correctly when options.immediate=true', async () => {
@@ -364,7 +408,7 @@ describe('logic/broadcaster', () => {
 
     it('should behave correctly when immediate false; data false', async () => {
       task.options.immediate = false;
-      task.options.data      = false;
+      task.options.data = false;
       await (instance as any).filterQueue();
       expect(instance.queue).to.be.deep.equal([task]);
     });
@@ -384,21 +428,24 @@ describe('logic/broadcaster', () => {
     let broadcastStub: SinonStub;
 
     beforeEach(() => {
-      queue      = [{}, {}];
-      broadcasts = [{
-        options: 'options1',
-        params : { name: 'params1' },
-      }, {
-        options: 'options2',
-        params : { name: 'params2' },
-      }];
-      peers      = [{ some: 'some1' }, { some: 'some2' }];
+      queue = [{}, {}];
+      broadcasts = [
+        {
+          options: 'options1',
+          params: { name: 'params1' },
+        },
+        {
+          options: 'options2',
+          params: { name: 'params2' },
+        },
+      ];
+      peers = [{ some: 'some1' }, { some: 'some2' }];
 
       instance.queue = queue;
 
       filterQueueStub = sandbox.stub(instance as any, 'filterQueue');
       squashQueueStub = sandbox.stub(instance as any, 'squashQueue');
-      broadcastStub   = sandbox.stub(instance as any, 'broadcast');
+      broadcastStub = sandbox.stub(instance as any, 'broadcast');
 
       squashQueueStub.returns(broadcasts);
       broadcastStub.resolves();
@@ -408,15 +455,19 @@ describe('logic/broadcaster', () => {
       await (instance as any).releaseQueue();
       expect(loggerStub.stubs.debug.callCount).to.be.at.least(1);
       expect(loggerStub.stubs.debug.firstCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Releasing enqueued broadcasts');
+      expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal(
+        'Releasing enqueued broadcasts'
+      );
     });
 
     it('should not call filterQueue if queue.length == 0', async () => {
       instance.queue = [];
-      const result   = await (instance as any).releaseQueue();
+      const result = await (instance as any).releaseQueue();
       expect(loggerStub.stubs.debug.callCount).to.be.equal(2);
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal('Queue empty');
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(
+        'Queue empty'
+      );
       expect(result).to.be.undefined;
       expect(filterQueueStub.called).to.be.false;
     });
@@ -441,7 +492,7 @@ describe('logic/broadcaster', () => {
         expect(broadcastStub.getCall(index).args.length).to.be.equal(1);
         expect(broadcastStub.getCall(index).args[0]).to.be.deep.equal({
           options: broadcast.options,
-          params : {
+          params: {
             name: broadcast.params.name,
           },
         });
@@ -454,7 +505,9 @@ describe('logic/broadcaster', () => {
       await (instance as any).releaseQueue();
       expect(loggerStub.stubs.warn.calledOnce).to.be.true;
       expect(loggerStub.stubs.warn.firstCall.args.length).to.be.equal(2);
-      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Failed to release broadcast queue');
+      expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal(
+        'Failed to release broadcast queue'
+      );
       expect(loggerStub.stubs.warn.firstCall.args[1]).to.be.equal(error);
     });
 
@@ -462,7 +515,9 @@ describe('logic/broadcaster', () => {
       await (instance as any).releaseQueue();
       expect(loggerStub.stubs.debug.calledTwice).to.be.true;
       expect(loggerStub.stubs.debug.secondCall.args.length).to.be.equal(1);
-      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(`Broadcasts released ${broadcasts.length}`);
+      expect(loggerStub.stubs.debug.secondCall.args[0]).to.be.equal(
+        `Broadcasts released ${broadcasts.length}`
+      );
     });
   });
 });

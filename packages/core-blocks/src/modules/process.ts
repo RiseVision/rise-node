@@ -11,7 +11,7 @@ import {
   ITransactionPool,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
@@ -22,11 +22,11 @@ import {
   IBaseTransaction,
   IKeypair,
   SignedAndChainedBlockType,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 import {
   WrapInDBSequence,
-  WrapInDefaultSequence
+  WrapInDefaultSequence,
 } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
@@ -128,7 +128,7 @@ export class BlocksModuleProcess {
     const { ids } = await this.blocksUtilsModule.getIdSequence(height);
 
     const commonResp = await peer.makeRequest(this.commonBlockRequest, {
-      query: { ids: ids.join(',') }
+      query: { ids: ids.join(',') },
     });
 
     if (!commonResp || !commonResp.common) {
@@ -152,8 +152,8 @@ export class BlocksModuleProcess {
       where: {
         height: commonResp.common.height,
         id: commonResp.common.id,
-        previousBlock: commonResp.common.previousBlock
-      }
+        previousBlock: commonResp.common.previousBlock,
+      },
     });
 
     if (matchingCount === 0) {
@@ -197,9 +197,9 @@ export class BlocksModuleProcess {
       where: {
         height: {
           [Op.gte]: params.offset,
-          [Op.lt]: params.limit
-        }
-      }
+          [Op.lt]: params.limit,
+        },
+      },
     });
 
     // Cycle through every block and apply it.
@@ -269,7 +269,7 @@ export class BlocksModuleProcess {
 
     this.logger.info(`Loading blocks from ${peer.string}`);
     const blocksFromPeer = await peer.makeRequest(this.getBlocksRequest, {
-      query: { lastBlockId: lastValidBlock.id }
+      query: { lastBlockId: lastValidBlock.id },
     });
 
     for (const block of blocksFromPeer.blocks) {
@@ -288,7 +288,7 @@ export class BlocksModuleProcess {
           id: block.id,
           err: err.message || err.toString(),
           module: 'blocks',
-          block
+          block,
         });
         throw err;
       }
@@ -309,7 +309,7 @@ export class BlocksModuleProcess {
   ): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
     const txs = this.txPool.unconfirmed.txList({
-      limit: this.constants.maxTxsPerBlock
+      limit: this.constants.maxTxsPerBlock,
     });
 
     const ready: Array<IBaseTransaction<any>> = [];
@@ -318,7 +318,7 @@ export class BlocksModuleProcess {
     );
     for (const tx of txs) {
       const sender = await this.accountsModule.getAccount({
-        publicKey: tx.senderPublicKey
+        publicKey: tx.senderPublicKey,
       });
       if (!sender) {
         throw new Error('Sender not found');
@@ -369,7 +369,7 @@ export class BlocksModuleProcess {
       keypair,
       previousBlock,
       timestamp,
-      transactions: txs
+      transactions: txs,
     });
   }
 
@@ -377,7 +377,7 @@ export class BlocksModuleProcess {
     block: SignedBlockType,
     opts: { broadcast: boolean; saveBlock: boolean } = {
       broadcast: true,
-      saveBlock: true
+      saveBlock: true,
     }
   ) {
     if (this.isCleaning) {
@@ -477,7 +477,7 @@ export class BlocksModuleProcess {
             'height:',
             block.height,
             'generator:',
-            block.generatorPublicKey.toString('hex')
+            block.generatorPublicKey.toString('hex'),
           ].join(' ')
         );
         throw new Error('Block discarded - not in current chain');

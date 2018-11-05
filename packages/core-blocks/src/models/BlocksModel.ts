@@ -7,7 +7,7 @@ import {
   DataType,
   HasMany,
   PrimaryKey,
-  Table
+  Table,
 } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
@@ -107,7 +107,7 @@ export class BlocksModel extends BaseModel<BlocksModel> {
       blockSignature: b.blockSignature.toString('hex'),
       transactions: txs as any,
       generatorPublicKey: b.generatorPublicKey.toString('hex'),
-      payloadHash: b.payloadHash.toString('hex')
+      payloadHash: b.payloadHash.toString('hex'),
     };
     delete toRet.TransactionsModel;
     return toRet;

@@ -1,7 +1,7 @@
 import {
   ITransportTransaction,
   publicKey,
-  TransactionType
+  TransactionType,
 } from '@risevision/core-types';
 import { IBlocksModule } from '../modules';
 import { IBaseModel } from './IBaseModel';

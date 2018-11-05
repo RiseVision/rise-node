@@ -32,7 +32,7 @@ export class BaseTransportMethod<Data, Query, Out>
       data: await this.encodeRequest(req.body),
       headers: req.headers || {},
       method: this.method,
-      url: `${this.baseUrl}${queryString}`
+      url: `${this.baseUrl}${queryString}`,
     };
   }
 

@@ -16,10 +16,15 @@ describe('logic/rounds', () => {
   let container: Container;
 
   beforeEach(async () => {
-    sandbox                 = sinon.createSandbox();
-    container               = await createContainer(['core-consensus-dpos', 'core-helpers', 'core', 'core-crypto']);
-    slotsStub               = container.get(dPoSSymbols.helpers.slots);
-    instance                = container.get(dPoSSymbols.logic.rounds);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-consensus-dpos',
+      'core-helpers',
+      'core',
+      'core-crypto',
+    ]);
+    slotsStub = container.get(dPoSSymbols.helpers.slots);
+    instance = container.get(dPoSSymbols.logic.rounds);
   });
 
   afterEach(() => {
@@ -45,7 +50,7 @@ describe('logic/rounds', () => {
 
     it('should call firstInRound and lastInRound', () => {
       const firstInRoundSpy = sandbox.spy(instance, 'firstInRound');
-      const lastInRoundSpy  = sandbox.spy(instance, 'lastInRound');
+      const lastInRoundSpy = sandbox.spy(instance, 'lastInRound');
       instance.heightFromRound(round);
       expect(firstInRoundSpy.calledOnce).to.be.true;
       expect(lastInRoundSpy.calledOnce).to.be.true;
@@ -59,7 +64,7 @@ describe('logic/rounds', () => {
       const retVal = instance.heightFromRound(round);
       expect(retVal).to.be.deep.equal({
         first: 12323,
-        last : 12423,
+        last: 12423,
       });
     });
   });
@@ -75,5 +80,4 @@ describe('logic/rounds', () => {
       expect(instance.lastInRound(123)).to.be.equal(12423);
     });
   });
-
 });

@@ -6,7 +6,7 @@ import {
   DataType,
   DefaultScope,
   Model,
-  Sequelize
+  Sequelize,
 } from 'sequelize-typescript';
 import * as sequelize from 'sequelize';
 import { publicKey } from '@risevision/core-types';
@@ -20,7 +20,7 @@ const buildArrayArgAttribute = function(table: string): any {
     sequelize.literal(
       `(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`
     ),
-    table
+    table,
   ];
 };
 
@@ -33,8 +33,8 @@ const buildArrayArgAttribute = function(table: string): any {
     'u_multimin',
     'u_multilifetime',
     buildArrayArgAttribute('multisignatures'),
-    buildArrayArgAttribute('u_multisignatures')
-  ]
+    buildArrayArgAttribute('u_multisignatures'),
+  ],
 })
 export class AccountsModelWithMultisig extends IAccountsModel {
   @Column

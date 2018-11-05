@@ -9,7 +9,10 @@ import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import { Symbols } from '../../../core-interfaces/src';
 import { LiskWallet } from 'dpos-offline';
-import { createRandomTransaction, toBufferedTransaction } from '../../../core-transactions/tests/unit/utils/txCrafter';
+import {
+  createRandomTransaction,
+  toBufferedTransaction,
+} from '../../../core-transactions/tests/unit/utils/txCrafter';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
 chai.use(chaiAsPromised);
@@ -21,8 +24,16 @@ describe('secondSignHooks', () => {
   let secondSignWallet: LiskWallet;
   let AccountsModel: typeof AccountsModelWith2ndSign;
   beforeEach(async () => {
-    container = await createContainer(['core-secondsignature', 'core', 'core-helpers', 'core-crypto']);
-    AccountsModel = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
+    container = await createContainer([
+      'core-secondsignature',
+      'core',
+      'core-helpers',
+      'core-crypto',
+    ]);
+    AccountsModel = container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.accounts
+    );
     senderWallet = new LiskWallet(uuid.v4(), 'R');
     secondSignWallet = new LiskWallet(uuid.v4(), 'R');
     sender = new AccountsModel({
@@ -49,20 +60,25 @@ describe('secondSignHooks', () => {
       sender.secondSignature = 0;
       sender.secondPublicKey = null;
       tx = senderWallet.signTransaction(tx, secondSignWallet);
-      await expect(txLogic.verify(toBufferedTransaction(tx), sender, null, 1))
-        .rejectedWith('Second Signature provided but account does not have one registered');
+      await expect(
+        txLogic.verify(toBufferedTransaction(tx), sender, null, 1)
+      ).rejectedWith(
+        'Second Signature provided but account does not have one registered'
+      );
     });
     it('should reject tx without signSignature when account have one', async () => {
       tx = senderWallet.signTransaction(tx);
-      await expect(txLogic.verify(toBufferedTransaction(tx), sender, null, 1))
-        .rejectedWith('Missing second signature');
+      await expect(
+        txLogic.verify(toBufferedTransaction(tx), sender, null, 1)
+      ).rejectedWith('Missing second signature');
     });
     it('should reject tx if signSignature is not valid', async () => {
       tx = senderWallet.signTransaction(tx, secondSignWallet);
       tx.signSignature = new Array(128).fill('a').join('');
       tx.id = txLogic.getId(toBufferedTransaction(tx));
-      await expect(txLogic.verify(toBufferedTransaction(tx), sender, null, 1))
-        .rejectedWith('Invalid second signature');
+      await expect(
+        txLogic.verify(toBufferedTransaction(tx), sender, null, 1)
+      ).rejectedWith('Invalid second signature');
     });
     it('should not complain if tx is not from a secondSign enabled sender', async () => {
       sender.secondPublicKey = null;

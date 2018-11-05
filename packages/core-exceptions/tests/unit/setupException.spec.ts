@@ -1,12 +1,16 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { ExceptionsManager, setupExceptionOnInstance, setupExceptionOnType } from '../../src';
+import {
+  ExceptionsManager,
+  setupExceptionOnInstance,
+  setupExceptionOnType,
+} from '../../src';
 
 describe('setupException', () => {
   let excManager: ExceptionsManager;
 
   function createHandle(canHandle: boolean, toRet: any) {
-    const handler       = {
+    const handler = {
       canHandle() {
         return null;
       },
@@ -15,7 +19,7 @@ describe('setupException', () => {
       },
     };
     const canHandleStub = sinon.stub(handler, 'canHandle').returns(canHandle);
-    const handleStub    = sinon.stub(handler, 'handle').returns(toRet);
+    const handleStub = sinon.stub(handler, 'handle').returns(toRet);
 
     return {
       ...handler,
@@ -40,11 +44,7 @@ describe('setupException', () => {
 
       setupExceptionOnType(excManager, A, 'method', Symbol.for('ciao'));
       const handler = createHandle(true, 'meow');
-      excManager.registerExceptionHandler(
-        Symbol.for('ciao'),
-        'h1',
-        handler
-      );
+      excManager.registerExceptionHandler(Symbol.for('ciao'), 'h1', handler);
       const a = new A();
       expect(a.method()).eq('meow');
       expect(handler.canHandleStub.calledOnce).true;
@@ -66,7 +66,13 @@ describe('setupException', () => {
       excManager.registerExceptionHandler(Symbol.for('ciao'), 'one', handler1);
       excManager.registerExceptionHandler(Symbol.for('ciao'), 'two', handler2);
 
-      const stubs = [handler1.handleStub, handler1.canHandleStub, handler2.handleStub, handler2.canHandleStub, stub];
+      const stubs = [
+        handler1.handleStub,
+        handler1.canHandleStub,
+        handler2.handleStub,
+        handler2.canHandleStub,
+        stub,
+      ];
 
       const a = new A();
       expect(a.method()).eq('a');
@@ -112,7 +118,6 @@ describe('setupException', () => {
       expect(handler2.canHandleStub.calledOnce).is.true;
 
       expect(handler1.canHandleStub.calledAfter(handler2.canHandleStub)).true;
-
     });
   });
   describe('setupExceptionOnInstance', () => {
@@ -129,11 +134,7 @@ describe('setupException', () => {
       setupExceptionOnInstance(excManager, a, 'method', Symbol.for('ciao'));
 
       const handler = createHandle(true, 'meow');
-      excManager.registerExceptionHandler(
-        Symbol.for('ciao'),
-        'h1',
-        handler
-      );
+      excManager.registerExceptionHandler(Symbol.for('ciao'), 'h1', handler);
 
       expect(a.method()).eq('meow');
       expect(handler.canHandleStub.calledOnce).true;
@@ -156,7 +157,13 @@ describe('setupException', () => {
       excManager.registerExceptionHandler(Symbol.for('ciao'), 'one', handler1);
       excManager.registerExceptionHandler(Symbol.for('ciao'), 'two', handler2);
 
-      const stubs = [handler1.handleStub, handler1.canHandleStub, handler2.handleStub, handler2.canHandleStub, stub];
+      const stubs = [
+        handler1.handleStub,
+        handler1.canHandleStub,
+        handler2.handleStub,
+        handler2.canHandleStub,
+        stub,
+      ];
 
       expect(a.method()).eq('a');
       expect(stub.called).is.true;
@@ -189,7 +196,6 @@ describe('setupException', () => {
       setupExceptionOnInstance(excManager, a, 'method', Symbol.for('ciao'));
       setupExceptionOnInstance(excManager, a, 'method', Symbol.for('2'));
 
-
       const handler1 = createHandle(true, 'ciao');
       const handler2 = createHandle(false, '2');
 
@@ -202,9 +208,6 @@ describe('setupException', () => {
       expect(handler2.canHandleStub.calledOnce).is.true;
 
       expect(handler1.canHandleStub.calledAfter(handler2.canHandleStub)).true;
-
     });
   });
-
-
 });

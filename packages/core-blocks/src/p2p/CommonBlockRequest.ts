@@ -1,13 +1,13 @@
 import {
   IBlockLogic,
   IBlocksModel,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
-  SingleTransportPayload
+  SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
@@ -30,7 +30,7 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
     common: SignedAndChainedBlockType;
   }> = {
     messageType: 'commonBlock',
-    namespace: 'blocks.transport'
+    namespace: 'blocks.transport',
   };
 
   @inject(Symbols.logic.block)
@@ -59,7 +59,7 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
       limit: 1,
       order: [['height', 'DESC']],
       raw: true,
-      where: { id: { [Op.in]: excapedIds } }
+      where: { id: { [Op.in]: excapedIds } },
     });
 
     return { common };
@@ -71,7 +71,7 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
     return super.encodeResponse({
       common: data.common
         ? this.blockLogic.toProtoBuffer(data.common)
-        : (null as any)
+        : (null as any),
     });
   }
 
@@ -80,7 +80,7 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
   ): Promise<{ common: SignedAndChainedBlockType }> {
     const data: any = await super.decodeResponse(res);
     return {
-      common: data.common ? this.blockLogic.fromProtoBuffer(data.common) : null
+      common: data.common ? this.blockLogic.fromProtoBuffer(data.common) : null,
     };
   }
 }

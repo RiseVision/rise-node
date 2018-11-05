@@ -12,7 +12,7 @@ const defaults: IRateLimiterOpts = {
   delayAfter: 0, // Disabled
   delayMs: 0, // Disabled
   max: 0, // Disabled
-  windowMs: 60000 // 1 minute window
+  windowMs: 60000, // 1 minute window
 };
 
 /**
@@ -27,7 +27,7 @@ function applyLimits(limits: IRateLimiterOpts): IRateLimiterOpts {
       delayAfter: Math.floor(limits.delayAfter) || defaults.delayAfter,
       delayMs: Math.floor(limits.delayMs) || defaults.delayMs,
       max: Math.floor(limits.max) || defaults.max,
-      windowMs: Math.floor(limits.windowMs) || defaults.windowMs
+      windowMs: Math.floor(limits.windowMs) || defaults.windowMs,
     };
   } else {
     return defaults;

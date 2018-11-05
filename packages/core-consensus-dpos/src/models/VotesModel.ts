@@ -7,7 +7,7 @@ import {
   ForeignKey,
   IBuildOptions,
   PrimaryKey,
-  Table
+  Table,
 } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 

@@ -7,7 +7,7 @@
         "type": "array"
       }
     },
-    "required": [ "blocks" ]
+    "required": ["blocks"]
   },
   "getBlock": {
     "id": "blocks.getBlock",
@@ -20,9 +20,7 @@
         "maxLength": 20
       }
     },
-    "required": [
-      "id"
-    ]
+    "required": ["id"]
   },
   "getBlocks": {
     "id": "blocks.getBlocks",
@@ -35,10 +33,7 @@
       },
       "orderBy": {
         "type": "string",
-        "enum": [
-          "height:asc",
-          "height:desc"
-        ]
+        "enum": ["height:asc", "height:desc"]
       },
       "offset": {
         "type": "integer",
@@ -130,10 +125,6 @@
         "minimum": 1
       }
     },
-    "required": [
-      "id",
-      "previousBlock",
-      "height"
-    ]
+    "required": ["id", "previousBlock", "height"]
   }
 }

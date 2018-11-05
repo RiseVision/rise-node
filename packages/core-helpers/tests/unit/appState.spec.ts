@@ -102,5 +102,4 @@ describe('appState', () => {
       expect(retVal).to.be.equal((instance.states as any).rounds.isLoaded);
     });
   });
-
 });

@@ -8,13 +8,13 @@ import {
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   IBaseTransaction,
-  ITransportTransaction
+  ITransportTransaction,
 } from '@risevision/core-types';
 import {
   assertValidSchema,
@@ -23,7 +23,7 @@ import {
   IoCSymbol,
   removeEmptyObjKeys,
   SchemaValid,
-  ValidateSchema
+  ValidateSchema,
 } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -36,7 +36,7 @@ import {
   Put,
   QueryParam,
   QueryParams,
-  UseBefore
+  UseBefore,
 } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
@@ -98,7 +98,7 @@ export class TransactionsAPI {
             'senderIds',
             'recipientIds',
             'senderPublicKeys',
-            'recipientPublicKeys'
+            'recipientPublicKeys',
           ],
           param
         )
@@ -111,7 +111,7 @@ export class TransactionsAPI {
     body = castFieldsToNumberUsingSchema(schema.getTransactions, body);
     assertValidSchema(this.schema, body, {
       obj: schema.getTransactions,
-      opts: {}
+      opts: {},
     });
 
     const andBody = {};
@@ -142,14 +142,14 @@ export class TransactionsAPI {
       limit: body.limit || 100,
       offset: body.offset || 0,
       order: orderBy,
-      where
+      where,
     });
     // Reattach transactions asset
     await this.txLogic.attachAssets(transactions);
 
     return {
       count,
-      transactions: transactions.map((t) => t.toTransport())
+      transactions: transactions.map((t) => t.toTransport()),
     };
   }
 
@@ -203,7 +203,7 @@ export class TransactionsAPI {
         .filter(
           (tx) => (params.address ? params.address === tx.recipientId : true)
         )
-        .map((tx) => this.TXModel.toTransportTransaction(tx))
+        .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
 
@@ -245,7 +245,7 @@ export class TransactionsAPI {
         .filter(
           (tx) => (params.address ? params.address === tx.recipientId : true)
         )
-        .map((tx) => this.TXModel.toTransportTransaction(tx))
+        .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
 
@@ -288,7 +288,7 @@ export class TransactionsAPI {
             (params.address ? params.address === tx.recipientId : false)
           );
         })
-        .map((tx) => this.TXModel.toTransportTransaction(tx))
+        .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
 
@@ -310,7 +310,7 @@ export class TransactionsAPI {
   @ValidateSchema()
   @UseBefore(PrivateApisGuard)
   public async localCreate(@SchemaValid(schema.addTransactions, {
-    castNumbers: true
+    castNumbers: true,
   })
   @Body()
   body: {
@@ -346,8 +346,8 @@ export class TransactionsAPI {
     type: 'object',
     properties: {
       transaction: { type: 'object' },
-      transactions: { type: 'array', maxItems: 10 }
-    }
+      transactions: { type: 'array', maxItems: 10 },
+    },
   })
   @Body()
   body: {
@@ -421,7 +421,7 @@ export class TransactionsAPI {
       senderId: {},
       senderPublicKey: {},
       timestamp: {},
-      type: {}
+      type: {},
     };
     whereClause.amount[Op.lte] = body.maxAmount;
     whereClause.amount[Op.gte] = body.minAmount;
@@ -473,7 +473,7 @@ export class TransactionsAPI {
 
     if (Array.isArray(body.senderIds)) {
       whereClause.senderId = {
-        [Op.in]: body.senderIds.map((item) => item.toUpperCase())
+        [Op.in]: body.senderIds.map((item) => item.toUpperCase()),
       };
       if (body.senderId) {
         whereClause.senderId[Op.in].push(body.senderId.toUpperCase());
@@ -482,7 +482,7 @@ export class TransactionsAPI {
 
     if (Array.isArray(body.recipientIds)) {
       whereClause.recipientId = {
-        [Op.in]: body.recipientIds.map((item) => item.toUpperCase())
+        [Op.in]: body.recipientIds.map((item) => item.toUpperCase()),
       };
       if (body.recipientId) {
         whereClause.recipientId[Op.in].push(body.recipientId.toUpperCase());
@@ -491,7 +491,7 @@ export class TransactionsAPI {
 
     if (Array.isArray(body.senderPublicKeys)) {
       whereClause.senderPublicKey = {
-        [Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex'))
+        [Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex')),
       };
       if (body.senderPublicKey) {
         whereClause.senderPublicKey[Op.in].push(

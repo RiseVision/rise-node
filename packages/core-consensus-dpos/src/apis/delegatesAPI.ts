@@ -6,7 +6,7 @@ import {
   ICrypto,
   ISystemModule,
   ITransactionsModel,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, publicKey } from '@risevision/core-types';
@@ -14,7 +14,7 @@ import {
   HTTPError,
   IoCSymbol,
   SchemaValid,
-  ValidateSchema
+  ValidateSchema,
 } from '@risevision/core-utils';
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
@@ -29,7 +29,7 @@ import {
   Put,
   QueryParam,
   QueryParams,
-  UseBefore
+  UseBefore,
 } from 'routing-controllers';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
@@ -38,7 +38,7 @@ import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import {
   Accounts2DelegatesModel,
   AccountsModelForDPOS,
-  RoundsFeesModel
+  RoundsFeesModel,
 } from '../models';
 import { DelegatesModule, ForgeModule } from '../modules';
 
@@ -94,7 +94,7 @@ export class DelegatesAPI {
   @Get('/')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates, {
-    castNumbers: true
+    castNumbers: true,
   })
   @QueryParams()
   data: {
@@ -115,7 +115,7 @@ export class DelegatesAPI {
         rate: item.info.rank,
         rank: item.info.rank,
         approval: item.info.approval,
-        productivity: item.info.productivity
+        productivity: item.info.productivity,
       };
       // tslint:enable object-literal-sort-keys
     });
@@ -144,7 +144,7 @@ export class DelegatesAPI {
     }
     return {
       delegates: delegates.slice(d.offset, d.limit),
-      totalCount: d.count
+      totalCount: d.count,
     };
   }
 
@@ -164,7 +164,7 @@ export class DelegatesAPI {
   @Get('/forging/getForgedByAccount')
   @ValidateSchema()
   public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, {
-    castNumbers: true
+    castNumbers: true,
   })
   // tslint:disable-next-line max-line-length
   @QueryParams()
@@ -180,18 +180,18 @@ export class DelegatesAPI {
       const reward = await this.aggregateBlockReward({
         end: params.end,
         generatorPublicKey: params.generatorPublicKey,
-        start: params.start
+        start: params.start,
       });
       const forged = new BigNumber(reward.fees).plus(reward.rewards).toString();
       return {
         count: reward.count,
         fees: reward.fees,
         forged,
-        rewards: reward.rewards
+        rewards: reward.rewards,
       };
     } else {
       const account = await this.accounts.getAccount({
-        publicKey: Buffer.from(params.generatorPublicKey, 'hex')
+        publicKey: Buffer.from(params.generatorPublicKey, 'hex'),
       });
 
       if (!account) {
@@ -201,7 +201,7 @@ export class DelegatesAPI {
       return {
         fees: account.fees,
         forged: new BigNumber(account.fees).plus(account.rewards).toString(),
-        rewards: account.rewards
+        rewards: account.rewards,
       };
     }
   }
@@ -217,7 +217,7 @@ export class DelegatesAPI {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
     const { delegates } = await this.delegatesModule.getDelegates({
-      orderBy: 'username:asc'
+      orderBy: 'username:asc',
     });
     const delegate = delegates.find(
       (d) =>
@@ -230,7 +230,7 @@ export class DelegatesAPI {
           {
             ...delegate.delegate.toPOJO(),
             ...delegate.info,
-            ...{ rate: delegate.info.rank }
+            ...{ rate: delegate.info.rank },
           },
           [
             'username',
@@ -242,9 +242,9 @@ export class DelegatesAPI {
             'rank',
             'approval',
             'productivity',
-            'rate'
+            'rate',
           ]
-        )
+        ),
       };
     }
     throw new HTTPError('Delegate not found', 200);
@@ -259,13 +259,13 @@ export class DelegatesAPI {
   }) {
     const rows = await this.Accounts2DelegatesModel.findAll({
       attributes: ['accountId'],
-      where: { dependentId: params.publicKey }
+      where: { dependentId: params.publicKey },
     });
     const addresses = rows.map((r) => r.accountId);
 
     const accounts = await this.accounts.getAccounts({
       address: { $in: addresses },
-      sort: 'balance'
+      sort: 'balance',
     });
 
     return {
@@ -274,9 +274,9 @@ export class DelegatesAPI {
           'address',
           'balance',
           'username',
-          'publicKey'
+          'publicKey',
         ])
-      )
+      ),
     };
   }
 
@@ -341,7 +341,7 @@ export class DelegatesAPI {
       currentBlock: this.BlocksModel.toStringBlockType(curBlock),
       currentBlockSlot,
       currentSlot,
-      delegates: nextForgers
+      delegates: nextForgers,
     };
   }
 
@@ -362,13 +362,13 @@ export class DelegatesAPI {
     if (params.publicKey) {
       return {
         delegates: [params.publicKey],
-        enabled: this.forgeModule.isForgeEnabledOn(params.publicKey)
+        enabled: this.forgeModule.isForgeEnabledOn(params.publicKey),
       };
     } else {
       const delegates = this.forgeModule.getEnabledKeys();
       return {
         delegates,
-        enabled: delegates.length > 0
+        enabled: delegates.length > 0,
       };
     }
   }
@@ -484,7 +484,7 @@ export class DelegatesAPI {
         q: `%${q}%`,
         limit,
         orderBy,
-        orderHow
+        orderHow,
       }
     );
   }
@@ -522,7 +522,7 @@ export class DelegatesAPI {
 
     const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
     const acc = await this.AccountsModel.findOne({
-      where: { isDelegate: 1, publicKey: bufPublicKey }
+      where: { isDelegate: 1, publicKey: bufPublicKey },
     });
     if (acc === null) {
       throw new Error('Account not found or is not a delegate');
@@ -534,13 +534,13 @@ export class DelegatesAPI {
     } = (await this.BlocksModel.findOne({
       attributes: [
         sequelize.literal('COUNT(1)'),
-        sequelize.literal('SUM("reward") as rewards')
+        sequelize.literal('SUM("reward") as rewards'),
       ],
       raw: true,
       where: {
         ...timestampClausole,
-        generatorPublicKey: bufPublicKey
-      }
+        generatorPublicKey: bufPublicKey,
+      },
     })) as any;
 
     const data = {
@@ -548,10 +548,10 @@ export class DelegatesAPI {
       fees: (await this.RoundsFeesModel.aggregate('fees', 'sum', {
         where: {
           ...timestampClausole,
-          publicKey: bufPublicKey
-        }
+          publicKey: bufPublicKey,
+        },
       })) as number,
-      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10)
+      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
     };
     if (isNaN(data.fees)) {
       // see https://github.com/sequelize/sequelize/issues/6299

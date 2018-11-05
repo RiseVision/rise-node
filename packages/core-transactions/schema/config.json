@@ -1,8 +1,8 @@
 {
-  "type"      : "object",
+  "type": "object",
   "properties": {
     "transactions": {
-      "type"  : "object",
+      "type": "object",
       "properties": {
         "maxTxsPerQueue": {
           "type": "integer",
@@ -19,10 +19,8 @@
           "minValue": 1
         }
       },
-      "required": [ "maxTxsPerQueue", "processQueueInterval", "expiryInterval" ]
+      "required": ["maxTxsPerQueue", "processQueueInterval", "expiryInterval"]
     }
   },
-  "required"  : [
-    "transactions"
-  ]
+  "required": ["transactions"]
 }

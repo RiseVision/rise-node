@@ -1,6 +1,9 @@
 import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { BasePeerType } from '@risevision/core-types';
-import { castFieldsToNumberUsingSchema, IoCSymbol } from '@risevision/core-utils';
+import {
+  castFieldsToNumberUsingSchema,
+  IoCSymbol,
+} from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
@@ -13,7 +16,6 @@ const transportSchema = require('../../../schema/transport.json');
 @injectable()
 @IoCSymbol(p2pSymbols.transportMiddlewares.validatePeer)
 export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
-
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
   @inject(Symbols.modules.peers)
@@ -23,22 +25,30 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
-  public use(request: express.Request, response: any, next: (err?: any) => any) {
-    castFieldsToNumberUsingSchema(
-      transportSchema.headers,
-      request.headers
-    );
+  public use(
+    request: express.Request,
+    response: any,
+    next: (err?: any) => any
+  ) {
+    castFieldsToNumberUsingSchema(transportSchema.headers, request.headers);
     if (!this.schema.validate(request.headers, transportSchema.headers)) {
       this.removePeer(request);
-      return next(new Error(`${this.schema.getLastError().details[0].path
-        } - ${this.schema.getLastErrors()[0].message}`));
+      return next(
+        new Error(
+          `${this.schema.getLastError().details[0].path} - ${
+            this.schema.getLastErrors()[0].message
+          }`
+        )
+      );
     }
-    if (!this.systemModule.networkCompatible(request.headers.nethash as string)) {
+    if (
+      !this.systemModule.networkCompatible(request.headers.nethash as string)
+    ) {
       this.removePeer(request);
       // TODO: convert this into an error.
       return next({
         expected: this.systemModule.getNethash(),
-        message : 'Request is made on the wrong network',
+        message: 'Request is made on the wrong network',
         received: request.headers.nethash,
       });
     }
@@ -48,13 +58,16 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
       // TODO: Convert this into an error
       return next({
         expected: this.systemModule.getMinVersion(),
-        message : 'Request is made from incompatible version',
+        message: 'Request is made from incompatible version',
         received: request.headers.version,
       });
     }
 
     // Add peer only if not firewalled
-    if (typeof request.headers.firewalled === 'undefined' || request.headers.firewalled === 'false') {
+    if (
+      typeof request.headers.firewalled === 'undefined' ||
+      request.headers.firewalled === 'false'
+    ) {
       const p = this.peersLogic.create(this.computeBasePeerType(request));
       p.applyHeaders(request.headers as any);
       this.peersModule.update(p);
@@ -67,6 +80,9 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
   }
 
   private computeBasePeerType(request: express.Request): BasePeerType {
-    return { ip: request.ip, port: parseInt(request.headers.port as string, 10) };
+    return {
+      ip: request.ip,
+      port: parseInt(request.headers.port as string, 10),
+    };
   }
 }

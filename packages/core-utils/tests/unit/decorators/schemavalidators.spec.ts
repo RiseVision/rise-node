@@ -9,16 +9,17 @@ import * as z_schema from 'z-schema';
 const { expect } = chai;
 chai.use(chaiAsPromised);
 const helpersStub = {} as any;
-const ProxySchemaValidators = proxyquire('../../../src/decorators/schemavalidators', {
-  '../castFieldsUsingSchema': helpersStub
-});
+const ProxySchemaValidators = proxyquire(
+  '../../../src/decorators/schemavalidators',
+  {
+    '../castFieldsUsingSchema': helpersStub,
+  }
+);
 const { SchemaValid, ValidateSchema } = ProxySchemaValidators;
 
 // tslint:disable no-unused-expression max-classes-per-file
 describe('helpers/decorators', () => {
-
   describe('SchemaValid', () => {
-
     // Schemas:
     const nonEmptyString = { type: 'string', minLength: 1 };
     const integerNumber = { type: 'integer' };
@@ -27,7 +28,7 @@ describe('helpers/decorators', () => {
       public schema: z_schema;
 
       constructor() {
-        this.schema = new z_schema( {});
+        this.schema = new z_schema({});
       }
 
       // Returns metadata for a specific method
@@ -36,7 +37,11 @@ describe('helpers/decorators', () => {
       }
 
       // Returns metadata for a specific method, including only the object with the passed index
-      public get_metadata_with_index(method: string, index: number, key = '__schema') {
+      public get_metadata_with_index(
+        method: string,
+        index: number,
+        key = '__schema'
+      ) {
         const metadata = this.get_metadata(method, key);
         const filtered = metadata.filter((item) => {
           return item.index === index;
@@ -73,23 +78,35 @@ describe('helpers/decorators', () => {
     it('should add a number of metadata objects === the number of decorated parameters of the method', () => {
       class TestCase extends TestUtil {
         // 3 params, 2 validated with nonEmptyString and integerNumber schemas
-        public method(@SchemaValid(nonEmptyString) param: string,
-                      @SchemaValid(integerNumber) param2: number,
-                      nonDecoratedParam: string) {
+        public method(
+          @SchemaValid(nonEmptyString) param: string,
+          @SchemaValid(integerNumber) param2: number,
+          nonDecoratedParam: string
+        ) {
           return param;
         }
       }
       const instance = new TestCase();
       const metadata = instance.get_metadata('method');
       expect(metadata.length).to.be.eq(2);
-      expect(instance.get_metadata_with_index('method', 0).obj).to.be.deep.eq(nonEmptyString);
-      expect(instance.get_metadata_with_index('method', 1).obj).to.be.deep.eq(integerNumber);
+      expect(instance.get_metadata_with_index('method', 0).obj).to.be.deep.eq(
+        nonEmptyString
+      );
+      expect(instance.get_metadata_with_index('method', 1).obj).to.be.deep.eq(
+        integerNumber
+      );
     });
 
     it('should include the errorString and castNumbers properties in metadata items when provided', () => {
       class TestCase extends TestUtil {
         // Decorator is specified with both errorString and castNumbers
-        public method(@SchemaValid(nonEmptyString, {errorString: 'RISEError', castNumbers: true}) param: string)  {
+        public method(
+          @SchemaValid(nonEmptyString, {
+            errorString: 'RISEError',
+            castNumbers: true,
+          })
+          param: string
+        ) {
           return param;
         }
       }
@@ -102,7 +119,9 @@ describe('helpers/decorators', () => {
     it('should allow passing the errorString as second parameter of the decorator', () => {
       class TestCase extends TestUtil {
         // Decorator is specified with a plain error string
-        public method(@SchemaValid(nonEmptyString, 'RISEError4') param: string)   {
+        public method(
+          @SchemaValid(nonEmptyString, 'RISEError4') param: string
+        ) {
           return param;
         }
       }
@@ -122,10 +141,10 @@ describe('helpers/decorators', () => {
         },
         str: {
           minLength: 1,
-          type     : 'string',
+          type: 'string',
         },
       },
-      type      : 'object',
+      type: 'object',
     };
 
     class TestUtil {
@@ -141,7 +160,10 @@ describe('helpers/decorators', () => {
     it('should validate passed parameters with schema and continue function execution if validation is OK', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public method(@SchemaValid(nonEmptyString) param: string, executionSpy: SinonSpy) {
+        public method(
+          @SchemaValid(nonEmptyString) param: string,
+          executionSpy: SinonSpy
+        ) {
           executionSpy();
           return param;
         }
@@ -157,7 +179,10 @@ describe('helpers/decorators', () => {
     it('should throw an error and stop execution if validation is KO', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public async method(@SchemaValid(nonEmptyString) param: string, executionSpy: SinonSpy) {
+        public async method(
+          @SchemaValid(nonEmptyString) param: string,
+          executionSpy: SinonSpy
+        ) {
           executionSpy();
           return param;
         }
@@ -171,7 +196,9 @@ describe('helpers/decorators', () => {
     it('should throw an error with the right message when specified in metadata', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public async method(@SchemaValid(nonEmptyString, 'RISEError6') param: string) {
+        public async method(
+          @SchemaValid(nonEmptyString, 'RISEError6') param: string
+        ) {
           return param;
         }
       }
@@ -182,7 +209,9 @@ describe('helpers/decorators', () => {
     it('should call castFieldsToNumberUsingSchema if specified in metadata', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public async method(@SchemaValid(simpleObject, {castNumbers: true}) param: any) {
+        public async method(
+          @SchemaValid(simpleObject, { castNumbers: true }) param: any
+        ) {
           return param;
         }
       }
@@ -197,7 +226,9 @@ describe('helpers/decorators', () => {
     it('should reject the promise if method is returning a promise', async () => {
       class TestCase extends TestUtil {
         @ValidateSchema()
-        public async method(@SchemaValid(nonEmptyString, 'RISEError8') param: string) {
+        public async method(
+          @SchemaValid(nonEmptyString, 'RISEError8') param: string
+        ) {
           return param;
         }
       }
@@ -213,5 +244,4 @@ describe('helpers/decorators', () => {
       expect(error.message).to.be.eq('RISEError8');
     });
   });
-
 });

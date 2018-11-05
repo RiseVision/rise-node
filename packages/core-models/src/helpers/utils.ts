@@ -2,11 +2,11 @@ import * as _ from 'lodash';
 import { IScopeFindOptions, IScopeOptions, Model } from 'sequelize-typescript';
 import {
   addAttribute,
-  getAttributes
+  getAttributes,
 } from 'sequelize-typescript/lib/services/models';
 import {
   addScopeOptions,
-  getScopeOptions
+  getScopeOptions,
 } from 'sequelize-typescript/lib/services/scopes';
 import { deepAssign } from 'sequelize-typescript/lib/utils/object';
 
@@ -25,19 +25,19 @@ export function mergeScopeOptions(
     } else {
       toRet.attributes = {
         exclude: from.attributes.exclude,
-        include: _.uniq(attrs.concat(from.attributes.include))
+        include: _.uniq(attrs.concat(from.attributes.include)),
       };
     }
   } else if (typeof attrs === 'object') {
     if (Array.isArray(from.attributes)) {
       toRet.attributes = {
         exclude: attrs.exclude,
-        include: _.uniq(attrs.include.concat(from.attributes))
+        include: _.uniq(attrs.include.concat(from.attributes)),
       };
     } else {
       toRet.attributes = {
         exclude: _.uniq(attrs.exclude.concat(from.attributes.exclude)),
-        include: _.uniq(attrs.include.concat(from.attributes.include))
+        include: _.uniq(attrs.include.concat(from.attributes.include)),
       };
     }
   }

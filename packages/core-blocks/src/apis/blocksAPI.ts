@@ -7,7 +7,7 @@ import {
   ISystemModule,
   ITransactionLogic,
   ITransactionsModel,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
@@ -18,7 +18,7 @@ import {
   removeEmptyObjKeys,
   SchemaValid,
   ValidateSchema,
-  WrapInDBSequence
+  WrapInDBSequence,
 } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
@@ -86,26 +86,26 @@ export class BlocksAPI {
       previousBlock: filters.previousBlock,
       reward: filters.reward,
       totalAmount: filters.totalAmount,
-      totalFee: filters.totalFee
+      totalFee: filters.totalFee,
     };
 
     removeEmptyObjKeys(whereClause);
     const orderBy = [
-      filters.orderBy ? filters.orderBy.split(':') : ['height', 'desc']
+      filters.orderBy ? filters.orderBy.split(':') : ['height', 'desc'],
     ];
 
     const { rows: blocks, count } = await this.BlocksModel.findAndCountAll({
       limit: filters.limit || 100,
       offset: filters.offset || 0,
       order: orderBy,
-      where: whereClause
+      where: whereClause,
     });
     // attach transactions and assets with it.
     await Promise.all(
       blocks.map((b) =>
         this.TransactionsModel.findAll({
           where: { blockId: b.id },
-          order: [['rowId', 'asc']]
+          order: [['rowId', 'asc']],
         })
           .then((txs) => {
             b.transactions = txs;
@@ -117,21 +117,21 @@ export class BlocksAPI {
     // console.log(blocks);
     return {
       blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(b)),
-      count
+      count,
     };
   }
 
   @Get('/get')
   @ValidateSchema()
   public async getBlock(@SchemaValid(blocksSchema.getBlock, {
-    castNumbers: true
+    castNumbers: true,
   })
   @QueryParams()
   filters: {
     id: string;
   }) {
     const block = await this.BlocksModel.findById(filters.id, {
-      include: [this.TransactionsModel]
+      include: [this.TransactionsModel],
     });
     if (block === null) {
       throw new HTTPError('Block not found', 200);
@@ -168,7 +168,7 @@ export class BlocksAPI {
       fee: fees.fees.send,
       fromHeight: fees.fromHeight,
       toHeight: fees.toHeight,
-      height: fees.height
+      height: fees.height,
     };
   }
 
@@ -192,7 +192,7 @@ export class BlocksAPI {
     return {
       milestone: this.blockRewardLogic.calcMilestone(
         this.blocksModule.lastBlock.height
-      )
+      ),
     };
   }
 
@@ -201,7 +201,7 @@ export class BlocksAPI {
     return {
       reward: this.blockRewardLogic.calcReward(
         this.blocksModule.lastBlock.height
-      )
+      ),
     };
   }
 
@@ -210,7 +210,7 @@ export class BlocksAPI {
     return {
       supply: this.blockRewardLogic.calcSupply(
         this.blocksModule.lastBlock.height
-      )
+      ),
     };
   }
 
@@ -225,7 +225,7 @@ export class BlocksAPI {
       milestone: this.blockRewardLogic.calcMilestone(lastBlock.height),
       nethash: this.systemModule.getNethash(),
       reward: this.blockRewardLogic.calcReward(lastBlock.height),
-      supply: this.blockRewardLogic.calcSupply(lastBlock.height)
+      supply: this.blockRewardLogic.calcSupply(lastBlock.height),
     };
   }
 }

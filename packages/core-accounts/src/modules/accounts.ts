@@ -2,7 +2,7 @@ import {
   AccountDiffType,
   AccountFilterData,
   IAccountsModel,
-  IAccountsModule
+  IAccountsModule,
 } from '@risevision/core-interfaces';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { DBOp, IBaseTransaction } from '@risevision/core-types';
@@ -45,7 +45,7 @@ export class AccountsModule implements IAccountsModule {
       if (!allSenders.find((item) => item.address === tx.senderId)) {
         allSenders.push({
           address: tx.senderId,
-          publicKey: tx.senderPublicKey
+          publicKey: tx.senderPublicKey,
         });
       }
       if (tx.requesterPublicKey) {
@@ -55,7 +55,7 @@ export class AccountsModule implements IAccountsModule {
         if (!allSenders.find((item) => item.address === requesterAddress)) {
           allSenders.push({
             address: requesterAddress,
-            publicKey: tx.requesterPublicKey
+            publicKey: tx.requesterPublicKey,
           });
         }
       }
@@ -72,7 +72,7 @@ export class AccountsModule implements IAccountsModule {
     const allSenders = this.unfoldSenders(txs);
 
     const senderAccounts = await this.AccountsModel.findAll({
-      where: { address: allSenders.map((s) => s.address) }
+      where: { address: allSenders.map((s) => s.address) },
     });
 
     const sendersMap: { [address: string]: IAccountsModel } = {};

@@ -6,13 +6,23 @@ import * as Throttle from 'promise-parallel-throttle';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { BroadcasterLogic, p2pSymbols, PeersLogic, PeersModule, PingRequest, TransportModule } from '../../src';
+import {
+  BroadcasterLogic,
+  p2pSymbols,
+  PeersLogic,
+  PeersModule,
+  PingRequest,
+  TransportModule,
+} from '../../src';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
 import * as SocketIO from 'socket.io';
 import { AppState, JobsQueue, Sequence } from '@risevision/core-helpers';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
-import { TransactionLogic, TransactionsModule } from '../../../core-transactions';
+import {
+  TransactionLogic,
+  TransactionsModule,
+} from '../../../core-transactions';
 import { SystemModule } from '@risevision/core';
 import { createFakeBlock } from '../../../core-blocks/tests/unit/utils/createFakeBlocks';
 import { StubbedRequest } from './utils/StubbedRequest';
@@ -24,28 +34,37 @@ chai.use(chaiAsPromised);
 // tslint:disable no-unused-expression
 // tslint:disable no-unused-expression max-line-length
 
-const popsicleStub         = {} as any;
-const throttleStub         = {} as any;
+const popsicleStub = {} as any;
+const throttleStub = {} as any;
 const proxyTransportModule = proxyquire('../../src/transport', {
-  'popsicle'                 : popsicleStub,
+  popsicle: popsicleStub,
   'promise-parallel-throttle': throttleStub,
 });
 
 describe('src/modules/transport.ts', () => {
-
   let inst: TransportModule;
   let container: Container;
   let sandbox: SinonSandbox;
   const appConfig = {
-    peers: { options: { timeout: 1000, }, },
+    peers: { options: { timeout: 1000 } },
   };
 
   before(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
 
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
-    container.rebind(Symbols.modules.transport).to(proxyTransportModule.TransportModule);
+    container
+      .rebind(Symbols.modules.transport)
+      .to(proxyTransportModule.TransportModule);
   });
 
   let constants;
@@ -64,30 +83,33 @@ describe('src/modules/transport.ts', () => {
   let systemModule: SystemModule;
 
   beforeEach(() => {
-    io         = container.get(Symbols.generic.socketIO);
+    io = container.get(Symbols.generic.socketIO);
     schemaStub = container.get(Symbols.generic.zschema);
 
-    constants        = container.get(Symbols.generic.constants);
-    balancesSequence = container.getNamed(Symbols.helpers.sequence, Symbols.names.helpers.balancesSequence);
-    jobsQueue        = container.get(Symbols.helpers.jobsQueue);
-    logger           = container.get(Symbols.helpers.logger);
+    constants = container.get(Symbols.generic.constants);
+    balancesSequence = container.getNamed(
+      Symbols.helpers.sequence,
+      Symbols.names.helpers.balancesSequence
+    );
+    jobsQueue = container.get(Symbols.helpers.jobsQueue);
+    logger = container.get(Symbols.helpers.logger);
 
-    appState         = container.get(Symbols.logic.appState);
+    appState = container.get(Symbols.logic.appState);
     broadcasterLogic = container.get(Symbols.logic.broadcaster);
     transactionLogic = container.get(Symbols.logic.transaction);
-    peersLogic       = container.get(Symbols.logic.peers);
+    peersLogic = container.get(Symbols.logic.peers);
 
     peersModule = container.get(Symbols.modules.peers);
 
     transactionModule = container.get(Symbols.modules.transactions);
-    systemModule      = container.get(Symbols.modules.system);
-    blocksModule      = container.get(Symbols.modules.blocks);
+    systemModule = container.get(Symbols.modules.system);
+    blocksModule = container.get(Symbols.modules.blocks);
 
     blocksModule.lastBlock = createFakeBlock(container);
     // set appState.setComputed call for @postConstruct method
-    inst                   = container.get(Symbols.modules.transport);
+    inst = container.get(Symbols.modules.transport);
 
-    (inst as  any).sequence = {
+    (inst as any).sequence = {
       addAndPromise: sandbox.spy((w) => Promise.resolve(w())),
     };
   });
@@ -97,14 +119,13 @@ describe('src/modules/transport.ts', () => {
   });
 
   describe('postConstructor', () => {
-
     it('should set computed', () => {
       sandbox.stub(appState, 'get').returns(19);
       expect(appState.getComputed('node.poorConsensus')).eq(true);
     });
   });
 
-  describe('getFromPeer', function () {
+  describe('getFromPeer', function() {
     this.timeout(3000);
 
     let peer;
@@ -118,34 +139,37 @@ describe('src/modules/transport.ts', () => {
     let removePeerStub: SinonStub;
 
     beforeEach(() => {
-      peer    = { makeRequest: sandbox.stub(), ip: '127.0.0.1', port: Math.ceil(Math.random() * 10000) };
+      peer = {
+        makeRequest: sandbox.stub(),
+        ip: '127.0.0.1',
+        port: Math.ceil(Math.random() * 10000),
+      };
       options = {
         method: 'put',
-        url   : 'url.com',
+        url: 'url.com',
       };
       headers = {
         nethash: systemModule.headers.nethash,
         version: '1.1.1',
-        port   : peer.port,
-        height : 100,
+        port: peer.port,
+        height: 100,
       };
-      res     = {
-        body   : {},
+      res = {
+        body: {},
         headers: { ...headers },
-        method : 'put',
-        status : 200,
-        url    : 'example.com',
+        method: 'put',
+        status: 200,
+        url: 'example.com',
       };
 
       thePeer = { applyHeaders: sandbox.stub() };
       thePeer.applyHeaders.returns(headers);
 
-      popsicleUseStub      = { use: sandbox.stub().resolves(res) };
+      popsicleUseStub = { use: sandbox.stub().resolves(res) };
       popsicleStub.plugins = { parse: sandbox.stub().returns(1) };
       popsicleStub.request = sandbox.stub().returns(popsicleUseStub);
 
       removePeerStub = sandbox.stub(inst as any, 'removePeer');
-
     });
 
     it('should call peersLogic.create', async () => {
@@ -163,15 +187,15 @@ describe('src/modules/transport.ts', () => {
       expect(popsicleStub.request.firstCall.args.length).to.be.equal(1);
       delete popsicleStub.request.firstCall.args[0].transport;
       expect(popsicleStub.request.firstCall.args[0]).to.be.deep.equal({
-        body   : undefined,
+        body: undefined,
         headers: {
           ...systemModule.headers,
-          accept        : 'application/octet-stream',
+          accept: 'application/octet-stream',
           'content-type': 'application/octet-stream',
         },
-        method : 'put',
+        method: 'put',
         timeout: 1000,
-        url    : `http://127.0.0.1:${peer.port}url.com`,
+        url: `http://127.0.0.1:${peer.port}url.com`,
       });
 
       expect(popsicleUseStub.use.calledOnce).to.be.true;
@@ -180,24 +204,29 @@ describe('src/modules/transport.ts', () => {
     });
 
     it('should call override headers if provided', async () => {
-      await inst.getFromPeer(peer, { ...options, headers: { broadhash: 'meow', other: 'hey' } });
+      await inst.getFromPeer(peer, {
+        ...options,
+        headers: { broadhash: 'meow', other: 'hey' },
+      });
       expect(popsicleStub.request.calledOnce).to.be.true;
       expect(popsicleStub.request.firstCall.args.length).to.be.equal(1);
       delete popsicleStub.request.firstCall.args[0].transport;
       expect(popsicleStub.request.firstCall.args[0].headers).to.be.deep.equal({
         ...systemModule.headers,
-        accept        : 'application/octet-stream',
+        accept: 'application/octet-stream',
         'content-type': 'application/octet-stream',
-        other         : 'hey',
-        broadhash     : 'meow',
+        other: 'hey',
+        broadhash: 'meow',
       });
     });
-    it('should call popsicle twice (retry) if rejects and return 2nd result', async function () {
+    it('should call popsicle twice (retry) if rejects and return 2nd result', async function() {
       this.timeout(2100);
       const start = Date.now();
       popsicleUseStub.use.onFirstCall().rejects(error);
       popsicleUseStub.use.onSecondCall().resolves({ status: 500 });
-      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith('bad response code 500');
+      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(
+        'bad response code 500'
+      );
 
       expect(popsicleUseStub.use.calledTwice).is.true;
       expect(Date.now() - start).gt(2000);
@@ -211,23 +240,37 @@ describe('src/modules/transport.ts', () => {
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0].peer.string).to.be.deep.equal(`127.0.0.1:${peer.port}`);
-      expect(removePeerStub.firstCall.args[0].code).to.be.deep.equal('HTTPERROR');
+      expect(removePeerStub.firstCall.args[0].peer.string).to.be.deep.equal(
+        `127.0.0.1:${peer.port}`
+      );
+      expect(removePeerStub.firstCall.args[0].code).to.be.deep.equal(
+        'HTTPERROR'
+      );
       expect(removePeerStub.firstCall.args[1]).to.be.equal(error.message);
     });
 
     it('should call removePeer and return rejected promise if req.status !== 200', async () => {
       res.status = 609;
       popsicleUseStub.use.resolves(res);
-      error = new Error(`Received bad response code ${res.status} ${res.method} ${res.url}`);
+      error = new Error(
+        `Received bad response code ${res.status} ${res.method} ${res.url}`
+      );
 
-      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(error.message);
+      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(
+        error.message
+      );
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0].peer.string).to.be.deep.equal(`127.0.0.1:${peer.port}`);
-      expect(removePeerStub.firstCall.args[0].code).to.be.deep.equal(`ERESPONSE ${res.status}`);
-      expect(removePeerStub.firstCall.args[1]).to.be.equal(`put http://127.0.0.1:${peer.port}url.com`);
+      expect(removePeerStub.firstCall.args[0].peer.string).to.be.deep.equal(
+        `127.0.0.1:${peer.port}`
+      );
+      expect(removePeerStub.firstCall.args[0].code).to.be.deep.equal(
+        `ERESPONSE ${res.status}`
+      );
+      expect(removePeerStub.firstCall.args[1]).to.be.equal(
+        `put http://127.0.0.1:${peer.port}url.com`
+      );
     });
     //
     // it('should call thePeer.applyHeaders', async () => {
@@ -237,38 +280,68 @@ describe('src/modules/transport.ts', () => {
 
     it('should validate response headers against schema and eventually removePeer', async () => {
       res.headers.nethash = 'meow';
-      await expect(inst.getFromPeer(peer, options)).to.be
-        .rejectedWith('Invalid response headers {"nethash":"meow","version":"1.1.1","port":' + peer.port + ',"height":100,"state":1} put http://127.0.0.1:' + peer.port + 'url.com');
+      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(
+        'Invalid response headers {"nethash":"meow","version":"1.1.1","port":' +
+          peer.port +
+          ',"height":100,"state":1} put http://127.0.0.1:' +
+          peer.port +
+          'url.com'
+      );
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
       expect(removePeerStub.firstCall.args[0].code).eq('EHEADERS');
-      expect(removePeerStub.firstCall.args[0].peer.string).to.be.deep.equal(`127.0.0.1:${peer.port}`);
-      expect(removePeerStub.firstCall.args[0].code).to.be.deep.equal('EHEADERS');
-      expect(removePeerStub.firstCall.args[1]).to.be.equal(`put http://127.0.0.1:${peer.port}url.com`);
+      expect(removePeerStub.firstCall.args[0].peer.string).to.be.deep.equal(
+        `127.0.0.1:${peer.port}`
+      );
+      expect(removePeerStub.firstCall.args[0].code).to.be.deep.equal(
+        'EHEADERS'
+      );
+      expect(removePeerStub.firstCall.args[1]).to.be.equal(
+        `put http://127.0.0.1:${peer.port}url.com`
+      );
     });
 
     it('should call removePeer and return rejected promise if systemModule.networkCompatible returned false', async () => {
-      res.headers.nethash = Array(64).fill('a').join('');
-      error               = new Error('Peer is not on the same network aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa put http://127.0.0.1:' + peer.port + 'url.com');
-      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(error.message);
+      res.headers.nethash = Array(64)
+        .fill('a')
+        .join('');
+      error = new Error(
+        'Peer is not on the same network aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa put http://127.0.0.1:' +
+          peer.port +
+          'url.com'
+      );
+      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(
+        error.message
+      );
 
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0].peer.string).eq(`127.0.0.1:${peer.port}`);
+      expect(removePeerStub.firstCall.args[0].peer.string).eq(
+        `127.0.0.1:${peer.port}`
+      );
       expect(removePeerStub.firstCall.args[0].code).eq('ENETHASH');
-      expect(removePeerStub.firstCall.args[1]).to.be.equal(`put http://127.0.0.1:${peer.port}url.com`);
+      expect(removePeerStub.firstCall.args[1]).to.be.equal(
+        `put http://127.0.0.1:${peer.port}url.com`
+      );
     });
 
     it('should call systemModule.versionCompatible', async () => {
       sandbox.stub(systemModule, 'versionCompatible').returns(false);
-      await expect(inst.getFromPeer(peer, options))
-        .to.be.rejectedWith('Peer is using incompatible version 1.1.1 put http://127.0.0.1:' + peer.port + 'url.com');
+      await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(
+        'Peer is using incompatible version 1.1.1 put http://127.0.0.1:' +
+          peer.port +
+          'url.com'
+      );
       expect(removePeerStub.calledOnce).to.be.true;
       expect(removePeerStub.firstCall.args.length).to.be.equal(2);
-      expect(removePeerStub.firstCall.args[0].peer.string).eq(`127.0.0.1:${peer.port}`);
+      expect(removePeerStub.firstCall.args[0].peer.string).eq(
+        `127.0.0.1:${peer.port}`
+      );
       expect(removePeerStub.firstCall.args[0].code).eq('EVERSION 1.1.1');
-      expect(removePeerStub.firstCall.args[1]).to.be.equal(`put http://127.0.0.1:${peer.port}url.com`);
+      expect(removePeerStub.firstCall.args[1]).to.be.equal(
+        `put http://127.0.0.1:${peer.port}url.com`
+      );
     });
 
     it('should call peersModule.update', async () => {
@@ -277,7 +350,9 @@ describe('src/modules/transport.ts', () => {
 
       expect(peersModuleUpdate.calledOnce).to.be.true;
       expect(peersModuleUpdate.firstCall.args.length).to.be.equal(1);
-      expect(peersModuleUpdate.firstCall.args[0].string).to.be.equal(`127.0.0.1:${peer.port}`);
+      expect(peersModuleUpdate.firstCall.args[0].string).to.be.equal(
+        `127.0.0.1:${peer.port}`
+      );
     });
 
     it('should return an object with body and peer properties if everything is ok', async () => {
@@ -288,7 +363,6 @@ describe('src/modules/transport.ts', () => {
   });
 
   describe('getFromRandomPeer', () => {
-
     let config;
     let peers;
     let result;
@@ -299,11 +373,13 @@ describe('src/modules/transport.ts', () => {
 
     beforeEach(() => {
       requestHandler = new StubbedRequest();
-      result         = 'hehehe';
-      config         = {};
-      peers          = [{ makeRequest: sandbox.stub().returns(result) }];
+      result = 'hehehe';
+      config = {};
+      peers = [{ makeRequest: sandbox.stub().returns(result) }];
 
-      peersModuleListStub = sandbox.stub(peersModule, 'list').resolves({ peers });
+      peersModuleListStub = sandbox
+        .stub(peersModule, 'list')
+        .resolves({ peers });
     });
 
     it('should call peersModule.list', async () => {
@@ -313,17 +389,25 @@ describe('src/modules/transport.ts', () => {
       expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
       expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({
         allowedStates: [PeerState.CONNECTED, PeerState.DISCONNECTED],
-        limit        : 1,
+        limit: 1,
       });
     });
 
     it('should call makeRequest and return result', async () => {
-      expect(await inst.getFromRandomPeer(config, requestHandler, { body: { my: 'payload' } })).to.be.equal(result);
+      expect(
+        await inst.getFromRandomPeer(config, requestHandler, {
+          body: { my: 'payload' },
+        })
+      ).to.be.equal(result);
       expect(peers[0].makeRequest.calledOnce).to.be.true;
       expect(peers[0].makeRequest.firstCall.args.length).to.be.equal(2);
       expect(peers[0].makeRequest.firstCall.args[0]).deep.eq(requestHandler);
-      expect(peers[0].makeRequest.firstCall.args[0]).to.be.instanceOf(StubbedRequest);
-      expect(peers[0].makeRequest.firstCall.args[1]).deep.eq({ body: { my: 'payload' } });
+      expect(peers[0].makeRequest.firstCall.args[0]).to.be.instanceOf(
+        StubbedRequest
+      );
+      expect(peers[0].makeRequest.firstCall.args[1]).deep.eq({
+        body: { my: 'payload' },
+      });
     });
   });
 
@@ -349,12 +433,14 @@ describe('src/modules/transport.ts', () => {
     let peerListStub: SinonStub;
     let pingRequest: PingRequest;
     beforeEach(() => {
-      peers = [{
-        makeRequest: sandbox.stub(),
-        state      : PeerState.CONNECTED,
-        string     : 'string',
-        updated    : false,
-      }];
+      peers = [
+        {
+          makeRequest: sandbox.stub(),
+          state: PeerState.CONNECTED,
+          string: 'string',
+          updated: false,
+        },
+      ];
 
       throttleStub.all = sandbox.stub().callsFake((fkArray) => {
         const promiseArray = [];
@@ -363,11 +449,14 @@ describe('src/modules/transport.ts', () => {
         }
         return Promise.all(promiseArray);
       });
-      registerStub     = sandbox.stub(jobsQueue, 'register').callsArg(1);
+      registerStub = sandbox.stub(jobsQueue, 'register').callsArg(1);
 
       discoverPeersStub = sandbox.stub(inst as any, 'discoverPeers');
-      peerListStub      = sandbox.stub(peersLogic, 'list').returns(peers);
-      pingRequest       = container.getNamed(p2pSymbols.transportMethod, p2pSymbols.requests.ping);
+      peerListStub = sandbox.stub(peersLogic, 'list').returns(peers);
+      pingRequest = container.getNamed(
+        p2pSymbols.transportMethod,
+        p2pSymbols.requests.ping
+      );
     });
 
     it('should call logger.trace', async () => {
@@ -378,7 +467,6 @@ describe('src/modules/transport.ts', () => {
       // use to async call of jobsQueue.register callback
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-
       expect(loggerTraceStub.callCount).to.be.equal(4);
 
       expect(loggerTraceStub.getCall(0).args.length).to.be.equal(1);
@@ -386,7 +474,9 @@ describe('src/modules/transport.ts', () => {
 
       expect(loggerTraceStub.getCall(1).args.length).to.be.equal(2);
       expect(loggerTraceStub.getCall(1).args[0]).to.be.equal('Updating peers');
-      expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({ count: peers.length });
+      expect(loggerTraceStub.getCall(1).args[1]).to.be.deep.equal({
+        count: peers.length,
+      });
 
       expect(loggerTraceStub.getCall(2).args.length).to.be.equal(2);
       expect(loggerTraceStub.getCall(2).args[0]).to.be.equal('Updating peer');
@@ -394,7 +484,6 @@ describe('src/modules/transport.ts', () => {
 
       expect(loggerTraceStub.getCall(3).args.length).to.be.equal(1);
       expect(loggerTraceStub.getCall(3).args[0]).to.be.equal('Updated Peers');
-
     });
 
     it('should call jobsQueue.register', async () => {
@@ -402,7 +491,9 @@ describe('src/modules/transport.ts', () => {
 
       expect(registerStub.calledOnce).to.be.true;
       expect(registerStub.firstCall.args.length).to.be.equal(3);
-      expect(registerStub.firstCall.args[0]).to.be.equal('peersDiscoveryAndUpdate');
+      expect(registerStub.firstCall.args[0]).to.be.equal(
+        'peersDiscoveryAndUpdate'
+      );
       expect(registerStub.firstCall.args[1]).to.be.a('function');
       expect(registerStub.firstCall.args[2]).to.be.equal(5000);
     });
@@ -423,7 +514,9 @@ describe('src/modules/transport.ts', () => {
       process.nextTick(() => {
         expect(logger.stubs.error.calledOnce).to.be.true;
         expect(logger.stubs.error.firstCall.args.length).to.be.equal(2);
-        expect(logger.stubs.error.firstCall.args[0]).to.be.equal('Discovering new peers failed');
+        expect(logger.stubs.error.firstCall.args[0]).to.be.equal(
+          'Discovering new peers failed'
+        );
         expect(logger.stubs.error.firstCall.args[1]).to.be.equal(error);
       });
     });
@@ -442,11 +535,12 @@ describe('src/modules/transport.ts', () => {
       expect(throttleStub.all.calledOnce).to.be.true;
       expect(throttleStub.all.firstCall.args.length).to.be.equal(2);
       expect(throttleStub.all.firstCall.args[0]).to.be.a('array');
-      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({ maxInProgress: 50 });
+      expect(throttleStub.all.firstCall.args[1]).to.be.deep.equal({
+        maxInProgress: 50,
+      });
     });
 
     describe('Throttle.all callback(for each peer in peers)', () => {
-
       it('should call pingAndUpdate(check on p.updated is false)', async () => {
         await inst.onPeersReady();
 
@@ -473,13 +567,13 @@ describe('src/modules/transport.ts', () => {
         await wait(10);
         expect(logger.stubs.debug.calledOnce).to.be.true;
         expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
-        expect(logger.stubs.debug.firstCall.args[0]).to.be.equal('Ping failed when updating peer string');
+        expect(logger.stubs.debug.firstCall.args[0]).to.be.equal(
+          'Ping failed when updating peer string'
+        );
         expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(error);
-
       });
 
       describe('false in condition of Throttle.all"s callback', () => {
-
         it('p in null', async () => {
           peers[0] = null;
           logger.stubs.trace.resetHistory();

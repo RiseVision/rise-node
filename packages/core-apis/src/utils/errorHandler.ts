@@ -4,7 +4,7 @@ import express from 'express';
 import { inject, injectable } from 'inversify';
 import {
   ExpressErrorMiddlewareInterface,
-  Middleware
+  Middleware,
 } from 'routing-controllers';
 import { APISymbols } from '../helpers';
 

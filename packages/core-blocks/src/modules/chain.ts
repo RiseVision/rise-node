@@ -10,7 +10,7 @@ import {
   ITransactionLogic,
   ITransactionPool,
   ITransactionsModel,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
@@ -18,12 +18,12 @@ import {
   DBOp,
   SignedAndChainedBlockType,
   SignedBlockType,
-  TransactionType
+  TransactionType,
 } from '@risevision/core-types';
 import {
   catchToLoggerAndRemapError,
   wait,
-  WrapInBalanceSequence
+  WrapInBalanceSequence,
 } from '@risevision/core-utils';
 import * as deepFreeze from 'js-flock/deepFreeze';
 import { inject, injectable, named } from 'inversify';
@@ -36,7 +36,7 @@ import {
   OnDestroyBlock,
   OnPostApplyBlock,
   OnTransactionsSaved,
-  RollbackBlockDBOps
+  RollbackBlockDBOps,
 } from '../hooks';
 import { BlocksModuleUtils } from './utils';
 import bs = require('binary-search');
@@ -106,7 +106,7 @@ export class BlocksModuleChain {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', {
       id: lastBlock.id,
-      height: lastBlock.height
+      height: lastBlock.height,
     });
 
     if (lastBlock.height === 1) {
@@ -178,14 +178,14 @@ export class BlocksModuleChain {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         const sender = await this.accountsModule.assignPublicKeyToAccount({
           address: tx.senderId,
-          publicKey: tx.senderPublicKey
+          publicKey: tx.senderPublicKey,
         });
         // Apply tx.
         const ops: Array<DBOp<any>> = [
           {
             model: this.AccountsModel,
             query: this.AccountsModel.createBulkAccountsSQL([tx.recipientId]),
-            type: 'custom'
+            type: 'custom',
           },
           ...(await this.transactionLogic.applyUnconfirmed(
             { ...tx, blockId: block.id } as any,
@@ -195,7 +195,7 @@ export class BlocksModuleChain {
             { ...tx, blockId: block.id } as any,
             block,
             sender
-          ))
+          )),
         ];
         await this.dbHelper.performOps(ops);
 
@@ -280,7 +280,7 @@ export class BlocksModuleChain {
       ops.push({
         model: this.AccountsModel,
         query: await this.AccountsModel.createBulkAccountsSQL(recipients),
-        type: 'custom'
+        type: 'custom',
       });
     }
 
@@ -421,13 +421,13 @@ export class BlocksModuleChain {
     lb1: SignedAndChainedBlockType
   ): Promise<IBlocksModel> {
     const lb = await this.BlocksModel.findById(lb1.id, {
-      include: [this.TransactionsModel]
+      include: [this.TransactionsModel],
     });
     if (lb === null) {
       throw new Error('curBlock is null');
     }
     const previousBlock = await this.BlocksModel.findById(lb.previousBlock, {
-      include: [this.TransactionsModel]
+      include: [this.TransactionsModel],
     });
 
     if (previousBlock === null) {

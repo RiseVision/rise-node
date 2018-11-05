@@ -5,7 +5,7 @@ import {
   IBaseTransaction,
   IConfirmedTransaction,
   ITransportTransaction,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 
 /**

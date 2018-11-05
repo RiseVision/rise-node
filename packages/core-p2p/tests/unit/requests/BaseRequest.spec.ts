@@ -13,7 +13,7 @@ class TestRequest extends BaseTransportMethod<any, any, any> {
   public readonly baseUrl = '/test/';
 }
 
-const factory = (what: (new () => any)) => (ctx) => (options) => {
+const factory = (what: new () => any) => (ctx) => (options) => {
   const toRet = ctx.container.resolve(what);
   toRet.options = options;
   return toRet;
@@ -29,10 +29,25 @@ describe('apis/requests/BaseTransportMethod', () => {
   const testSymbol = Symbol('testRequest');
 
   beforeEach(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-p2p', 'core-helpers', 'core-crypto', 'core-blocks', 'core-transactions', 'core', 'core-accounts']);
-    container.bind(p2pSymbols.transportMethod).to(TestRequest).inSingletonScope().whenTargetNamed(testSymbol);
-    container.rebind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelperStub).inSingletonScope();
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-p2p',
+      'core-helpers',
+      'core-crypto',
+      'core-blocks',
+      'core-transactions',
+      'core',
+      'core-accounts',
+    ]);
+    container
+      .bind(p2pSymbols.transportMethod)
+      .to(TestRequest)
+      .inSingletonScope()
+      .whenTargetNamed(testSymbol);
+    container
+      .rebind(p2pSymbols.helpers.protoBuf)
+      .to(ProtoBufHelperStub)
+      .inSingletonScope();
     protoBufStub = container.get(p2pSymbols.helpers.protoBuf);
     peer = createFakePeer();
     instance = container.getNamed(p2pSymbols.transportMethod, testSymbol);
@@ -70,5 +85,4 @@ describe('apis/requests/BaseTransportMethod', () => {
   //     });
   //   });
   // });
-
 });

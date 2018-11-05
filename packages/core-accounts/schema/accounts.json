@@ -9,9 +9,7 @@
         "maxLength": 100
       }
     },
-    "required": [
-      "secret"
-    ]
+    "required": ["secret"]
   },
   "getBalance": {
     "id": "accounts.getBalance",
@@ -24,9 +22,7 @@
         "maxLength": 22
       }
     },
-    "required": [
-      "address"
-    ]
+    "required": ["address"]
   },
   "getPublicKey": {
     "id": "accounts.getPublickey",
@@ -39,9 +35,7 @@
         "maxLength": 22
       }
     },
-    "required": [
-      "address"
-    ]
+    "required": ["address"]
   },
   "generatePublicKey": {
     "id": "accounts.generatePublickey",
@@ -53,9 +47,7 @@
         "maxLength": 100
       }
     },
-    "required": [
-      "secret"
-    ]
+    "required": ["secret"]
   },
   "getAccount": {
     "id": "accounts.getAccount",

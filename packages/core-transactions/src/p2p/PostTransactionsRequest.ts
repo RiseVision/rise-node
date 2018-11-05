@@ -2,7 +2,7 @@ import { ITransactionsModule, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
-  SingleTransportPayload
+  SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
@@ -27,7 +27,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
     PostTransactionsRequestDataType
   > = {
     messageType: 'transportTransactions',
-    namespace: 'transactions.transport'
+    namespace: 'transactions.transport',
   };
 
   @inject(Symbols.modules.transactions)
@@ -58,8 +58,8 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
           transactions: allTransactions.slice(
             idx * this.constants.maxTxsPerBlock,
             (idx + 1) * this.constants.maxTxsPerBlock
-          )
-        }
+          ),
+        },
       };
     });
   }
@@ -85,7 +85,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
     return super.encodeRequest({
       transactions: data.transactions.map((tx) =>
         this.txLogic.toProtoBuffer(tx)
-      ) as any
+      ) as any,
     });
   }
 
@@ -96,7 +96,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
     return {
       transactions: d.transactions.map((txBuf) =>
         this.txLogic.fromProtoBuffer(txBuf as any)
-      )
+      ),
     };
   }
 

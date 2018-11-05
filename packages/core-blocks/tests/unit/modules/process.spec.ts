@@ -6,7 +6,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import {
   createRandomTransactions,
-  toBufferedTransaction
+  toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
   IAccountsModel,
@@ -15,10 +15,14 @@ import {
   IBlocksModule,
   ITransactionLogic,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { BlocksModuleProcess, BlocksModuleVerify, BlocksSymbols } from '../../../src';
+import {
+  BlocksModuleProcess,
+  BlocksModuleVerify,
+  BlocksSymbols,
+} from '../../../src';
 import { ModelSymbols } from '@risevision/core-models';
 import { LiskWallet } from 'dpos-offline';
 import { TransactionPool } from '@risevision/core-transactions';
@@ -39,18 +43,27 @@ describe('modules/blocks/process', () => {
   let container: Container;
   let AccountsModel: typeof IAccountsModel;
   beforeEach(async () => {
-    sandbox           = sinon.createSandbox();
-    container         = await createContainer(['core-blocks', 'core-helpers', 'core-crypto', 'core', 'core-accounts', 'core-transactions']);
-    accountsModule    = container.get(Symbols.modules.accounts);
-    instance          = container.get(BlocksSymbols.modules.process);
-    txModule          = container.get(Symbols.modules.transactions);
-    txLogic           = container.get(Symbols.logic.transaction);
-    txPool            = container.get(Symbols.logic.txpool);
-    blocksModule      = container.get(BlocksSymbols.modules.blocks);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-blocks',
+      'core-helpers',
+      'core-crypto',
+      'core',
+      'core-accounts',
+      'core-transactions',
+    ]);
+    accountsModule = container.get(Symbols.modules.accounts);
+    instance = container.get(BlocksSymbols.modules.process);
+    txModule = container.get(Symbols.modules.transactions);
+    txLogic = container.get(Symbols.logic.transaction);
+    txPool = container.get(Symbols.logic.txpool);
+    blocksModule = container.get(BlocksSymbols.modules.blocks);
     blockVerifyModule = container.get(BlocksSymbols.modules.verify);
-    blockLogic        = container.get(BlocksSymbols.logic.block);
-    AccountsModel     = container.getNamed(ModelSymbols.model, Symbols.models.accounts);
-
+    blockLogic = container.get(BlocksSymbols.logic.block);
+    AccountsModel = container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.accounts
+    );
   });
   afterEach(() => {
     sandbox.restore();
@@ -383,33 +396,34 @@ describe('modules/blocks/process', () => {
   describe('generateBlock', () => {
     let txs;
     let stubs = {
-      amGettAccount             : null as SinonStub,
+      amGettAccount: null as SinonStub,
       txModuleFilterConfirmedIds: null as SinonStub,
     };
     beforeEach(() => {
-      txs                              = createRandomTransactions(10);
+      txs = createRandomTransactions(10);
       stubs.txModuleFilterConfirmedIds = sandbox
-        .stub(txModule, 'filterConfirmedIds').resolves([txs[0].id, txs[2].id]);
-      stubs.amGettAccount              = sandbox
-        .stub(accountsModule, 'getAccount').callsFake((what) => Promise.resolve(new AccountsModel(what)));
+        .stub(txModule, 'filterConfirmedIds')
+        .resolves([txs[0].id, txs[2].id]);
+      stubs.amGettAccount = sandbox
+        .stub(accountsModule, 'getAccount')
+        .callsFake((what) => Promise.resolve(new AccountsModel(what)));
     });
     it('should use blockLogic.create with the proper data and post result to verify.processBlock', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
-      const createSpy        = sandbox.spy(blockLogic, 'create');
-      const wallet           = new LiskWallet('meow', 'R');
-      const keypair          = {
+      const createSpy = sandbox.spy(blockLogic, 'create');
+      const wallet = new LiskWallet('meow', 'R');
+      const keypair = {
         privateKey: Buffer.from(wallet.privKey, 'hex'),
-        publicKey : Buffer.from(wallet.publicKey, 'hex'),
+        publicKey: Buffer.from(wallet.publicKey, 'hex'),
       };
-      const r                = await instance.generateBlock(keypair, 10);
+      const r = await instance.generateBlock(keypair, 10);
 
       expect(createSpy.called).is.true;
-      expect(createSpy.firstCall.args[0])
-        .deep.eq({
+      expect(createSpy.firstCall.args[0]).deep.eq({
         keypair,
         previousBlock: { height: 10, id: '11' },
-        timestamp    : 10,
-        transactions : [],
+        timestamp: 10,
+        transactions: [],
       });
 
       expect(r).deep.eq(createSpy.firstCall.returnValue);
@@ -421,26 +435,33 @@ describe('modules/blocks/process', () => {
     });
     it('should filter transactions by verifying them', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
-      const txs              = createRandomTransactions(3).map((t) => toBufferedTransaction(t));
+      const txs = createRandomTransactions(3).map((t) =>
+        toBufferedTransaction(t)
+      );
       txs.forEach((t) => txPool.unconfirmed.add(t, { receivedAt: new Date() }));
 
       const stub = sandbox.stub(txLogic, 'verify').resolves();
       stub.onCall(2).rejects();
       const createSpy = sandbox.spy(blockLogic, 'create');
 
-      const wallet  = new LiskWallet('meow', 'R');
+      const wallet = new LiskWallet('meow', 'R');
       const keypair = {
         privateKey: Buffer.from(wallet.privKey, 'hex'),
-        publicKey : Buffer.from(wallet.publicKey, 'hex'),
+        publicKey: Buffer.from(wallet.publicKey, 'hex'),
       };
       await instance.generateBlock(keypair, 10);
 
       expect(createSpy.firstCall.args[0].transactions.length).eq(2);
-      expect(createSpy.firstCall.args[0].transactions).deep.eq([txs[0], txs[1]]);
+      expect(createSpy.firstCall.args[0].transactions).deep.eq([
+        txs[0],
+        txs[1],
+      ]);
     });
     it('should filter transactions that are not ready', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
-      const txs              = createRandomTransactions(3).map((t) => toBufferedTransaction(t));
+      const txs = createRandomTransactions(3).map((t) =>
+        toBufferedTransaction(t)
+      );
       txs.forEach((t) => txPool.unconfirmed.add(t, { receivedAt: new Date() }));
 
       const stub = sandbox.stub(txLogic, 'ready').resolves(true);
@@ -448,15 +469,18 @@ describe('modules/blocks/process', () => {
       stub.onCall(2).resolves(false);
       const createSpy = sandbox.spy(blockLogic, 'create');
 
-      const wallet  = new LiskWallet('meow', 'R');
+      const wallet = new LiskWallet('meow', 'R');
       const keypair = {
         privateKey: Buffer.from(wallet.privKey, 'hex'),
-        publicKey : Buffer.from(wallet.publicKey, 'hex'),
+        publicKey: Buffer.from(wallet.publicKey, 'hex'),
       };
       await instance.generateBlock(keypair, 10);
 
       expect(createSpy.firstCall.args[0].transactions.length).eq(2);
-      expect(createSpy.firstCall.args[0].transactions).deep.eq([txs[0], txs[1]]);
+      expect(createSpy.firstCall.args[0].transactions).deep.eq([
+        txs[0],
+        txs[1],
+      ]);
     });
   });
   //
@@ -635,5 +659,4 @@ describe('modules/blocks/process', () => {
   //     expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Discarded block that does not match with current chain: 1 height:  round: round slot: 1 generator: ');
   //   });
   // });
-
 });

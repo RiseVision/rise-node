@@ -2,13 +2,13 @@ import {
   IAccountsModel,
   IAccountsModule,
   IBlocksModel,
-  ILogger
+  ILogger,
 } from '@risevision/core-interfaces';
 import {
   address,
   DBCustomOp,
   DBOp,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 import * as fs from 'fs';
 import * as sequelize from 'sequelize';
@@ -67,7 +67,7 @@ export class RoundLogic {
         'roundFees',
         'roundRewards',
         'roundDelegates',
-        'roundOutsiders'
+        'roundOutsiders',
       ]);
     }
 
@@ -90,15 +90,15 @@ export class RoundLogic {
       model: this.scope.models.AccountsModel,
       options: {
         where: {
-          address: { [Op.in]: this.scope.roundOutsiders }
-        }
+          address: { [Op.in]: this.scope.roundOutsiders },
+        },
       },
       type: 'update',
       values: {
         missedblocks: sequelize.literal(
           `missedblocks ${this.scope.backwards ? '-' : '+'} 1`
-        )
-      }
+        ),
+      },
     };
   }
 
@@ -109,7 +109,7 @@ export class RoundLogic {
     return {
       model: this.scope.models.AccountsModel,
       query: recalcVotesSQL,
-      type: 'custom'
+      type: 'custom',
     };
   }
 
@@ -122,13 +122,13 @@ export class RoundLogic {
         model: this.scope.models.AccountsModel,
         options: {
           where: {
-            blockId: this.scope.block.id
-          }
+            blockId: this.scope.block.id,
+          },
         },
         type: 'update',
         values: {
-          blockId: '0'
-        }
+          blockId: '0',
+        },
       };
     }
     return null;
@@ -142,7 +142,7 @@ export class RoundLogic {
     return {
       model: this.scope.models.AccountsModel,
       query: performVotesSnapshotSQL,
-      type: 'custom'
+      type: 'custom',
     };
   }
   /**
@@ -153,7 +153,7 @@ export class RoundLogic {
     return {
       model: this.scope.models.AccountsModel,
       query: restoreVotesSnasphotSQL,
-      type: 'custom'
+      type: 'custom',
     };
   }
 
@@ -174,7 +174,7 @@ export class RoundLogic {
       const changes = roundChanges.at(i);
       this.scope.library.logger.trace('Delegate changes', {
         delegate: delegate.toString('hex'),
-        changes
+        changes,
       });
 
       // merge Account in the direction.
@@ -187,7 +187,7 @@ export class RoundLogic {
           publicKey: delegate,
           rewards: this.scope.backwards ? -changes.rewards : changes.rewards,
           round: this.scope.round,
-          u_balance: this.scope.backwards ? -changes.balance : changes.balance
+          u_balance: this.scope.backwards ? -changes.balance : changes.balance,
         })
       );
     }
@@ -206,7 +206,7 @@ export class RoundLogic {
       this.scope.library.logger.trace('Fees remaining', {
         delegate: remainderDelegate.toString('hex'),
         fees: feesRemaining,
-        index: remainderIndex
+        index: remainderIndex,
       });
 
       queries.push(
@@ -216,7 +216,7 @@ export class RoundLogic {
           fees: feesRemaining,
           publicKey: remainderDelegate,
           round: this.scope.round,
-          u_balance: feesRemaining
+          u_balance: feesRemaining,
         })
       );
     }
@@ -233,7 +233,7 @@ export class RoundLogic {
       this.updateMissedBlocks(),
       ...this.applyRound(),
       this.performVotesSnapshot(),
-      this.updateVotes()
+      this.updateVotes(),
     ];
   }
 
@@ -244,7 +244,7 @@ export class RoundLogic {
     return [
       this.updateMissedBlocks(),
       ...this.applyRound(),
-      this.restoreVotesSnapshot()
+      this.restoreVotesSnapshot(),
     ];
   }
 }

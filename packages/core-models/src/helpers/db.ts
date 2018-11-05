@@ -4,7 +4,7 @@ import {
   DBOp,
   DBRemoveOp,
   DBUpdateOp,
-  DBUpsertOp
+  DBUpsertOp,
 } from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
@@ -19,7 +19,7 @@ squelPostgres.registerValueHandler(Buffer, (buffer) => {
   return {
     formatted: true,
     rawNesting: true,
-    value: "E'\\\\x" + buffer.toString('hex') + "'"
+    value: "E'\\\\x" + buffer.toString('hex') + "'",
   } as any;
 });
 
@@ -56,7 +56,7 @@ export class DBHelper {
         autoQuoteFieldNames: true,
         autoQuoteTableNames: true,
         nameQuoteCharacter: '"',
-        stringFormatter: (s) => `'${s}'`
+        stringFormatter: (s) => `'${s}'`,
       })
       .into(insertOp.model.getTableName() as string)
       .setFieldsRows(insertOp.values)
@@ -72,9 +72,9 @@ export class DBHelper {
         [Op.or]: [
           {
             [upsertOp.model.primaryKeyAttribute]:
-              upsertOp.values[upsertOp.model.primaryKeyAttribute]
-          }
-        ]
+              upsertOp.values[upsertOp.model.primaryKeyAttribute],
+          },
+        ],
       },
       upsertOp.model,
       { raw: true }

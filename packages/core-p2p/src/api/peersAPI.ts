@@ -4,7 +4,7 @@ import {
   HTTPError,
   IoCSymbol,
   SchemaValid,
-  ValidateSchema
+  ValidateSchema,
 } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
@@ -72,13 +72,13 @@ export class PeersAPI {
   public async count() {
     try {
       const connected = (await this.peersModule.getByFilter({
-        state: PeerState.CONNECTED
+        state: PeerState.CONNECTED,
       })).length;
       const disconnected = (await this.peersModule.getByFilter({
-        state: PeerState.DISCONNECTED
+        state: PeerState.DISCONNECTED,
       })).length;
       const banned = (await this.peersModule.getByFilter({
-        state: PeerState.BANNED
+        state: PeerState.BANNED,
       })).length;
 
       return { connected, disconnected, banned };
@@ -92,7 +92,7 @@ export class PeersAPI {
     return {
       build: this.versionBuild,
       minVersion: this.systemModule.getMinVersion(),
-      version: this.appConfig.version
+      version: this.appConfig.version,
     };
   }
 }

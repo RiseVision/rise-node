@@ -11,7 +11,11 @@ import * as path from 'path';
 import { Op } from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { AccountsLoaderSubscriber, AccountsModel, AccountsSymbols } from '../../../src';
+import {
+  AccountsLoaderSubscriber,
+  AccountsModel,
+  AccountsSymbols,
+} from '../../../src';
 
 chai.use(chaiAsPromised);
 describe('accounts/hooks/loaderSubscriber', () => {
@@ -21,11 +25,15 @@ describe('accounts/hooks/loaderSubscriber', () => {
   let instance: AccountsLoaderSubscriber;
   let hookSystem: WordPressHookSystem;
   beforeEach(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core-accounts', 'core-helpers', 'core-crypto']);
-    accModel  = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
-    hookSystem  = new WordPressHookSystem(new InMemoryFilterModel());
-    instance  = container.get(AccountsSymbols.__internal.loaderHooks);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core-accounts',
+      'core-helpers',
+      'core-crypto',
+    ]);
+    accModel = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
+    hookSystem = new WordPressHookSystem(new InMemoryFilterModel());
+    instance = container.get(AccountsSymbols.__internal.loaderHooks);
     // de-register current hooks and register a new hooksystem to isolate tests.
     await instance.unHook();
     instance.hookSystem = hookSystem;
@@ -37,13 +45,20 @@ describe('accounts/hooks/loaderSubscriber', () => {
     sandbox.restore();
   });
 
-  it('should recreate accts table on proper hook', async () =>{
+  it('should recreate accts table on proper hook', async () => {
     const dropStub = sandbox.stub(accModel, 'drop').resolves();
     const queryStub = sandbox.stub(accModel.sequelize, 'query').resolves();
     await hookSystem.do_action(RecreateAccountsTables.name);
     expect(dropStub.calledOnce).is.true;
     expect(queryStub.calledOnce).is.true;
-    expect(queryStub.calledWith(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'sql', 'memoryTables.sql'), { encoding: 'utf8' })))
+    expect(
+      queryStub.calledWith(
+        fs.readFileSync(
+          path.join(__dirname, '..', '..', '..', 'sql', 'memoryTables.sql'),
+          { encoding: 'utf8' }
+        )
+      )
+    );
   });
   describe('integrity hook', () => {
     let accountsCountStub: SinonStub;
@@ -54,12 +69,12 @@ describe('accounts/hooks/loaderSubscriber', () => {
     });
     it('should call load if there are some orphanedMemAccounts', async () => {
       queryStub.resolves(['a']);
-      await expect(hookSystem.do_action(OnCheckIntegrity.name, 1))
-        .rejectedWith('Detected orphaned blocks in mem_accounts');
+      await expect(hookSystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
+        'Detected orphaned blocks in mem_accounts'
+      );
       expect(queryStub.firstCall.args[0]).to.be.deep.eq(
         'SELECT a."blockId", b."id" FROM mem_accounts a LEFT OUTER JOIN blocks b ON b."id" = a."blockId" WHERE a."blockId" IS NOT NULL AND a."blockId" != \'0\' AND b."id" IS NULL\n'
       );
     });
   });
-
 });

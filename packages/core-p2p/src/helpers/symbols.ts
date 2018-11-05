@@ -12,32 +12,32 @@ export const p2pSymbols = {
   transportMiddleware: Symbol.for('rise.p2p.transportMiddleware'),
   transportMiddlewares: {
     attachPeerHeaders: Symbol.for('rise.p2p.attachPeerHeaders'),
-    validatePeer: Symbol.for('rise.p2p.validatePeerHeadersMiddleware')
+    validatePeer: Symbol.for('rise.p2p.validatePeerHeadersMiddleware'),
   },
   helpers: {
-    protoBuf: Symbol.for('rise.p2p.protobufHelper')
+    protoBuf: Symbol.for('rise.p2p.protobufHelper'),
   },
   modules: {
     peers: Symbols.modules.peers,
-    transport: Symbols.modules.transport
+    transport: Symbols.modules.transport,
   },
   api: {
     peersAPI: Symbol.for('rise.p2p.peersAPI'),
-    transport: Symbol.for('rise.p2p.transport')
+    transport: Symbol.for('rise.p2p.transport'),
   },
   logic: {
     broadcaster: Symbols.logic.broadcaster,
     peerFactory: Symbol.for('rise.p2p.peerFactory'),
     peerLogic: Symbols.logic.peer,
-    peersLogic: Symbols.logic.peers
+    peersLogic: Symbols.logic.peers,
   },
   utils: {
     transportWrapper: Symbol.for('rise.p2p.transportWrapper'),
-    v2ErrorHandler: Symbol.for('rise.p2p.v2ErrorHandler')
+    v2ErrorHandler: Symbol.for('rise.p2p.v2ErrorHandler'),
   },
   requests: {
     ping: Symbol.for('rise.p2p.ping'),
-    peersList: Symbol.for('rise.p2p.peersList')
+    peersList: Symbol.for('rise.p2p.peersList'),
   },
   model: Symbols.models.peers,
   __internals: {
@@ -47,6 +47,6 @@ export const p2pSymbols = {
     ),
     resolvedTransportMiddlewares: Symbol.for(
       'rise.p2p.__internals.resolvedTransportMiddlewares'
-    )
-  }
+    ),
+  },
 };

@@ -12,23 +12,27 @@ describe('configCreator', () => {
     expect(config['testasset']).true;
   });
   it('should load configData from provided path', () => {
-    expect(() => configCreator(`${nowPwd}/hey.json`, []))
-      .to.throw(`${nowPwd}/hey.json`);
+    expect(() => configCreator(`${nowPwd}/hey.json`, [])).to.throw(
+      `${nowPwd}/hey.json`
+    );
   });
   it('should query each module .afterConfigValidation', () => {
-    const coreModuleStub  = new CoreModuleStub();
+    const coreModuleStub = new CoreModuleStub();
     const coreModuleStub2 = new CoreModuleStub();
-    coreModuleStub.stubs.afterConfigValidation.returns({ disappear: 'hey', common: true, first: '1' });
-    coreModuleStub2.stubs.afterConfigValidation.returns({ common: true, first: '1.1', second: 2 });
-    const config = configCreator(null, [
-      coreModuleStub,
-      coreModuleStub2,
-    ]);
+    coreModuleStub.stubs.afterConfigValidation.returns({
+      disappear: 'hey',
+      common: true,
+      first: '1',
+    });
+    coreModuleStub2.stubs.afterConfigValidation.returns({
+      common: true,
+      first: '1.1',
+      second: 2,
+    });
+    const config = configCreator(null, [coreModuleStub, coreModuleStub2]);
     expect(config).deep.eq({ common: true, first: '1.1', second: 2 });
 
     expect(coreModuleStub.stubs.afterConfigValidation.calledOnce).is.true;
     expect(coreModuleStub2.stubs.afterConfigValidation.calledOnce).is.true;
-
-
   });
 });

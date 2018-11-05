@@ -17,11 +17,10 @@ describe('helpers/diff', () => {
       expect(Diff.merge(['b'], ['+b'])).to.be.deep.eq(false);
     });
     it('should handle null source', () => {
-      expect(Diff.merge(null, ['+b']))
-        .to.be.deep.eq(['b']);
+      expect(Diff.merge(null, ['+b'])).to.be.deep.eq(['b']);
     });
     it('shouldnt modify original array', () => {
-      const arr     = ['a', 'b', 'c'];
+      const arr = ['a', 'b', 'c'];
       const arrCopy = ['a', 'b', 'c'];
       Diff.merge(arr, ['-a', '-b', '+d']);
       expect(arr).to.be.deep.eq(arrCopy);
@@ -33,7 +32,12 @@ describe('helpers/diff', () => {
 
   describe('reverse', () => {
     it('should reverse diff', () => {
-      expect(Diff.reverse(['-a', '+b', '-c', '+d'])).to.be.deep.eq(['+a', '-b', '+c', '-d']);
+      expect(Diff.reverse(['-a', '+b', '-c', '+d'])).to.be.deep.eq([
+        '+a',
+        '-b',
+        '+c',
+        '-d',
+      ]);
     });
     it('should return empty array if empty arr is given', () => {
       expect(Diff.reverse([])).to.be.deep.eq([]);

@@ -9,8 +9,6 @@
         "maxItems": 100
       }
     },
-    "required": [
-      "signatures"
-    ]
+    "required": ["signatures"]
   }
 }

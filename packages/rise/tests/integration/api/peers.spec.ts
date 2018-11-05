@@ -1,7 +1,11 @@
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
-import { checkIntParam, checkRequiredParam, checkReturnObjKeyVal } from './utils';
+import {
+  checkIntParam,
+  checkRequiredParam,
+  checkReturnObjKeyVal,
+} from './utils';
 import { Symbols } from '@risevision/core-interfaces';
 import { PeerState, PeerType } from '@risevision/core-types';
 import { createFakePeers } from '../../../../core-p2p/tests/unit/utils/fakePeersFactory';
@@ -9,40 +13,44 @@ import { PeersLogic } from '@risevision/core-p2p';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/peers', () => {
-
   initializer.setup();
 
   describe('/', () => {
-    checkIntParam('height', '/api/peers', {min: 1});
-    checkIntParam('offset', '/api/peers', {min: 0});
-    checkIntParam('limit', '/api/peers', {min: 1, max: 100});
-    checkIntParam('port', '/api/peers', {min: 1, max: 65535});
-    checkIntParam('state', '/api/peers', {min: 0, max: 2});
+    checkIntParam('height', '/api/peers', { min: 1 });
+    checkIntParam('offset', '/api/peers', { min: 0 });
+    checkIntParam('limit', '/api/peers', { min: 1, max: 100 });
+    checkIntParam('port', '/api/peers', { min: 1, max: 65535 });
+    checkIntParam('state', '/api/peers', { min: 0, max: 2 });
     checkReturnObjKeyVal('peers', [], '/api/peers');
     describe('with peers', () => {
       let connectedPeers: PeerType[];
       let disconnectedPeers: PeerType[];
       let bannedPeers: PeerType[];
       beforeEach(async () => {
-        const peersLogic  = initializer.appManager.container.get<PeersLogic>(Symbols.logic.peers);
-        const peers       = createFakePeers(10);
-        connectedPeers    = peers.splice(0, 2);
+        const peersLogic = initializer.appManager.container.get<PeersLogic>(
+          Symbols.logic.peers
+        );
+        const peers = createFakePeers(10);
+        connectedPeers = peers.splice(0, 2);
         disconnectedPeers = peers.splice(0, 3);
-        bannedPeers       = peers.splice(0, 5);
+        bannedPeers = peers.splice(0, 5);
 
-        connectedPeers.forEach((p) => p.state = PeerState.CONNECTED);
-        disconnectedPeers.forEach((p) => p.state = PeerState.DISCONNECTED);
-        bannedPeers.forEach((p) => p.state = PeerState.BANNED);
+        connectedPeers.forEach((p) => (p.state = PeerState.CONNECTED));
+        disconnectedPeers.forEach((p) => (p.state = PeerState.DISCONNECTED));
+        bannedPeers.forEach((p) => (p.state = PeerState.BANNED));
 
         connectedPeers.forEach((p) => peersLogic.upsert(p, true));
         disconnectedPeers.forEach((p) => peersLogic.upsert(p, true));
         bannedPeers.forEach((p) => peersLogic.upsert(p, true));
-
       });
 
       afterEach(() => {
-        const peersLogic = initializer.appManager.container.get<PeersLogic>(Symbols.logic.peers);
-        connectedPeers.concat(disconnectedPeers).concat(bannedPeers)
+        const peersLogic = initializer.appManager.container.get<PeersLogic>(
+          Symbols.logic.peers
+        );
+        connectedPeers
+          .concat(disconnectedPeers)
+          .concat(bannedPeers)
           .forEach((p) => peersLogic.remove(p));
       });
 
@@ -57,8 +65,7 @@ describe('api/peers', () => {
               const matchingNonces = connectedPeers.map((p) => p.nonce);
               matchingNonces.sort();
               expect(resp.body.peers.length).to.be.eq(connectedPeers.length);
-              expect(nonces).to.be
-                .deep.eq(matchingNonces);
+              expect(nonces).to.be.deep.eq(matchingNonces);
             });
         });
 
@@ -72,8 +79,7 @@ describe('api/peers', () => {
               const matchingNonces = disconnectedPeers.map((p) => p.nonce);
               matchingNonces.sort();
               expect(resp.body.peers.length).to.be.eq(disconnectedPeers.length);
-              expect(nonces).to.be
-                .deep.eq(matchingNonces);
+              expect(nonces).to.be.deep.eq(matchingNonces);
             });
         });
 
@@ -82,14 +88,12 @@ describe('api/peers', () => {
             .get(`/api/peers?state=${PeerState.BANNED}`)
             .expect(200)
             .then((resp) => {
-
               const nonces = resp.body.peers.map((p) => p.nonce);
               nonces.sort();
               const matchingNonces = bannedPeers.map((p) => p.nonce);
               matchingNonces.sort();
               expect(resp.body.peers.length).to.be.eq(bannedPeers.length);
-              expect(nonces).to.be
-                .deep.eq(matchingNonces);
+              expect(nonces).to.be.deep.eq(matchingNonces);
             });
         });
       });
@@ -101,8 +105,9 @@ describe('api/peers', () => {
             .expect(200)
             .then((resp) => {
               expect(resp.body.peers.length).to.be.eq(1);
-              expect(resp.body.peers[0].nonce).to.be
-                .deep.eq(connectedPeers[0].nonce);
+              expect(resp.body.peers[0].nonce).to.be.deep.eq(
+                connectedPeers[0].nonce
+              );
             });
         });
       });
@@ -113,7 +118,6 @@ describe('api/peers', () => {
             .expect(200)
             .then((resp) => {
               expect(resp.body.peers.length).to.be.eq(1);
-
             });
         });
         it('should honor offset & limit and return only 1 peer', async () => {
@@ -125,7 +129,6 @@ describe('api/peers', () => {
             });
         });
       });
-
     });
     it('should use params');
     it('should return peers :)');
@@ -134,7 +137,7 @@ describe('api/peers', () => {
   describe('/get', () => {
     checkRequiredParam('ip', '/api/peers/get?ip=1.1.1.1&port=1000');
     checkRequiredParam('port', '/api/peers/get?ip=1.1.1.1&port=1000');
-    checkIntParam('port', '/api/peers/get?ip=1.1.1.1', {min: 1, max: 65535});
+    checkIntParam('port', '/api/peers/get?ip=1.1.1.1', { min: 1, max: 65535 });
     it('should throw peer not found if peer is not found', async () => {
       return supertest(initializer.apiExpress)
         .get('/api/peers/get?ip=1.1.1.1&port=100')
@@ -154,20 +157,21 @@ describe('api/peers', () => {
       let disconnectedPeers: PeerType[];
       let bannedPeers: PeerType[];
       before(async () => {
-        const peersLogic  = initializer.appManager.container.get<PeersLogic>(Symbols.logic.peers);
-        const peers       = createFakePeers(10);
-        connectedPeers    = peers.splice(0, 2);
+        const peersLogic = initializer.appManager.container.get<PeersLogic>(
+          Symbols.logic.peers
+        );
+        const peers = createFakePeers(10);
+        connectedPeers = peers.splice(0, 2);
         disconnectedPeers = peers.splice(0, 3);
-        bannedPeers       = peers.splice(0, 5);
+        bannedPeers = peers.splice(0, 5);
 
-        connectedPeers.forEach((p) => p.state = PeerState.CONNECTED);
-        disconnectedPeers.forEach((p) => p.state = PeerState.DISCONNECTED);
-        bannedPeers.forEach((p) => p.state = PeerState.BANNED);
+        connectedPeers.forEach((p) => (p.state = PeerState.CONNECTED));
+        disconnectedPeers.forEach((p) => (p.state = PeerState.DISCONNECTED));
+        bannedPeers.forEach((p) => (p.state = PeerState.BANNED));
 
         connectedPeers.forEach((p) => peersLogic.upsert(p, true));
         disconnectedPeers.forEach((p) => peersLogic.upsert(p, true));
         bannedPeers.forEach((p) => peersLogic.upsert(p, true));
-
       });
 
       checkReturnObjKeyVal('connected', 2, '/api/peers/count');

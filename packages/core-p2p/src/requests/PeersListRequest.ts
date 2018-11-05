@@ -2,7 +2,7 @@ import { ConstantsType, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import {
   BaseProtobufTransportMethod,
-  ProtoIdentifier
+  ProtoIdentifier,
 } from './BaseProtobufTransportMethod';
 import { Symbols } from '@risevision/core-interfaces';
 import { p2pSymbols } from '../helpers';
@@ -23,7 +23,7 @@ export class PeersListRequest extends BaseProtobufTransportMethod<
   protected readonly protoResponse: ProtoIdentifier<PeersListResponse> = {
     convOptions: { longs: Number },
     messageType: 'transportPeers',
-    namespace: 'p2p.peers'
+    namespace: 'p2p.peers',
   };
 
   @inject(p2pSymbols.modules.peers)

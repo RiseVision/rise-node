@@ -22,7 +22,6 @@ decorate(injectable(), Extendable);
 
 @injectable()
 export class DelegatesHooks extends Extendable {
-
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegates)
   private delegatesModel: typeof DelegatesModel;
@@ -44,13 +43,16 @@ export class DelegatesHooks extends Extendable {
 
   @OnCheckIntegrity()
   private async checkLoadingIntegrity(totalBlocks: number) {
-    const delegatesCount = await this.accountsModel.count({ where: { isDelegate: 1 } });
+    const delegatesCount = await this.accountsModel.count({
+      where: { isDelegate: 1 },
+    });
     if (delegatesCount === 0) {
       throw new Error('No delegates found');
     }
     const [duplicatedDelegates] = await this.delegatesModel.sequelize.query(
       countDuplicatedDelegatesSQL,
-      { type: sequelize.QueryTypes.SELECT });
+      { type: sequelize.QueryTypes.SELECT }
+    );
     if (duplicatedDelegates.count > 0) {
       throw new Error('Delegates table corrupted with duplicated entries');
     }
@@ -61,14 +63,21 @@ export class DelegatesHooks extends Extendable {
    * and not in the future compared to now.
    */
   @VerifyBlock(9)
-  private async verifyBlockSlot(payload: { errors: string[], verified: boolean }, block: SignedBlockType, lastBlock: SignedBlockType) {
+  private async verifyBlockSlot(
+    payload: { errors: string[]; verified: boolean },
+    block: SignedBlockType,
+    lastBlock: SignedBlockType
+  ) {
     if (!payload.verified) {
       return payload;
     }
     const slotNumber = this.slots.getSlotNumber(block.timestamp);
-    const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
+    const lastSlot = this.slots.getSlotNumber(lastBlock.timestamp);
 
-    if (slotNumber > this.slots.getSlotNumber(this.slots.getTime()) || slotNumber <= lastSlot) {
+    if (
+      slotNumber > this.slots.getSlotNumber(this.slots.getTime()) ||
+      slotNumber <= lastSlot
+    ) {
       // if in future or in the past => error
       payload.errors.push('Invalid block timestamp');
       payload.verified = false;
@@ -81,7 +90,10 @@ export class DelegatesHooks extends Extendable {
    */
   @VerifyBlock(100)
   @VerifyReceipt(100)
-  private async verifyBlock(payload: { errors: string[], verified: boolean }, block: SignedBlockType) {
+  private async verifyBlock(
+    payload: { errors: string[]; verified: boolean },
+    block: SignedBlockType
+  ) {
     if (!payload.verified) {
       return payload;
     }
@@ -99,20 +111,23 @@ export class DelegatesHooks extends Extendable {
    * Verify block slot is not too in the past or in the future.
    */
   @VerifyReceipt()
-  private async verifyBlockSlotWindow(payload: { errors: string[], verified: boolean }, block: SignedBlockType) {
+  private async verifyBlockSlotWindow(
+    payload: { errors: string[]; verified: boolean },
+    block: SignedBlockType
+  ) {
     if (!payload.verified) {
       return payload;
     }
-    const curSlot   = this.slots.getSlotNumber();
+    const curSlot = this.slots.getSlotNumber();
     const blockSlot = this.slots.getSlotNumber(block.timestamp);
-    const errors    = [];
+    const errors = [];
     if (curSlot - blockSlot > this.constants.blockSlotWindow) {
       errors.push('Block slot is too old');
     }
     if (curSlot < blockSlot) {
       errors.push('Block slot is in the future');
     }
-    payload.errors   = errors;
+    payload.errors = errors;
     payload.verified = errors.length === 0;
     return payload;
   }
