@@ -15,7 +15,7 @@ import { BlocksP2P } from '../../../src/p2p';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);
-
+// tslint:disable no-unused-expression
 describe('blocks/p2p/main', () => {
   let sandbox: SinonSandbox;
   let container: Container;

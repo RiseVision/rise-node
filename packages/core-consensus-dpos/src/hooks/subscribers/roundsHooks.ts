@@ -48,6 +48,7 @@ export class RoundsHooks extends Extendable {
 
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.accounts2UDelegates)
+  // tslint:disable-next-line
   private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
 
   @inject(Symbols.generic.constants)

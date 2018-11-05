@@ -832,7 +832,6 @@ describe('apis/delegatesAPI', () => {
     let kp;
     let publicKey;
     let account;
-    let hash;
     let isForgeEnabledOnStub: SinonStub;
     let getAccountStub: SinonStub;
     let enableForgeStub: SinonStub;

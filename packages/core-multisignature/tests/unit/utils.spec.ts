@@ -11,6 +11,7 @@ import * as uuid from 'uuid';
 import { MultisigSymbols, MultiSigUtils } from '../../src';
 
 // TODO: fill in these tests.
+// tslint:disable no-unused-expression
 describe('multisigUtils', () => {
   let container: Container;
   let instance: MultiSigUtils;

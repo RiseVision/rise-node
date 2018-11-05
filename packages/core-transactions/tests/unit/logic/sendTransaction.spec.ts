@@ -24,7 +24,7 @@ import {
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function
 describe('logic/transactions/send', () => {
   let sandbox: SinonSandbox;
   let container: Container;
@@ -196,7 +196,7 @@ describe('logic/transactions/send', () => {
       const accountMergeStub = sandbox
         .stub(accountLogic, 'merge')
         .returns(['a']);
-
+      // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {
         public hookSystem: WordPressHookSystem = container.get(
           Symbols.generic.hookSystem

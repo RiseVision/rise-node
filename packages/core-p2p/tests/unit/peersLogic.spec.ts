@@ -10,7 +10,7 @@ import { P2pConfig, p2pSymbols, Peer, PeersLogic } from '../../src';
 
 const expect = chai.expect;
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function
 describe('logic/peers', () => {
   let instance: PeersLogic;
   let loggerStub: LoggerStub;

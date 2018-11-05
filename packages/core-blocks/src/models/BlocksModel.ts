@@ -35,9 +35,9 @@ export class BlocksModel extends BaseModel<BlocksModel> {
     const toRet = {
       ...(b instanceof BlocksModel ? b.toJSON() : b),
       blockSignature: b.blockSignature.toString('hex'),
-      transactions: txs as any,
       generatorPublicKey: b.generatorPublicKey.toString('hex'),
       payloadHash: b.payloadHash.toString('hex'),
+      transactions: txs as any,
     };
     delete toRet.TransactionsModel;
     return toRet;

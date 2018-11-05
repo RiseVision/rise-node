@@ -22,7 +22,7 @@ import {
 } from '../common/utils';
 import { checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-identical-functions object-literal-sort-keys
 describe('api/multisignatures', () => {
   initializer.setup();
 

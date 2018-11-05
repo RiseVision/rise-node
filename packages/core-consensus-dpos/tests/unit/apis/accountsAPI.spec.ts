@@ -91,10 +91,10 @@ describe('apis/accountsAPI', function() {
         delegatesFromQuery = [del1, del2].map((d, idx) => ({
           delegate: new accountsModel(d),
           info: {
-            rate: idx,
-            rank: idx,
             approval: 100,
             productivity: 100,
+            rank: idx,
+            rate: idx,
           },
         }));
 
@@ -125,11 +125,11 @@ describe('apis/accountsAPI', function() {
               missedblocks: undefined,
               producedblocks: undefined,
               productivity: 100,
+              publicKey: '1',
               rank: 0,
               rate: 0,
               username: undefined,
               vote: undefined,
-              publicKey: '1',
             },
           ],
         });

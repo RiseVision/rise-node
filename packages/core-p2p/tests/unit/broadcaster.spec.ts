@@ -20,7 +20,7 @@ import {
 } from '../../src';
 import { StubbedRequest } from './utils/StubbedRequest';
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression  no-big-function
 describe('logic/broadcaster', () => {
   let sandbox: SinonSandbox;
   let instance: BroadcasterLogic;
@@ -202,12 +202,12 @@ describe('logic/broadcaster', () => {
       expect(spy.calledOnce).to.be.true;
       expect(spy.firstCall.args.length).to.be.equal(1);
       expect(spy.firstCall.args[0]).to.be.deep.equal({
+        filters: params,
         options: {
           immediate: false,
           method: options.method,
           payload: { body: 'meow' },
         },
-        filters: params,
       });
     });
 

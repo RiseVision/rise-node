@@ -43,7 +43,7 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function
 describe('apis/transactionsAPI', () => {
   let sandbox: SinonSandbox;
   let instance: TransactionsAPI;
@@ -52,7 +52,6 @@ describe('apis/transactionsAPI', () => {
   let txModule: TransactionsModule;
   let txLogic: TransactionLogic;
   let txPool: TransactionPool;
-  let hookSystem: WordPressHookSystem;
   let TransactionsModel: typeof ITransactionsModel;
   let blocksModule: IBlocksModule;
 
@@ -90,6 +89,7 @@ describe('apis/transactionsAPI', () => {
         .stub(TransactionsModel, 'findAndCountAll')
         .resolves({ rows: [], count: 0 });
     });
+    // tslint:disable-next-line max-line-length
     it('should query for data with proper manipulation (casted numbers, bufferd publickeys and untouched elements', async () => {
       const accounts = new Array(3)
         .fill(null)
@@ -163,9 +163,9 @@ describe('apis/transactionsAPI', () => {
     it('should use limit, offset and order param', async () => {
       findAndCountAllStub.resolves({ rows: [], count: 0 });
       await instance.getTransactions({
-        orderBy: 'height:desc',
         limit: 10,
         offset: 20,
+        orderBy: 'height:desc',
       });
       expect(findAndCountAllStub.firstCall.args[0]).deep.eq({
         limit: 10,
@@ -199,8 +199,8 @@ describe('apis/transactionsAPI', () => {
       const attachAssetsStub = sandbox
         .stub(txLogic, 'attachAssets')
         .callsFake((txs) => {
-          txs.forEach((tx) => {
-            tx.asset = { delegate: { username: 'meow' } };
+          txs.forEach((tt) => {
+            tt.asset = { delegate: { username: 'meow' } };
           });
         });
 
@@ -212,7 +212,7 @@ describe('apis/transactionsAPI', () => {
 
         @TXApiGetTxFilter()
         public async filterTx(ta: ITransportTransaction<any>) {
-          ta.cat = 'meows';
+          (ta as any).cat = 'meows';
           return ta;
         }
       }
@@ -228,10 +228,10 @@ describe('apis/transactionsAPI', () => {
           asset: {
             delegate: { username: 'meow' },
           },
-          signatures: [],
-          signSignature: null,
-          // Filter
           cat: 'meows',
+          // Filter
+          signSignature: null,
+          signatures: [],
         },
       });
 
@@ -445,8 +445,8 @@ describe('apis/transactionsAPI', () => {
       expect(r).deep.eq({
         transaction: {
           ...t,
-          signSignature: null,
           requesterPublicKey: null,
+          signSignature: null,
           signatures: undefined,
         },
       });

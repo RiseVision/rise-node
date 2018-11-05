@@ -30,9 +30,12 @@ import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import * as uuid from 'uuid';
 import initializer from './init';
 
+// tslint:disable-next-line no-var-requires
 const delegates = require('../../../../core-launchpad/tests/unit/assets/genesisDelegates.json');
+// tslint:disable-next-line no-var-requires
 const genesisBlock = require('../../../../core-launchpad/tests/unit/assets/genesisBlock.json');
 
+// tslint:disable no-console no-unused-expression
 export const findDelegateByPkey = (
   pk: publicKey
 ): {
@@ -230,9 +233,9 @@ export const createMultiSignAccount = async (
 
   for (const signature of signatures) {
     await multisigModule.onNewSignature({
+      relays: 10,
       signature: Buffer.from(signature, 'hex'),
       transaction: tx.id,
-      relays: 10,
     });
   }
   const poolManager = initializer.appManager.container.get<PoolManager>(

@@ -72,8 +72,8 @@ export class PeersLoaderSubscriber extends Extendable {
           })
       );
       this.logger.trace('Peers->dbLoad Peers discovered', {
-        updated,
         total: rows.length,
+        updated,
       });
     } catch (e) {
       this.logger.error('Import peers from database failed', {

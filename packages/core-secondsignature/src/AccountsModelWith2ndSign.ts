@@ -18,6 +18,7 @@ export class AccountsModelWith2ndSign extends IAccountsModel {
   @Column(DataType.BLOB)
   public secondPublicKey: Buffer;
   @Column
+  // tslint:disable-next-line variable-name
   public u_secondSignature: 0 | 1;
 
   constructor(

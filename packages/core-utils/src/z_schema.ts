@@ -50,6 +50,7 @@ z_schema.registerFormat('signatureBuf', (buf: Buffer) => {
   return buf.length === 64;
 });
 
+// tslint:disable-next-line no-identical-functions
 z_schema.registerFormat('sha256Buf', (buf: Buffer) => {
   if (!Buffer.isBuffer(buf)) {
     return false;

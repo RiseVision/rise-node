@@ -74,6 +74,7 @@ describe('accounts/hooks/loaderSubscriber', () => {
         'Detected orphaned blocks in mem_accounts'
       );
       expect(queryStub.firstCall.args[0]).to.be.deep.eq(
+        // tslint:disable-next-line
         'SELECT a."blockId", b."id" FROM mem_accounts a LEFT OUTER JOIN blocks b ON b."id" = a."blockId" WHERE a."blockId" IS NOT NULL AND a."blockId" != \'0\' AND b."id" IS NULL\n'
       );
     });

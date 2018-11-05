@@ -11,7 +11,7 @@ import {
   checkReturnObjKeyVal,
 } from './utils';
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-identical-functions
 describe('api/peers', () => {
   initializer.setup();
 

@@ -15,6 +15,7 @@ import { DelegatesModel } from '../../../../src/models';
 
 chai.use(chaiAsPromised);
 
+// tslint:disable no-identical-functions
 describe('hooks/subscribers/delegates', () => {
   let container: Container;
   let instance: DelegatesHooks;

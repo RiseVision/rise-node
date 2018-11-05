@@ -12,6 +12,7 @@ import {
 import { reportedIT } from './benchutils';
 
 const numTransactions = 90000;
+// tslint:disable no-big-function
 describe('TPS', function() {
   this.timeout(1000000);
   initializer.setup();

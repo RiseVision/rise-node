@@ -20,7 +20,7 @@ import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function
 
 describe('apis/blocksAPI', () => {
   let sandbox: SinonSandbox;

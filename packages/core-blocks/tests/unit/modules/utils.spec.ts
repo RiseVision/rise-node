@@ -20,7 +20,7 @@ import * as sinon from 'sinon';
 import { BlocksModule, BlocksModuleUtils, BlocksSymbols } from '../../../src';
 import { CommonHeightsToQuery } from '../../../src/hooks';
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function
 chai.use(chaiAsPromised);
 
 describe('modules/utils', () => {
@@ -95,8 +95,8 @@ describe('modules/utils', () => {
       expect(findOneStub.called).is.true;
       expect(findOneStub.firstCall.args[0]).deep.eq({
         include: ['txModel'],
-        order: [['height', 'DESC']],
         limit: 1,
+        order: [['height', 'DESC']],
       });
     });
     it('should call txLogic.attachAssets over block txs', async () => {

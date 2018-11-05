@@ -38,6 +38,7 @@ import { BlocksModuleChain } from './chain';
 import { BlocksModuleUtils } from './utils';
 import { BlocksModuleVerify } from './verify';
 
+// tslint:disable-next-line no-var-requires
 const schema = require('../../schema/blocks.json');
 
 @injectable()
@@ -285,10 +286,10 @@ export class BlocksModuleProcess {
         );
       } catch (err) {
         this.logger.debug('Block processing failed', {
-          id: block.id,
-          err: err.message || err.toString(),
-          module: 'blocks',
           block,
+          err: err.message || err.toString(),
+          id: block.id,
+          module: 'blocks',
         });
         throw err;
       }

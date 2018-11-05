@@ -21,7 +21,7 @@ import { SigSymbols } from '../../src/symbols';
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function
 describe('logic/transactions/secondSignature', () => {
   let sandbox: SinonSandbox;
   let zSchemaStub: any;
@@ -195,9 +195,9 @@ describe('logic/transactions/secondSignature', () => {
       await instance.apply(tx, block, sender);
       expect(applyValuesStub.called).is.true;
       expect(applyValuesStub.firstCall.args[0]).deep.eq({
-        u_secondSignature: 0,
-        secondSignature: 1,
         secondPublicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        secondSignature: 1,
+        u_secondSignature: 0,
       });
     });
     it('should return an update operation with proper data', async () => {
@@ -225,9 +225,9 @@ describe('logic/transactions/secondSignature', () => {
       await instance.undo(tx, block, sender);
       expect(applyValuesStub.called).is.true;
       expect(applyValuesStub.firstCall.args[0]).deep.eq({
-        u_secondSignature: 1,
-        secondSignature: 0,
         secondPublicKey: null,
+        secondSignature: 0,
+        u_secondSignature: 1,
       });
     });
     it('should return an update operation with proper data', async () => {
@@ -384,20 +384,20 @@ describe('logic/transactions/secondSignature', () => {
       await instance.attachAssets(txs);
 
       expect(txs[0]).deep.eq({
-        id: 1,
         asset: {
           signature: {
             publicKey: 'aa',
           },
         },
+        id: 1,
       });
       expect(txs[1]).deep.eq({
-        id: 2,
         asset: {
           signature: {
             publicKey: 'bb',
           },
         },
+        id: 2,
       });
     });
   });

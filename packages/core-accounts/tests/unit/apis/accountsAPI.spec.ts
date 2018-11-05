@@ -20,7 +20,7 @@ import {
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function
 describe('apis/accountsAPI', () => {
   let sandbox: SinonSandbox;
   let instance: AccountsAPI;

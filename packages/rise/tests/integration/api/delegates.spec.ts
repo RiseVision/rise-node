@@ -32,7 +32,7 @@ chai.use(chaiSorted);
 
 const { expect } = chai;
 
-// tslint:disable no-unused-expression max-line-length no-identical-functions object-literal-sort-keys no-var-requires max-line-length
+// tslint:disable no-unused-expression max-line-length no-identical-functions object-literal-sort-keys no-var-requires max-line-length no-big-function
 const delegates = require('../../../../core-launchpad/tests/unit/assets/genesisDelegates.json');
 describe('api/delegates', () => {
   initializer.setup();

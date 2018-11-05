@@ -6,6 +6,7 @@ export const emptyCB: cback<any> = () => void 0;
 
 export function logOnly(
   logger: ILogger,
+  // tslint:disable-next-line
   severity: 'warn' | 'error' | 'debug' | 'info' = 'warn'
 ): (e: Error) => Promise<null> {
   return async (err: Error) => {

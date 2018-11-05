@@ -20,6 +20,7 @@ import { RoundsModule } from '../../../../src/modules';
 
 chai.use(chaiAsPromised);
 
+// tslint:disable no-unused-expression
 describe('hooks/subscribers/rounds', () => {
   let container: Container;
   let instance: RoundsHooks;

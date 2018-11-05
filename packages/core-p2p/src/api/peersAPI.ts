@@ -12,6 +12,7 @@ import * as z_schema from 'z-schema';
 import { p2pSymbols } from '../helpers';
 import { PeersModule } from '../peersModule';
 
+// tslint:disable-next-line no-var-requires
 const peersSchema = require('../../schema/peers.json');
 
 @JsonController('/api/peers')

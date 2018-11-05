@@ -5,6 +5,7 @@ import {
   WordPressHookSystem,
 } from 'mangiafuoco';
 
+// tslint:disable-next-line interface-name
 export interface ActionFilterDecoratorType<K = () => Promise<any>> {
   <T extends IWPHookSubscriber>(
     hookGetter: () => WordPressHookSystem,

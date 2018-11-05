@@ -73,6 +73,7 @@ describe('apis/requests/CommonBlockRequest', () => {
       sequelizeQueryStub.resolves(null);
       const res = await createRequest({ ids: '1,2,3' });
       expect(res).deep.eq({ common: null });
+      // tslint:disable-next-line no-unused-expression
       expect(sequelizeQueryStub.calledOnce).is.true;
       expect(sequelizeQueryStub.firstCall.args[1].where).contain(
         "IN ('1', '2', '3')"

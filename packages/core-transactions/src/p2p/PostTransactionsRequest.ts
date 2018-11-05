@@ -1,11 +1,11 @@
-import { ITransactionsModule, Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
-import { inject, injectable, named } from 'inversify';
+import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { TransactionLogic } from '../TransactionLogic';
 import { TransactionsModule } from '../TransactionModule';
@@ -52,7 +52,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
     );
 
     // split requests into chunks of size maxTxsPerBlock
-    return new Array(chunks).fill(null).map((_, idx) => {
+    return new Array(chunks).fill(null).map((unused, idx) => {
       return {
         body: {
           transactions: allTransactions.slice(

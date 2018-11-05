@@ -20,13 +20,13 @@ export class SignaturesAPI {
   public async fees(@SchemaValid(
     {
       id: 'signatures.getFee',
-      type: 'object',
       properties: {
         height: {
-          type: 'integer',
           minimum: 1,
+          type: 'integer',
         },
       },
+      type: 'object',
     },
     { castNumbers: true }
   )

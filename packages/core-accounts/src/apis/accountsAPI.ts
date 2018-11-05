@@ -35,7 +35,9 @@ import * as z_schema from 'z-schema';
 import { FilterAPIGetAccount } from '../hooks';
 import { AccountsSymbols } from '../symbols';
 
+// tslint:disable-next-line
 const accountSchema = require('../../schema/accounts.json');
+
 @JsonController('/api/accounts')
 @injectable()
 @IoCSymbol(AccountsSymbols.api)

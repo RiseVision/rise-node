@@ -1,6 +1,7 @@
-import { PeerState, PeerType } from '@risevision/core-types';
+import { PeerState } from '@risevision/core-types';
 import { Peer } from '../peer';
 
+// tslint:disable-next-line interface-name
 export interface PeerFilter {
   limit?: number;
   offset?: number;

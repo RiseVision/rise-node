@@ -343,11 +343,11 @@ export class TransactionsAPI {
   @Put()
   @ValidateSchema()
   public async put(@SchemaValid({
-    type: 'object',
     properties: {
       transaction: { type: 'object' },
       transactions: { type: 'array', maxItems: 10 },
     },
+    type: 'object',
   })
   @Body()
   body: {

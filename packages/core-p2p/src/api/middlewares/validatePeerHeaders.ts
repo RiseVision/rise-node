@@ -11,6 +11,7 @@ import * as z_schema from 'z-schema';
 import { PeersLogic, PeersModule } from '../../';
 import { p2pSymbols } from '../../helpers';
 
+// tslint:disable-next-line no-var-requires
 const transportSchema = require('../../../schema/transport.json');
 
 @injectable()

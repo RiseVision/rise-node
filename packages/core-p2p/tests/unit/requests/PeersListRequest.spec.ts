@@ -11,7 +11,6 @@ import { createFakePeers } from '../utils/fakePeersFactory';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PeersListRequest', () => {
-  let instance: PeersListRequest;
   // let decodeStub: SinonStub;
   let peers: PeerType[];
   let container: Container;

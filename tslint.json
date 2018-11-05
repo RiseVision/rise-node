@@ -5,6 +5,7 @@
   ],
   "jsRules":        {},
   "rules":          {
+    "object-literal-key-quotes": [true, "as-needed"],
     "quotemark": [true, "single", "avoid-escape", "avoid-template"],
     "trailing-comma": [
       true,

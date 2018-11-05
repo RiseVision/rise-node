@@ -119,6 +119,7 @@ export class TransactionLogic implements ITransactionLogic {
    * Return the transaction bytes.
    * @returns {Buffer}
    */
+  // tslint:disable-next-line cognitive-complexity
   public getBytes(
     tx: IBaseTransaction<any>,
     skipSignature: boolean = false,
@@ -711,8 +712,6 @@ export class TransactionLogic implements ITransactionLogic {
     const report = this.schema.validate(tx, txSchema);
 
     if (!report) {
-      console.log(tx);
-      console.log(this.schema.getLastErrors());
       throw new Error(
         `Failed to validate transaction schema: ${this.schema
           .getLastErrors()
@@ -731,6 +730,7 @@ export class TransactionLogic implements ITransactionLogic {
       return;
     }
     const txsByGroup = _.groupBy(txs, (i) => i.type);
+    // tslint:disable-next-line forin
     for (const type in txsByGroup) {
       const loopTXs = txsByGroup[type];
       this.assertKnownTransactionType(loopTXs[0].type);

@@ -19,6 +19,7 @@ import { AccountsModelWith2ndSign } from './AccountsModelWith2ndSign';
 import { SignaturesModel } from './SignaturesModel';
 import { SigSymbols } from './symbols';
 
+// tslint:disable-next-line no-var-requires
 const secondSignatureSchema = require('../schema/secondSignature.json');
 
 // tslint:disable-next-line interface-over-type-literal

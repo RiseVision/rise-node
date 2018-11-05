@@ -2,6 +2,7 @@ import { DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
+// tslint:disable-next-line interface-name
 export interface BaseDBOp<T extends Model<T>> {
   model: (new () => T) & (typeof Model);
 }

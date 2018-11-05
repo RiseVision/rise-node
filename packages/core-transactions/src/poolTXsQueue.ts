@@ -52,8 +52,8 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
       throw new Error(`Transaction not found in this queue ${txID}`);
     }
     return {
-      tx: this.transactions[this.index[txID]],
       payload: this.payload[txID],
+      tx: this.transactions[this.index[txID]],
     };
   }
 

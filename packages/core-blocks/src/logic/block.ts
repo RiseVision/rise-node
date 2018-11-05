@@ -29,6 +29,7 @@ import z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlockRewardLogic } from './blockReward';
 
+// tslint:disable-next-line no-var-requires
 const blockSchema = require('../../schema/block.json');
 
 @injectable()

@@ -81,15 +81,15 @@ describe('rounds', () => {
 
   function mapDelegate(i: any) {
     return {
-      user: i.delegate.username,
-      vote: i.delegate.vote,
-      bala: i.delegate.balance,
-      ubala: i.delegate.u_balance,
-      pk: i.delegate.publicKey.toString('hex'),
       addr: i.delegate.address,
-      rank: i.info.rank,
+      bala: i.delegate.balance,
       mb: i.delegate.missedblocks,
       pb: i.delegate.producedblocks,
+      pk: i.delegate.publicKey.toString('hex'),
+      rank: i.info.rank,
+      ubala: i.delegate.u_balance,
+      user: i.delegate.username,
+      vote: i.delegate.vote,
     };
   }
 
@@ -167,8 +167,8 @@ describe('rounds', () => {
       const { preOBJ, postOBJ } = await getPREPostOBJ();
 
       const blocks = await blocksModel.findAll({
-        where: { height: { [Op.gt]: 1 } },
         order: [['height', 'ASC']],
+        where: { height: { [Op.gt]: 1 } },
       });
       const totalRewards = blocks
         .map((x) => x.totalFee)

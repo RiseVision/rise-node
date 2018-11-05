@@ -22,7 +22,7 @@ import {
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression object-literal-sort-keys max-line-length
+// tslint:disable no-unused-expression object-literal-sort-keys max-line-length no-big-function
 describe('modules/blocks/chain', () => {
   let instance: BlocksModuleChain;
   let blocksModel: typeof BlocksModel;

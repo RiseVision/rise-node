@@ -55,7 +55,7 @@ describe('helpers/blocksProgressLogger', () => {
       expect(loggerStub.stubs.info.args[0][0]).to.equal('My message');
       expect(loggerStub.stubs.info.args[0][1]).contain('applied');
     });
-
+    // tslint:disable-next-line no-identical-functions
     it('this.applied % this.step === 1', () => {
       instance['applied'] = 5;
       instance.applyNext();

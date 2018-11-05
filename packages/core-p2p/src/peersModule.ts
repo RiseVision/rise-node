@@ -157,6 +157,7 @@ export class PeersModule implements IPeersModule {
    * Gets the peers using the given filter.
    * if orderBy Is not specified then returned peers are shuffled.
    */
+  // tslint:disable-next-line cognitive-complexity
   public async getByFilter(filter: PeerFilter): Promise<Peer[]> {
     const allowedFields = [
       'ip',

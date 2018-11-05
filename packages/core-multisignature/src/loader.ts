@@ -6,6 +6,7 @@ import { MultisigSymbols } from './helpers';
 import { MultisignaturesModule } from './multisignatures';
 import { GetSignaturesRequest } from './p2p/';
 
+// tslint:disable-next-line no-var-requires
 const loaderSchema = require('../schema/loader.json');
 
 @injectable()

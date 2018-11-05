@@ -31,6 +31,7 @@ import {
 } from './models/';
 import { DelegatesModule, ForgeModule, RoundsModule } from './modules';
 
+// tslint:disable-next-line no-var-requires
 const configSchema = require('../schema/config.json');
 
 export class CoreModule extends BaseCoreModule<DposAppConfig>

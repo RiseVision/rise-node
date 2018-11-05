@@ -21,7 +21,7 @@ import {
   checkReturnObjKeyVal,
 } from './utils';
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function
 describe('api/blocks', () => {
   initializer.setup();
   initializer.autoRestoreEach();
@@ -33,13 +33,13 @@ describe('api/blocks', () => {
     describe('validation', () => {
       describe('integers', () => {
         checkIntParam('totalAmount', '/api/blocks/', {
-          min: 0,
           max: '10999999991000001',
+          min: 0,
         });
         checkIntParam('limit', '/api/blocks/', { min: 1, max: 100 });
         checkIntParam('totalFee', '/api/blocks/', {
-          min: 0,
           max: '10999999991000001',
+          min: 0,
         });
         checkIntParam('height', '/api/blocks/', { min: 1 });
         checkIntParam('offset', '/api/blocks/', { min: 0 });
@@ -268,6 +268,7 @@ describe('api/blocks', () => {
         });
     });
 
+    // tslint:disable-next-line
     it('should use provided height', async () => {
       return supertest(initializer.apiExpress)
         .get('/api/blocks/getFees?height=10000&asd=asd')
@@ -279,6 +280,7 @@ describe('api/blocks', () => {
     });
   });
 
+  // tslint:disable-next-line
   describe('/getNethash', () => {
     checkReturnObjKeyVal(
       'nethash',

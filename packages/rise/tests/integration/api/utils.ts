@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import * as supertest from 'supertest';
 import * as url from 'url';
 import initializer from '../common/init';
-// tslint:disable no-unused-expression max-line-length no-identical-function
+// tslint:disable no-unused-expression max-line-length no-identical-functions
 export const checkAddress = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid address`, async () => {
     return supertest(initializer.apiExpress)

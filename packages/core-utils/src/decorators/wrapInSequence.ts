@@ -1,3 +1,4 @@
+// tslint:disable-next-line interface-name
 interface Sequence {
   addAndPromise(what: () => Promise<any>): Promise<any>;
 }

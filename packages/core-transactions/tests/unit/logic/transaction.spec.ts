@@ -539,6 +539,7 @@ describe('logic/transaction', () => {
       ).to.be.rejectedWith('Invalid transaction amount');
     });
 
+    // tslint:disable-next-line
     it('should throw if amount is written in exponential notation', async () => {
       (tx as any).amount = '10e3';
       await expect(

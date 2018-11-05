@@ -109,8 +109,8 @@ describe('apis/requests/GetTransactionsRequest', () => {
       .map(() => toBufferedTransaction(createRandomTransaction()))
       .forEach((t) => txPool.unconfirmed.add(t, { receivedAt: new Date() }));
     txPool.pending.add(toBufferedTransaction(createRandomTransaction()), {
-      receivedAt: new Date(),
       ready: false,
+      receivedAt: new Date(),
     });
     txPool.ready.add(toBufferedTransaction(createRandomTransaction()), {
       receivedAt: new Date(),

@@ -61,16 +61,16 @@ export class AccountsAPI {
             (d) => account.delegates.indexOf(d.delegate.hexPublicKey) !== -1
           )
           .map((d) => ({
-            username: d.delegate.username,
             address: d.delegate.address,
-            publicKey: d.delegate.hexPublicKey,
-            vote: d.delegate.vote,
-            producedblocks: d.delegate.producedblocks,
-            missedblocks: d.delegate.missedblocks,
-            rate: d.info.rank,
-            rank: d.info.rank,
             approval: d.info.approval,
+            missedblocks: d.delegate.missedblocks,
+            producedblocks: d.delegate.producedblocks,
             productivity: d.info.productivity,
+            publicKey: d.delegate.hexPublicKey,
+            rank: d.info.rank,
+            rate: d.info.rank,
+            username: d.delegate.username,
+            vote: d.delegate.vote,
           })),
       };
     }

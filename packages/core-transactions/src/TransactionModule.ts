@@ -101,6 +101,7 @@ export class TransactionsModule implements ITransactionsModule {
       if (confirmedIDs.indexOf(tx.id) !== -1) {
         continue; // Transaction already confirmed.
       }
+      // tslint:disable no-nested-template-literals
       this.logger.debug(
         `Received transaction ${tx.id} ${
           peer ? `from peer ${peer.string}` : ' '

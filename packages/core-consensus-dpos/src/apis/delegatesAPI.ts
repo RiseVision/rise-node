@@ -84,10 +84,10 @@ export class DelegatesAPI {
       SELECT * FROM delegates WHERE username LIKE \${q} LIMIT \${limit}
     `,
       {
-        q: `%${q}%`,
         limit,
         orderBy,
         orderHow,
+        q: `%${q}%`,
       }
     );
   }

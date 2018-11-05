@@ -1,4 +1,5 @@
 import { Symbols } from '@risevision/core-interfaces';
+// tslint:disable object-literal-sort-keys
 
 export const p2pSymbols = {
   constants: Symbol.for('rise.p2p.p2pConstants'),

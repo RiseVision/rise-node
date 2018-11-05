@@ -1,4 +1,4 @@
-// tslint:disable no-unused-expression no-string-literal
+// tslint:disable no-unused-expression no-string-literal no-big-function
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
@@ -163,22 +163,22 @@ describe('logic/transactionPool - InnerTXQueue', () => {
       };
       addTransactions(instance);
       instance.list({
-        reverse: false,
-        limit: 10,
         filterFn,
+        limit: 10,
+        reverse: false,
       });
       expect(filterFnSpy.callCount).to.be.equal(3);
       expect(filterFnSpy.firstCall.args[0]).to.be.deep.equal({
-        tx: tx1,
         payload: payload1,
+        tx: tx1,
       });
       expect(filterFnSpy.secondCall.args[0]).to.be.deep.equal({
-        tx: tx2,
         payload: payload2,
+        tx: tx2,
       });
       expect(filterFnSpy.thirdCall.args[0]).to.be.deep.equal({
-        tx: tx3,
         payload: payload3,
+        tx: tx3,
       });
     });
 

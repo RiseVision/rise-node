@@ -15,7 +15,7 @@ const expect = chai.expect;
 const ProxyPeerLogic = proxyquire('../../src/peer.ts', { ip });
 
 chai.use(chaiAsPromised);
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function
 describe('logic/peer', () => {
   let instance;
   let container: Container;

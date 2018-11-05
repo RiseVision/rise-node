@@ -24,7 +24,7 @@ import { DelegatesModule, RoundsModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression no-big-function object-literal-sort-keys
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys max-line-length
 describe('modules/rounds', () => {
   let instance: RoundsModule;
   let container: Container;

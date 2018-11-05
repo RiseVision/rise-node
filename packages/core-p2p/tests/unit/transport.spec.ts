@@ -32,7 +32,7 @@ import { StubbedRequest } from './utils/StubbedRequest';
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function
 
 const popsicleStub = {} as any;
 const throttleStub = {} as any;
@@ -140,8 +140,8 @@ describe('src/modules/transport.ts', () => {
 
     beforeEach(() => {
       peer = {
-        makeRequest: sandbox.stub(),
         ip: '127.0.0.1',
+        makeRequest: sandbox.stub(),
         port: Math.ceil(Math.random() * 10000),
       };
       options = {
@@ -149,10 +149,10 @@ describe('src/modules/transport.ts', () => {
         url: 'url.com',
       };
       headers = {
-        nethash: systemModule.headers.nethash,
-        version: '1.1.1',
-        port: peer.port,
         height: 100,
+        nethash: systemModule.headers.nethash,
+        port: peer.port,
+        version: '1.1.1',
       };
       res = {
         body: {},
@@ -214,9 +214,9 @@ describe('src/modules/transport.ts', () => {
       expect(popsicleStub.request.firstCall.args[0].headers).to.be.deep.equal({
         ...systemModule.headers,
         "accept": 'application/octet-stream',
+        "broadhash": 'meow',
         'content-type': 'application/octet-stream',
         "other": 'hey',
-        "broadhash": 'meow',
       });
     });
     it('should call popsicle twice (retry) if rejects and return 2nd result', async function() {
@@ -368,7 +368,6 @@ describe('src/modules/transport.ts', () => {
     let result;
     let requestHandler;
 
-    let getFromPeerStub;
     let peersModuleListStub;
 
     beforeEach(() => {

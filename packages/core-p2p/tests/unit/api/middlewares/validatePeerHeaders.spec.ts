@@ -39,10 +39,10 @@ describe('apis/utils/validatePeerHeaders', () => {
     sandbox = sinon.createSandbox();
     request = {
       headers: {
-        port: 5555,
-        version: '1.0.0',
         nethash:
           'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+        port: 5555,
+        version: '1.0.0',
       },
       ip: '80.1.2.3',
     };
