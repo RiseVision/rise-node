@@ -23,7 +23,14 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
     return null;
   }
 
-  public applyDiffArray(toWhat: 'delegates' | 'u_delegates' | 'multisignatures' | 'u_multisignatures', diff: any) {
+  public applyDiffArray(
+    toWhat:
+      | 'delegates'
+      | 'u_delegates'
+      | 'multisignatures'
+      | 'u_multisignatures',
+    diff: any
+  ) {
     return null;
   }
 

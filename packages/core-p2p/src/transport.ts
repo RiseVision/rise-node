@@ -16,7 +16,8 @@ import {
   ConstantsType,
   PeerHeaders,
   PeerRequestOptions,
-  PeerState, PeerType,
+  PeerState,
+  PeerType,
 } from '@risevision/core-types';
 import { cbToPromise } from '@risevision/core-utils';
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';
@@ -30,10 +31,15 @@ import { p2pSymbols } from './helpers';
 import { OnPeersReady } from './hooks/actions';
 import { PeersLogic } from './peersLogic';
 import { PeersModule } from './peersModule';
-import { ITransportMethod, PeersListResponse, PingRequest, SingleTransportPayload } from './requests/';
+import {
+  ITransportMethod,
+  PeersListResponse,
+  PingRequest,
+  SingleTransportPayload,
+} from './requests/';
 
 // tslint:disable-next-line
-const peersSchema     = require('../schema/peers.json');
+const peersSchema = require('../schema/peers.json');
 // tslint:disable-next-line
 const transportSchema = require('../schema/transport.json');
 
@@ -100,7 +106,7 @@ export class TransportModule extends Extendable {
   @postConstruct()
   public postConstructor() {
     this.appState.setComputed('node.poorConsensus', (a: IAppState) => {
-      if (typeof(a.get('node.consensus')) === 'undefined') {
+      if (typeof a.get('node.consensus') === 'undefined') {
         return false;
       }
       return a.get('node.consensus') < this.constants.minBroadhashConsensus;
@@ -108,64 +114,105 @@ export class TransportModule extends Extendable {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromPeer<T>(peer: BasePeerType, options: PeerRequestOptions): Promise<{ body: T, peer: PeerType }> {
-    const url     = options.url;
+  public async getFromPeer<T>(
+    peer: BasePeerType,
+    options: PeerRequestOptions
+  ): Promise<{ body: T; peer: PeerType }> {
+    const url = options.url;
     const thePeer = this.peersLogic.create(peer);
-    const req     = {
-      body     : options.data,
-      headers  : {
-        ... this.systemModule.headers as any,
-        accept        : 'application/octet-stream',
+    const req = {
+      body: options.data,
+      headers: {
+        ...(this.systemModule.headers as any),
+        accept: 'application/octet-stream',
         'content-type': 'application/octet-stream',
-        ... options.headers,
+        ...options.headers,
       },
-      method   : options.method,
-      timeout  : this.appConfig.peers.options.timeout,
+      method: options.method,
+      timeout: this.appConfig.peers.options.timeout,
       transport: popsicle.createTransport({ type: 'buffer' }),
-      url      : `http://${peer.ip}:${peer.port}${url}`,
+      url: `http://${peer.ip}:${peer.port}${url}`,
     };
 
-    const parsingPlugin = (request: popsicle.Request, next: () => Promise<popsicle.Response>) => {
+    const parsingPlugin = (
+      request: popsicle.Request,
+      next: () => Promise<popsicle.Response>
+    ) => {
       return next().then((response) => response);
     };
 
     let res: popsicle.Response;
     try {
-      res = await
-        promiseRetry(
-          (retry) => popsicle.request(req)
+      res = await promiseRetry(
+        (retry) =>
+          popsicle
+            .request(req)
             .use(parsingPlugin)
             .catch(retry),
-          {
-            minTimeout: 2000, /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */
-            retries   : 1,
-          }
-        );
+        {
+          minTimeout: 2000 /* this is the timeout for the retry. Lets wait at least 2seconds before retrying. */,
+          retries: 1,
+        }
+      );
     } catch (err) {
       this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
       return Promise.reject(err);
     }
 
     if (res.status !== 200) {
-      this.removePeer({ peer: thePeer, code: `ERESPONSE ${res.status}` }, `${req.method} ${req.url}`);
-      return Promise.reject(new Error(`Received bad response code ${res.status} ${req.method} ${res.url}`));
+      this.removePeer(
+        { peer: thePeer, code: `ERESPONSE ${res.status}` },
+        `${req.method} ${req.url}`
+      );
+      return Promise.reject(
+        new Error(
+          `Received bad response code ${res.status} ${req.method} ${res.url}`
+        )
+      );
     }
 
     const headers: PeerHeaders = thePeer.applyHeaders(res.headers as any);
     if (!this.schema.validate(headers, transportSchema.headers)) {
-      this.removePeer({ peer: thePeer, code: 'EHEADERS' }, `${req.method} ${req.url}`);
-      return Promise.reject(new Error(`Invalid response headers ${JSON.stringify(headers)} ${req.method} ${req.url}`));
+      this.removePeer(
+        { peer: thePeer, code: 'EHEADERS' },
+        `${req.method} ${req.url}`
+      );
+      return Promise.reject(
+        new Error(
+          `Invalid response headers ${JSON.stringify(headers)} ${req.method} ${
+            req.url
+          }`
+        )
+      );
     }
 
     if (!this.systemModule.networkCompatible(headers.nethash)) {
-      this.removePeer({ peer: thePeer, code: 'ENETHASH' }, `${req.method} ${req.url}`);
-      return Promise.reject(new Error(`Peer is not on the same network ${headers.nethash} ${req.method} ${req.url}`));
+      this.removePeer(
+        { peer: thePeer, code: 'ENETHASH' },
+        `${req.method} ${req.url}`
+      );
+      return Promise.reject(
+        new Error(
+          `Peer is not on the same network ${headers.nethash} ${req.method} ${
+            req.url
+          }`
+        )
+      );
     }
 
     if (!this.systemModule.versionCompatible(headers.version)) {
-      this.removePeer({ peer: thePeer, code: `EVERSION ${headers.version}` }, `${req.method} ${req.url}`);
+      this.removePeer(
+        { peer: thePeer, code: `EVERSION ${headers.version}` },
+        `${req.method} ${req.url}`
+      );
       // tslint:disable-next-line max-line-length
-      return Promise.reject(new Error(`Peer is using incompatible version ${headers.version} ${req.method} ${req.url}`));
+      return Promise.reject(
+        new Error(
+          `Peer is using incompatible version ${headers.version} ${
+            req.method
+          } ${req.url}`
+        )
+      );
     }
     this.peersModule.update(thePeer);
     return {
@@ -175,13 +222,14 @@ export class TransportModule extends Extendable {
   }
 
   // tslint:disable-next-line max-line-length
-  public async getFromRandomPeer<Body, Query, Out>(config: { limit?: number, broadhash?: string, allowedStates?: PeerState[] },
-                                                   transportMethod: ITransportMethod<Body, Query, Out>,
-                                                   payload: SingleTransportPayload<Body, Query>
+  public async getFromRandomPeer<Body, Query, Out>(
+    config: { limit?: number; broadhash?: string; allowedStates?: PeerState[] },
+    transportMethod: ITransportMethod<Body, Query, Out>,
+    payload: SingleTransportPayload<Body, Query>
   ): Promise<Out> {
-    config.limit         = 1;
+    config.limit = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
-    const { peers }      = await this.peersModule.list(config);
+    const { peers } = await this.peersModule.list(config);
     if (peers.length === 0) {
       throw new Error('No peer available');
     }
@@ -202,50 +250,68 @@ export class TransportModule extends Extendable {
   public async onPeersReady() {
     this.logger.trace('Peers ready');
     // await this.discoverPeers();
-    this.jobsQueue.register('peersDiscoveryAndUpdate', async () => {
-      try {
-        await this.discoverPeers();
-      } catch (err) {
-        this.logger.error('Discovering new peers failed', err);
-      }
-
-      const peers = this.peersLogic.list(false);
-      this.logger.trace('Updating peers', { count: peers.length });
-
-      await Throttle.all(peers.map((p) => async () => {
-        if (p && p.state !== PeerState.BANNED && (!p.updated || Date.now() - p.updated > 3000)) {
-          this.logger.trace('Updating peer', p.string);
-          try {
-            await p.makeRequest(this.pingRequest);
-          } catch (err) {
-            this.logger.debug(`Ping failed when updating peer ${p.string}`, err);
-          }
+    this.jobsQueue.register(
+      'peersDiscoveryAndUpdate',
+      async () => {
+        try {
+          await this.discoverPeers();
+        } catch (err) {
+          this.logger.error('Discovering new peers failed', err);
         }
-      }), { maxInProgress: 50 });
-      this.logger.trace('Updated Peers');
-    }, 5000);
+
+        const peers = this.peersLogic.list(false);
+        this.logger.trace('Updating peers', { count: peers.length });
+
+        await Throttle.all(
+          peers.map((p) => async () => {
+            if (
+              p &&
+              p.state !== PeerState.BANNED &&
+              (!p.updated || Date.now() - p.updated > 3000)
+            ) {
+              this.logger.trace('Updating peer', p.string);
+              try {
+                await p.makeRequest(this.pingRequest);
+              } catch (err) {
+                this.logger.debug(
+                  `Ping failed when updating peer ${p.string}`,
+                  err
+                );
+              }
+            }
+          }),
+          { maxInProgress: 50 }
+        );
+        this.logger.trace('Updated Peers');
+      },
+      5000
+    );
   }
 
-
-// TODO
-// /**
-//  * Validate signature with schema and calls processSignature from module multisignautre
-//  */
-// @ValidateSchema()
-// public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
-//                                 signature: { transaction: string, signature: string }) {
-//   try {
-//     await this.multisigModule.processSignature(signature);
-//   } catch (e) {
-//     throw new Error(`Error processing signature: ${e.message || e}`);
-//   }
-// }
+  // TODO
+  // /**
+  //  * Validate signature with schema and calls processSignature from module multisignautre
+  //  */
+  // @ValidateSchema()
+  // public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
+  //                                 signature: { transaction: string, signature: string }) {
+  //   try {
+  //     await this.multisigModule.processSignature(signature);
+  //   } catch (e) {
+  //     throw new Error(`Error processing signature: ${e.message || e}`);
+  //   }
+  // }
 
   /**
    * Removes a peer by calling modules peer remove
    */
-  private removePeer(options: { code: string, peer: PeerType }, extraMessage: string) {
-    this.logger.debug(`${options.code} Removing peer ${options.peer.string} ${extraMessage}`);
+  private removePeer(
+    options: { code: string; peer: PeerType },
+    extraMessage: string
+  ) {
+    this.logger.debug(
+      `${options.code} Removing peer ${options.peer.string} ${extraMessage}`
+    );
     this.peersModule.remove(options.peer.ip, options.peer.port);
   }
 
@@ -255,24 +321,26 @@ export class TransportModule extends Extendable {
   private async discoverPeers(): Promise<void> {
     this.logger.trace('Transport->discoverPeers');
 
-    const response       = await this.getFromRandomPeer<void, void, PeersListResponse>(
-      {},
-      this.peersListMethod,
-      null
-    );
+    const response = await this.getFromRandomPeer<
+      void,
+      void,
+      PeersListResponse
+    >({}, this.peersListMethod, null);
 
-    await cbToPromise((cb) => this.schema.validate(response, peersSchema.discover.peers, cb));
+    await cbToPromise((cb) =>
+      this.schema.validate(response, peersSchema.discover.peers, cb)
+    );
 
     // Filter only acceptable peers.
     const acceptablePeers = this.peersLogic.acceptable(response.peers);
 
-    let discovered   = 0;
+    let discovered = 0;
     let alreadyKnown = 0;
-    let rejected     = 0;
+    let rejected = 0;
     for (const rawPeer of acceptablePeers) {
       const peer = this.peersLogic.create(rawPeer);
       if (this.schema.validate(peer, peersSchema.discover.peer)) {
-        peer.state   = PeerState.DISCONNECTED;
+        peer.state = PeerState.DISCONNECTED;
         const newOne = this.peersLogic.upsert(peer, true);
         if (newOne) {
           discovered++;
@@ -285,7 +353,8 @@ export class TransportModule extends Extendable {
       }
     }
 
-    this.logger.debug(`Discovered ${discovered} peers - Rejected ${rejected} - AlreadyKnown ${alreadyKnown}`);
-
+    this.logger.debug(
+      `Discovered ${discovered} peers - Rejected ${rejected} - AlreadyKnown ${alreadyKnown}`
+    );
   }
 }

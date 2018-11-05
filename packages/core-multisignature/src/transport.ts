@@ -8,7 +8,6 @@ import { PostSignaturesRequest } from './p2p';
 
 @injectable()
 export class MultisigTransportModule {
-
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.generic.hookSystem)
@@ -22,7 +21,10 @@ export class MultisigTransportModule {
   /**
    * Calls enqueue signatures and emits a signature change socket message
    */
-  public async onSignature(signature: { transaction: string, signature: Buffer, relays?: number }, broadcast: boolean) {
+  public async onSignature(
+    signature: { transaction: string; signature: Buffer; relays?: number },
+    broadcast: boolean
+  ) {
     if (!broadcast) {
       return;
     }
@@ -30,7 +32,8 @@ export class MultisigTransportModule {
       { body: signature },
       this.postSignatures
     );
-    await this.hookSystem.do_action('pushapi/onNewMessage', 'signature/change', signature)
+    await this.hookSystem
+      .do_action('pushapi/onNewMessage', 'signature/change', signature)
       .catch(logOnly(this.logger, 'warn'));
   }
 }

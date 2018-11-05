@@ -6,7 +6,9 @@ import * as path from 'path';
 import * as protobuf from 'protobufjs';
 import { IConversionOptions, Root, Type } from 'protobufjs';
 
-export type MyConvOptions<T> = IConversionOptions & { postProcess?: (obj: T) => T };
+export type MyConvOptions<T> = IConversionOptions & {
+  postProcess?: (obj: T) => T;
+};
 
 @injectable()
 export class ProtoBufHelper {
@@ -30,14 +32,21 @@ export class ProtoBufHelper {
    * @param {string} messageType (optional) specific message type to lookup in the proto
    * @returns {boolean} true if message is verified, else false.
    */
-  public validate(payload: object, namespace: string, messageType?: string): boolean {
+  public validate(
+    payload: object,
+    namespace: string,
+    messageType?: string
+  ): boolean {
     const message = this.getMessageInstance(namespace, messageType);
     const result = message.verify(payload);
     if (result === null) {
       return true;
     } else {
       this.lastError = `Protobuf verify error [${namespace} ${messageType}]: ${result}`;
-      this.logger.debug(`Protobuf verify error. ${result}`, JSON.stringify({payload, namespace, messageType}));
+      this.logger.debug(
+        `Protobuf verify error. ${result}`,
+        JSON.stringify({ payload, namespace, messageType })
+      );
       return false;
     }
   }
@@ -64,7 +73,11 @@ export class ProtoBufHelper {
    * @param {string} messageType (optional) specific message type to lookup in the proto
    * @returns {any}
    */
-  public decode<T = any>(data: Buffer, namespace: string, messageType?: string): T {
+  public decode<T = any>(
+    data: Buffer,
+    namespace: string,
+    messageType?: string
+  ): T {
     const message = this.getMessageInstance(namespace, messageType);
     if (message !== null) {
       try {
@@ -91,7 +104,12 @@ export class ProtoBufHelper {
    * @param {string} messType
    * @returns {T}
    */
-  public decodeToObj<T = any>(data: Buffer, namespace: string, messType?: string, converters: MyConvOptions<T> = {}): T {
+  public decodeToObj<T = any>(
+    data: Buffer,
+    namespace: string,
+    messType?: string,
+    converters: MyConvOptions<T> = {}
+  ): T {
     let message: T;
     let inst;
     let postProcess: (obj: T) => T = (a) => a;
@@ -109,8 +127,10 @@ export class ProtoBufHelper {
   }
 
   public loadProto(filename: string, namespace: string) {
-    if (typeof(this.protos[namespace]) !== 'undefined') {
-      throw new Error(`Proto[${namespace}] already defined and redefinition attempted in ${filename}`);
+    if (typeof this.protos[namespace] !== 'undefined') {
+      throw new Error(
+        `Proto[${namespace}] already defined and redefinition attempted in ${filename}`
+      );
     }
     let root: Root;
     try {
@@ -130,18 +150,22 @@ export class ProtoBufHelper {
       try {
         instance = proto.lookupType(typeToLookup);
       } catch (e) {
-        this.logger.error(`ProtoBuf: cannot find message ${typeToLookup} in ${namespace}`);
+        this.logger.error(
+          `ProtoBuf: cannot find message ${typeToLookup} in ${namespace}`
+        );
         return null;
       }
       return instance;
     } else {
-      this.logger.error(`Unable to find ProtoBuf with package ${namespace} and messageType ${messageType}`);
+      this.logger.error(
+        `Unable to find ProtoBuf with package ${namespace} and messageType ${messageType}`
+      );
     }
   }
 
   private autoLoadProtos() {
     for (const module of this.modules) {
-      const protoDir = path.join(module.directory,  'proto');
+      const protoDir = path.join(module.directory, 'proto');
       if (!fs.existsSync(protoDir)) {
         continue;
       }
@@ -154,5 +178,4 @@ export class ProtoBufHelper {
       });
     }
   }
-
 }

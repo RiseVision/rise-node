@@ -1,6 +1,11 @@
 import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { AppConfig, PeerState } from '@risevision/core-types';
-import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import {
+  HTTPError,
+  IoCSymbol,
+  SchemaValid,
+  ValidateSchema
+} from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
@@ -30,8 +35,11 @@ export class PeersAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getPeers(@SchemaValid(peersSchema.getPeers, { castNumbers: true })
-                        @QueryParams() params: any) {
+  public async getPeers(
+    @SchemaValid(peersSchema.getPeers, { castNumbers: true })
+    @QueryParams()
+    params: any
+  ) {
     try {
       const peers = await this.peersModule.getByFilter(params);
       return { peers: peers.map((peer) => peer.object()) };
@@ -43,7 +51,11 @@ export class PeersAPI {
   @Get('/get')
   @ValidateSchema()
   public async getPeer(@SchemaValid(peersSchema.getPeer, { castNumbers: true })
-                       @QueryParams() params: { ip: string, port: number }) {
+  @QueryParams()
+  params: {
+    ip: string;
+    port: number;
+  }) {
     try {
       const peers = await this.peersModule.getByFilter(params);
       if (peers.length > 0) {
@@ -59,9 +71,15 @@ export class PeersAPI {
   @Get('/count')
   public async count() {
     try {
-      const connected    = (await this.peersModule.getByFilter({ state: PeerState.CONNECTED })).length;
-      const disconnected = (await this.peersModule.getByFilter({ state: PeerState.DISCONNECTED })).length;
-      const banned       = (await this.peersModule.getByFilter({ state: PeerState.BANNED })).length;
+      const connected = (await this.peersModule.getByFilter({
+        state: PeerState.CONNECTED
+      })).length;
+      const disconnected = (await this.peersModule.getByFilter({
+        state: PeerState.DISCONNECTED
+      })).length;
+      const banned = (await this.peersModule.getByFilter({
+        state: PeerState.BANNED
+      })).length;
 
       return { connected, disconnected, banned };
     } catch (e) {
@@ -72,10 +90,9 @@ export class PeersAPI {
   @Get('/version')
   public async version() {
     return {
-      build     : this.versionBuild,
+      build: this.versionBuild,
       minVersion: this.systemModule.getMinVersion(),
-      version   : this.appConfig.version,
+      version: this.appConfig.version
     };
   }
-
 }

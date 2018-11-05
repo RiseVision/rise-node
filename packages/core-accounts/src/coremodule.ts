@@ -13,18 +13,28 @@ import { AccountsSymbols } from './symbols';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
-  public constants    = {};
+  public constants = {};
 
   public addElementsToContainer(): void {
-    this.container.bind(AccountsSymbols.logic).to(AccountLogic).inSingletonScope();
-    this.container.bind(ModelSymbols.model).toConstructor(AccountsModel)
+    this.container
+      .bind(AccountsSymbols.logic)
+      .to(AccountLogic)
+      .inSingletonScope();
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(AccountsModel)
       .whenTargetNamed(AccountsSymbols.model);
-    this.container.bind(AccountsSymbols.module).to(AccountsModule).inSingletonScope();
-    this.container.bind(APISymbols.api)
+    this.container
+      .bind(AccountsSymbols.module)
+      .to(AccountsModule)
+      .inSingletonScope();
+    this.container
+      .bind(APISymbols.api)
       .toConstructor(AccountsAPI)
       .whenTargetNamed(AccountsSymbols.api);
 
-    this.container.bind(AccountsSymbols.__internal.loaderHooks)
+    this.container
+      .bind(AccountsSymbols.__internal.loaderHooks)
       .to(AccountsLoaderSubscriber)
       .inSingletonScope();
   }
@@ -32,14 +42,21 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
   public async initAppElements() {
     z_schema.registerFormat('address', (str: string) => {
       // tslint:disable-next-line
-      return new RegExp(`^[0-9]{1,20}${this.container.get<ConstantsType>(Symbols.generic.constants).addressSuffix}$`).test(str);
+      return new RegExp(
+        `^[0-9]{1,20}${
+          this.container.get<ConstantsType>(Symbols.generic.constants)
+            .addressSuffix
+        }$`
+      ).test(str);
     });
-    await this.container.get<AccountsLoaderSubscriber>(AccountsSymbols.__internal.loaderHooks)
+    await this.container
+      .get<AccountsLoaderSubscriber>(AccountsSymbols.__internal.loaderHooks)
       .hookMethods();
   }
 
   public async teardown() {
-    await this.container.get<AccountsLoaderSubscriber>(AccountsSymbols.__internal.loaderHooks)
+    await this.container
+      .get<AccountsLoaderSubscriber>(AccountsSymbols.__internal.loaderHooks)
       .unHook();
   }
 }

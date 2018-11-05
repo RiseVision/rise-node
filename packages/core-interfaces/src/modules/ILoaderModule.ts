@@ -25,5 +25,9 @@ export interface ILoaderModule {
    */
   loadBlockChain(): Promise<void>;
 
-  load(count: number, limitPerIteration: number, message?: string): Promise<void>;
+  load(
+    count: number,
+    limitPerIteration: number,
+    message?: string
+  ): Promise<void>;
 }

@@ -1,7 +1,15 @@
-import { ILogger, ITransactionsModule, Symbols } from '@risevision/core-interfaces';
+import {
+  ILogger,
+  ITransactionsModule,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { p2pSymbols, Peer } from '@risevision/core-p2p';
 import { decorate, inject, injectable, named } from 'inversify';
-import { OnWPAction, WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import {
+  OnWPAction,
+  WordPressHookSystem,
+  WPHooksSubscriber,
+} from 'mangiafuoco';
 import * as promiseRetry from 'promise-retry';
 import { GetTransactionsRequest } from './p2p';
 import { TXSymbols } from './txSymbols';
@@ -11,7 +19,6 @@ decorate(injectable(), Extendable);
 
 @injectable()
 export class TXLoader extends Extendable {
-
   @inject(Symbols.generic.hookSystem)
   public hookSystem: WordPressHookSystem;
 
@@ -36,14 +43,17 @@ export class TXLoader extends Extendable {
       return;
     }
     try {
-      await promiseRetry(async (retry) => {
-        try {
-          await this.loadTransactions(await peerFactory());
-        } catch (e) {
-          this.logger.warn('Error loading transactions... Retrying... ', e);
-          retry(e);
-        }
-      }, { retries: 3 });
+      await promiseRetry(
+        async (retry) => {
+          try {
+            await this.loadTransactions(await peerFactory());
+          } catch (e) {
+            this.logger.warn('Error loading transactions... Retrying... ', e);
+            retry(e);
+          }
+        },
+        { retries: 3 }
+      );
     } catch (e) {
       this.logger.log('Unconfirmed transactions loader error', e);
     }
@@ -71,5 +81,4 @@ export class TXLoader extends Extendable {
       }
     }
   }
-
 }

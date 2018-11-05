@@ -2,8 +2,9 @@ import {
   IAccountLogic,
   ISystemModule,
   ITransactionLogic,
-  ITransactionsModel, Symbols,
-  VerificationType
+  ITransactionsModel,
+  Symbols,
+  VerificationType,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
@@ -14,7 +15,7 @@ import {
   IBaseTransaction,
   IConfirmedTransaction,
   SignedBlockType,
-  TransactionType
+  TransactionType,
 } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable, named, postConstruct } from 'inversify';
@@ -24,7 +25,11 @@ import * as SocketIO from 'socket.io';
 import * as z_schema from 'z-schema';
 
 import { MultisigConstantsType, MultisigSymbols } from './helpers';
-import { Accounts2MultisignaturesModel, Accounts2U_MultisignaturesModel, MultiSignaturesModel } from './models/';
+import {
+  Accounts2MultisignaturesModel,
+  Accounts2U_MultisignaturesModel,
+  MultiSignaturesModel,
+} from './models/';
 import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultiSigUtils } from './utils';
 
@@ -34,12 +39,14 @@ export type MultisigAsset = {
     min: number;
     lifetime: number;
     keysgroup: string[];
-  }
+  };
 };
 
 @injectable()
-export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignaturesModel> {
-
+export class MultiSignatureTransaction extends BaseTx<
+  MultisigAsset,
+  MultiSignaturesModel
+> {
   private unconfirmedSignatures: { [name: string]: true };
 
   // Generics
@@ -89,13 +96,24 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     this.unconfirmedSignatures = {};
   }
 
-  public calculateFee(tx: IBaseTransaction<MultisigAsset>, sender: any, height: number): number {
+  public calculateFee(
+    tx: IBaseTransaction<MultisigAsset>,
+    sender: any,
+    height: number
+  ): number {
     return this.systemModule.getFees(height).fees.multisignature;
   }
 
-  public getBytes(tx: IBaseTransaction<MultisigAsset>, skipSignature: boolean, skipSecondSignature: boolean): Buffer {
-    const keysBuff = Buffer.from(tx.asset.multisignature.keysgroup.join(''), 'utf8');
-    const bb       = new ByteBuffer(1 + 1 + keysBuff.length, true);
+  public getBytes(
+    tx: IBaseTransaction<MultisigAsset>,
+    skipSignature: boolean,
+    skipSecondSignature: boolean
+  ): Buffer {
+    const keysBuff = Buffer.from(
+      tx.asset.multisignature.keysgroup.join(''),
+      'utf8'
+    );
+    const bb = new ByteBuffer(1 + 1 + keysBuff.length, true);
     bb.writeByte(tx.asset.multisignature.min);
     bb.writeByte(tx.asset.multisignature.lifetime);
 
@@ -120,10 +138,11 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     const lifetime = bb.readByte(1);
     const keysString = bytes.slice(2, bb.buffer.length).toString('utf8');
     // Cut keys string into 32-bytes chunks
-    const keysgroup = [].concat.apply([],
-      keysString.split('').map(
-        (x, i) => i % 65 ? [] : keysString.slice(i, i + 65)
-      )
+    const keysgroup = [].concat.apply(
+      [],
+      keysString
+        .split('')
+        .map((x, i) => (i % 65 ? [] : keysString.slice(i, i + 65)))
     );
     return {
       multisignature: {
@@ -134,7 +153,10 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     };
   }
 
-  public async verify(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<void> {
+  public async verify(
+    tx: IBaseTransaction<MultisigAsset>,
+    sender: AccountsModelWithMultisig
+  ): Promise<void> {
     this.assertValidFormat(tx);
 
     if (this.ready(tx, sender)) {
@@ -154,36 +176,50 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
         }
 
         if (!valid) {
-          throw new Error('Failed to verify signature in multisignature keysgroup');
+          throw new Error(
+            'Failed to verify signature in multisignature keysgroup'
+          );
         }
       }
     }
 
-    if (tx.asset.multisignature.keysgroup.indexOf(`+${sender.publicKey.toString('hex')}`) !== -1) {
-      throw new Error('Invalid multisignature keysgroup. Cannot contain sender');
+    if (
+      tx.asset.multisignature.keysgroup.indexOf(
+        `+${sender.publicKey.toString('hex')}`
+      ) !== -1
+    ) {
+      throw new Error(
+        'Invalid multisignature keysgroup. Cannot contain sender'
+      );
     }
   }
 
-  public async apply(tx: IConfirmedTransaction<MultisigAsset>,
-                     block: SignedBlockType,
-                     sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
+  public async apply(
+    tx: IConfirmedTransaction<MultisigAsset>,
+    block: SignedBlockType,
+    sender: AccountsModelWithMultisig
+  ): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
     return this.calcOps('confirmed', tx.asset, block.id, sender);
   }
 
-  public async undo(tx: IConfirmedTransaction<MultisigAsset>,
-                    block: SignedBlockType,
-                    sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
+  public async undo(
+    tx: IConfirmedTransaction<MultisigAsset>,
+    block: SignedBlockType,
+    sender: AccountsModelWithMultisig
+  ): Promise<Array<DBOp<any>>> {
     // to restore to the previous state we try to fetch the previous multisig transaction
     // if there is any then we apply that tx after rollbacking. otherwise we reset to 0 all the fields.
     // seek for prev txs for such account.
-    const prevTX = await this.TransactionsModel.findOne<ITransactionsModel<MultisigAsset>>({
+    const prevTX = await this.TransactionsModel.findOne<
+      ITransactionsModel<MultisigAsset>
+    >({
       limit: 1,
       order: [['height', 'DESC']],
       where: {
-        id      : { [Op.ne]: tx.id },
+        id: { [Op.ne]: tx.id },
         senderId: sender.address,
-        type    : TransactionType.MULTI,
+        type: TransactionType.MULTI,
       },
     });
 
@@ -200,7 +236,10 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     return this.calcOps('confirmed', asset, '0', sender);
   }
 
-  public async applyUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
+  public async applyUnconfirmed(
+    tx: IBaseTransaction<MultisigAsset>,
+    sender: AccountsModelWithMultisig
+  ): Promise<Array<DBOp<any>>> {
     if (this.unconfirmedSignatures[sender.address]) {
       throw new Error('Signature on this account is pending confirmation');
     }
@@ -208,47 +247,62 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     return this.calcOps('unconfirmed', tx.asset, null, sender);
   }
 
-  public async undoUnconfirmed(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<Array<DBOp<any>>> {
+  public async undoUnconfirmed(
+    tx: IBaseTransaction<MultisigAsset>,
+    sender: AccountsModelWithMultisig
+  ): Promise<Array<DBOp<any>>> {
     delete this.unconfirmedSignatures[sender.address];
     sender.u_multisignatures = (sender.multisignatures || []).slice();
-    sender.u_multimin        = sender.multimin;
-    sender.u_multilifetime   = sender.multilifetime;
+    sender.u_multimin = sender.multimin;
+    sender.u_multilifetime = sender.multilifetime;
     // Copy confirmed values over as most of the heavy lifting is done there.
 
     return [
       // clean up memaccounts2u_multisignatures
       {
-        model  : this.Accounts2UMultisignaturesModel,
-        type   : 'remove',
+        model: this.Accounts2UMultisignaturesModel,
+        type: 'remove',
         options: { where: { accountId: sender.address } },
       },
       // copy confirmed values from 2_multisignatures to 2u_multisignatures.
-      ... (sender.multisignatures || []).map((k) => ({
-        model : this.Accounts2UMultisignaturesModel,
-        type  : 'upsert',
-        values: {
-          accountId  : sender.address,
-          dependentId: k,
-        },
-      } as DBUpsertOp<Accounts2U_MultisignaturesModel>)),
+      ...(sender.multisignatures || []).map(
+        (k) =>
+          ({
+            model: this.Accounts2UMultisignaturesModel,
+            type: 'upsert',
+            values: {
+              accountId: sender.address,
+              dependentId: k,
+            },
+          } as DBUpsertOp<Accounts2U_MultisignaturesModel>)
+      ),
       //
       {
-        model  : this.AccountsModel,
+        model: this.AccountsModel,
         options: { where: { address: tx.senderId } },
-        type   : 'update',
-        values : {
+        type: 'update',
+        values: {
           u_multilifetime: sequelize.col('multilifetime'),
-          u_multimin     : sequelize.col('multimin'),
+          u_multimin: sequelize.col('multimin'),
         },
       },
     ];
   }
 
-  public objectNormalize(tx: IBaseTransaction<MultisigAsset>): IBaseTransaction<MultisigAsset> {
-    const report = this.schema.validate(tx.asset.multisignature, this.multisigSchema);
+  public objectNormalize(
+    tx: IBaseTransaction<MultisigAsset>
+  ): IBaseTransaction<MultisigAsset> {
+    const report = this.schema.validate(
+      tx.asset.multisignature,
+      this.multisigSchema
+    );
     if (!report) {
-      throw new Error(`Failed to validate multisignature schema: ${this.schema.getLastErrors()
-        .map((err) => err.message).join(', ')}`);
+      throw new Error(
+        `Failed to validate multisignature schema: ${this.schema
+          .getLastErrors()
+          .map((err) => err.message)
+          .join(', ')}`
+      );
     }
 
     return tx;
@@ -260,8 +314,8 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     } else {
       const multisignature = {
         keysgroup: [],
-        lifetime : raw.m_lifetime,
-        min      : raw.m_min,
+        lifetime: raw.m_lifetime,
+        min: raw.m_min,
       };
 
       if (typeof raw.m_keysgroup === 'string') {
@@ -273,14 +327,16 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }): DBCreateOp<MultiSignaturesModel> {
+  public dbSave(
+    tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }
+  ): DBCreateOp<MultiSignaturesModel> {
     return {
-      model : this.MultiSignaturesModel,
-      type  : 'create',
+      model: this.MultiSignaturesModel,
+      type: 'create',
       values: {
-        keysgroup    : tx.asset.multisignature.keysgroup.join(','),
-        lifetime     : tx.asset.multisignature.lifetime,
-        min          : tx.asset.multisignature.min,
+        keysgroup: tx.asset.multisignature.keysgroup.join(','),
+        lifetime: tx.asset.multisignature.lifetime,
+        min: tx.asset.multisignature.min,
         transactionId: tx.id,
       },
     };
@@ -299,7 +355,10 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
    * @param sender
    * @returns {boolean}
    */
-  public async ready(tx: IBaseTransaction<MultisigAsset>, sender: AccountsModelWithMultisig): Promise<boolean> {
+  public async ready(
+    tx: IBaseTransaction<MultisigAsset>,
+    sender: AccountsModelWithMultisig
+  ): Promise<boolean> {
     this.assertValidFormat(tx);
     if (!Array.isArray(tx.signatures)) {
       return false;
@@ -308,38 +367,51 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
   }
 
   public async attachAssets(txs: Array<IConfirmedTransaction<MultisigAsset>>) {
-    const res = await this.MultiSignaturesModel
-      .findAll({
-        where: { transactionId: txs.map((tx) => tx.id) },
-      });
+    const res = await this.MultiSignaturesModel.findAll({
+      where: { transactionId: txs.map((tx) => tx.id) },
+    });
 
     const indexes = {};
-    res.forEach((tx, idx) => indexes[tx.transactionId] = idx);
+    res.forEach((tx, idx) => (indexes[tx.transactionId] = idx));
 
     txs.forEach((tx) => {
-      if (typeof(indexes[tx.id]) === 'undefined') {
+      if (typeof indexes[tx.id] === 'undefined') {
         throw new Error(`Couldn't restore asset for Signature tx: ${tx.id}`);
       }
       const info = res[indexes[tx.id]];
-      tx.asset   = {
+      tx.asset = {
         multisignature: {
           keysgroup: info.keysgroup.split(','),
-          lifetime : info.lifetime,
-          min      : info.min,
+          lifetime: info.lifetime,
+          min: info.min,
         },
       };
     });
   }
 
-  private calcOps(type: 'confirmed' | 'unconfirmed', asset: MultisigAsset, blockId: string, sender: AccountsModelWithMultisig): Array<DBOp<any>> {
+  private calcOps(
+    type: 'confirmed' | 'unconfirmed',
+    asset: MultisigAsset,
+    blockId: string,
+    sender: AccountsModelWithMultisig
+  ): Array<DBOp<any>> {
     if (type === 'confirmed') {
       sender.multisignatures = [];
       sender.applyDiffArray('multisignatures', asset.multisignature.keysgroup);
-      sender.applyValues({ multimin: asset.multisignature.min, multilifetime: asset.multisignature.lifetime });
+      sender.applyValues({
+        multimin: asset.multisignature.min,
+        multilifetime: asset.multisignature.lifetime,
+      });
     } else {
       sender.u_multisignatures = [];
-      sender.applyDiffArray('u_multisignatures', asset.multisignature.keysgroup);
-      sender.applyValues({ u_multimin: asset.multisignature.min, u_multilifetime: asset.multisignature.lifetime });
+      sender.applyDiffArray(
+        'u_multisignatures',
+        asset.multisignature.keysgroup
+      );
+      sender.applyValues({
+        u_multimin: asset.multisignature.min,
+        u_multilifetime: asset.multisignature.lifetime,
+      });
     }
 
     const ops: Array<DBOp<any>> = [];
@@ -347,25 +419,28 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     if (type === 'unconfirmed') {
       updateValue = {
         u_multilifetime: asset.multisignature.lifetime,
-        u_multimin     : asset.multisignature.min,
+        u_multimin: asset.multisignature.min,
       };
     } else {
       updateValue = {
         blockId,
         multilifetime: asset.multisignature.lifetime,
-        multimin     : asset.multisignature.min,
+        multimin: asset.multisignature.min,
       };
     }
     ops.push({
-      model  : this.AccountsModel,
+      model: this.AccountsModel,
       options: { where: { address: sender.address } },
-      type   : 'update',
-      values : updateValue,
+      type: 'update',
+      values: updateValue,
     });
     ops.push({
-      model  : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
+      model:
+        type === 'confirmed'
+          ? this.Accounts2MultisignaturesModel
+          : this.Accounts2UMultisignaturesModel,
       options: { where: { accountId: sender.address } },
-      type   : 'remove',
+      type: 'remove',
     });
 
     // insert new entries to accounts2MultisignaturesModel
@@ -376,22 +451,25 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
       const address = this.accountLogic.generateAddressByPublicKey(realKey);
       ops.push(
         {
-          model : this.AccountsModel,
-          type  : 'upsert',
+          model: this.AccountsModel,
+          type: 'upsert',
           values: {
             address,
             publicKey: realKey,
           },
         },
         {
-          model : type === 'confirmed' ? this.Accounts2MultisignaturesModel : this.Accounts2UMultisignaturesModel,
-          type  : 'create',
+          model:
+            type === 'confirmed'
+              ? this.Accounts2MultisignaturesModel
+              : this.Accounts2UMultisignaturesModel,
+          type: 'create',
           values: {
-            accountId  : sender.address,
+            accountId: sender.address,
             dependentId: realKey.toString('hex'),
           },
-        });
-
+        }
+      );
     }
     return ops;
   }
@@ -411,25 +489,43 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
 
     // check multisig asset is valid hex publickeys
     for (const key of tx.asset.multisignature.keysgroup) {
-      if (!key || typeof(key) !== 'string' || key.length !== 64 + 1) {
+      if (!key || typeof key !== 'string' || key.length !== 64 + 1) {
         throw new Error('Invalid member in keysgroup');
       }
     }
 
-    if (tx.asset.multisignature.min < this.constants.multisigConstraints.min.minimum ||
-      tx.asset.multisignature.min > this.constants.multisigConstraints.min.maximum) {
-      throw new Error(`Invalid multisignature min. Must be between ${this.constants.multisigConstraints.min.minimum} and ${
-        this.constants.multisigConstraints.min.maximum}`);
+    if (
+      tx.asset.multisignature.min <
+        this.constants.multisigConstraints.min.minimum ||
+      tx.asset.multisignature.min >
+        this.constants.multisigConstraints.min.maximum
+    ) {
+      throw new Error(
+        `Invalid multisignature min. Must be between ${
+          this.constants.multisigConstraints.min.minimum
+        } and ${this.constants.multisigConstraints.min.maximum}`
+      );
     }
 
-    if (tx.asset.multisignature.min > tx.asset.multisignature.keysgroup.length) {
-      throw new Error('Invalid multisignature min. Must be less than or equal to keysgroup size');
+    if (
+      tx.asset.multisignature.min > tx.asset.multisignature.keysgroup.length
+    ) {
+      throw new Error(
+        'Invalid multisignature min. Must be less than or equal to keysgroup size'
+      );
     }
 
-    if (tx.asset.multisignature.lifetime < this.constants.multisigConstraints.lifetime.minimum ||
-      tx.asset.multisignature.lifetime > this.constants.multisigConstraints.lifetime.maximum) {
-      throw new Error(`Invalid multisignature lifetime. Must be between ${this.constants.multisigConstraints
-        .lifetime.minimum} and ${this.constants.multisigConstraints.lifetime.maximum}`);
+    if (
+      tx.asset.multisignature.lifetime <
+        this.constants.multisigConstraints.lifetime.minimum ||
+      tx.asset.multisignature.lifetime >
+        this.constants.multisigConstraints.lifetime.maximum
+    ) {
+      throw new Error(
+        `Invalid multisignature lifetime. Must be between ${
+          this.constants.multisigConstraints.lifetime.minimum
+        } and ${this.constants.multisigConstraints.lifetime.maximum}`
+      );
     }
 
     if (tx.recipientId) {
@@ -441,11 +537,11 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     }
 
     for (const key of tx.asset.multisignature.keysgroup) {
-      if (typeof(key) !== 'string') {
+      if (typeof key !== 'string') {
         throw new Error('Invalid member in keysgroup');
       }
 
-      const sign   = key[0];
+      const sign = key[0];
       const pubKey = key.substring(1);
       if (sign !== '+') {
         throw new Error('Invalid math operator in multisignature keysgroup');
@@ -457,34 +553,39 @@ export class MultiSignatureTransaction extends BaseTx<MultisigAsset, MultiSignat
     }
 
     // Check for duplicated keys
-    if (tx.asset.multisignature.keysgroup.filter((k, i, a) => a.indexOf(k) !== i).length > 0) {
-      throw new Error('Encountered duplicate public key in multisignature keysgroup');
+    if (
+      tx.asset.multisignature.keysgroup.filter((k, i, a) => a.indexOf(k) !== i)
+        .length > 0
+    ) {
+      throw new Error(
+        'Encountered duplicate public key in multisignature keysgroup'
+      );
     }
   }
 
   @postConstruct()
   private postConstruct() {
     this.multisigSchema = {
-      id        : 'Multisignature',
-      type      : 'object',
+      id: 'Multisignature',
+      type: 'object',
       properties: {
-        min      : {
-          type   : 'integer',
+        min: {
+          type: 'integer',
           minimum: this.constants.multisigConstraints.min.minimum,
           maximum: this.constants.multisigConstraints.min.maximum,
         },
         keysgroup: {
-          type    : 'array',
+          type: 'array',
           minItems: this.constants.multisigConstraints.keysgroup.minItems,
           maxItems: this.constants.multisigConstraints.keysgroup.maxItems,
         },
-        lifetime : {
-          type   : 'integer',
+        lifetime: {
+          type: 'integer',
           minimum: this.constants.multisigConstraints.lifetime.minimum,
           maximum: this.constants.multisigConstraints.lifetime.maximum,
         },
       },
-      required  : ['min', 'keysgroup', 'lifetime'],
+      required: ['min', 'keysgroup', 'lifetime'],
     };
   }
 }

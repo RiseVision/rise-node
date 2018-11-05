@@ -2,10 +2,11 @@ import { PeerRequestOptions } from '@risevision/core-types';
 import { Peer } from '../peer';
 
 export type SingleTransportPayload<Body, Query> = {
-  headers?: { [h: string]: string }
-  body?: Body,
-  query?: Query,
-  requester?: Peer } | null;
+  headers?: { [h: string]: string };
+  body?: Body;
+  query?: Query;
+  requester?: Peer;
+} | null;
 
 export interface ITransportMethod<Data, Query, Out> {
   batchable: boolean;
@@ -16,7 +17,9 @@ export interface ITransportMethod<Data, Query, Out> {
    * For batchable requests this method could be called to batch different requests together.
    * It will bundle requests together if possible to reduce the amount of requests to perform.
    */
-  mergeRequests(reqs: Array<SingleTransportPayload<Data, Query>>): Array<SingleTransportPayload<Data, Query>>;
+  mergeRequests(
+    reqs: Array<SingleTransportPayload<Data, Query>>
+  ): Array<SingleTransportPayload<Data, Query>>;
 
   /**
    * Check if such envelope request is expired or not.
@@ -42,6 +45,7 @@ export interface ITransportMethod<Data, Query, Out> {
    * Creates request options
    * @param req
    */
-  createRequestOptions(req?: SingleTransportPayload<Data, Query>): Promise<PeerRequestOptions<Buffer>>;
-
+  createRequestOptions(
+    req?: SingleTransportPayload<Data, Query>
+  ): Promise<PeerRequestOptions<Buffer>>;
 }

@@ -2,7 +2,8 @@ import {
   IAccountLogic,
   IAccountsModel,
   IAccountsModule,
-  ISystemModule, Symbols
+  ISystemModule,
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -10,7 +11,7 @@ import {
   IBaseTransaction,
   IConfirmedTransaction,
   SignedBlockType,
-  TransactionType
+  TransactionType,
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { BaseTx } from './BaseTx';
@@ -18,7 +19,6 @@ import { SendTxApplyFilter, SendTxUndoFilter } from './hooks/filters';
 
 @injectable()
 export class SendTransaction extends BaseTx<void, null> {
-
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.logic.account)
@@ -35,11 +35,18 @@ export class SendTransaction extends BaseTx<void, null> {
     super(TransactionType.SEND);
   }
 
-  public calculateFee(tx: IBaseTransaction<void>, sender: IAccountsModel, height: number): number {
+  public calculateFee(
+    tx: IBaseTransaction<void>,
+    sender: IAccountsModel,
+    height: number
+  ): number {
     return this.systemModule.getFees(height).fees.send;
   }
 
-  public async verify(tx: IBaseTransaction<void>, sender: IAccountsModel): Promise<void> {
+  public async verify(
+    tx: IBaseTransaction<void>,
+    sender: IAccountsModel
+  ): Promise<void> {
     if (!tx.recipientId) {
       throw new Error('Missing recipient');
     }
@@ -49,28 +56,47 @@ export class SendTransaction extends BaseTx<void, null> {
     }
   }
 
-  public async apply(tx: IConfirmedTransaction<void>,
-                     block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return await this.hookSystem.apply_filters(SendTxApplyFilter.name, [
-      ... this.accountLogic.merge(tx.recipientId, {
-        balance  : tx.amount,
-        blockId  : block.id,
-        // round    : this.roundsLogic.calcRound(block.height),
-        u_balance: tx.amount,
-      }),
-    ], tx, block, sender);
+  public async apply(
+    tx: IConfirmedTransaction<void>,
+    block: SignedBlockType,
+    sender: IAccountsModel
+  ): Promise<Array<DBOp<any>>> {
+    return await this.hookSystem.apply_filters(
+      SendTxApplyFilter.name,
+      [
+        ...this.accountLogic.merge(tx.recipientId, {
+          balance: tx.amount,
+          blockId: block.id,
+          // round    : this.roundsLogic.calcRound(block.height),
+          u_balance: tx.amount,
+        }),
+      ],
+      tx,
+      block,
+      sender
+    );
   }
 
   // tslint:disable-next-line max-line-length
-  public async undo(tx: IConfirmedTransaction<void>, block: SignedBlockType, sender: IAccountsModel): Promise<Array<DBOp<any>>> {
-    return await this.hookSystem.apply_filters(SendTxUndoFilter.name, [
-      ... this.accountLogic.merge(tx.recipientId, {
-        balance  : -tx.amount,
-        blockId  : block.id,
-        // round    : this.roundsLogic.calcRound(block.height),
-        u_balance: -tx.amount,
-      }),
-    ], tx, block, sender);
+  public async undo(
+    tx: IConfirmedTransaction<void>,
+    block: SignedBlockType,
+    sender: IAccountsModel
+  ): Promise<Array<DBOp<any>>> {
+    return await this.hookSystem.apply_filters(
+      SendTxUndoFilter.name,
+      [
+        ...this.accountLogic.merge(tx.recipientId, {
+          balance: -tx.amount,
+          blockId: block.id,
+          // round    : this.roundsLogic.calcRound(block.height),
+          u_balance: -tx.amount,
+        }),
+      ],
+      tx,
+      block,
+      sender
+    );
   }
 
   public objectNormalize(tx: IBaseTransaction<void>): IBaseTransaction<void> {
@@ -81,5 +107,4 @@ export class SendTransaction extends BaseTx<void, null> {
   public dbSave(tx: IConfirmedTransaction<void> & { senderId: string }) {
     return null;
   }
-
 }

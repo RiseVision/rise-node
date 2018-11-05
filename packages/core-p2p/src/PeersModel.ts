@@ -27,5 +27,4 @@ export class PeersModel extends Model<PeersModel> implements IPeersModel {
 
   @Column
   public height: number;
-
 }

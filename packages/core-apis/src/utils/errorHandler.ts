@@ -2,18 +2,25 @@ import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { HTTPError, IoCSymbol } from '@risevision/core-utils';
 import express from 'express';
 import { inject, injectable } from 'inversify';
-import { ExpressErrorMiddlewareInterface, Middleware } from 'routing-controllers';
+import {
+  ExpressErrorMiddlewareInterface,
+  Middleware
+} from 'routing-controllers';
 import { APISymbols } from '../helpers';
 
 @IoCSymbol(APISymbols.errorHandler)
-@Middleware({type: 'after'})
+@Middleware({ type: 'after' })
 @injectable()
 export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
-
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  public error(error: any, req: express.Request, res: express.Response, next: (err: any) => any) {
+  public error(
+    error: any,
+    req: express.Request,
+    res: express.Response,
+    next: (err: any) => any
+  ) {
     if (error instanceof HTTPError) {
       res.status(error.statusCode);
     } else {
@@ -26,5 +33,4 @@ export class APIErrorHandler implements ExpressErrorMiddlewareInterface {
     this.logger.error('API error ' + req.url, error);
     res.send({ success: false, error });
   }
-
 }

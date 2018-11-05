@@ -3,16 +3,18 @@ export type QueueType = 'queued' | 'pending' | 'ready' | 'unconfirmed';
 
 export type QueueEntry<T extends { receivedAt: Date }> = {
   tx: IBaseTransaction<any>;
-  payload: T
+  payload: T;
 };
 export type ListingOptions<T extends { receivedAt: Date }> = {
-  reverse?: boolean,
-  limit?: number,
-  filterFn?: (entry: QueueEntry<T>) => boolean,
-  sortFn?: (a: QueueEntry<T>, b: QueueEntry<T>) => number
+  reverse?: boolean;
+  limit?: number;
+  filterFn?: (entry: QueueEntry<T>) => boolean;
+  sortFn?: (a: QueueEntry<T>, b: QueueEntry<T>) => number;
 };
 
-export interface IInnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }> {
+export interface IInnerTXQueue<
+  T extends { receivedAt: Date } = { receivedAt: Date }
+> {
   readonly identifier: string;
   readonly count: number;
 
@@ -30,14 +32,13 @@ export interface IInnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Da
 
   list(opts?: ListingOptions<T>): Array<QueueEntry<T>>;
 
-  txList(opts?: ListingOptions<T>): Array<IBaseTransaction<any>>
-
+  txList(opts?: ListingOptions<T>): Array<IBaseTransaction<any>>;
 }
 
 export interface ITransactionPool {
   readonly queued: IInnerTXQueue;
   readonly ready: IInnerTXQueue;
-  readonly pending: IInnerTXQueue<{ receivedAt: Date, ready: boolean }>;
+  readonly pending: IInnerTXQueue<{ receivedAt: Date; ready: boolean }>;
   readonly unconfirmed: IInnerTXQueue;
   readonly allQueues: IInnerTXQueue[];
 

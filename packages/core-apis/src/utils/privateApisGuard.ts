@@ -9,15 +9,19 @@ import { APIConfig, APISymbols } from '../helpers/';
 @injectable()
 @IoCSymbol(APISymbols.privateApiGuard)
 export class PrivateApisGuard implements ExpressMiddlewareInterface {
-
   @inject(Symbols.generic.appConfig)
   private config: APIConfig;
 
-  public use(request: express.Request, response: any, next: (err?: any) => any) {
-    if (!checkIpInList(this.config.api.access.restrictedWhiteList, request.ip)) {
+  public use(
+    request: express.Request,
+    response: any,
+    next: (err?: any) => any
+  ) {
+    if (
+      !checkIpInList(this.config.api.access.restrictedWhiteList, request.ip)
+    ) {
       return next(new HTTPError('Private API access denied', 403));
     }
     next();
   }
-
 }

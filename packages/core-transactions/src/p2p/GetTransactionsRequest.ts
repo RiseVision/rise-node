@@ -1,33 +1,41 @@
 import { inject, injectable } from 'inversify';
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
-import { BaseProtobufTransportMethod, ProtoIdentifier, SingleTransportPayload } from '@risevision/core-p2p';
+import {
+  BaseProtobufTransportMethod,
+  ProtoIdentifier,
+  SingleTransportPayload
+} from '@risevision/core-p2p';
 import { TXSymbols } from '../txSymbols';
 import { TransactionPool } from '../TransactionPool';
 
 // tslint:disable-next-line
 export type GetTransactionsRequestDataType = {
-  transactions: Array<IBaseTransaction<any>>
+  transactions: Array<IBaseTransaction<any>>;
 };
 
 @injectable()
-export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, null, GetTransactionsRequestDataType> {
+export class GetTransactionsRequest extends BaseProtobufTransportMethod<
+  null,
+  null,
+  GetTransactionsRequestDataType
+> {
   public readonly method: 'GET' = 'GET';
-  public readonly baseUrl       = '/v2/peer/transactions';
+  public readonly baseUrl = '/v2/peer/transactions';
 
   public protoResponse: ProtoIdentifier<GetTransactionsRequestDataType> = {
     messageType: 'transportTransactions',
-    namespace  : 'transactions.transport',
+    namespace: 'transactions.transport'
   };
 
   public schemaResponse = {
     properties: {
       transactions: {
-        type: 'array',
-      },
+        type: 'array'
+      }
     },
     required: ['transactions'],
-    type: 'object',
+    type: 'object'
   };
 
   @inject(Symbols.logic.transaction)
@@ -40,7 +48,9 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, nu
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
-  protected async produceResponse(request: SingleTransportPayload<null, null>): Promise<GetTransactionsRequestDataType> {
+  protected async produceResponse(
+    request: SingleTransportPayload<null, null>
+  ): Promise<GetTransactionsRequestDataType> {
     let limit = this.constants.maxSharedTxs;
 
     const unconfirmed = this.pool.unconfirmed.list({ limit }).map((t) => t.tx);
@@ -55,17 +65,26 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<null, nu
   }
 
   // Necessary to keep types easy to use by consumers.
-  protected encodeResponse(data: GetTransactionsRequestDataType): Promise<Buffer> {
+  protected encodeResponse(
+    data: GetTransactionsRequestDataType
+  ): Promise<Buffer> {
     return super.encodeResponse({
-      transactions: data.transactions.map((tx) => this.transactionLogic.toProtoBuffer(tx)),
+      transactions: data.transactions.map((tx) =>
+        this.transactionLogic.toProtoBuffer(tx)
+      )
     } as any);
   }
 
-  protected async decodeResponse(res: Buffer): Promise<GetTransactionsRequestDataType> {
-    const superRes: { transactions: Buffer[] } = await super.decodeResponse(res) as any;
+  protected async decodeResponse(
+    res: Buffer
+  ): Promise<GetTransactionsRequestDataType> {
+    const superRes: { transactions: Buffer[] } = (await super.decodeResponse(
+      res
+    )) as any;
     return {
-      transactions: (superRes.transactions || [])
-        .map((bufTx) => this.transactionLogic.fromProtoBuffer(bufTx)),
+      transactions: (superRes.transactions || []).map((bufTx) =>
+        this.transactionLogic.fromProtoBuffer(bufTx)
+      )
     };
   }
 }

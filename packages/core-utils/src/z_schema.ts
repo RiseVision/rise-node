@@ -9,14 +9,12 @@ z_schema.registerFormat('id', (str: string) => {
   return /^[0-9]+$/g.test(str);
 });
 
-
-
 z_schema.registerFormat('username', (str: string) => {
-  if (typeof(str) !== 'string') {
+  if (typeof str !== 'string') {
     return false;
   }
 
-  return /^[a-z0-9!@$&_.]+$/ig.test(str);
+  return /^[a-z0-9!@$&_.]+$/gi.test(str);
 });
 
 z_schema.registerFormat('hex', (str: string) => /^[a-f0-9]*$/i.test(str));
@@ -71,11 +69,13 @@ z_schema.registerFormat('delegatesList', (obj: any) => {
 
 z_schema.registerFormat('ip', (str) => ip.isV4Format(str));
 
-z_schema.registerFormat('os', (str: string) => /^[a-z0-9-_.+]+$/ig.test(str));
+z_schema.registerFormat('os', (str: string) => /^[a-z0-9-_.+]+$/gi.test(str));
 
-z_schema.registerFormat('version', (str: string) => /^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})(-?[a-z]{1})?$/g.test(str));
+z_schema.registerFormat('version', (str: string) =>
+  /^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})(-?[a-z]{1})?$/g.test(str)
+);
 
 // var registeredFormats = z_schema.getRegisteredFormats();
 // console.log(registeredFormats);
 
-export {z_schema};
+export { z_schema };

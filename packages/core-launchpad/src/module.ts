@@ -10,7 +10,7 @@ export interface ICoreModule<ConfigType> {
   directory: string;
   container?: Container;
   config?: ConfigType;
-  sortedModules?: Array<ICoreModule<any>>
+  sortedModules?: Array<ICoreModule<any>>;
 
   extendCommander(program: CommanderStatic): void;
 
@@ -22,14 +22,18 @@ export interface ICoreModule<ConfigType> {
 
   afterConfigValidation?<T extends ConfigType>(config: T): T;
 
-  patchConfigWithCLIParams?<T extends ConfigType>(progrma: CommanderStatic, config: T): T;
+  patchConfigWithCLIParams?<T extends ConfigType>(
+    progrma: CommanderStatic,
+    config: T
+  ): T;
 
   addElementsToContainer(): void;
 
   initAppElements(): void | Promise<void>;
 }
 
-export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<ConfigType> {
+export abstract class BaseCoreModule<ConfigType = any>
+  implements ICoreModule<ConfigType> {
   public abstract configSchema: any;
   public abstract constants: any;
   public version = null;
@@ -43,7 +47,10 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
     return void 0;
   }
 
-  public patchConfigWithCLIParams<T extends ConfigType>(program: CommanderStatic, config: T): T {
+  public patchConfigWithCLIParams<T extends ConfigType>(
+    program: CommanderStatic,
+    config: T
+  ): T {
     return config;
   }
 
@@ -63,8 +70,7 @@ export abstract class BaseCoreModule<ConfigType = any> implements ICoreModule<Co
     return config;
   }
 
-  public addElementsToContainer() {
-  }
+  public addElementsToContainer() {}
 
   public initAppElements(): Promise<void> | void {
     return null;

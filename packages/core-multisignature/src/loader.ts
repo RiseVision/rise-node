@@ -51,7 +51,7 @@ export class MultisigLoader {
     // Process multisignature transactions and validate signatures in sequence
     await this.defaultSequence.addAndPromise(async () => {
       for (const multiSigTX of signatures) {
-        for (const signature of  multiSigTX.signatures) {
+        for (const signature of multiSigTX.signatures) {
           try {
             await this.multisigModule.onNewSignature({
               relays: Number.MAX_SAFE_INTEGER,
@@ -59,7 +59,12 @@ export class MultisigLoader {
               transaction: multiSigTX.transaction,
             });
           } catch (err) {
-            this.logger.warn(`Cannot process multisig signature for ${multiSigTX.transaction} `, err);
+            this.logger.warn(
+              `Cannot process multisig signature for ${
+                multiSigTX.transaction
+              } `,
+              err
+            );
           }
         }
       }

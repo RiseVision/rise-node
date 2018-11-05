@@ -11,7 +11,7 @@ import {
 
 export class CoreModule extends BaseCoreModule<DbAppConfig> {
   public configSchema = require('../schema/config.json');
-  public constants    = {};
+  public constants = {};
   private sequelize: Sequelize;
 
   public addElementsToContainer(): void {
@@ -21,45 +21,56 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
 
     this.sequelize = new Sequelize({
       database: this.config.db.database,
-      dialect : 'postgres',
-      host    : this.config.db.host,
-      logging : false,
+      dialect: 'postgres',
+      host: this.config.db.host,
+      logging: false,
       password: this.config.db.password,
-      pool    : {
+      pool: {
         idle: this.config.db.poolIdleTimeout,
-        max : this.config.db.poolSize,
+        max: this.config.db.poolSize,
       },
-      port    : this.config.db.port,
+      port: this.config.db.port,
       username: this.config.db.user,
     });
 
     this.container.bind(ModelSymbols.sequelize).toConstantValue(this.sequelize);
-    this.container.bind(ModelSymbols.sequelizeNamespace).toConstantValue(namespace);
-    this.container.bind(ModelSymbols.helpers.db).to(DBHelper).inSingletonScope();
+    this.container
+      .bind(ModelSymbols.sequelizeNamespace)
+      .toConstantValue(namespace);
+    this.container
+      .bind(ModelSymbols.helpers.db)
+      .to(DBHelper)
+      .inSingletonScope();
 
-    this.container.bind(ModelSymbols.model).toConstructor(ForksStatsModel)
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(ForksStatsModel)
       .whenTargetNamed(ModelSymbols.names.forkStats);
-    this.container.bind(ModelSymbols.model).toConstructor(InfoModel)
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(InfoModel)
       .whenTargetNamed(ModelSymbols.names.info);
-    this.container.bind(ModelSymbols.model).toConstructor(MigrationsModel)
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(MigrationsModel)
       .whenTargetNamed(ModelSymbols.names.migrations);
   }
 
   public async initAppElements() {
     for (const m of this.sortedModules) {
       // tslint:disable-next-line
-      if (typeof(m['onPreInitModels']) === 'function') {
+      if (typeof m['onPreInitModels'] === 'function') {
         // tslint:disable-next-line
         await m['onPreInitModels']();
       }
     }
     const models = this.container.getAll<typeof BaseModel>(ModelSymbols.model);
-    models.forEach((m) => m.container = this.container);
+    models.forEach((m) => (m.container = this.container));
     this.sequelize.addModels(models);
 
     for (const m of this.sortedModules) {
       // tslint:disable-next-line
-      if (typeof(m['onPostInitModels']) === 'function') {
+      if (typeof m['onPostInitModels'] === 'function') {
         // tslint:disable-next-line
         await m['onPostInitModels']();
       }

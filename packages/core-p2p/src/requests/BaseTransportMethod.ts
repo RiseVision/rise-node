@@ -8,7 +8,8 @@ import { Peer } from '../peer';
 import { ITransportMethod, SingleTransportPayload } from './ITransportMethod';
 
 @injectable()
-export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<Data, Query, Out> {
+export class BaseTransportMethod<Data, Query, Out>
+  implements ITransportMethod<Data, Query, Out> {
   public readonly batchable: boolean = false;
   // AppManager will inject the dependency here
   public readonly method!: 'GET' | 'POST';
@@ -22,13 +23,16 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
   @inject(p2pSymbols.helpers.protoBuf)
   public protoBufHelper: ProtoBufHelper;
 
-  public async createRequestOptions(req: SingleTransportPayload<Data, Query> = { body: null }): Promise<PeerRequestOptions<Buffer>> {
-    const queryString = req.query !== null ? `?${querystring.stringify(req.query)}` : '';
+  public async createRequestOptions(
+    req: SingleTransportPayload<Data, Query> = { body: null }
+  ): Promise<PeerRequestOptions<Buffer>> {
+    const queryString =
+      req.query !== null ? `?${querystring.stringify(req.query)}` : '';
     return {
-      data   : await this.encodeRequest(req.body),
+      data: await this.encodeRequest(req.body),
       headers: req.headers || {},
-      method : this.method,
-      url    : `${this.baseUrl}${queryString}`,
+      method: this.method,
+      url: `${this.baseUrl}${queryString}`
     };
   }
 
@@ -49,7 +53,10 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
    * @param query query object.
    * NOTE: all errors should be handled here.
    */
-  public async handleRequest(buf: Buffer, query: Query | null): Promise<Buffer> {
+  public async handleRequest(
+    buf: Buffer,
+    query: Query | null
+  ): Promise<Buffer> {
     const body = await this.decodeRequest(buf);
     await this.assertValidRequest({ body, query });
     const response = await this.produceResponse({ body, query });
@@ -60,7 +67,9 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
    * For batchable requests this method could be called to batch different requests together.
    * It will bundle requests together if possible to reduce the amount of requests to perform.
    */
-  public mergeRequests(reqs: Array<SingleTransportPayload<Data, Query>>): Array<SingleTransportPayload<Data, Query>> {
+  public mergeRequests(
+    reqs: Array<SingleTransportPayload<Data, Query>>
+  ): Array<SingleTransportPayload<Data, Query>> {
     return reqs;
   }
 
@@ -76,7 +85,9 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
    * @param request input body data object
    * @param query Query object.
    */
-  protected produceResponse(request: SingleTransportPayload<Data, Query>): Promise<Out> {
+  protected produceResponse(
+    request: SingleTransportPayload<Data, Query>
+  ): Promise<Out> {
     return null;
   }
 
@@ -112,11 +123,18 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
    * Validate request is valid (aka formerly valid)
    * should throw if request is invalid
    */
-  protected async assertValidRequest(request: SingleTransportPayload<Data, Query>): Promise<void> {
+  protected async assertValidRequest(
+    request: SingleTransportPayload<Data, Query>
+  ): Promise<void> {
     if (this.requestSchema) {
       const res = this.schema.validate(request, this.requestSchema);
       if (!res) {
-        throw new Error(this.schema.getLastErrors().map((e) => `${e.path} - ${e.message}`).join(' - '));
+        throw new Error(
+          this.schema
+            .getLastErrors()
+            .map((e) => `${e.path} - ${e.message}`)
+            .join(' - ')
+        );
       }
     }
   }
@@ -129,7 +147,12 @@ export class BaseTransportMethod<Data, Query, Out> implements ITransportMethod<D
     if (this.responseSchema) {
       const res = this.schema.validate(data, this.responseSchema);
       if (!res) {
-        throw new Error(this.schema.getLastErrors().map((e) => `${e.path} - ${e.message}`).join(' - '));
+        throw new Error(
+          this.schema
+            .getLastErrors()
+            .map((e) => `${e.path} - ${e.message}`)
+            .join(' - ')
+        );
       }
     }
   }

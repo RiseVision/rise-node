@@ -1,7 +1,11 @@
 import { Symbols } from '@risevision/core-interfaces';
 import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
-import { OnWPAction, WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import {
+  OnWPAction,
+  WordPressHookSystem,
+  WPHooksSubscriber,
+} from 'mangiafuoco';
 import { Transaction } from 'sequelize';
 import * as SocketIO from 'socket.io';
 
@@ -16,7 +20,11 @@ export class SocketIOAPI extends Extendable {
   public io: SocketIO.Server;
 
   @OnWPAction('core/blocks/chain/applyBlock.post')
-  public async onNewBlock(block: SignedBlockType, tx: Transaction, broadcast: boolean) {
+  public async onNewBlock(
+    block: SignedBlockType,
+    tx: Transaction,
+    broadcast: boolean
+  ) {
     // If !broadcast it probably means we're syncing.
     if (broadcast) {
       this.io.sockets.emit('blocks/change', block);

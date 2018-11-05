@@ -14,28 +14,32 @@ export function checkIsModule(packageJSONPath: string) {
 
 // tslint:disable-next-line
 type ModuleInfo = {
-  name: string,
-  modulePath: string,
-  packageJSON: any,
-  rootDirectory: any,
-  subDeps: { [k: string]: ModuleInfo }
+  name: string;
+  modulePath: string;
+  packageJSON: any;
+  rootDirectory: any;
+  subDeps: { [k: string]: ModuleInfo };
 };
 
 export function resolveModule(modulePath: string, modules: any): ModuleInfo {
   const sourceModuleRootDirectory = path.dirname(findPkg.sync(modulePath));
-  const packageJSON               = require(`${sourceModuleRootDirectory}/package.json`);
-  const name                      = packageJSON.name;
+  const packageJSON = require(`${sourceModuleRootDirectory}/package.json`);
+  const name = packageJSON.name;
   if (modules[name]) {
     if (modules[name].rootDirectory !== sourceModuleRootDirectory) {
-      throw new Error(`Requiring a different version for ${name} ${modules[name].rootDirectory} - ${sourceModuleRootDirectory}`);
+      throw new Error(
+        `Requiring a different version for ${name} ${
+          modules[name].rootDirectory
+        } - ${sourceModuleRootDirectory}`
+      );
     }
     return modules[name];
   }
   const dependencies = packageJSON.dependencies;
-  const depHandles   = Object.keys(dependencies);
-  const subModules   = {};
+  const depHandles = Object.keys(dependencies);
+  const subModules = {};
   for (const depHandle of depHandles) {
-    const subModulePath   = require.resolve(depHandle, {
+    const subModulePath = require.resolve(depHandle, {
       paths: [
         `${sourceModuleRootDirectory}/node_modules`,
         ...require.main.paths,
@@ -45,17 +49,15 @@ export function resolveModule(modulePath: string, modules: any): ModuleInfo {
     if (checkIsModule(packageJSONPath)) {
       subModules[depHandle] = resolveModule(subModulePath, modules);
     }
-
   }
-  Object.keys(subModules)
-    .forEach((k) => modules[k] = subModules[k]);
+  Object.keys(subModules).forEach((k) => (modules[k] = subModules[k]));
 
   const toRet = {
     modulePath,
     name,
     packageJSON,
     rootDirectory: sourceModuleRootDirectory,
-    subDeps      : subModules,
+    subDeps: subModules,
   };
 
   if (!modules[name]) {
@@ -67,12 +69,14 @@ export function resolveModule(modulePath: string, modules: any): ModuleInfo {
   return toRet;
 }
 
-export function loadCoreSortedModules(allModules: { [k: string]: ModuleInfo},
-                                      pathGetter: (module: ModuleInfo) => string = (module) => module.modulePath): Array<ICoreModule<any>> {
-  const dag                                     = new DAG<ICoreModule<any>>();
+export function loadCoreSortedModules(
+  allModules: { [k: string]: ModuleInfo },
+  pathGetter: (module: ModuleInfo) => string = (module) => module.modulePath
+): Array<ICoreModule<any>> {
+  const dag = new DAG<ICoreModule<any>>();
   for (const moduleName in allModules) {
-    const moduleInfo                   = allModules[moduleName];
-    const CoreModule                   = require(pathGetter(moduleInfo)).CoreModule;
+    const moduleInfo = allModules[moduleName];
+    const CoreModule = require(pathGetter(moduleInfo)).CoreModule;
     const moduleImpl: ICoreModule<any> = new CoreModule();
 
     if (!moduleImpl.version) {
@@ -91,8 +95,9 @@ export function loadCoreSortedModules(allModules: { [k: string]: ModuleInfo},
   return sortedModules;
 }
 
-
-export function fetchCoreModuleImplementations(appPath: string): Array<ICoreModule<any>> {
+export function fetchCoreModuleImplementations(
+  appPath: string
+): Array<ICoreModule<any>> {
   const allModules: { [k: string]: ModuleInfo } = {};
   resolveModule(appPath, allModules);
   return loadCoreSortedModules(allModules);

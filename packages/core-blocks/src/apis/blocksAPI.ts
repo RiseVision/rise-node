@@ -6,7 +6,8 @@ import {
   IBlocksModule,
   ISystemModule,
   ITransactionLogic,
-  ITransactionsModel, Symbols,
+  ITransactionsModel,
+  Symbols
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
@@ -30,7 +31,6 @@ const blocksSchema = require('../../schema/blocks.json');
 @IoCSymbol(BlocksSymbols.api.api)
 @injectable()
 export class BlocksAPI {
-
   // Generic
   @inject(LaunchpadSymbols.zschema)
   public schema: z_schema;
@@ -73,48 +73,66 @@ export class BlocksAPI {
   @Get('/')
   @ValidateSchema()
   @WrapInDBSequence
-  public async getBlocks(@SchemaValid(blocksSchema.getBlocks, { castNumbers: true })
-                         @QueryParams() filters) {
+  public async getBlocks(
+    @SchemaValid(blocksSchema.getBlocks, { castNumbers: true })
+    @QueryParams()
+    filters
+  ) {
     const whereClause: any = {
-      generatorPublicKey: filters.generatorPublicKey ? Buffer.from(filters.generatorPublicKey, 'hex') : undefined,
-      height            : filters.height,
-      previousBlock     : filters.previousBlock,
-      reward            : filters.reward,
-      totalAmount       : filters.totalAmount,
-      totalFee          : filters.totalFee,
+      generatorPublicKey: filters.generatorPublicKey
+        ? Buffer.from(filters.generatorPublicKey, 'hex')
+        : undefined,
+      height: filters.height,
+      previousBlock: filters.previousBlock,
+      reward: filters.reward,
+      totalAmount: filters.totalAmount,
+      totalFee: filters.totalFee
     };
 
     removeEmptyObjKeys(whereClause);
-    const orderBy = [filters.orderBy ? filters.orderBy.split(':') : ['height', 'desc']];
+    const orderBy = [
+      filters.orderBy ? filters.orderBy.split(':') : ['height', 'desc']
+    ];
 
     const { rows: blocks, count } = await this.BlocksModel.findAndCountAll({
-      limit : filters.limit || 100,
+      limit: filters.limit || 100,
       offset: filters.offset || 0,
-      order : orderBy,
-      where : whereClause,
+      order: orderBy,
+      where: whereClause
     });
     // attach transactions and assets with it.
-    await Promise.all(blocks
-      .map((b) => this.TransactionsModel.findAll({ where: { blockId: b.id }, order: [['rowId', 'asc']] })
-        .then((txs) => {
-          b.transactions = txs;
-          return this.transactionLogic.attachAssets(b.transactions);
+    await Promise.all(
+      blocks.map((b) =>
+        this.TransactionsModel.findAll({
+          where: { blockId: b.id },
+          order: [['rowId', 'asc']]
         })
-        .then(() => b)
+          .then((txs) => {
+            b.transactions = txs;
+            return this.transactionLogic.attachAssets(b.transactions);
+          })
+          .then(() => b)
       )
     );
     // console.log(blocks);
     return {
       blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(b)),
-      count,
+      count
     };
   }
 
   @Get('/get')
   @ValidateSchema()
-  public async getBlock(@SchemaValid(blocksSchema.getBlock, { castNumbers: true })
-                        @QueryParams() filters: { id: string }) {
-    const block = await this.BlocksModel.findById(filters.id, { include: [this.TransactionsModel] });
+  public async getBlock(@SchemaValid(blocksSchema.getBlock, {
+    castNumbers: true
+  })
+  @QueryParams()
+  filters: {
+    id: string;
+  }) {
+    const block = await this.BlocksModel.findById(filters.id, {
+      include: [this.TransactionsModel]
+    });
     if (block === null) {
       throw new HTTPError('Block not found', 200);
     }
@@ -141,15 +159,26 @@ export class BlocksAPI {
   @Get('/getFee')
   @ValidateSchema()
   public async getFee(@SchemaValid(blocksSchema.getFee, { castNumbers: true })
-                      @QueryParams() params: { height: number }) {
+  @QueryParams()
+  params: {
+    height: number;
+  }) {
     const fees = this.systemModule.getFees(params.height);
-    return { fee: fees.fees.send, fromHeight: fees.fromHeight, toHeight: fees.toHeight, height: fees.height };
+    return {
+      fee: fees.fees.send,
+      fromHeight: fees.fromHeight,
+      toHeight: fees.toHeight,
+      height: fees.height
+    };
   }
 
   @Get('/getFees')
   @ValidateSchema()
   public async getFees(@SchemaValid(blocksSchema.getFees, { castNumbers: true })
-                       @QueryParams() params: { height: number }) {
+  @QueryParams()
+  params: {
+    height: number;
+  }) {
     return this.systemModule.getFees(params.height);
   }
 
@@ -160,17 +189,29 @@ export class BlocksAPI {
 
   @Get('/getMilestone')
   public getMilestone() {
-    return { milestone: this.blockRewardLogic.calcMilestone(this.blocksModule.lastBlock.height) };
+    return {
+      milestone: this.blockRewardLogic.calcMilestone(
+        this.blocksModule.lastBlock.height
+      )
+    };
   }
 
   @Get('/getReward')
   public getReward() {
-    return { reward: this.blockRewardLogic.calcReward(this.blocksModule.lastBlock.height) };
+    return {
+      reward: this.blockRewardLogic.calcReward(
+        this.blocksModule.lastBlock.height
+      )
+    };
   }
 
   @Get('/getSupply')
   public getSupply() {
-    return { supply: this.blockRewardLogic.calcSupply(this.blocksModule.lastBlock.height) };
+    return {
+      supply: this.blockRewardLogic.calcSupply(
+        this.blocksModule.lastBlock.height
+      )
+    };
   }
 
   @Get('/getStatus')
@@ -178,13 +219,13 @@ export class BlocksAPI {
     const lastBlock = this.blocksModule.lastBlock;
     return {
       broadhash: await this.systemModule.getBroadhash(),
-      epoch    : this.constants.epochTime,
-      fee      : this.systemModule.getFees(lastBlock.height).fees.send,
-      height   : lastBlock.height,
+      epoch: this.constants.epochTime,
+      fee: this.systemModule.getFees(lastBlock.height).fees.send,
+      height: lastBlock.height,
       milestone: this.blockRewardLogic.calcMilestone(lastBlock.height),
-      nethash  : this.systemModule.getNethash(),
-      reward   : this.blockRewardLogic.calcReward(lastBlock.height),
-      supply   : this.blockRewardLogic.calcSupply(lastBlock.height),
+      nethash: this.systemModule.getNethash(),
+      reward: this.blockRewardLogic.calcReward(lastBlock.height),
+      supply: this.blockRewardLogic.calcSupply(lastBlock.height)
     };
   }
 }

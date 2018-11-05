@@ -7,8 +7,10 @@ import {
   IBlocksModule,
   IForkModule,
   ILogger,
-  ITransactionLogic, ITransactionPool,
-  ITransactionsModule, Symbols
+  ITransactionLogic,
+  ITransactionPool,
+  ITransactionsModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -26,7 +28,6 @@ import { BlocksModuleChain } from './chain';
 
 @injectable()
 export class BlocksModuleVerify {
-
   // Helpers
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
@@ -77,10 +78,12 @@ export class BlocksModuleVerify {
   /**
    * Verifies block before fork detection and return all possible errors related to block
    */
-  public async verifyReceipt(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }> {
+  public async verifyReceipt(
+    block: SignedBlockType
+  ): Promise<{ errors: string[]; verified: boolean }> {
     const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
 
-    block.height           = lastBlock.height + 1;
+    block.height = lastBlock.height + 1;
     const errors: string[] = [
       this.verifySignature(block),
       this.verifyPreviousBlock(block),
@@ -88,16 +91,16 @@ export class BlocksModuleVerify {
       this.verifyVersion(block),
       this.verifyReward(block),
       this.verifyId(block),
-      this.verifyPayload(block),
+      this.verifyPayload(block)
     ]
       .reduce((a, b) => a.concat(b))
       .reverse();
 
-    return  this.hookSystem.apply_filters(
+    return this.hookSystem.apply_filters(
       VerifyReceipt.name,
       {
         errors,
-        verified: errors.length === 0,
+        verified: errors.length === 0
       },
       block
     );
@@ -106,7 +109,9 @@ export class BlocksModuleVerify {
   /**
    * Verify block before processing and return all possible errors related to block
    */
-  public async verifyBlock(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }> {
+  public async verifyBlock(
+    block: SignedBlockType
+  ): Promise<{ errors: string[]; verified: boolean }> {
     const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
 
     const errors = [
@@ -116,14 +121,14 @@ export class BlocksModuleVerify {
       this.verifyReward(block),
       this.verifyId(block),
       this.verifyPayload(block),
-      await this.verifyForkOne(block, lastBlock),
+      await this.verifyForkOne(block, lastBlock)
     ].reduce((a, b) => a.concat(b));
 
     return this.hookSystem.apply_filters(
       VerifyBlock.name,
       {
         errors,
-        verified: errors.length === 0,
+        verified: errors.length === 0
       },
       block,
       lastBlock
@@ -132,11 +137,11 @@ export class BlocksModuleVerify {
 
   // TODO: me
   public async onBlockchainReady() {
-    const blocks       = await this.BlocksModel.findAll({
+    const blocks = await this.BlocksModel.findAll({
       attributes: ['id'],
-      limit     : this.constants.blockSlotWindow,
-      order     : [['height', 'desc']],
-      raw       : true,
+      limit: this.constants.blockSlotWindow,
+      order: [['height', 'desc']],
+      raw: true
     });
     this.lastNBlockIds = blocks.map((b) => b.id);
   }
@@ -164,7 +169,7 @@ export class BlocksModuleVerify {
    */
   private verifySignature(block: SignedBlockType): string[] {
     const errors = [];
-    let valid    = false;
+    let valid = false;
     try {
       valid = this.blockLogic.verifySignature(block);
     } catch (e) {
@@ -225,15 +230,17 @@ export class BlocksModuleVerify {
     }
 
     if (block.transactions.length !== block.numberOfTransactions) {
-      errors.push('Included transactions do not match block transactions count');
+      errors.push(
+        'Included transactions do not match block transactions count'
+      );
     }
 
     if (block.transactions.length > this.constants.maxTxsPerBlock) {
       errors.push('Number of transactions exceeds maximum per block');
     }
 
-    let totalAmount   = 0;
-    let totalFee      = 0;
+    let totalAmount = 0;
+    let totalFee = 0;
     const payloadHash = crypto.createHash('sha256');
 
     const appliedTransactions = {};
@@ -274,18 +281,28 @@ export class BlocksModuleVerify {
   /**
    * Verifies if this block is after the previous one or is on another chain (Fork type 1)
    */
-  private async verifyForkOne(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
+  private async verifyForkOne(
+    block: SignedBlockType,
+    lastBlock: SignedBlockType
+  ): Promise<string[]> {
     if (block.previousBlock && block.previousBlock !== lastBlock.id) {
       await this.forkModule.fork(block, ForkType.TYPE_1);
-      return [`Invalid previous block: ${block.previousBlock} expected ${lastBlock.id}`];
+      return [
+        `Invalid previous block: ${block.previousBlock} expected ${
+          lastBlock.id
+        }`
+      ];
     }
     return [];
   }
 
-  async checkBlockTransactions(block: SignedBlockType, accountsMap: { [address: string]: IAccountsModel }) {
+  async checkBlockTransactions(
+    block: SignedBlockType,
+    accountsMap: { [address: string]: IAccountsModel }
+  ) {
     const allIds = [];
     for (const tx of block.transactions) {
-      tx.id         = this.transactionLogic.getId(tx);
+      tx.id = this.transactionLogic.getId(tx);
       // Apply block id to the tx
       tx['blockId'] = block.id;
       allIds.push(tx.id);
@@ -296,29 +313,36 @@ export class BlocksModuleVerify {
     let prevId = allIds[0];
     for (let i = 1; i < allIds.length; i++) {
       if (prevId === allIds[i]) {
-        throw new Error(`Duplicated transaction found in block with id ${prevId}`);
+        throw new Error(
+          `Duplicated transaction found in block with id ${prevId}`
+        );
       }
       prevId = allIds[i];
     }
 
     // check that none of the transaction exists in db.
-    const confirmedIDs = await this.transactionsModule.filterConfirmedIds(allIds);
+    const confirmedIDs = await this.transactionsModule.filterConfirmedIds(
+      allIds
+    );
     if (confirmedIDs.length > 0) {
       // Error, some of the included transactions are confirmed
       await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
       for (const confirmedID of confirmedIDs) {
         if (this.txPool.unconfirmed.remove(confirmedID)) {
-          await this.transactionsModule.undoUnconfirmed(block.transactions.filter((t) => t.id === confirmedID)[0]);
+          await this.transactionsModule.undoUnconfirmed(
+            block.transactions.filter((t) => t.id === confirmedID)[0]
+          );
         }
       }
-      throw new Error(`Transactions already confirmed: ${confirmedIDs.join(', ')}`);
+      throw new Error(
+        `Transactions already confirmed: ${confirmedIDs.join(', ')}`
+      );
     }
 
-    await Promise.all(block.transactions
-      .map((tx) => this.transactionsModule
-        .checkTransaction(tx, accountsMap, block.height)
+    await Promise.all(
+      block.transactions.map((tx) =>
+        this.transactionsModule.checkTransaction(tx, accountsMap, block.height)
       )
     );
   }
-
 }

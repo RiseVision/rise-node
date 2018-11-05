@@ -1,15 +1,20 @@
 interface Sequence {
-  addAndPromise(what: () => Promise<any>): Promise<any>
+  addAndPromise(what: () => Promise<any>): Promise<any>;
 }
 
-export function WrapInSequence<T>(which: 'balancesSequence' | 'dbSequence' | 'defaultSequence') {
-  return (target: T,
-          method: string,
-          descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>) => {
+export function WrapInSequence<T>(
+  which: 'balancesSequence' | 'dbSequence' | 'defaultSequence'
+) {
+  return (
+    target: T,
+    method: string,
+    descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>
+  ) => {
     const oldValue = descriptor.value;
     descriptor.value = function wrapInSequence(...args: any[]) {
-      return (this[which] as Sequence)
-        .addAndPromise(() => oldValue.apply(this, args));
+      return (this[which] as Sequence).addAndPromise(() =>
+        oldValue.apply(this, args)
+      );
     };
   };
 }
@@ -17,14 +22,20 @@ export function WrapInSequence<T>(which: 'balancesSequence' | 'dbSequence' | 'de
 /**
  * Decorator to wrap method in Balance Sequence
  */
-export const WrapInBalanceSequence = WrapInSequence<{balancesSequence: Sequence}>('balancesSequence');
+export const WrapInBalanceSequence = WrapInSequence<{
+  balancesSequence: Sequence;
+}>('balancesSequence');
 
 /**
  * Decorator to wrap method in DB Sequence
  */
-export const WrapInDBSequence = WrapInSequence<{dbSequence: Sequence}>('dbSequence');
+export const WrapInDBSequence = WrapInSequence<{ dbSequence: Sequence }>(
+  'dbSequence'
+);
 
 /**
  * Decorator to wrap method in Default Sequence
  */
-export const WrapInDefaultSequence = WrapInSequence<{defaultSequence: Sequence}>('defaultSequence');
+export const WrapInDefaultSequence = WrapInSequence<{
+  defaultSequence: Sequence;
+}>('defaultSequence');

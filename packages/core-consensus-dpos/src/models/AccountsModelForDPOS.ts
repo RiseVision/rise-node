@@ -5,8 +5,13 @@ import { publicKey } from '@risevision/core-types';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
-const buildArrayArgAttribute = function (table: string): any {
-  return [sequelize.literal(`(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`), table];
+const buildArrayArgAttribute = function(table: string): any {
+  return [
+    sequelize.literal(
+      `(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`
+    ),
+    table
+  ];
 };
 
 @DefaultScope({
@@ -17,7 +22,7 @@ const buildArrayArgAttribute = function (table: string): any {
     'u_isDelegate',
     'vote',
     buildArrayArgAttribute('delegates'),
-    buildArrayArgAttribute('u_delegates'),
+    buildArrayArgAttribute('u_delegates')
   ]
 })
 export class AccountsModelForDPOS extends IAccountsModel {
@@ -36,8 +41,10 @@ export class AccountsModelForDPOS extends IAccountsModel {
   @Column(DataType.TEXT)
   public u_delegates?: publicKey[];
 
-  public constructor(values?: FilteredModelAttributes<AccountsModelForDPOS>, options?: IBuildOptions) {
+  public constructor(
+    values?: FilteredModelAttributes<AccountsModelForDPOS>,
+    options?: IBuildOptions
+  ) {
     super(values, options);
   }
-
 }

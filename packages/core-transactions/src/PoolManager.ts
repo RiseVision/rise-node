@@ -1,4 +1,11 @@
-import { IAccountsModel, IAccountsModule, IJobsQueue, ILogger, ISequence, Symbols } from '@risevision/core-interfaces';
+import {
+  IAccountsModel,
+  IAccountsModule,
+  IJobsQueue,
+  ILogger,
+  ISequence,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { BroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { logOnly, WrapInBalanceSequence } from '@risevision/core-utils';
@@ -15,7 +22,6 @@ import { TxExpireTimeout } from './hooks/filters';
 
 @injectable()
 export class PoolManager {
-
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
   @inject(Symbols.generic.constants)
@@ -47,12 +53,11 @@ export class PoolManager {
 
   @postConstruct()
   public postConstruct() {
-    this.jobsQueue
-      .register(
-        'poolManager',
-        () => this.processPool(),
-        this.config.transactions.processQueueInterval
-      );
+    this.jobsQueue.register(
+      'poolManager',
+      () => this.processPool(),
+      this.config.transactions.processQueueInterval
+    );
   }
 
   public cleanup() {
@@ -67,14 +72,15 @@ export class PoolManager {
   }
 
   protected async removeExpiredTransactions() {
-    const elements      = this.pool.allQueues.map((q) => q.list())
+    const elements = this.pool.allQueues
+      .map((q) => q.list())
       .reduce((a, b) => a.concat(b), []);
     for (const txP of elements) {
       const { tx, payload } = txP;
       if (!tx) {
         continue;
       }
-      const now     = Math.floor(Date.now() / 1000);
+      const now = Math.floor(Date.now() / 1000);
       const timeOut = await this.hookSystem.apply_filters(
         TxExpireTimeout.name,
         this.constants.unconfirmedTransactionTimeOut,
@@ -83,7 +89,11 @@ export class PoolManager {
       const seconds = now - Math.floor(payload.receivedAt.getTime() / 1000);
       if (seconds > timeOut) {
         this.pool.removeFromPool(tx.id);
-        this.logger.info(`Expired transaction: ${tx.id} received at: ${payload.receivedAt.toUTCString()}`);
+        this.logger.info(
+          `Expired transaction: ${
+            tx.id
+          } received at: ${payload.receivedAt.toUTCString()}`
+        );
       }
     }
   }
@@ -92,25 +102,28 @@ export class PoolManager {
   protected async processQueuedTransactions() {
     // Fetch txs from queue in order of appearance.
     const bundledTxs = await this.pool.queued.list({
-      limit : this.config.transactions.bundleLimit,
-      sortFn: (a, b) => b.payload.receivedAt.getTime() - a.payload.receivedAt.getTime(),
+      limit: this.config.transactions.bundleLimit,
+      sortFn: (a, b) =>
+        b.payload.receivedAt.getTime() - a.payload.receivedAt.getTime(),
     });
 
-    const accMap = await this.accountsModule
-      .txAccounts(bundledTxs.map((btx) => btx.tx));
+    const accMap = await this.accountsModule.txAccounts(
+      bundledTxs.map((btx) => btx.tx)
+    );
 
     // Either discard or move to ready/pending
     for (const btx of bundledTxs) {
-      await this.processQueued(btx.tx, accMap)
-        .catch(logOnly(this.logger));
+      await this.processQueued(btx.tx, accMap).catch(logOnly(this.logger));
     }
   }
 
   @WrapInBalanceSequence
   protected async checkPendingTransactions() {
-// Check if some of the pending are now ready.
+    // Check if some of the pending are now ready.
     const pendingTxs = await this.pool.pending.list();
-    const accMap     = await this.accountsModule.txAccounts(pendingTxs.map((a) => a.tx));
+    const accMap = await this.accountsModule.txAccounts(
+      pendingTxs.map((a) => a.tx)
+    );
     for (const ptx of pendingTxs) {
       const ready = await this.logic.ready(ptx.tx, accMap[ptx.tx.senderId]);
       if (ready) {
@@ -121,21 +134,29 @@ export class PoolManager {
 
   @WrapInBalanceSequence
   protected async applyUnconfirmed() {
-// Unconfirm some txs.
-    const missingUnconfirmed = this.constants.maxTxsPerBlock - this.pool.unconfirmed.count;
-    const readyTxs           = this.pool.ready.list({
-      limit  : missingUnconfirmed,
-      sortFn : (a, b) => a.tx.fee - b.tx.fee,
-    }).map((t) => t.tx);
+    // Unconfirm some txs.
+    const missingUnconfirmed =
+      this.constants.maxTxsPerBlock - this.pool.unconfirmed.count;
+    const readyTxs = this.pool.ready
+      .list({
+        limit: missingUnconfirmed,
+        sortFn: (a, b) => a.tx.fee - b.tx.fee,
+      })
+      .map((t) => t.tx);
 
     const accMap = await this.accountsModule.txAccounts(readyTxs);
 
-    const confirmedIDs = await this.module
-      .filterConfirmedIds(readyTxs.map((t) => t.id));
-    const unconfirmedInCycle: Array<IBaseTransaction<any> & { relays: number }> = [];
+    const confirmedIDs = await this.module.filterConfirmedIds(
+      readyTxs.map((t) => t.id)
+    );
+    const unconfirmedInCycle: Array<
+      IBaseTransaction<any> & { relays: number }
+    > = [];
     for (const readyTx of readyTxs) {
       if (confirmedIDs.indexOf(readyTx.id) !== -1) {
-        this.logger.warn(`Transaction ${readyTx.id} was ready but already confirmed`);
+        this.logger.warn(
+          `Transaction ${readyTx.id} was ready but already confirmed`
+        );
         this.pool.removeFromPool(readyTx.id);
         continue;
       }
@@ -150,9 +171,14 @@ export class PoolManager {
         unconfirmedInCycle.push(readyTx as any);
 
         // Notify
-        await this.hookSystem.do_action(OnNewUnconfirmedTransation.name, readyTx)
+        await this.hookSystem
+          .do_action(OnNewUnconfirmedTransation.name, readyTx)
           .catch(logOnly(this.logger, 'debug'));
-        await this.hookSystem.do_action('pushapi/onNewMessage', 'transactions/change', readyTx);
+        await this.hookSystem.do_action(
+          'pushapi/onNewMessage',
+          'transactions/change',
+          readyTx
+        );
       } catch (e) {
         // IF tx failed to apply for some reason lets move it back in queued state.
         this.pool.moveTx(readyTx.id, 'ready', 'queued');
@@ -175,10 +201,13 @@ export class PoolManager {
     }
   }
 
-  protected async processQueued(tx: IBaseTransaction<any>, accMap: { [add: string]: IAccountsModel }) {
+  protected async processQueued(
+    tx: IBaseTransaction<any>,
+    accMap: { [add: string]: IAccountsModel }
+  ) {
     try {
       await this.accountsModule.checkTXsAccountsMap([tx], accMap);
-      if (!await this.logic.ready(tx, accMap[tx.senderId])) {
+      if (!(await this.logic.ready(tx, accMap[tx.senderId]))) {
         await this.pool.moveTx(tx.id, 'queued', 'pending');
         const p = await this.pool.pending.getPayload(tx);
         p.ready = false;
@@ -192,5 +221,4 @@ export class PoolManager {
       return;
     }
   }
-
 }

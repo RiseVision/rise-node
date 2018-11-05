@@ -1,4 +1,8 @@
-import { BlocksModuleChain, BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
+import {
+  BlocksModuleChain,
+  BlocksModuleProcess,
+  BlocksSymbols
+} from '@risevision/core-blocks';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -15,22 +19,28 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
-import { AppConfig, ConstantsType, SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  AppConfig,
+  ConstantsType,
+  SignedAndChainedBlockType
+} from '@risevision/core-types';
 import { logOnly } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import SocketIO from 'socket.io';
 import z_schema from 'z-schema';
 import {
-  OnBlockchainReady, OnCheckIntegrity,
+  OnBlockchainReady,
+  OnCheckIntegrity,
   OnSyncRequested,
-  RecreateAccountsTables, RestoreUnconfirmedEntries,
+  RecreateAccountsTables,
+  RestoreUnconfirmedEntries,
   WhatToSync
 } from '../hooks';
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
-  private network: { height: number, peers: Peer[] };
+  private network: { height: number; peers: Peer[] };
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -89,17 +99,19 @@ export class LoaderModule implements ILoaderModule {
   public initialize() {
     this.network = {
       height: 0,
-      peers : [],
+      peers: []
     };
   }
 
   public async getNetwork() {
-    if (!(
-      this.network.height > 0 &&
-      Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1)
+    if (
+      !(
+        this.network.height > 0 &&
+        Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1
+      )
     ) {
       const { peers } = await this.peersModule.list({});
-      this.network    = this.peersModule.findGoodPeers(peers);
+      this.network = this.peersModule.findGoodPeers(peers);
     }
     return this.network;
   }
@@ -150,14 +162,15 @@ export class LoaderModule implements ILoaderModule {
       return this.load(1, limit, null, true);
     }
 
-    const genesisBlock = await this.BlocksModel.findOne({ where: { height: 1 } });
+    const genesisBlock = await this.BlocksModel.findOne({
+      where: { height: 1 }
+    });
     // If there's a genesis in db lets check its validity against code version
     if (genesisBlock) {
-      const matches = (
+      const matches =
         genesisBlock.id === this.genesisBlock.id &&
         genesisBlock.payloadHash.equals(this.genesisBlock.payloadHash) &&
-        genesisBlock.blockSignature.equals(this.genesisBlock.blockSignature)
-      );
+        genesisBlock.blockSignature.equals(this.genesisBlock.blockSignature);
       if (!matches) {
         throw new Error('Failed to match genesis block with database');
       }
@@ -186,31 +199,43 @@ export class LoaderModule implements ILoaderModule {
   private async verifySnapshot(blocksCount: number, limit: number) {
     this.logger.info('Snapshot mode enabled');
 
-    blocksCount = await this.hookSystem.apply_filters('core/loader/snapshot/blocksCount', blocksCount);
+    blocksCount = await this.hookSystem.apply_filters(
+      'core/loader/snapshot/blocksCount',
+      blocksCount
+    );
 
     this.config.loading.snapshot = blocksCount;
     this.appState.set('rounds.snapshot', blocksCount);
 
-    this.logger.info(`Snapshotting to end of round: ${this.config.loading.snapshot}`, blocksCount);
-
-    await this.load(
-      blocksCount,
-      limit,
-      'Blocks Verification enabled',
-      false
+    this.logger.info(
+      `Snapshotting to end of round: ${this.config.loading.snapshot}`,
+      blocksCount
     );
+
+    await this.load(blocksCount, limit, 'Blocks Verification enabled', false);
 
     if (this.blocksModule.lastBlock.height !== blocksCount) {
       // tslint:disable-next-line max-line-length
-      this.logger.error(`LastBlock height does not expected block. Expected: ${blocksCount} - Received: ${this.blocksModule.lastBlock.height}`);
+      this.logger.error(
+        `LastBlock height does not expected block. Expected: ${blocksCount} - Received: ${
+          this.blocksModule.lastBlock.height
+        }`
+      );
       process.exit(1);
     }
 
     // Clip blockchain
-    await this.blocksChainModule.deleteAfterBlock(this.blocksModule.lastBlock.height);
+    await this.blocksChainModule.deleteAfterBlock(
+      this.blocksModule.lastBlock.height
+    );
   }
 
-  public async load(count: number, limitPerIteration: number, message?: string, emitBlockchainReady = false) {
+  public async load(
+    count: number,
+    limitPerIteration: number,
+    message?: string,
+    emitBlockchainReady = false
+  ) {
     let offset = 0;
     if (message) {
       this.logger.warn(message);
@@ -221,14 +246,16 @@ export class LoaderModule implements ILoaderModule {
 
     while (count >= offset) {
       if (count > 1) {
-        this.logger.info('Rebuilding blockchain, current block height: ' + (offset + 1));
+        this.logger.info(
+          'Rebuilding blockchain, current block height: ' + (offset + 1)
+        );
       }
       await this.blocksProcessModule.loadBlocksOffset(
         Math.min(limitPerIteration, 1 + count - offset), // exclusive limit
         offset,
-        true/*verify*/
+        true /*verify*/
       );
-      offset          = offset + limitPerIteration;
+      offset = offset + limitPerIteration;
     }
     if (emitBlockchainReady) {
       this.logger.info('Blockchain ready');
@@ -238,19 +265,26 @@ export class LoaderModule implements ILoaderModule {
   }
 
   private async doSync() {
-    const whatToSync: string[] = await this.hookSystem.apply_filters(WhatToSync.name, []);
+    const whatToSync: string[] = await this.hookSystem.apply_filters(
+      WhatToSync.name,
+      []
+    );
     for (const what of whatToSync) {
       this.logger.info(`Syncing ${what}`);
-      await this.hookSystem.do_action(OnSyncRequested.name, what, () => this.getRandomPeer());
+      await this.hookSystem.do_action(OnSyncRequested.name, what, () =>
+        this.getRandomPeer()
+      );
     }
   }
 
   private syncTimer() {
     this.logger.trace('Setting sync timer');
-    this.jobsQueue.register('loaderSyncTimer', async () => {
+    this.jobsQueue.register(
+      'loaderSyncTimer',
+      async () => {
         this.logger.trace('Sync timer trigger', {
           last_receipt: this.blocksModule.lastReceipt.get(),
-          syncing     : this.isSyncing,
+          syncing: this.isSyncing
         });
         this.appState.set('loader.isSyncing', true);
         await this.doSync().catch(logOnly(this.logger));
@@ -259,5 +293,4 @@ export class LoaderModule implements ILoaderModule {
       Math.max(1000, this.constants.blockTime * (1000 / 50))
     );
   }
-
 }

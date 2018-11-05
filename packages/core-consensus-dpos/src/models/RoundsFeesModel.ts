@@ -13,5 +13,4 @@ export class RoundsFeesModel extends Model<RoundsFeesModel> {
 
   @Column(DataType.BLOB)
   public publicKey: Buffer;
-
 }

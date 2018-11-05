@@ -4,14 +4,20 @@ export type cback<T = void> = (err: Error, data?: T) => void;
 
 export const emptyCB: cback<any> = () => void 0;
 
-export function logOnly(logger: ILogger, severity: 'warn' | 'error' | 'debug' | 'info' = 'warn'): (e: Error) => Promise<null> {
+export function logOnly(
+  logger: ILogger,
+  severity: 'warn' | 'error' | 'debug' | 'info' = 'warn'
+): (e: Error) => Promise<null> {
   return async (err: Error) => {
     logger[severity](err.stack);
     return null;
   };
 }
 
-export function catchToLoggerAndRemapError<T>(rejectString: string, logger: ILogger): (err: Error) => Promise<T> {
+export function catchToLoggerAndRemapError<T>(
+  rejectString: string,
+  logger: ILogger
+): (err: Error) => Promise<T> {
   return (err: Error) => {
     logger.error(err.stack);
     return Promise.reject(rejectString);
@@ -23,7 +29,10 @@ export function catchToLoggerAndRemapError<T>(rejectString: string, logger: ILog
  * @param promise the promise
  * @param cb the callback
  */
-export function promiseToCB<T>(promise: Promise<T>, cb: cback<T> = emptyCB): Promise<T> {
+export function promiseToCB<T>(
+  promise: Promise<T>,
+  cb: cback<T> = emptyCB
+): Promise<T> {
   return promise
     .then((res) => {
       cb(null, res);
@@ -38,9 +47,18 @@ export function promiseToCB<T>(promise: Promise<T>, cb: cback<T> = emptyCB): Pro
 /**
  * Promisify a fn that returns a callback
  */
-export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi: true): Promise<T[]>;
-export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi?: false): Promise<T>;
-export function cbToPromise<T>(fn: (cb: cback<T>) => void, multi = false): Promise<T> {
+export function cbToPromise<T>(
+  fn: (cb: cback<T>) => void,
+  multi: true
+): Promise<T[]>;
+export function cbToPromise<T>(
+  fn: (cb: cback<T>) => void,
+  multi?: false
+): Promise<T>;
+export function cbToPromise<T>(
+  fn: (cb: cback<T>) => void,
+  multi = false
+): Promise<T> {
   return new Promise((resolve, reject) => {
     fn((...args) => {
       if (args[0]) {
@@ -60,7 +78,10 @@ export function cbToVoidPromise(fn: (cb: cback<any>) => void): Promise<void> {
   return cbToPromise(fn);
 }
 
-export function logCatchRewrite(logger: ILogger, errString: string): (err: Error) => Promise<any> {
+export function logCatchRewrite(
+  logger: ILogger,
+  errString: string
+): (err: Error) => Promise<any> {
   return (err: Error) => {
     logger.error(err.stack);
     return Promise.reject(new Error(errString));

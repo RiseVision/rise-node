@@ -10,33 +10,52 @@ import { ForkModule, LoaderModule, SystemModule } from './modules';
 import { CoreSymbols } from './symbols';
 import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
 
-export class CoreModule extends BaseCoreModule<void> implements ICoreModuleWithModels {
+export class CoreModule extends BaseCoreModule<void>
+  implements ICoreModuleWithModels {
   public configSchema = {};
-  public constants    = constants;
+  public constants = constants;
 
   public async addElementsToContainer() {
-    this.container.bind(Symbols.helpers.timeToEpoch).to(TimeToEpoch).inSingletonScope();
+    this.container
+      .bind(Symbols.helpers.timeToEpoch)
+      .to(TimeToEpoch)
+      .inSingletonScope();
     this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
-    this.container.bind(CoreSymbols.modules.fork).to(ForkModule).inSingletonScope();
-    this.container.bind(CoreSymbols.modules.system).to(SystemModule).inSingletonScope();
-    this.container.bind(CoreSymbols.modules.loader).to(LoaderModule).inSingletonScope();
-    this.container.bind(APISymbols.api).toConstructor(LoaderAPI)
+    this.container
+      .bind(CoreSymbols.modules.fork)
+      .to(ForkModule)
+      .inSingletonScope();
+    this.container
+      .bind(CoreSymbols.modules.system)
+      .to(SystemModule)
+      .inSingletonScope();
+    this.container
+      .bind(CoreSymbols.modules.loader)
+      .to(LoaderModule)
+      .inSingletonScope();
+    this.container
+      .bind(APISymbols.api)
+      .toConstructor(LoaderAPI)
       .whenTargetNamed(CoreSymbols.api.loader);
   }
 
   public async onPostInitModels() {
-    const infoModel = this.container.getNamed<typeof IInfoModel>(ModelSymbols.model, ModelSymbols.names.info);
+    const infoModel = this.container.getNamed<typeof IInfoModel>(
+      ModelSymbols.model,
+      ModelSymbols.names.info
+    );
     // Create or restore nonce!
-    const [val] = await infoModel
-      .findOrCreate({where: {key: 'nonce'}, defaults: {value: uuid.v4()}});
+    const [val] = await infoModel.findOrCreate({
+      where: { key: 'nonce' },
+      defaults: { value: uuid.v4() },
+    });
 
     this.container.bind(Symbols.generic.nonce).toConstantValue(val.value);
-    await infoModel
-      .upsert({
-        key  : 'genesisAccount',
-        value: this.container.get<any>(Symbols.generic.genesisBlock)
-          .transactions[0].senderId,
-      });
+    await infoModel.upsert({
+      key: 'genesisAccount',
+      value: this.container.get<any>(Symbols.generic.genesisBlock)
+        .transactions[0].senderId,
+    });
   }
 
   public async initAppElements() {
@@ -47,10 +66,14 @@ export class CoreModule extends BaseCoreModule<void> implements ICoreModuleWithM
   }
 
   public async boot() {
-    const loaderModule = this.container.get<LoaderModule>(CoreSymbols.modules.loader);
+    const loaderModule = this.container.get<LoaderModule>(
+      CoreSymbols.modules.loader
+    );
     await loaderModule.loadBlockChain();
   }
   public async teardown(): Promise<void> {
-    await this.container.get<LoaderModule>(CoreSymbols.modules.loader).cleanup();
+    await this.container
+      .get<LoaderModule>(CoreSymbols.modules.loader)
+      .cleanup();
   }
 }

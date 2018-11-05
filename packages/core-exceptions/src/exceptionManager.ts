@@ -20,7 +20,9 @@ export type ExceptionType = {
 
 @injectable()
 export class ExceptionsManager {
-  private handlers: { [k in symbol]: { [h: string]: IExceptionHandler<any> } } = {};
+  private handlers: {
+    [k in symbol]: { [h: string]: IExceptionHandler<any> }
+  } = {};
 
   @inject(ModelSymbols.model)
   @named(ExceptionSymbols.model)
@@ -29,8 +31,12 @@ export class ExceptionsManager {
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
 
-  public registerExceptionHandler<T= any>(what: symbol, handlerKey: string, handler: IExceptionHandler<T>) {
-    this.handlers[what]             = this.handlers[what] || {};
+  public registerExceptionHandler<T = any>(
+    what: symbol,
+    handlerKey: string,
+    handler: IExceptionHandler<T>
+  ) {
+    this.handlers[what] = this.handlers[what] || {};
     this.handlers[what][handlerKey] = handler;
   }
 
@@ -39,11 +45,12 @@ export class ExceptionsManager {
   }
 
   public handlersForKey<T = any>(what: symbol): Array<IExceptionHandler<T>> {
-    if (typeof(this.handlers[what]) === 'undefined') {
+    if (typeof this.handlers[what] === 'undefined') {
       return [];
     } else {
-      return Object.keys(this.handlers[what])
-        .map((k) => this.handlers[what][k]);
+      return Object.keys(this.handlers[what]).map(
+        (k) => this.handlers[what][k]
+      );
     }
   }
 
@@ -51,14 +58,14 @@ export class ExceptionsManager {
     for (const exception of exceptions) {
       if (this.appConfig.loading.snapshot) {
         // If we're in snapshot verification we need to reset the exceptions
-        await this.exceptionModel
-          .destroy({where: {type: exception.type, key: exception.address}});
+        await this.exceptionModel.destroy({
+          where: { type: exception.type, key: exception.address },
+        });
       }
       await this.exceptionModel.findOrCreate({
-        defaults: {remainingCount: exception.maxCount},
-        where   : {type: exception.type, key: exception.address},
+        defaults: { remainingCount: exception.maxCount },
+        where: { type: exception.type, key: exception.address },
       });
     }
   }
-
 }

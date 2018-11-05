@@ -1,4 +1,8 @@
-import { ILogger, IMigrationsModel, Symbols } from '@risevision/core-interfaces';
+import {
+  ILogger,
+  IMigrationsModel,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { BigNumber } from 'bignumber.js';
@@ -6,7 +10,12 @@ import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
-type MigrationEntry = { id: BigNumber, name: string, path: string, moduleName: string };
+type MigrationEntry = {
+  id: BigNumber;
+  name: string;
+  path: string;
+  moduleName: string;
+};
 @injectable()
 export class Migrator {
   @inject(ModelSymbols.model)
@@ -20,17 +29,19 @@ export class Migrator {
   private logger: ILogger;
 
   public async init(): Promise<void> {
-    const hasMigrations   = await this.checkMigrations();
-    const lastMigration   = await this.getLastMigration(hasMigrations);
-    const pending         = await this.readPendingMigrations(lastMigration);
+    const hasMigrations = await this.checkMigrations();
+    const lastMigration = await this.getLastMigration(hasMigrations);
+    const pending = await this.readPendingMigrations(lastMigration);
     const insertedPending = await this.applyPendingMigrations(pending);
     await this.insertAppliedMigrations(insertedPending);
     await this.applyRuntimeQueryFile();
   }
 
   private async checkMigrations(): Promise<boolean> {
-    const [row] = await this.MigrationsModel.sequelize
-      .query('SELECT to_regclass(\'migrations\')', { raw: true, type: sequelize.QueryTypes.SELECT });
+    const [row] = await this.MigrationsModel.sequelize.query(
+      "SELECT to_regclass('migrations')",
+      { raw: true, type: sequelize.QueryTypes.SELECT }
+    );
     return row.to_regclass !== null;
   }
 
@@ -56,16 +67,25 @@ export class Migrator {
    * Reads sql migration folder and returns only pending migrations sqls.
    */
   // tslint:disable-next-line max-line-length
-  private async readPendingMigrations(lastMigration: BigNumber): Promise<MigrationEntry[]> {
-    const pms = await Promise.all(this.modules
-      .map((m) => this.readPendingMigrationsForSingleCoreModule(m, lastMigration))
+  private async readPendingMigrations(
+    lastMigration: BigNumber
+  ): Promise<MigrationEntry[]> {
+    const pms = await Promise.all(
+      this.modules.map((m) =>
+        this.readPendingMigrationsForSingleCoreModule(m, lastMigration)
+      )
     );
     return pms
       .reduce((a, b) => a.concat(b), [])
-      .sort((a, b) => path.basename(a.path).localeCompare(path.basename(b.path)));
+      .sort((a, b) =>
+        path.basename(a.path).localeCompare(path.basename(b.path))
+      );
   }
 
-  private async readPendingMigrationsForSingleCoreModule(coreModule: ICoreModule<any>, lastMigration: BigNumber): Promise<MigrationEntry[]> {
+  private async readPendingMigrationsForSingleCoreModule(
+    coreModule: ICoreModule<any>,
+    lastMigration: BigNumber
+  ): Promise<MigrationEntry[]> {
     const migrationsPath = path.join(coreModule.directory, 'sql', 'migrations');
     if (!fs.existsSync(migrationsPath)) {
       return [];
@@ -74,7 +94,9 @@ export class Migrator {
     function matchMigrationName(file) {
       const name = file.match(/_.+\.sql$/);
 
-      return Array.isArray(name) ? name[0].replace(/_/, '').replace(/\.sql$/, '') : null;
+      return Array.isArray(name)
+        ? name[0].replace(/_/, '').replace(/\.sql$/, '')
+        : null;
     }
 
     function matchMigrationId(file) {
@@ -83,25 +105,32 @@ export class Migrator {
       return Array.isArray(id) ? new BigNumber(id[0]) : null;
     }
 
-    return fs.readdirSync(migrationsPath)
-      .map((file) => ({
-        id        : matchMigrationId(file),
-        moduleName: coreModule.name,
-        name      : matchMigrationName(file),
-        path      : path.join(migrationsPath, file),
-      }))
-      // only non null and existing file ending with .sql
-      .filter((d) => (d.id && d.name))
-      .filter((d) => fs.statSync(d.path).isFile())
-      .filter((d) => /\.sql$/.test(d.path))
-      // Filter only pending migrations
-      .filter((d) => !lastMigration || d.id.isGreaterThan(lastMigration));
+    return (
+      fs
+        .readdirSync(migrationsPath)
+        .map((file) => ({
+          id: matchMigrationId(file),
+          moduleName: coreModule.name,
+          name: matchMigrationName(file),
+          path: path.join(migrationsPath, file),
+        }))
+        // only non null and existing file ending with .sql
+        .filter((d) => d.id && d.name)
+        .filter((d) => fs.statSync(d.path).isFile())
+        .filter((d) => /\.sql$/.test(d.path))
+        // Filter only pending migrations
+        .filter((d) => !lastMigration || d.id.isGreaterThan(lastMigration))
+    );
   }
 
   private async applyPendingMigrations(pendingMigrations: MigrationEntry[]) {
     for (const m of pendingMigrations) {
-      this.logger.info(`Applying Pending migration from ${m.moduleName} - named: ${m.name}`);
-      await this.MigrationsModel.sequelize.query(fs.readFileSync(m.path, { encoding: 'utf8' }));
+      this.logger.info(
+        `Applying Pending migration from ${m.moduleName} - named: ${m.name}`
+      );
+      await this.MigrationsModel.sequelize.query(
+        fs.readFileSync(m.path, { encoding: 'utf8' })
+      );
     }
     return pendingMigrations;
   }
@@ -125,8 +154,9 @@ export class Migrator {
       const runtimePath = path.join(m.directory, 'sql', 'runtime.sql');
       if (fs.existsSync(runtimePath)) {
         this.logger.info(`Applying runtime.sql from ${m.name}`);
-        await this.MigrationsModel.sequelize
-          .query(fs.readFileSync(runtimePath, { encoding: 'utf8' }));
+        await this.MigrationsModel.sequelize.query(
+          fs.readFileSync(runtimePath, { encoding: 'utf8' })
+        );
       }
     }
   }

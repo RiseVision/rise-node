@@ -1,4 +1,10 @@
-import { IInnerTXQueue, ILogger, ITransactionLogic, ITransactionPool, Symbols } from '@risevision/core-interfaces';
+import {
+  IInnerTXQueue,
+  ILogger,
+  ITransactionLogic,
+  ITransactionPool,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import { TXAppConfig } from './helpers/appconfig';
@@ -10,14 +16,17 @@ type QueueType = 'queued' | 'pending' | 'ready' | 'unconfirmed';
 // tslint:disable-next-line
 @injectable()
 export class TransactionPool implements ITransactionPool {
-  protected queues: {[k in QueueType]: InnerTXQueue};
+  protected queues: { [k in QueueType]: InnerTXQueue };
 
   get queued() {
     return this.queues.queued;
   }
 
   get pending() {
-    return this.queues.pending as InnerTXQueue<{ready: boolean, receivedAt: Date}>;
+    return this.queues.pending as InnerTXQueue<{
+      ready: boolean;
+      receivedAt: Date;
+    }>;
   }
 
   get ready() {
@@ -48,17 +57,17 @@ export class TransactionPool implements ITransactionPool {
   @postConstruct()
   public afterConstruction() {
     this.queues = {
-      pending    : new this.PoolQueue('pending'),
-      queued     : new this.PoolQueue('queued'),
-      ready      : new this.PoolQueue('ready'),
+      pending: new this.PoolQueue('pending'),
+      queued: new this.PoolQueue('queued'),
+      ready: new this.PoolQueue('ready'),
       unconfirmed: new this.PoolQueue('unconfirmed'),
     };
   }
 
   public moveTx(txId: string, from: QueueType, to: QueueType): void {
-    const fromQ             = this[from];
+    const fromQ = this[from];
     const toQ: InnerTXQueue = this[to];
-    const {tx, payload}     = fromQ.get(txId);
+    const { tx, payload } = fromQ.get(txId);
     fromQ.remove(txId);
     toQ.add(tx, payload);
   }
@@ -77,12 +86,10 @@ export class TransactionPool implements ITransactionPool {
   }
 
   public removeFromPool(transactionId: string) {
-    this.allQueues
-      .forEach((q) => q.remove(transactionId));
+    this.allQueues.forEach((q) => q.remove(transactionId));
   }
 
   public get allQueues(): InnerTXQueue[] {
     return [this.ready, this.queued, this.pending, this.unconfirmed];
   }
-
 }

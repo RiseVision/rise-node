@@ -10,40 +10,54 @@ import { JobsQueue } from './jobsQueue';
 import { Migrator } from './migrator';
 import { Sequence } from './sequence';
 
-export class CoreModule extends BaseCoreModule<AppConfig> implements ICoreModuleWithModels {
+export class CoreModule extends BaseCoreModule<AppConfig>
+  implements ICoreModuleWithModels {
   public configSchema = {};
-  public constants    = {};
+  public constants = {};
 
   public addElementsToContainer(): void {
-    this.container.bind(HelpersSymbols.appState).to(AppState).inSingletonScope();
-    this.container.bind(HelpersSymbols.jobsQueue).to(JobsQueue).inSingletonScope();
+    this.container
+      .bind(HelpersSymbols.appState)
+      .to(AppState)
+      .inSingletonScope();
+    this.container
+      .bind(HelpersSymbols.jobsQueue)
+      .to(JobsQueue)
+      .inSingletonScope();
     let logger;
     try {
       logger = this.container.get(Symbols.helpers.logger);
-    } catch (e) {
-    }
+    } catch (e) {}
     if (!logger) {
       logger = loggerCreator({
-        echo      : this.config.consoleLogLevel,
+        echo: this.config.consoleLogLevel,
         errorLevel: this.config.fileLogLevel,
-        filename  : this.config.logFileName,
+        filename: this.config.logFileName,
       });
       this.container.bind(Symbols.helpers.logger).toConstantValue(logger);
     }
 
-    this.container.bind(Symbols.generic.zschema).toConstantValue(new z_schema({}));
-    this.container.bind(HelpersSymbols.migrator).to(Migrator).inSingletonScope();
+    this.container
+      .bind(Symbols.generic.zschema)
+      .toConstantValue(new z_schema({}));
+    this.container
+      .bind(HelpersSymbols.migrator)
+      .to(Migrator)
+      .inSingletonScope();
     [
       HelpersSymbols.names.balancesSequence,
       HelpersSymbols.names.dbSequence,
       HelpersSymbols.names.defaultSequence,
     ].forEach((s) => {
-      this.container.bind(HelpersSymbols.sequence)
-        .toConstantValue(new Sequence(s, {
-          onWarning: (current) => {
-            logger.warn(`${s.toString()} queue`, current);
-          },
-        }))
+      this.container
+        .bind(HelpersSymbols.sequence)
+        .toConstantValue(
+          new Sequence(s, {
+            onWarning: (current) => {
+              logger.warn(`${s.toString()} queue`, current);
+            },
+          })
+        )
         .whenTargetNamed(s);
     });
   }
@@ -56,11 +70,13 @@ export class CoreModule extends BaseCoreModule<AppConfig> implements ICoreModule
     program.option('-l, --log <level>', 'log level');
   }
 
-  public patchConfigWithCLIParams<T extends AppConfig>(program: CommanderStatic, appConfig: T) {
+  public patchConfigWithCLIParams<T extends AppConfig>(
+    program: CommanderStatic,
+    appConfig: T
+  ) {
     if (program.log) {
       appConfig.consoleLogLevel = program.log;
     }
     return appConfig;
   }
-
 }

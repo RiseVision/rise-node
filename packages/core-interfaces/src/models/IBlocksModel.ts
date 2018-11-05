@@ -4,7 +4,6 @@ import { ITransactionsModel } from './ITransactionsModel';
 import { IBlocksModule } from '../modules';
 
 export class IBlocksModel extends IBaseModel<IBlocksModel> {
-
   public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
     throw new Error('Not implemented. Please implement in subclass');
   }
@@ -24,6 +23,4 @@ export class IBlocksModel extends IBaseModel<IBlocksModel> {
   public generatorPublicKey: Buffer;
   public blockSignature: Buffer;
   public transactions: ITransactionsModel[];
-
-
 }

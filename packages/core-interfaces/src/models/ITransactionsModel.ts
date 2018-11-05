@@ -1,10 +1,15 @@
-import { ITransportTransaction, publicKey, TransactionType } from '@risevision/core-types';
+import {
+  ITransportTransaction,
+  publicKey,
+  TransactionType
+} from '@risevision/core-types';
 import { IBlocksModule } from '../modules';
 import { IBaseModel } from './IBaseModel';
 import { IBaseTransaction } from '../../../core-types/dist';
 
-export class ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsModel<Asset>> {
-
+export class ITransactionsModel<Asset = any> extends IBaseModel<
+  ITransactionsModel<Asset>
+> {
   public id: string;
 
   public rowId: number;
@@ -39,7 +44,9 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<ITransactionsMod
     return null;
   }
 
-  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>): ITransportTransaction<Asset> & { confirmations?: number } {
+  public static toTransportTransaction<Asset>(
+    t: IBaseTransaction<Asset>
+  ): ITransportTransaction<Asset> & { confirmations?: number } {
     return null;
   }
 }

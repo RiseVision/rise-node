@@ -10,14 +10,18 @@ import { ICoreModule } from './module';
 
 export class AppManager {
   public container: Container = new Container();
-  public hookSystem: WordPressHookSystem = new WordPressHookSystem(new InMemoryFilterModel());
-  private isCleaning       = false;
+  public hookSystem: WordPressHookSystem = new WordPressHookSystem(
+    new InMemoryFilterModel()
+  );
+  private isCleaning = false;
 
-  constructor(private appConfig: AppConfig,
-              private logger: ILogger,
-              private versionBuild: string,
-              private genesisBlock: SignedAndChainedBlockType,
-              private modules: Array<ICoreModule<any>>) {
+  constructor(
+    private appConfig: AppConfig,
+    private logger: ILogger,
+    private versionBuild: string,
+    private genesisBlock: SignedAndChainedBlockType,
+    private modules: Array<ICoreModule<any>>
+  ) {
     this.appConfig.nethash = genesisBlock.payloadHash.toString('hex');
     // this.container.applyMiddleware(theLogger);
     // Sets the int8 (64bit integer) to be parsed as int instead of being returned as text
@@ -62,11 +66,21 @@ export class AppManager {
     });
 
     this.container.bind(Symbols.helpers.logger).toConstantValue(this.logger);
-    this.container.bind(LaunchpadSymbols.coremodules).toConstantValue(this.modules);
-    this.container.bind(Symbols.generic.appConfig).toConstantValue(this.appConfig);
-    this.container.bind(Symbols.generic.versionBuild).toConstantValue(this.versionBuild);
-    this.container.bind(Symbols.generic.genesisBlock).toConstantValue(this.genesisBlock);
-    this.container.bind(Symbols.generic.hookSystem).toConstantValue(this.hookSystem);
+    this.container
+      .bind(LaunchpadSymbols.coremodules)
+      .toConstantValue(this.modules);
+    this.container
+      .bind(Symbols.generic.appConfig)
+      .toConstantValue(this.appConfig);
+    this.container
+      .bind(Symbols.generic.versionBuild)
+      .toConstantValue(this.versionBuild);
+    this.container
+      .bind(Symbols.generic.genesisBlock)
+      .toConstantValue(this.genesisBlock);
+    this.container
+      .bind(Symbols.generic.hookSystem)
+      .toConstantValue(this.hookSystem);
 
     for (const m of this.modules) {
       await m.addElementsToContainer();
@@ -89,5 +103,4 @@ export class AppManager {
 
     this.logger.info('App Booted');
   }
-
 }

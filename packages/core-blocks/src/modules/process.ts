@@ -7,10 +7,11 @@ import {
   IForkModule,
   ILogger,
   ISequence,
-  ITransactionLogic, ITransactionPool,
+  ITransactionLogic,
+  ITransactionPool,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols,
+  Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
@@ -23,7 +24,10 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType
 } from '@risevision/core-types';
-import { WrapInDBSequence, WrapInDefaultSequence } from '@risevision/core-utils';
+import {
+  WrapInDBSequence,
+  WrapInDefaultSequence
+} from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
@@ -38,7 +42,6 @@ const schema = require('../../schema/blocks.json');
 
 @injectable()
 export class BlocksModuleProcess {
-
   // Generics
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
@@ -118,19 +121,25 @@ export class BlocksModuleProcess {
    */
   // FIXME Void return for recoverChain
   // tslint:disable-next-line max-line-length
-  public async getCommonBlock(peer: Peer, height: number): Promise<{ id: string, previousBlock: string, height: number } | void> {
-    const { ids }    = await this.blocksUtilsModule.getIdSequence(height);
+  public async getCommonBlock(
+    peer: Peer,
+    height: number
+  ): Promise<{ id: string; previousBlock: string; height: number } | void> {
+    const { ids } = await this.blocksUtilsModule.getIdSequence(height);
 
-    const commonResp = await peer.makeRequest(
-      this.commonBlockRequest,
-        { query: { ids: ids.join(',') } }
-      );
+    const commonResp = await peer.makeRequest(this.commonBlockRequest, {
+      query: { ids: ids.join(',') }
+    });
 
     if (!commonResp || !commonResp.common) {
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
         return this.blocksChainModule.recoverChain();
       } else {
-        throw new Error(`Chain comparison failed with peer ${peer.string} using ids: ${ids.join(', ')}`);
+        throw new Error(
+          `Chain comparison failed with peer ${
+            peer.string
+          } using ids: ${ids.join(', ')}`
+        );
       }
     }
 
@@ -141,10 +150,10 @@ export class BlocksModuleProcess {
     // Check that block with ID, previousBlock and height exists in database
     const matchingCount = await this.BlocksModel.count({
       where: {
-        height       : commonResp.common.height,
-        id           : commonResp.common.id,
-        previousBlock: commonResp.common.previousBlock,
-      },
+        height: commonResp.common.height,
+        id: commonResp.common.id,
+        previousBlock: commonResp.common.previousBlock
+      }
     });
 
     if (matchingCount === 0) {
@@ -152,8 +161,11 @@ export class BlocksModuleProcess {
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
         return this.blocksChainModule.recoverChain();
       } else {
-        throw new Error(`Chain comparison failed with peer: ${
-          peer.string} using block ${JSON.stringify(commonResp.common)}`);
+        throw new Error(
+          `Chain comparison failed with peer: ${
+            peer.string
+          } using block ${JSON.stringify(commonResp.common)}`
+        );
       }
     }
 
@@ -169,21 +181,25 @@ export class BlocksModuleProcess {
    */
   @WrapInDBSequence
   // tslint:disable-next-line max-line-length
-  public async loadBlocksOffset(limit: number, offset: number = 0, verify: boolean): Promise<SignedAndChainedBlockType> {
+  public async loadBlocksOffset(
+    limit: number,
+    offset: number = 0,
+    verify: boolean
+  ): Promise<SignedAndChainedBlockType> {
     const newLimit = limit + (offset || 0);
-    const params   = { limit: newLimit, offset: offset || 0 };
+    const params = { limit: newLimit, offset: offset || 0 };
 
     this.logger.debug('Loading blocks offset', { limit, offset, verify });
 
     const blocks: IBlocksModel[] = await this.BlocksModel.findAll({
       include: [this.TransactionsModel],
-      order  : ['height', 'rowId'],
-      where  : {
+      order: ['height', 'rowId'],
+      where: {
         height: {
           [Op.gte]: params.offset,
-          [Op.lt] : params.limit,
-        },
-      },
+          [Op.lt]: params.limit
+        }
+      }
     });
 
     // Cycle through every block and apply it.
@@ -203,7 +219,10 @@ export class BlocksModuleProcess {
         // No access to database.
         const check = await this.blocksVerifyModule.verifyBlock(block);
         if (!check.verified) {
-          this.logger.error(`Block ${block.id} verification failed`, check.errors.join(', '));
+          this.logger.error(
+            `Block ${block.id} verification failed`,
+            check.errors.join(', ')
+          );
           // Return first error from checks
           throw new Error(check.errors[0]);
         }
@@ -216,8 +235,13 @@ export class BlocksModuleProcess {
         // FIXME: Looks like we are missing some validations here, because applyBlock is
         // different than processBlock used elesewhere
         // - that need to be checked and adjusted to be consistent
-        const txAccounts = await this.accountsModule.txAccounts(block.transactions);
-        await this.accountsModule.checkTXsAccountsMap(block.transactions, txAccounts);
+        const txAccounts = await this.accountsModule.txAccounts(
+          block.transactions
+        );
+        await this.accountsModule.checkTXsAccountsMap(
+          block.transactions,
+          txAccounts
+        );
         await this.blocksChainModule.applyBlock(
           block,
           false,
@@ -235,30 +259,37 @@ export class BlocksModuleProcess {
    * @param {Peer | BasePeerType} rawPeer
    * @return {Promise<SignedBlockType>}
    */
-  public async loadBlocksFromPeer(rawPeer: Peer | BasePeerType): Promise<SignedBlockType> {
+  public async loadBlocksFromPeer(
+    rawPeer: Peer | BasePeerType
+  ): Promise<SignedBlockType> {
     let lastValidBlock: SignedBlockType = this.blocksModule.lastBlock;
 
     // normalize Peer
     const peer = this.peersLogic.create(rawPeer);
 
     this.logger.info(`Loading blocks from ${peer.string}`);
-    const blocksFromPeer = await peer.makeRequest(
-      this.getBlocksRequest,
-      { query: { lastBlockId: lastValidBlock.id } }
-    );
+    const blocksFromPeer = await peer.makeRequest(this.getBlocksRequest, {
+      query: { lastBlockId: lastValidBlock.id }
+    });
 
     for (const block of blocksFromPeer.blocks) {
       if (this.isCleaning) {
         return lastValidBlock;
       }
       try {
-        await this.processBlock(block, {broadcast: false, saveBlock: true});
+        await this.processBlock(block, { broadcast: false, saveBlock: true });
         lastValidBlock = block;
-        this.logger.info(`Block ${block.id} loaded from ${peer.string}`, `height: ${block.height}`);
-      } catch (err) {
-        this.logger.debug('Block processing failed',
-          { id: block.id, err: err.message || err.toString(), module: 'blocks', block }
+        this.logger.info(
+          `Block ${block.id} loaded from ${peer.string}`,
+          `height: ${block.height}`
         );
+      } catch (err) {
+        this.logger.debug('Block processing failed', {
+          id: block.id,
+          err: err.message || err.toString(),
+          module: 'blocks',
+          block
+        });
         throw err;
       }
     }
@@ -272,15 +303,23 @@ export class BlocksModuleProcess {
    * @param {number} timestamp
    * @return {Promise<void>}
    */
-  public async generateBlock(keypair: IKeypair, timestamp: number): Promise<SignedAndChainedBlockType> {
+  public async generateBlock(
+    keypair: IKeypair,
+    timestamp: number
+  ): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
-    const txs           = this.txPool.unconfirmed.txList({limit: this.constants.maxTxsPerBlock});
+    const txs = this.txPool.unconfirmed.txList({
+      limit: this.constants.maxTxsPerBlock
+    });
 
     const ready: Array<IBaseTransaction<any>> = [];
-    const confirmedTxs                        = await this.transactionsModule
-      .filterConfirmedIds(txs.map((tx) => tx.id));
+    const confirmedTxs = await this.transactionsModule.filterConfirmedIds(
+      txs.map((tx) => tx.id)
+    );
     for (const tx of txs) {
-      const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
+      const sender = await this.accountsModule.getAccount({
+        publicKey: tx.senderPublicKey
+      });
       if (!sender) {
         throw new Error('Sender not found');
       }
@@ -293,19 +332,23 @@ export class BlocksModuleProcess {
         continue;
       }
 
-      if (!await this.transactionLogic.ready(tx, sender)) {
+      if (!(await this.transactionLogic.ready(tx, sender))) {
         // Skip tx if it's not ready.
         continue;
       }
 
       try {
-        await this.transactionLogic.verify(tx, sender, null, previousBlock.height);
+        await this.transactionLogic.verify(
+          tx,
+          sender,
+          null,
+          previousBlock.height
+        );
         ready.push(tx);
       } catch (err) {
         // TODO: why is error swallowed here? shouldn't we better handle this error?
         this.logger.error(err.stack);
       }
-
     }
     return this.generateBlockWithTransactions(keypair, timestamp, ready);
   }
@@ -316,17 +359,27 @@ export class BlocksModuleProcess {
    * @param timestamp
    * @param txs
    */
-  public async generateBlockWithTransactions(keypair: IKeypair, timestamp: number, txs: Array<IBaseTransaction<any>>): Promise<SignedAndChainedBlockType> {
+  public async generateBlockWithTransactions(
+    keypair: IKeypair,
+    timestamp: number,
+    txs: Array<IBaseTransaction<any>>
+  ): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
     return this.blockLogic.create({
       keypair,
       previousBlock,
       timestamp,
-      transactions: txs,
+      transactions: txs
     });
   }
 
-  public async processBlock(block: SignedBlockType, opts: {broadcast: boolean, saveBlock: boolean} = {broadcast: true, saveBlock: true}) {
+  public async processBlock(
+    block: SignedBlockType,
+    opts: { broadcast: boolean; saveBlock: boolean } = {
+      broadcast: true,
+      saveBlock: true
+    }
+  ) {
     if (this.isCleaning) {
       // We're shutting down so stop processing any further
       throw new Error('Cleaning up');
@@ -339,10 +392,15 @@ export class BlocksModuleProcess {
 
     // after verifyBlock block also have 'height' field so it's a SignedAndChainedBlock
     // That's because of verifyReceipt.
-    const { verified, errors } = await this.blocksVerifyModule.verifyBlock(block);
+    const { verified, errors } = await this.blocksVerifyModule.verifyBlock(
+      block
+    );
 
     if (!verified) {
-      this.logger.error(`Block ${block.id} verification failed`, errors.join(', '));
+      this.logger.error(
+        `Block ${block.id} verification failed`,
+        errors.join(', ')
+      );
       throw new Error(errors[0]);
     }
 
@@ -353,9 +411,14 @@ export class BlocksModuleProcess {
     }
 
     // check transactions
-    const accountsMap = await this.accountsModule.txAccounts(block.transactions);
+    const accountsMap = await this.accountsModule.txAccounts(
+      block.transactions
+    );
 
-    await this.accountsModule.checkTXsAccountsMap(block.transactions, accountsMap);
+    await this.accountsModule.checkTXsAccountsMap(
+      block.transactions,
+      accountsMap
+    );
     await this.blocksVerifyModule.checkBlockTransactions(block, accountsMap);
 
     this.blocksModule.lastReceipt.update();
@@ -384,51 +447,73 @@ export class BlocksModuleProcess {
 
     const lastBlock = this.blocksModule.lastBlock;
     // Detect sane block
-    if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
+    if (
+      block.previousBlock === lastBlock.id &&
+      lastBlock.height + 1 === block.height
+    ) {
       // Process received block
       return this.processBlock(block);
-    } else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
+    } else if (
+      block.previousBlock !== lastBlock.id &&
+      lastBlock.height + 1 === block.height
+    ) {
       // Process received fork cause 1
       return this.receiveForkOne(block, lastBlock);
-    } else if (block.previousBlock === lastBlock.previousBlock &&
-      block.height === lastBlock.height && block.id !== lastBlock.id) {
+    } else if (
+      block.previousBlock === lastBlock.previousBlock &&
+      block.height === lastBlock.height &&
+      block.id !== lastBlock.id
+    ) {
       // Process received fork cause 5
       return this.receiveForkFive(block, lastBlock);
     } else {
       if (block.id === lastBlock.id) {
         this.logger.debug('Block already processed', block.id);
       } else {
-        this.logger.warn([
-          'Discarded block that does not match with current chain:', block.id,
-          'height:', block.height,
-          'generator:', block.generatorPublicKey.toString('hex'),
-        ].join(' '));
+        this.logger.warn(
+          [
+            'Discarded block that does not match with current chain:',
+            block.id,
+            'height:',
+            block.height,
+            'generator:',
+            block.generatorPublicKey.toString('hex')
+          ].join(' ')
+        );
         throw new Error('Block discarded - not in current chain');
       }
-
     }
   }
 
   /**
    * Receive block detected as fork cause 1: Consecutive height but different previous block id
    */
-  private async receiveForkOne(block: SignedBlockType, lastBlock: SignedAndChainedBlockType) {
+  private async receiveForkOne(
+    block: SignedBlockType,
+    lastBlock: SignedAndChainedBlockType
+  ) {
     const tmpBlock = _.clone(block);
 
     // Fork: Consecutive height but different previous block id
     await this.forkModule.fork(block, ForkType.TYPE_1);
 
     // Keep the oldest block, or if both have same age, keep block with lower id
-    if (block.timestamp > lastBlock.timestamp || (block.timestamp === lastBlock.timestamp && block.id > lastBlock.id)) {
+    if (
+      block.timestamp > lastBlock.timestamp ||
+      (block.timestamp === lastBlock.timestamp && block.id > lastBlock.id)
+    ) {
       this.logger.info('Last block stands');
     } else {
       this.logger.info('Last block and parent loses');
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
         // await this.delegatesModule.assertValidBlockSlot(block);
-        const check     = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
+        const check = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
-          this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
+          this.logger.error(
+            `Block ${tmpBlockN.id} verification failed`,
+            check.errors.join(', ')
+          );
           throw new Error(check.errors[0]);
         }
         // Delete last 2 blocks
@@ -444,7 +529,10 @@ export class BlocksModuleProcess {
   /**
    * Receive block detected as fork cause 5: Same height and previous block id, but different block id
    */
-  private async receiveForkFive(block: SignedBlockType, lastBlock: SignedBlockType) {
+  private async receiveForkFive(
+    block: SignedBlockType,
+    lastBlock: SignedBlockType
+  ) {
     const tmpBlock = _.clone(block);
 
     // Fork: Same height and previous block id, but different block id
@@ -452,11 +540,17 @@ export class BlocksModuleProcess {
 
     // Check if delegate forged on more than one node
     if (block.generatorPublicKey === lastBlock.generatorPublicKey) {
-      this.logger.warn('Delegate forging on multiple nodes', block.generatorPublicKey);
+      this.logger.warn(
+        'Delegate forging on multiple nodes',
+        block.generatorPublicKey
+      );
     }
 
     // Keep the oldest block, or if both have same age, keep block with lower id
-    if (block.timestamp > lastBlock.timestamp || (block.timestamp === lastBlock.timestamp && block.id > lastBlock.id)) {
+    if (
+      block.timestamp > lastBlock.timestamp ||
+      (block.timestamp === lastBlock.timestamp && block.id > lastBlock.id)
+    ) {
       this.logger.info('Last block stands');
     } else {
       this.logger.info('Last block loses');
@@ -466,7 +560,10 @@ export class BlocksModuleProcess {
         // verify receipt of block
         const check = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {
-          this.logger.error(`Block ${tmpBlockN.id} verification failed`, check.errors.join(', '));
+          this.logger.error(
+            `Block ${tmpBlockN.id} verification failed`,
+            check.errors.join(', ')
+          );
           throw new Error(check.errors[0]);
         }
 

@@ -1,8 +1,14 @@
 import { ExceptionsManager } from './exceptionManager';
 
-export type FNProps<T> = ({ [P in keyof T]: T[P] extends Function ? P : never })[keyof T];
+export type FNProps<T> = ({
+  [P in keyof T]: T[P] extends Function ? P : never
+})[keyof T];
 
-function createExceptionWrapper(excManager: ExceptionsManager, exception: symbol, oldFN: Function) {
+function createExceptionWrapper(
+  excManager: ExceptionsManager,
+  exception: symbol,
+  oldFN: Function
+) {
   return function rteWrapper(...args: any[]) {
     const handlers = excManager.handlersForKey(exception);
     for (const handler of handlers) {
@@ -14,10 +20,12 @@ function createExceptionWrapper(excManager: ExceptionsManager, exception: symbol
   } as any;
 }
 
-export function setupExceptionOnType<T>(excManager: ExceptionsManager,
-                                        obj: new () => T,
-                                        method: FNProps<T>,
-                                        exception: symbol) {
+export function setupExceptionOnType<T>(
+  excManager: ExceptionsManager,
+  obj: new () => T,
+  method: FNProps<T>,
+  exception: symbol
+) {
   obj.prototype[method] = createExceptionWrapper(
     excManager,
     exception,
@@ -25,13 +33,13 @@ export function setupExceptionOnType<T>(excManager: ExceptionsManager,
   );
 }
 
-export function setupExceptionOnInstance<T>(excManager: ExceptionsManager,
-                                            obj: T,
-                                            method: FNProps<T>,
-                                            exception: symbol) {
-  obj[method] = createExceptionWrapper(
-    excManager,
-    exception,
-    obj[method] as any
-  );
+export function setupExceptionOnInstance<T>(
+  excManager: ExceptionsManager,
+  obj: T,
+  method: FNProps<T>,
+  exception: symbol
+) {
+  obj[method] = createExceptionWrapper(excManager, exception, obj[
+    method
+  ] as any);
 }

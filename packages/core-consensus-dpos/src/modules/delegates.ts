@@ -4,7 +4,8 @@ import {
   IBlockReward,
   IBlocksModule,
   ILogger,
-  ITransactionsModule, Symbols
+  ITransactionsModule,
+  Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { publicKey, SignedBlockType } from '@risevision/core-types';
@@ -19,7 +20,7 @@ import { AccountsModelForDPOS, DelegatesModel } from '../models';
 @injectable()
 export class DelegatesModule {
   // Holds the current round delegates cache list.
-  private delegatesListCache: {[round: number]: Buffer[]} = {};
+  private delegatesListCache: { [round: number]: Buffer[] } = {};
 
   // Generic
   @inject(Symbols.generic.zschema)
@@ -57,11 +58,17 @@ export class DelegatesModule {
   @named(dPoSSymbols.models.delegates)
   private accountsModel: typeof AccountsModelForDPOS;
 
-  public async checkConfirmedDelegates(account: AccountsModelForDPOS, votes: string[]) {
+  public async checkConfirmedDelegates(
+    account: AccountsModelForDPOS,
+    votes: string[]
+  ) {
     return this.checkDelegates(account, votes, 'confirmed');
   }
 
-  public async checkUnconfirmedDelegates(account: AccountsModelForDPOS, votes: string[]) {
+  public async checkUnconfirmedDelegates(
+    account: AccountsModelForDPOS,
+    votes: string[]
+  ) {
     return this.checkDelegates(account, votes, 'unconfirmed');
   }
 
@@ -74,18 +81,24 @@ export class DelegatesModule {
     const round = this.roundsLogic.calcRound(height);
     const seedSource = round.toString();
     if (!this.delegatesListCache[round]) {
-      const pkeys      = await this.getKeysSortByVote();
-      let currentSeed  = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
+      const pkeys = await this.getKeysSortByVote();
+      let currentSeed = crypto
+        .createHash('sha256')
+        .update(seedSource, 'utf8')
+        .digest();
 
       // Shuffle public keys.
       for (let i = 0, delegatesCount = pkeys.length; i < delegatesCount; i++) {
         for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
-          const newIndex  = currentSeed[x] % delegatesCount;
-          const b         = pkeys[newIndex];
+          const newIndex = currentSeed[x] % delegatesCount;
+          const b = pkeys[newIndex];
           pkeys[newIndex] = pkeys[i];
-          pkeys[i]        = b;
+          pkeys[i] = b;
         }
-        currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
+        currentSeed = crypto
+          .createHash('sha256')
+          .update(currentSeed)
+          .digest();
       }
       // delete previous and
       delete this.delegatesListCache[round + 1];
@@ -98,53 +111,65 @@ export class DelegatesModule {
   /**
    * Gets delegates and for each calculate rank approval and productivity.
    */
-  public async getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
+  public async getDelegates(query: {
+    limit?: number;
+    offset?: number;
+    orderBy: string;
+  }): Promise<{
     delegates: Array<{
-      delegate: AccountsModelForDPOS,
-      info: { rank: number, approval: number, productivity: number }
-    }>,
-    count: number,
-    offset: number,
-    limit: number,
-    sortField: string,
-    sortMethod: 'ASC' | 'DESC'
+      delegate: AccountsModelForDPOS;
+      info: { rank: number; approval: number; productivity: number };
+    }>;
+    count: number;
+    offset: number;
+    limit: number;
+    sortField: string;
+    sortMethod: 'ASC' | 'DESC';
   }> {
     if (!query) {
       throw new Error('Missing query argument');
     }
 
     const delegates = await this.accountsModule.getAccounts({
-        isDelegate: 1,
-        sort      : { vote: -1, publicKey: 1 },
-      }
-    );
+      isDelegate: 1,
+      sort: { vote: -1, publicKey: 1 }
+    });
 
-    const limit  = Math.min(this.dposConstants.activeDelegates, query.limit || this.dposConstants.activeDelegates);
+    const limit = Math.min(
+      this.dposConstants.activeDelegates,
+      query.limit || this.dposConstants.activeDelegates
+    );
     const offset = query.offset || 0;
 
-    const count     = delegates.length;
+    const count = delegates.length;
     const realLimit = Math.min(offset + limit, count);
 
-    const lastBlock   = this.blocksModule.lastBlock;
+    const lastBlock = this.blocksModule.lastBlock;
     const totalSupply = this.blockReward.calcSupply(lastBlock.height);
 
     // tslint:disable-next-line
-    const crunchedDelegates: Array<{ delegate: AccountsModelForDPOS, info: { rank: number, approval: number, productivity: number } }> = [];
+    const crunchedDelegates: Array<{
+      delegate: AccountsModelForDPOS;
+      info: { rank: number; approval: number; productivity: number };
+    }> = [];
     for (let i = 0; i < delegates.length; i++) {
+      const rank = i + 1;
+      const approval =
+        Math.round((delegates[i].vote / totalSupply) * 1e4) / 1e2;
 
-      const rank     = i + 1;
-      const approval = Math.round((delegates[i].vote / totalSupply) * 1e4) / 1e2;
+      const percent =
+        Math.abs(
+          100 -
+            delegates[i].missedblocks /
+              ((delegates[i].producedblocks + delegates[i].missedblocks) / 100)
+        ) || 0;
 
-      const percent = Math.abs(
-        100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100))
-      ) || 0;
-
-      const outsider     = i + 1 > this.slots.delegates;
-      const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
+      const outsider = i + 1 > this.slots.delegates;
+      const productivity = !outsider ? Math.round(percent * 1e2) / 1e2 : 0;
 
       crunchedDelegates.push({
         delegate: delegates[i],
-        info    : { rank, approval, productivity },
+        info: { rank, approval, productivity }
       });
     }
 
@@ -156,11 +181,11 @@ export class DelegatesModule {
 
     return {
       count,
-      delegates : crunchedDelegates,
-      limit     : realLimit,
+      delegates: crunchedDelegates,
+      limit: realLimit,
       offset,
-      sortField : orderBy.sortField,
-      sortMethod: orderBy.sortMethod,
+      sortField: orderBy.sortField,
+      sortMethod: orderBy.sortMethod
     };
   }
 
@@ -174,7 +199,11 @@ export class DelegatesModule {
     const curSlot = this.slots.getSlotNumber(block.timestamp);
     const delegId = delegates[curSlot % this.slots.delegates];
     if (!(delegId && block.generatorPublicKey.equals(delegId))) {
-      this.logger.error(`Expected generator ${delegId.toString('hex')} Received generator: ${block.generatorPublicKey.toString('hex')}`);
+      this.logger.error(
+        `Expected generator ${delegId.toString(
+          'hex'
+        )} Received generator: ${block.generatorPublicKey.toString('hex')}`
+      );
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
   }
@@ -185,8 +214,8 @@ export class DelegatesModule {
   private async getKeysSortByVote(): Promise<Buffer[]> {
     const rows = await this.accountsModule.getAccounts({
       isDelegate: 1,
-      limit     : this.slots.delegates,
-      sort      : { vote: -1, publicKey: 1 },
+      limit: this.slots.delegates,
+      sort: { vote: -1, publicKey: 1 }
     });
     return rows.map((r) => r.publicKey);
   }
@@ -198,16 +227,22 @@ export class DelegatesModule {
    * @param state
    * @return {Promise<void>}
    */
-  private async checkDelegates(account: AccountsModelForDPOS, votes: string[], state: 'confirmed' | 'unconfirmed') {
+  private async checkDelegates(
+    account: AccountsModelForDPOS,
+    votes: string[],
+    state: 'confirmed' | 'unconfirmed'
+  ) {
     if (!account) {
       throw new Error('Account not found');
     }
 
-    const delegates: publicKey[] = (state === 'confirmed' ? account.delegates : account.u_delegates) || ([] as any);
-    const existingVotes          = Array.isArray(delegates) ? delegates.length : 0;
+    const delegates: publicKey[] =
+      (state === 'confirmed' ? account.delegates : account.u_delegates) ||
+      ([] as any);
+    const existingVotes = Array.isArray(delegates) ? delegates.length : 0;
 
     let additions = 0;
-    let removals  = 0;
+    let removals = 0;
 
     for (const vote of votes) {
       const sign = vote[0];
@@ -221,20 +256,29 @@ export class DelegatesModule {
 
       const curPK = vote.substr(1);
 
-      if (!this.schema.validate(curPK, { format: 'publicKey', type: 'string' })) {
+      if (
+        !this.schema.validate(curPK, { format: 'publicKey', type: 'string' })
+      ) {
         throw new Error('Invalid public key');
       }
 
       if (sign === '+' && delegates.indexOf(curPK) !== -1) {
-        throw new Error('Failed to add vote, account has already voted for this delegate');
+        throw new Error(
+          'Failed to add vote, account has already voted for this delegate'
+        );
       }
       if (sign === '-' && delegates.indexOf(curPK) === -1) {
-        throw new Error('Failed to remove vote, account has not voted for this delegate');
+        throw new Error(
+          'Failed to remove vote, account has not voted for this delegate'
+        );
       }
 
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
-      const del = await this.accountsModule.getAccount({ publicKey: new Buffer(curPK, 'hex'), isDelegate: 1 });
+      const del = await this.accountsModule.getAccount({
+        publicKey: new Buffer(curPK, 'hex'),
+        isDelegate: 1
+      });
       if (!del) {
         throw new Error('Delegate not found');
       }
@@ -244,7 +288,11 @@ export class DelegatesModule {
 
     if (total > this.dposConstants.maximumVotes) {
       const exceeded = total - this.dposConstants.maximumVotes;
-      throw new Error(`Maximum number of ${this.dposConstants.maximumVotes} votes exceeded (${exceeded} too many)`);
+      throw new Error(
+        `Maximum number of ${
+          this.dposConstants.maximumVotes
+        } votes exceeded (${exceeded} too many)`
+      );
     }
   }
 }

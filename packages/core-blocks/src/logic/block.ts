@@ -11,7 +11,8 @@ import {
   BlockType,
   ConstantsType,
   DBOp,
-  IBaseTransaction, IBytesBlock,
+  IBaseTransaction,
+  IBytesBlock,
   IKeypair,
   RawFullBlockListType,
   SignedAndChainedBlockType,
@@ -32,8 +33,7 @@ const blockSchema = require('../../schema/block.json');
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
-
-  public table    = 'blocks';
+  public table = 'blocks';
   public dbFields = [
     'id',
     'version',
@@ -47,7 +47,7 @@ export class BlockLogic implements IBlockLogic {
     'payloadLength',
     'payloadHash',
     'generatorPublicKey',
-    'blockSignature',
+    'blockSignature'
   ];
   @inject(Symbols.generic.zschema)
   public zschema: z_schema;
@@ -72,9 +72,10 @@ export class BlockLogic implements IBlockLogic {
   private BlocksModel: typeof IBlocksModel;
 
   public create(data: {
-    keypair: IKeypair, timestamp: number,
-    transactions: Array<IBaseTransaction<any>>,
-    previousBlock?: SignedAndChainedBlockType
+    keypair: IKeypair;
+    timestamp: number;
+    transactions: Array<IBaseTransaction<any>>;
+    previousBlock?: SignedAndChainedBlockType;
   }): SignedAndChainedBlockType {
     const transactions = data.transactions;
     transactions.sort((a, b) => {
@@ -93,15 +94,15 @@ export class BlockLogic implements IBlockLogic {
       return 0;
     });
 
-    const nextHeight = (data.previousBlock) ? data.previousBlock.height + 1 : 1;
+    const nextHeight = data.previousBlock ? data.previousBlock.height + 1 : 1;
 
-    const reward    = this.blockReward.calcReward(nextHeight);
-    let totalFee    = 0;
+    const reward = this.blockReward.calcReward(nextHeight);
+    let totalFee = 0;
     let totalAmount = 0;
-    let size        = 0;
+    let size = 0;
 
     const blockTransactions = [];
-    const payloadHash       = crypto.createHash('sha256');
+    const payloadHash = crypto.createHash('sha256');
 
     for (const transaction of transactions) {
       const bytes: Buffer = this.transaction.getBytes(transaction);
@@ -120,24 +121,24 @@ export class BlockLogic implements IBlockLogic {
     }
 
     const block: SignedAndChainedBlockType = {
-      blockSignature      : undefined,
-      generatorPublicKey  : data.keypair.publicKey,
-      height              : data.previousBlock.height + 1,
-      id                  : undefined,
+      blockSignature: undefined,
+      generatorPublicKey: data.keypair.publicKey,
+      height: data.previousBlock.height + 1,
+      id: undefined,
       numberOfTransactions: blockTransactions.length,
-      payloadHash         : payloadHash.digest(),
-      payloadLength       : size,
-      previousBlock       : data.previousBlock.id,
+      payloadHash: payloadHash.digest(),
+      payloadLength: size,
+      previousBlock: data.previousBlock.id,
       reward,
-      timestamp           : data.timestamp,
+      timestamp: data.timestamp,
       totalAmount,
       totalFee,
-      transactions        : blockTransactions,
-      version             : 0,
+      transactions: blockTransactions,
+      version: 0
     };
 
     block.blockSignature = this.sign(block, data.keypair);
-    block.id             = this.getId(block);
+    block.id = this.getId(block);
     return this.objectNormalize(block);
   }
 
@@ -148,10 +149,7 @@ export class BlockLogic implements IBlockLogic {
    * @returns {string}
    */
   public sign(block: BlockType, key: IKeypair): Buffer {
-    return this.crypto.sign(
-      this.getHash(block, false),
-      key
-    );
+    return this.crypto.sign(this.getHash(block, false), key);
   }
 
   /**
@@ -178,8 +176,8 @@ export class BlockLogic implements IBlockLogic {
     const values = { ...filterObject(block, this.dbFields) };
     return {
       model: this.BlocksModel,
-      type : 'create',
-      values,
+      type: 'create',
+      values
     };
   }
 
@@ -189,63 +187,81 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    * @returns {BlockType}
    */
-  public objectNormalize<T extends BlockType<Buffer | string>>(block: T | SignedAndChainedTransportBlockType): T | SignedAndChainedBlockType {
+  public objectNormalize<T extends BlockType<Buffer | string>>(
+    block: T | SignedAndChainedTransportBlockType
+  ): T | SignedAndChainedBlockType {
     // Delete null or undefined elements in block obj
     for (const key in block) {
-      if (block[key] === null || typeof(block[key]) === 'undefined') {
+      if (block[key] === null || typeof block[key] === 'undefined') {
         delete block[key];
       }
     }
 
-    ['generatorPublicKey', 'payloadHash', 'blockSignature'].forEach((bufKey) => {
-      if (!Buffer.isBuffer(block[bufKey])) {
-        block[bufKey] = Buffer.from(block[bufKey], 'hex');
+    ['generatorPublicKey', 'payloadHash', 'blockSignature'].forEach(
+      (bufKey) => {
+        if (!Buffer.isBuffer(block[bufKey])) {
+          block[bufKey] = Buffer.from(block[bufKey], 'hex');
+        }
       }
-    });
-
-    const report = this.zschema.validate(
-      block,
-      blockSchema
     );
+
+    const report = this.zschema.validate(block, blockSchema);
     if (!report) {
-      throw new Error(`Failed to validate block schema: ${this.zschema
-        .getLastErrors().map((err) => err.message).join(', ')}`
+      throw new Error(
+        `Failed to validate block schema: ${this.zschema
+          .getLastErrors()
+          .map((err) => err.message)
+          .join(', ')}`
       );
     }
 
     for (let i = 0; i < block.transactions.length; i++) {
-      block.transactions[i] = this.transaction.objectNormalize(block.transactions[i]);
+      block.transactions[i] = this.transaction.objectNormalize(
+        block.transactions[i]
+      );
     }
     // cast to any is correct as we transform non-buffer items to
     return block as any;
   }
 
-  public dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string } {
+  public dbRead(
+    rawBlock: RawFullBlockListType
+  ): SignedBlockType & { totalForged: string; readonly generatorId: string } {
     if (!rawBlock.b_id) {
       return null;
     } else {
-      const self               = this;
-      const generatorPublicKey = Buffer.from(rawBlock.b_generatorPublicKey, 'hex');
+      const self = this;
+      const generatorPublicKey = Buffer.from(
+        rawBlock.b_generatorPublicKey,
+        'hex'
+      );
       const block = {
-        blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
+        blockSignature: Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
-          return self.accountLogic.generateAddressByPublicKey(generatorPublicKey);
+          return self.accountLogic.generateAddressByPublicKey(
+            generatorPublicKey
+          );
         },
         generatorPublicKey,
-        height              : parseInt(`${rawBlock.b_height}`, 10),
-        id                  : rawBlock.b_id,
-        numberOfTransactions: parseInt(`${rawBlock.b_numberOfTransactions}`, 10),
-        payloadHash         : Buffer.from(rawBlock.b_payloadHash, 'hex'),
-        payloadLength       : parseInt(`${rawBlock.b_payloadLength}`, 10),
-        previousBlock       : rawBlock.b_previousBlock,
-        reward              : parseInt(`${rawBlock.b_reward}`, 10),
-        timestamp           : parseInt(`${rawBlock.b_timestamp}`, 10),
-        totalAmount         : parseInt(`${rawBlock.b_totalAmount}`, 10),
-        totalFee            : parseInt(`${rawBlock.b_totalFee}`, 10),
-        totalForged         : '',
-        version             : parseInt(`${rawBlock.b_version}`, 10),
+        height: parseInt(`${rawBlock.b_height}`, 10),
+        id: rawBlock.b_id,
+        numberOfTransactions: parseInt(
+          `${rawBlock.b_numberOfTransactions}`,
+          10
+        ),
+        payloadHash: Buffer.from(rawBlock.b_payloadHash, 'hex'),
+        payloadLength: parseInt(`${rawBlock.b_payloadLength}`, 10),
+        previousBlock: rawBlock.b_previousBlock,
+        reward: parseInt(`${rawBlock.b_reward}`, 10),
+        timestamp: parseInt(`${rawBlock.b_timestamp}`, 10),
+        totalAmount: parseInt(`${rawBlock.b_totalAmount}`, 10),
+        totalFee: parseInt(`${rawBlock.b_totalFee}`, 10),
+        totalForged: '',
+        version: parseInt(`${rawBlock.b_version}`, 10)
       };
-      block.totalForged = new MyBigNumb(block.totalFee).plus(new MyBigNumb(block.reward)).toString();
+      block.totalForged = new MyBigNumb(block.totalFee)
+        .plus(new MyBigNumb(block.reward))
+        .toString();
       return block;
     }
   }
@@ -260,20 +276,23 @@ export class BlockLogic implements IBlockLogic {
   }
 
   public getHash(block: BlockType, includeSignature: boolean = true) {
-    return crypto.createHash('sha256')
+    return crypto
+      .createHash('sha256')
       .update(this.getBytes(block, includeSignature))
       .digest();
   }
 
-  public getBytes(block: BlockType | SignedBlockType, includeSignature: boolean = true): Buffer {
+  public getBytes(
+    block: BlockType | SignedBlockType,
+    includeSignature: boolean = true
+  ): Buffer {
     const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
-    const bb   = new ByteBuffer(size, true /* little endian */);
+    const bb = new ByteBuffer(size, true /* little endian */);
     bb.writeInt(block.version);
     bb.writeInt(block.timestamp);
 
     if (block.previousBlock) {
-      const pb = new MyBigNumb(block.previousBlock)
-        .toBuffer({ size: 8 });
+      const pb = new MyBigNumb(block.previousBlock).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
@@ -306,7 +325,10 @@ export class BlockLogic implements IBlockLogic {
       bb.writeByte(generatorPublicKeyBuffer[i]);
     }
 
-    if (typeof((block as SignedBlockType).blockSignature) !== 'undefined' && includeSignature) {
+    if (
+      typeof (block as SignedBlockType).blockSignature !== 'undefined' &&
+      includeSignature
+    ) {
       const blockSignatureBuffer = (block as SignedBlockType).blockSignature;
       // tslint:disable-next-line
       for (let i = 0; i < blockSignatureBuffer.length; i++) {
@@ -319,12 +341,16 @@ export class BlockLogic implements IBlockLogic {
     return bb.toBuffer() as any;
   }
 
-  public toProtoBuffer(block: SignedAndChainedBlockType & { relays?: number }): Buffer {
+  public toProtoBuffer(
+    block: SignedAndChainedBlockType & { relays?: number }
+  ): Buffer {
     const blk = {
-      bytes       : this.getBytes(block),
-      height      : block.height,
-      relays      : Number.isInteger(block.relays) ? block.relays : 1,
-      transactions: (block.transactions || []).map((tx) => this.transaction.toProtoBuffer(tx)),
+      bytes: this.getBytes(block),
+      height: block.height,
+      relays: Number.isInteger(block.relays) ? block.relays : 1,
+      transactions: (block.transactions || []).map((tx) =>
+        this.transaction.toProtoBuffer(tx)
+      )
     };
     return this.protobufHelper.encode(blk, 'blocks.bytes', 'bytesBlock');
   }
@@ -332,16 +358,17 @@ export class BlockLogic implements IBlockLogic {
   /**
    * Restores a block from its bytes
    */
-  public fromProtoBuffer(buffer: Buffer): SignedAndChainedBlockType & {relays: number} {
+  public fromProtoBuffer(
+    buffer: Buffer
+  ): SignedAndChainedBlockType & { relays: number } {
     if (buffer === null || typeof buffer === 'undefined') {
       return null;
     }
-    const blk: IBytesBlock = this.protobufHelper
-      .decode(
-        buffer,
-        'blocks.bytes',
-        'bytesBlock'
-      );
+    const blk: IBytesBlock = this.protobufHelper.decode(
+      buffer,
+      'blocks.bytes',
+      'bytesBlock'
+    );
     const bb = ByteBuffer.wrap(blk.bytes, 'binary', true);
     const version = bb.readInt(0);
     const timestamp = bb.readInt(4);
@@ -355,8 +382,9 @@ export class BlockLogic implements IBlockLogic {
         break;
       }
     }
-    const previousBlock = previousValid ?
-      MyBigNumb.fromBuffer(previousIdBytes).toString() : null;
+    const previousBlock = previousValid
+      ? MyBigNumb.fromBuffer(previousIdBytes).toString()
+      : null;
 
     const numberOfTransactions = bb.readInt(16);
     const totalAmount = bb.readLong(20).toNumber();
@@ -365,7 +393,8 @@ export class BlockLogic implements IBlockLogic {
     const payloadLength = bb.readInt(44);
     const payloadHash = blk.bytes.slice(48, 80);
     const generatorPublicKey = blk.bytes.slice(80, 112);
-    const blockSignature = blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
+    const blockSignature =
+      blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
     const id = this.getIdFromBytes(blk.bytes);
     const transactions = blk.transactions.map((tx) => {
       const baseTx = this.transaction.fromProtoBuffer(tx);
@@ -373,7 +402,9 @@ export class BlockLogic implements IBlockLogic {
         ...baseTx,
         blockId: id,
         height: blk.height,
-        senderId: this.accountLogic.generateAddressByPublicKey(baseTx.senderPublicKey),
+        senderId: this.accountLogic.generateAddressByPublicKey(
+          baseTx.senderPublicKey
+        )
       };
     });
 
@@ -393,7 +424,7 @@ export class BlockLogic implements IBlockLogic {
       blockSignature,
       transactions,
       height: blk.height,
-      relays: blk.relays,
+      relays: blk.relays
     };
   }
 
@@ -411,12 +442,14 @@ export class BlockLogic implements IBlockLogic {
   }
 
   private getIdFromBytes(bytes: Buffer): string {
-    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const hash = crypto
+      .createHash('sha256')
+      .update(bytes)
+      .digest();
     const temp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
     return MyBigNumb.fromBuffer(temp).toString();
   }
-
 }

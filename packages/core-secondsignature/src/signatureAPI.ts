@@ -17,20 +17,25 @@ export class SignaturesAPI {
 
   @Get('/fee')
   @ValidateSchema()
-  public async fees(@SchemaValid({
-    id        : 'signatures.getFee',
-    type      : 'object',
-    properties: {
-      height: {
-        type   : 'integer',
-        minimum: 1,
+  public async fees(@SchemaValid(
+    {
+      id: 'signatures.getFee',
+      type: 'object',
+      properties: {
+        height: {
+          type: 'integer',
+          minimum: 1,
+        },
       },
     },
-  }, { castNumbers: true })
-                    @QueryParams()
-                      params: { height?: number }) {
+    { castNumbers: true }
+  )
+  @QueryParams()
+  params: {
+    height?: number;
+  }) {
     const feesForHeight = this.system.getFees(params.height);
-    const { fees }      = feesForHeight;
+    const { fees } = feesForHeight;
     delete feesForHeight.fees;
     return { ...feesForHeight, ...{ fee: fees.secondsignature } };
   }

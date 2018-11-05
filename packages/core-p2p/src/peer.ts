@@ -1,34 +1,26 @@
-import { BasePeerType, PeerHeaders, PeerState, PeerType } from '@risevision/core-types';
+import {
+  BasePeerType,
+  PeerHeaders,
+  PeerState,
+  PeerType,
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import { p2pSymbols } from './helpers';
-import { BaseTransportMethod, ITransportMethod, SingleTransportPayload } from './requests/';
+import {
+  BaseTransportMethod,
+  ITransportMethod,
+  SingleTransportPayload,
+} from './requests/';
 import { PingRequest } from './requests/PingRequest';
 import { TransportModule } from './transport';
 import { TransportWrapper } from './utils/TransportWrapper';
 
-const nullable = [
-  'os',
-  'version',
-  'broadhash',
-  'height',
-  'clock',
-  'updated',
-];
+const nullable = ['os', 'version', 'broadhash', 'height', 'clock', 'updated'];
 
-const headers = [
-  'os',
-  'version',
-  'broadhash',
-  'height',
-  'nonce',
-];
+const headers = ['os', 'version', 'broadhash', 'height', 'nonce'];
 
-const immutable = [
-  'ip',
-  'port',
-  'string',
-];
+const immutable = ['ip', 'port', 'string'];
 
 const properties = [
   'ip',
@@ -91,12 +83,14 @@ export class Peer implements PeerType {
   }
 
   // tslint:disable-next-line max-line-length
-  public normalize<T extends { height?: number, port?: number, state?: PeerState }>(peer: T): T {
+  public normalize<
+    T extends { height?: number; port?: number; state?: PeerState }
+  >(peer: T): T {
     if (peer.height) {
       peer.height = this.parseInt(peer.height, 1);
     }
 
-    peer.port  = this.parseInt(peer.port, 0);
+    peer.port = this.parseInt(peer.port, 0);
     peer.state = this.parseInt(peer.state, PeerState.DISCONNECTED);
 
     return peer;
@@ -120,7 +114,11 @@ export class Peer implements PeerType {
   public update(peer: PeerType | PeerHeaders) {
     peer = this.normalize(peer);
     for (const prop of this.properties) {
-      if (peer[prop] !== null && typeof(peer[prop]) !== 'undefined' && this.immutable.indexOf(prop) === -1) {
+      if (
+        peer[prop] !== null &&
+        typeof peer[prop] !== 'undefined' &&
+        this.immutable.indexOf(prop) === -1
+      ) {
         this[prop] = peer[prop];
       }
     }
@@ -145,9 +143,11 @@ export class Peer implements PeerType {
     return copy;
   }
 
-  public async makeRequest<Body, Query, Out>(method: ITransportMethod<Body, Query, Out>,
-                                             payload: SingleTransportPayload<Body, Query> = {}): Promise<Out> {
-    const {body} = await this.transportModule.getFromPeer<Buffer>(
+  public async makeRequest<Body, Query, Out>(
+    method: ITransportMethod<Body, Query, Out>,
+    payload: SingleTransportPayload<Body, Query> = {}
+  ): Promise<Out> {
+    const { body } = await this.transportModule.getFromPeer<Buffer>(
       this,
       await method.createRequestOptions(payload)
     );

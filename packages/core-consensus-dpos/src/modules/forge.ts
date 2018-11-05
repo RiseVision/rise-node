@@ -6,11 +6,16 @@ import {
   ICrypto,
   IJobsQueue,
   ILogger,
-  IModule, ISequence, Symbols
+  IModule,
+  ISequence,
+  Symbols
 } from '@risevision/core-interfaces';
 import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
 import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
-import { catchToLoggerAndRemapError, WrapInDefaultSequence } from '@risevision/core-utils';
+import {
+  catchToLoggerAndRemapError,
+  WrapInDefaultSequence
+} from '@risevision/core-utils';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import { DposAppConfig, dPoSSymbols, Slots } from '../helpers/';
@@ -19,7 +24,7 @@ import { DelegatesModule } from './delegates';
 
 @injectable()
 export class ForgeModule implements IModule {
-  public enabledKeys: { [k: string]: true }   = {};
+  public enabledKeys: { [k: string]: true } = {};
   private keypairs: { [k: string]: IKeypair } = {};
 
   // Generic
@@ -64,14 +69,15 @@ export class ForgeModule implements IModule {
   }
 
   public getEnabledKeys(): publicKey[] {
-    return Object.keys(this.enabledKeys)
-      .filter((pk) => this.enabledKeys[pk] === true);
+    return Object.keys(this.enabledKeys).filter(
+      (pk) => this.enabledKeys[pk] === true
+    );
   }
 
   public isForgeEnabledOn(pk?: publicKey | IKeypair): boolean {
     let thePK: publicKey;
-    if (typeof(pk) === 'object') {
-      thePK                = pk.publicKey.toString('hex');
+    if (typeof pk === 'object') {
+      thePK = pk.publicKey.toString('hex');
       this.keypairs[thePK] = pk;
     } else {
       thePK = pk;
@@ -83,14 +89,15 @@ export class ForgeModule implements IModule {
    * enable forging for specific pk or all if pk is undefined
    */
   public enableForge(pk?: IKeypair) {
-    const thePK: publicKey = typeof(pk) !== 'undefined' ? pk.publicKey.toString('hex') : undefined;
+    const thePK: publicKey =
+      typeof pk !== 'undefined' ? pk.publicKey.toString('hex') : undefined;
     if (typeof thePK !== 'undefined') {
       this.keypairs[thePK] = pk;
     }
 
     Object.keys(this.keypairs)
-      .filter((p) => typeof(thePK) === 'undefined' || p === thePK)
-      .forEach((p) => this.enabledKeys[p] = true);
+      .filter((p) => typeof thePK === 'undefined' || p === thePK)
+      .forEach((p) => (this.enabledKeys[p] = true));
   }
 
   /**
@@ -98,7 +105,7 @@ export class ForgeModule implements IModule {
    */
   public disableForge(pk?: publicKey) {
     Object.keys(this.keypairs)
-      .filter((p) => typeof(pk) === 'undefined' || p === pk)
+      .filter((p) => typeof pk === 'undefined' || p === pk)
       .forEach((p) => delete this.enabledKeys[p]);
   }
 
@@ -107,7 +114,8 @@ export class ForgeModule implements IModule {
       this.jobsQueue.register(
         'delegatesNextForge',
         () => this.delegatesNextForge(),
-        1000);
+        1000
+      );
     }, 10000); // Register forging routine after 10seconds that blockchain is ready.
   }
 
@@ -126,9 +134,10 @@ export class ForgeModule implements IModule {
    * @return {Promise<void>}
    */
   private async forge() {
-    if (this.appState.get('loader.isSyncing') ||
-      this.appState.get('rounds.isTicking')) {
-
+    if (
+      this.appState.get('loader.isSyncing') ||
+      this.appState.get('rounds.isTicking')
+    ) {
       this.logger.debug('Client not ready to forge');
       return;
     }
@@ -145,19 +154,24 @@ export class ForgeModule implements IModule {
     }
 
     const currentSlot = this.slots.getSlotNumber();
-    const lastBlock   = this.blocksModule.lastBlock;
+    const lastBlock = this.blocksModule.lastBlock;
     if (currentSlot === this.slots.getSlotNumber(lastBlock.timestamp)) {
       this.logger.debug('Waiting for next delegate slot');
       return;
     }
 
-    const blockData = await this.getBlockSlotData(currentSlot, lastBlock.height + 1);
+    const blockData = await this.getBlockSlotData(
+      currentSlot,
+      lastBlock.height + 1
+    );
     if (blockData === null) {
       this.logger.warn('Skipping delegate slot');
       return;
     }
 
-    if (this.slots.getSlotNumber(blockData.time) !== this.slots.getSlotNumber()) {
+    if (
+      this.slots.getSlotNumber(blockData.time) !== this.slots.getSlotNumber()
+    ) {
       // not current slot. skip
       this.logger.debug(`Delegate slot ${this.slots.getSlotNumber()}`);
       return;
@@ -168,14 +182,22 @@ export class ForgeModule implements IModule {
     await this.peersModule.updateConsensus();
 
     if (this.appState.getComputed('node.poorConsensus')) {
-      throw new Error(`Inadequate broadhash consensus ${this.appState
-        .get('node.consensus')} %`);
+      throw new Error(
+        `Inadequate broadhash consensus ${this.appState.get(
+          'node.consensus'
+        )} %`
+      );
     }
 
     // ok lets generate, save and broadcast the block
-    await this.blocksProcessModule.generateBlock(blockData.keypair, blockData.time)
-      .catch(catchToLoggerAndRemapError('Failed to generate block within delegate slot', this.logger));
-
+    await this.blocksProcessModule
+      .generateBlock(blockData.keypair, blockData.time)
+      .catch(
+        catchToLoggerAndRemapError(
+          'Failed to generate block within delegate slot',
+          this.logger
+        )
+      );
   }
 
   /**
@@ -189,17 +211,30 @@ export class ForgeModule implements IModule {
     this.logger.info(`Loading ${secrets.length} delegates from config`);
 
     for (const secret of secrets) {
-      const keypair = this.crypto.makeKeyPair(crypto.createHash('sha256').update(secret, 'utf8').digest());
-      const account = await this.accountsModule.getAccount({ publicKey: keypair.publicKey });
+      const keypair = this.crypto.makeKeyPair(
+        crypto
+          .createHash('sha256')
+          .update(secret, 'utf8')
+          .digest()
+      );
+      const account = await this.accountsModule.getAccount({
+        publicKey: keypair.publicKey
+      });
       if (!account) {
-        throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);
+        throw new Error(
+          `Account with publicKey: ${keypair.publicKey.toString(
+            'hex'
+          )} not found`
+        );
       }
 
       if (account.isDelegate) {
         this.keypairs[keypair.publicKey.toString('hex')] = keypair;
         this.logger.info(`Forging enabled on account ${account.address}`);
       } else {
-        this.logger.warn(`Account with public Key: ${account.publicKey} is not a delegate`);
+        this.logger.warn(
+          `Account with public Key: ${account.publicKey} is not a delegate`
+        );
       }
     }
     // Enable forging for all accounts
@@ -210,24 +245,25 @@ export class ForgeModule implements IModule {
    *  Gets slot time and keypair of a forging enabled account
    *  returns null if no slots are found for any of the forging accounts.
    */
-  private async getBlockSlotData(slot: number, height: number): Promise<{ time: number, keypair: IKeypair }> {
+  private async getBlockSlotData(
+    slot: number,
+    height: number
+  ): Promise<{ time: number; keypair: IKeypair }> {
     const pkeys = await this.delegatesModule.generateDelegateList(height);
 
     const lastSlot = this.slots.getLastSlot(slot);
 
     for (let cs = slot; cs < lastSlot; cs++) {
       const delegPos = cs % this.slots.delegates;
-      const delegId  = pkeys[delegPos];
+      const delegId = pkeys[delegPos];
       if (delegId && this.enabledKeys[delegId.toString('hex')]) {
         return {
           keypair: this.keypairs[delegId.toString('hex')],
-          time   : this.slots.getSlotTime(cs),
+          time: this.slots.getSlotTime(cs)
         };
       }
     }
 
     return null;
-
   }
-
 }

@@ -2,9 +2,10 @@ import {
   IAccountsModule,
   ILogger,
   ISequence,
-  ITransactionLogic, ITransactionPool,
+  ITransactionLogic,
+  ITransactionPool,
   Symbols,
-  VerificationType
+  VerificationType,
 } from '@risevision/core-interfaces';
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { logOnly, WrapInBalanceSequence } from '@risevision/core-utils';
@@ -44,23 +45,31 @@ export class MultisignaturesModule {
   private multiTransport: MultisigTransportModule;
 
   // Called by PostSignatureRequest.
-  public async onNewSignature(tx: { signature: Buffer, transaction: string, relays: number }) {
+  public async onNewSignature(tx: {
+    signature: Buffer;
+    transaction: string;
+    relays: number;
+  }) {
     await this.processSignature(tx);
-    await this.multiTransport.onSignature(tx, true)
-      .catch(logOnly(this.logger));
+    await this.multiTransport.onSignature(tx, true).catch(logOnly(this.logger));
   }
   /**
    * Gets the tx from the txID, verifies the given signature and
    * @return {Promise<void>}
    */
   @WrapInBalanceSequence
-  private async processSignature(tx: { signature: Buffer, transaction: string }) {
+  private async processSignature(tx: {
+    signature: Buffer;
+    transaction: string;
+  }) {
     if (!this.txPool.pending.has(tx.transaction)) {
       throw new Error('Transaction not found');
     }
     const transaction = this.txPool.pending.get(tx.transaction).tx;
 
-    const sender = await this.accountsModule.getAccount({ address: transaction.senderId });
+    const sender = await this.accountsModule.getAccount({
+      address: transaction.senderId,
+    });
     if (!sender) {
       throw new Error('Sender not found');
     }
@@ -90,7 +99,11 @@ export class MultisignaturesModule {
     payload.ready = await this.multiTx.ready(transaction, sender);
   }
 
-  private async processNormalTxSignature(tx: IBaseTransaction<any>, signature: Buffer, sender: AccountsModelWithMultisig) {
+  private async processNormalTxSignature(
+    tx: IBaseTransaction<any>,
+    signature: Buffer,
+    sender: AccountsModelWithMultisig
+  ) {
     const multisignatures = sender.multisignatures;
 
     if (tx.requesterPublicKey) {
@@ -116,12 +129,19 @@ export class MultisignaturesModule {
     }
   }
 
-  private async processMultiSigSignature(tx: IBaseTransaction<MultisigAsset>, signature: Buffer, sender: AccountsModelWithMultisig) {
+  private async processMultiSigSignature(
+    tx: IBaseTransaction<MultisigAsset>,
+    signature: Buffer,
+    sender: AccountsModelWithMultisig
+  ) {
     // tslint:disable-next-line
-    if (tx.asset.multisignature['signatures'] || tx.signatures.indexOf(signature) !== -1) {
+    if (
+      tx.asset.multisignature['signatures'] ||
+      tx.signatures.indexOf(signature) !== -1
+    ) {
       throw new Error('Permission to sign transaction denied');
     }
-    let verify    = false;
+    let verify = false;
     const allKeys = tx.asset.multisignature.keysgroup
       // add wannabe multisig member keys
       .map((k) => k.substring(1))
@@ -130,7 +150,7 @@ export class MultisignaturesModule {
 
     for (let i = 0; i < allKeys.length && !verify; i++) {
       const key = allKeys[i];
-      verify    = this.transactionLogic.verifySignature(
+      verify = this.transactionLogic.verifySignature(
         tx,
         Buffer.from(key, 'hex'),
         signature,

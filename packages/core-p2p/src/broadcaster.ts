@@ -1,4 +1,9 @@
-import { IAppState, IJobsQueue, ILogger, Symbols } from '@risevision/core-interfaces';
+import {
+  IAppState,
+  IJobsQueue,
+  ILogger,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { AppConfig, ConstantsType, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
@@ -11,15 +16,15 @@ import { IBroadcasterLogic } from './interfaces/IBroadcasterLogic';
 
 // tslint:disable-next-line
 export type BroadcastFilters = {
-  limit?: number,
-  broadhash?: string,
-  peers?: PeerType[]
+  limit?: number;
+  broadhash?: string;
+  peers?: PeerType[];
 };
 
 // tslint:disable-next-line
 export interface BroadcastTaskOptions<Body, Query, Out> {
   immediate?: boolean;
-  headers?: {[h: string]: string};
+  headers?: { [h: string]: string };
   method: BaseTransportMethod<Body, Query, Out>;
   payload?: SingleTransportPayload<Body, Query>;
 }
@@ -61,8 +66,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   public afterConstruct() {
     this.jobsQueue.register(
       'broadcasterNextRelease',
-      () => this.releaseQueue()
-        .catch((err) => {
+      () =>
+        this.releaseQueue().catch((err) => {
           this.logger.log('Broadcast timer', err);
           return;
         }),
@@ -83,8 +88,8 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   public maybeEnqueue<Body, Query, Out>(
     payload: SingleTransportPayload<Body & { relays?: number }, Query>,
     method: BaseTransportMethod<Body, Query, Out>,
-    filters?: BroadcastFilters): boolean {
-
+    filters?: BroadcastFilters
+  ): boolean {
     payload.body.relays = (payload.body.relays || 0) + 1;
     if (payload.body.relays < this.maxRelays()) {
       this.enqueue(payload, method, filters);
@@ -96,16 +101,19 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   public enqueue<Body, Query, Out>(
     payload: SingleTransportPayload<Body, Query>,
     method: BaseTransportMethod<Body, Query, Out>,
-    filters?: BroadcastFilters): number {
+    filters?: BroadcastFilters
+  ): number {
     return this.queue.push({
       filters,
       options: { immediate: false, method, payload },
     });
   }
 
-  public async broadcast(task: BroadcastTask<any, any, any>): Promise<{ peer: PeerType[] }> {
-    task.filters           = task.filters || {};
-    task.filters.limit     = task.filters.limit || this.constants.maxPeers;
+  public async broadcast(
+    task: BroadcastTask<any, any, any>
+  ): Promise<{ peer: PeerType[] }> {
+    task.filters = task.filters || {};
+    task.filters.limit = task.filters.limit || this.constants.maxPeers;
     task.filters.broadhash = task.filters.broadhash || null;
 
     let peers = task.filters.peers;
@@ -120,16 +128,17 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     }
 
     await PromiseThrottle.all(
-      peers
-        .map((p) => this.peersLogic.create(p))
-        .map((peer) => () => {
-            return peer.makeRequest(task.options.method, task.options.payload)
-              .catch((err) => {
-                this.logger.debug(`Failed to broadcast to peer: ${peer.string}`, err);
-                return null;
-              });
-          }
-        ),
+      peers.map((p) => this.peersLogic.create(p)).map((peer) => () => {
+        return peer
+          .makeRequest(task.options.method, task.options.payload)
+          .catch((err) => {
+            this.logger.debug(
+              `Failed to broadcast to peer: ${peer.string}`,
+              err
+            );
+            return null;
+          });
+      }),
       { maxInProgress: this.p2pConstants.parallelLimit }
     );
     this.logger.debug('End broadcast');
@@ -151,11 +160,13 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     this.logger.debug(`Broadcast before filtering: ${this.queue.length}`);
     const newQueue = [];
     const oldQueue = this.queue.slice();
-    this.queue     = [];
+    this.queue = [];
     for (const task of oldQueue) {
       if (task.options.immediate) {
         newQueue.push(task);
-      } else if (!await task.options.method.isRequestExpired(task.options.payload)) {
+      } else if (
+        !(await task.options.method.isRequestExpired(task.options.payload))
+      ) {
         newQueue.push(task);
       }
     }
@@ -167,26 +178,31 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   /**
    * Group broadcast requests by API.
    */
-  private squashQueue(broadcasts: Array<BroadcastTask<any, any, any>>): Array<BroadcastTask<any, any, any>> {
-    const byRequests = _.groupBy(broadcasts, ((b) => b.options.method.baseUrl));
+  private squashQueue(
+    broadcasts: Array<BroadcastTask<any, any, any>>
+  ): Array<BroadcastTask<any, any, any>> {
+    const byRequests = _.groupBy(broadcasts, (b) => b.options.method.baseUrl);
 
     const squashed: Array<BroadcastTask<any, any, any>> = [];
 
     // tslint:disable-next-line
     for (const type in byRequests) {
       const requests = byRequests[type];
-      const [first]  = requests;
+      const [first] = requests;
 
-      const newRequests = first.options.method
-        .mergeRequests(requests.map((item) => item.options.payload));
+      const newRequests = first.options.method.mergeRequests(
+        requests.map((item) => item.options.payload)
+      );
 
-      squashed.push(... newRequests.map((payload) => ({
-        options: {
-          immediate: false,
-          method   : first.options.method,
-          payload,
-        },
-      })));
+      squashed.push(
+        ...newRequests.map((payload) => ({
+          options: {
+            immediate: false,
+            method: first.options.method,
+            payload,
+          },
+        }))
+      );
     }
 
     return squashed;
@@ -215,6 +231,5 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     } catch (e) {
       this.logger.warn('Failed to release broadcast queue', e);
     }
-
   }
 }

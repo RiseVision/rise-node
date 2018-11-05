@@ -4,7 +4,6 @@ import { dPoSSymbols } from '../helpers/';
 
 @injectable()
 export class RoundsLogic {
-
   @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
   /**
@@ -18,10 +17,10 @@ export class RoundsLogic {
   /**
    * Gets inclusive range of round from given height
    */
-  public heightFromRound(round: number): { first: number, last: number } {
+  public heightFromRound(round: number): { first: number; last: number } {
     return {
       first: this.firstInRound(round),
-      last : this.lastInRound(round),
+      last: this.lastInRound(round)
     };
   }
 

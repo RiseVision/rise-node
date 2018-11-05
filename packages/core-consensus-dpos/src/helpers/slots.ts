@@ -47,5 +47,4 @@ export class Slots {
   public getLastSlot(nextSlot: number) {
     return nextSlot + this.delegates;
   }
-
 }

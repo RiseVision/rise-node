@@ -7,7 +7,7 @@ export class BlockRewardLogic implements IBlockReward {
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
-  private rewards: Array<{ height: number, reward: number }>;
+  private rewards: Array<{ height: number; reward: number }>;
 
   @postConstruct()
   public initRewards() {
@@ -31,8 +31,8 @@ export class BlockRewardLogic implements IBlockReward {
   public calcSupply(height: number): number {
     height = this.parseHeight(height);
 
-    const milestone     = this.calcMilestone(height);
-    let supply          = this.constants.totalAmount;
+    const milestone = this.calcMilestone(height);
+    let supply = this.constants.totalAmount;
     let amountAccounted = 0;
 
     for (let i = 0; i < milestone; i++) {

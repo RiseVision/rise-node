@@ -1,4 +1,8 @@
-import { IBlockLogic, IBlocksModel, Symbols } from '@risevision/core-interfaces';
+import {
+  IBlockLogic,
+  IBlocksModel,
+  Symbols
+} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseProtobufTransportMethod,
@@ -11,15 +15,22 @@ import { Op } from 'sequelize';
 
 @injectable()
 // tslint:disable-next-line
-export class CommonBlockRequest extends BaseProtobufTransportMethod<null, { ids: string }, { common: SignedAndChainedBlockType }> {
-  public readonly method: 'GET'   = 'GET';
+export class CommonBlockRequest extends BaseProtobufTransportMethod<
+  null,
+  { ids: string },
+  { common: SignedAndChainedBlockType }
+> {
+  public readonly method: 'GET' = 'GET';
   public readonly baseUrl: string = '/v2/peer/blocks/common';
 
-  public readonly requestSchema = require('../../schema/transport.json').commonBlock;
+  public readonly requestSchema = require('../../schema/transport.json')
+    .commonBlock;
 
-  protected readonly protoResponse: ProtoIdentifier<{ common: SignedAndChainedBlockType }> = {
+  protected readonly protoResponse: ProtoIdentifier<{
+    common: SignedAndChainedBlockType;
+  }> = {
     messageType: 'commonBlock',
-    namespace  : 'blocks.transport',
+    namespace: 'blocks.transport'
   };
 
   @inject(Symbols.logic.block)
@@ -31,9 +42,10 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<null, { ids:
 
   // tslint:disable-next-line
   protected async produceResponse(
-    request: SingleTransportPayload<null, { ids: string }>): Promise<{ common: SignedAndChainedBlockType }> {
+    request: SingleTransportPayload<null, { ids: string }>
+  ): Promise<{ common: SignedAndChainedBlockType }> {
     const excapedIds = request.query.ids
-    // Remove quotes
+      // Remove quotes
       .replace(/['"]+/g, '')
       // Separate by comma into an array
       .split(',')
@@ -46,21 +58,29 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<null, { ids:
     const common = await this.BlocksModel.findOne({
       limit: 1,
       order: [['height', 'DESC']],
-      raw  : true,
-      where: { id: { [Op.in]: excapedIds } },
+      raw: true,
+      where: { id: { [Op.in]: excapedIds } }
     });
 
     return { common };
   }
 
-  protected encodeResponse(data: { common: SignedAndChainedBlockType }): Promise<Buffer> {
+  protected encodeResponse(data: {
+    common: SignedAndChainedBlockType;
+  }): Promise<Buffer> {
     return super.encodeResponse({
-      common: data.common ? this.blockLogic.toProtoBuffer(data.common) : null as any,
+      common: data.common
+        ? this.blockLogic.toProtoBuffer(data.common)
+        : (null as any)
     });
   }
 
-  protected async decodeResponse(res: Buffer): Promise<{ common: SignedAndChainedBlockType }> {
+  protected async decodeResponse(
+    res: Buffer
+  ): Promise<{ common: SignedAndChainedBlockType }> {
     const data: any = await super.decodeResponse(res);
-    return { common: data.common ? this.blockLogic.fromProtoBuffer(data.common) : null };
+    return {
+      common: data.common ? this.blockLogic.fromProtoBuffer(data.common) : null
+    };
   }
 }

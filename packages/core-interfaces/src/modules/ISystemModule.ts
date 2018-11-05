@@ -62,14 +62,19 @@ export interface ISystemModule extends IModule {
    */
   getBroadhash(): Promise<string>;
 
-  getFees(height?: number): {
+  getFees(
+    height?: number
+  ): {
     fees: {
-      send: number,
-      vote: number,
-      secondsignature: number,
-      delegate: number,
-      multisignature: number,
-    }, fromHeight: number, height: number, toHeight: number
+      send: number;
+      vote: number;
+      secondsignature: number;
+      delegate: number;
+      multisignature: number;
+    };
+    fromHeight: number;
+    height: number;
+    toHeight: number;
   };
 
   /**

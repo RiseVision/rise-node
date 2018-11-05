@@ -2,24 +2,44 @@ import { DeprecatedAPIError, PrivateApisGuard } from '@risevision/core-apis';
 import {
   IAccountsModule,
   IBlocksModel,
-  IBlocksModule, ICrypto,
+  IBlocksModule,
+  ICrypto,
   ISystemModule,
-  ITransactionsModel, Symbols,
+  ITransactionsModel,
+  Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, publicKey } from '@risevision/core-types';
-import { HTTPError, IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
+import {
+  HTTPError,
+  IoCSymbol,
+  SchemaValid,
+  ValidateSchema
+} from '@risevision/core-utils';
 import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import * as pgp from 'pg-promise';
-import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
+import {
+  Body,
+  Get,
+  JsonController,
+  Post,
+  Put,
+  QueryParam,
+  QueryParams,
+  UseBefore
+} from 'routing-controllers';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
-import { Accounts2DelegatesModel, AccountsModelForDPOS, RoundsFeesModel } from '../models';
+import {
+  Accounts2DelegatesModel,
+  AccountsModelForDPOS,
+  RoundsFeesModel
+} from '../models';
 import { DelegatesModule, ForgeModule } from '../modules';
 
 const schema = require('../../schema/delegates.json');
@@ -73,27 +93,36 @@ export class DelegatesAPI {
 
   @Get('/')
   @ValidateSchema()
-  public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })
-                            @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
-    const d         = await this.delegatesModule.getDelegates(data);
+  public async getDelegates(@SchemaValid(schema.getDelegates, {
+    castNumbers: true
+  })
+  @QueryParams()
+  data: {
+    orderBy: string;
+    limit: number;
+    offset: number;
+  }) {
+    const d = await this.delegatesModule.getDelegates(data);
     const delegates = d.delegates.map((item) => {
       // tslint:disable object-literal-sort-keys
       return {
-        address       : item.delegate.address,
-        username      : item.delegate.username,
-        publicKey     : item.delegate.hexPublicKey,
-        vote          : item.delegate.vote ? `${item.delegate.vote}` : '0',
+        address: item.delegate.address,
+        username: item.delegate.username,
+        publicKey: item.delegate.hexPublicKey,
+        vote: item.delegate.vote ? `${item.delegate.vote}` : '0',
         producedblocks: item.delegate.producedblocks,
-        missedblocks  : item.delegate.missedblocks,
-        rate          : item.info.rank,
-        rank          : item.info.rank,
-        approval      : item.info.approval,
-        productivity  : item.info.productivity,
+        missedblocks: item.delegate.missedblocks,
+        rate: item.info.rank,
+        rank: item.info.rank,
+        approval: item.info.approval,
+        productivity: item.info.productivity
       };
       // tslint:enable object-literal-sort-keys
     });
     if (d.sortField) {
-      if (['approval', 'productivity', 'rank', 'vote'].indexOf(d.sortField) > -1) {
+      if (
+        ['approval', 'productivity', 'rank', 'vote'].indexOf(d.sortField) > -1
+      ) {
         delegates.sort((a, b) => {
           if (d.sortMethod === 'ASC') {
             return a[d.sortField] - b[d.sortField];
@@ -101,7 +130,9 @@ export class DelegatesAPI {
             return b[d.sortField] - a[d.sortField];
           }
         });
-      } else if (['username', 'address', 'publicKey'].indexOf(d.sortField) > -1) {
+      } else if (
+        ['username', 'address', 'publicKey'].indexOf(d.sortField) > -1
+      ) {
         delegates.sort((a, b) => {
           if (d.sortMethod === 'ASC') {
             return a[d.sortField].localeCompare(b[d.sortField]);
@@ -111,71 +142,109 @@ export class DelegatesAPI {
         });
       }
     }
-    return { delegates: delegates.slice(d.offset, d.limit), totalCount: d.count };
+    return {
+      delegates: delegates.slice(d.offset, d.limit),
+      totalCount: d.count
+    };
   }
 
   @Get('/fee')
   @ValidateSchema()
   public async getFee(@SchemaValid(schema.getFee, { castNumbers: true })
-                      @QueryParams() params: { height?: number }) {
-    const f            = this.system.getFees(params.height);
+  @QueryParams()
+  params: {
+    height?: number;
+  }) {
+    const f = this.system.getFees(params.height);
     const { delegate } = f.fees;
     delete f.fees;
-    return { ...f, ... { fee: delegate } };
-
+    return { ...f, ...{ fee: delegate } };
   }
 
   @Get('/forging/getForgedByAccount')
   @ValidateSchema()
-  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, { castNumbers: true })
-                                  // tslint:disable-next-line max-line-length
-                                  @QueryParams() params: { generatorPublicKey: publicKey, start?: number, end?: number }) {
-    if (typeof(params.start) !== 'undefined' || typeof(params.end) !== 'undefined') {
+  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, {
+    castNumbers: true
+  })
+  // tslint:disable-next-line max-line-length
+  @QueryParams()
+  params: {
+    generatorPublicKey: publicKey;
+    start?: number;
+    end?: number;
+  }) {
+    if (
+      typeof params.start !== 'undefined' ||
+      typeof params.end !== 'undefined'
+    ) {
       const reward = await this.aggregateBlockReward({
-        end               : params.end,
+        end: params.end,
         generatorPublicKey: params.generatorPublicKey,
-        start             : params.start,
+        start: params.start
       });
       const forged = new BigNumber(reward.fees).plus(reward.rewards).toString();
       return {
-        count  : reward.count,
-        fees   : reward.fees,
+        count: reward.count,
+        fees: reward.fees,
         forged,
-        rewards: reward.rewards,
+        rewards: reward.rewards
       };
     } else {
-      const account = await this.accounts
-        .getAccount({ publicKey: Buffer.from(params.generatorPublicKey, 'hex') });
+      const account = await this.accounts.getAccount({
+        publicKey: Buffer.from(params.generatorPublicKey, 'hex')
+      });
 
       if (!account) {
         throw new HTTPError('Account not found', 200);
       }
 
       return {
-        fees   : account.fees,
-        forged : new BigNumber(account.fees).plus(account.rewards).toString(),
-        rewards: account.rewards,
+        fees: account.fees,
+        forged: new BigNumber(account.fees).plus(account.rewards).toString(),
+        rewards: account.rewards
       };
     }
-
   }
 
   @Get('/get')
   @ValidateSchema()
   public async getDelegate(@SchemaValid(schema.getDelegate)
-                           @QueryParams() params: { publicKey: publicKey, username: string }) {
+  @QueryParams()
+  params: {
+    publicKey: publicKey;
+    username: string;
+  }) {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
-    const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
-    const delegate      = delegates
-      .find((d) => d.delegate.hexPublicKey === params.publicKey || d.delegate.username === params.username);
+    const { delegates } = await this.delegatesModule.getDelegates({
+      orderBy: 'username:asc'
+    });
+    const delegate = delegates.find(
+      (d) =>
+        d.delegate.hexPublicKey === params.publicKey ||
+        d.delegate.username === params.username
+    );
     if (delegate) {
       return {
         delegate: filterObject(
-          { ...delegate.delegate.toPOJO(), ...delegate.info, ...{ rate: delegate.info.rank } },
-          ['username', 'address', 'publicKey', 'vote', 'producedblocks',
-            'missedblocks', 'rank', 'approval', 'productivity', 'rate']
-        ),
+          {
+            ...delegate.delegate.toPOJO(),
+            ...delegate.info,
+            ...{ rate: delegate.info.rank }
+          },
+          [
+            'username',
+            'address',
+            'publicKey',
+            'vote',
+            'producedblocks',
+            'missedblocks',
+            'rank',
+            'approval',
+            'productivity',
+            'rate'
+          ]
+        )
       };
     }
     throw new HTTPError('Delegate not found', 200);
@@ -184,33 +253,49 @@ export class DelegatesAPI {
   @Get('/voters')
   @ValidateSchema()
   public async getVoters(@SchemaValid(schema.getVoters)
-                         @QueryParams() params: { publicKey: publicKey }) {
-    const rows      = await this.Accounts2DelegatesModel.findAll({
+  @QueryParams()
+  params: {
+    publicKey: publicKey;
+  }) {
+    const rows = await this.Accounts2DelegatesModel.findAll({
       attributes: ['accountId'],
-      where     : { dependentId: params.publicKey },
+      where: { dependentId: params.publicKey }
     });
     const addresses = rows.map((r) => r.accountId);
 
-    const accounts = await this.accounts.getAccounts({ address: { $in: addresses }, sort: 'balance' });
+    const accounts = await this.accounts.getAccounts({
+      address: { $in: addresses },
+      sort: 'balance'
+    });
 
     return {
-      accounts: accounts.map((a) => filterObject(
-        a.toPOJO(),
-        ['address', 'balance', 'username', 'publicKey'])
-      ),
+      accounts: accounts.map((a) =>
+        filterObject(a.toPOJO(), [
+          'address',
+          'balance',
+          'username',
+          'publicKey'
+        ])
+      )
     };
   }
 
   @Get('/search')
   @ValidateSchema()
   public async search(@SchemaValid(schema.search, { castNumbers: true })
-                      @QueryParams() params: { q: string, limit?: number, orderBy?: string }) {
-
-    const orderBy = params.orderBy ? params.orderBy.split(':') : ['username', 'ASC'];
+  @QueryParams()
+  params: {
+    q: string;
+    limit?: number;
+    orderBy?: string;
+  }) {
+    const orderBy = params.orderBy
+      ? params.orderBy.split(':')
+      : ['username', 'ASC'];
     if (orderBy.length === 1) {
       orderBy.push('ASC');
     }
-    const delQuery  = DelegatesAPI.searchDelegate(
+    const delQuery = DelegatesAPI.searchDelegate(
       params.q,
       params.limit || this.dposConstants.activeDelegates,
       orderBy[0],
@@ -229,18 +314,26 @@ export class DelegatesAPI {
   }
 
   @Get('/getNextForgers')
-  public async getNextForgers(@QueryParam('limit', { required: false }) limit: number = 10) {
+  public async getNextForgers(
+    @QueryParam('limit', { required: false }) limit: number = 10
+  ) {
     const curBlock = this.blocks.lastBlock;
 
-    const activeDelegates = await this.delegatesModule.generateDelegateList(curBlock.height);
+    const activeDelegates = await this.delegatesModule.generateDelegateList(
+      curBlock.height
+    );
 
-    const currentBlockSlot      = this.slots.getSlotNumber(curBlock.timestamp);
-    const currentSlot           = this.slots.getSlotNumber();
+    const currentBlockSlot = this.slots.getSlotNumber(curBlock.timestamp);
+    const currentSlot = this.slots.getSlotNumber();
     const nextForgers: string[] = [];
     for (let i = 1; i <= this.slots.delegates && i <= limit; i++) {
       // This if looks a bit stupid to me.
       if (activeDelegates[(currentSlot + i) % this.slots.delegates]) {
-        nextForgers.push(activeDelegates[(currentSlot + i) % this.slots.delegates].toString('hex'));
+        nextForgers.push(
+          activeDelegates[(currentSlot + i) % this.slots.delegates].toString(
+            'hex'
+          )
+        );
       }
     }
 
@@ -248,7 +341,7 @@ export class DelegatesAPI {
       currentBlock: this.BlocksModel.toStringBlockType(curBlock),
       currentBlockSlot,
       currentSlot,
-      delegates   : nextForgers,
+      delegates: nextForgers
     };
   }
 
@@ -262,30 +355,39 @@ export class DelegatesAPI {
   @ValidateSchema()
   @UseBefore(PrivateApisGuard)
   public async getForgingStatus(@SchemaValid(schema.forgingStatus)
-                                @QueryParams() params: { publicKey: publicKey }) {
+  @QueryParams()
+  params: {
+    publicKey: publicKey;
+  }) {
     if (params.publicKey) {
       return {
         delegates: [params.publicKey],
-        enabled  : this.forgeModule.isForgeEnabledOn(params.publicKey),
+        enabled: this.forgeModule.isForgeEnabledOn(params.publicKey)
       };
     } else {
       const delegates = this.forgeModule.getEnabledKeys();
       return {
         delegates,
-        enabled: delegates.length > 0,
+        enabled: delegates.length > 0
       };
     }
-
   }
 
   @Post('/forging/enable')
   @ValidateSchema()
   @UseBefore(PrivateApisGuard)
   public async forgingEnable(@SchemaValid(schema.disableForging)
-                             @Body() params: { secret: string, publicKey: string }) {
-    const kp = this.crypto.makeKeyPair(crypto
-      .createHash('sha256').update(params.secret, 'utf8')
-      .digest());
+  @Body()
+  params: {
+    secret: string;
+    publicKey: string;
+  }) {
+    const kp = this.crypto.makeKeyPair(
+      crypto
+        .createHash('sha256')
+        .update(params.secret, 'utf8')
+        .digest()
+    );
 
     const pk = kp.publicKey.toString('hex');
     if (params.publicKey && pk !== params.publicKey) {
@@ -311,10 +413,17 @@ export class DelegatesAPI {
   @ValidateSchema()
   @UseBefore(PrivateApisGuard)
   public async forgingDisable(@SchemaValid(schema.disableForging)
-                              @Body() params: { secret: string, publicKey: string }) {
-    const kp = this.crypto.makeKeyPair(crypto
-      .createHash('sha256').update(params.secret, 'utf8')
-      .digest());
+  @Body()
+  params: {
+    secret: string;
+    publicKey: string;
+  }) {
+    const kp = this.crypto.makeKeyPair(
+      crypto
+        .createHash('sha256')
+        .update(params.secret, 'utf8')
+        .digest()
+    );
 
     const pk = kp.publicKey.toString('hex');
     if (params.publicKey && pk !== params.publicKey) {
@@ -336,12 +445,18 @@ export class DelegatesAPI {
     this.forgeModule.disableForge(pk);
   }
 
-  private static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC') {
+  private static searchDelegate(
+    q: string,
+    limit: number,
+    orderBy: string,
+    orderHow: 'ASC' | 'DESC' = 'ASC'
+  ) {
     if (['ASC', 'DESC'].indexOf(orderHow.toLocaleUpperCase()) === -1) {
       throw new Error('Invalid ordering mechanism');
     }
 
-    return pgp.as.format(`
+    return pgp.as.format(
+      `
     WITH
       supply AS (SELECT calcSupply((SELECT height FROM blocks ORDER BY height DESC LIMIT 1))::numeric),
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
@@ -364,66 +479,79 @@ export class DelegatesAPI {
         WHERE m."isDelegate" = 1
         ORDER BY \${orderBy:name} \${orderHow:raw})
       SELECT * FROM delegates WHERE username LIKE \${q} LIMIT \${limit}
-    `, {
-      q: `%${q}%`,
-      limit,
-      orderBy,
-      orderHow,
-    });
-
+    `,
+      {
+        q: `%${q}%`,
+        limit,
+        orderBy,
+        orderHow
+      }
+    );
   }
 
   /**
    * Gets block rewards for a delegate for time period
    */
   // tslint:disable-next-line max-line-length
-  public async aggregateBlockReward(filter: { generatorPublicKey: publicKey, start?: number, end?: number }): Promise<{ fees: number, rewards: number, count: number }> {
-    const params: any                            = {};
-    params.generatorPublicKey                    = filter.generatorPublicKey;
-    params.delegates                             = this.dposConstants.activeDelegates;
+  public async aggregateBlockReward(filter: {
+    generatorPublicKey: publicKey;
+    start?: number;
+    end?: number;
+  }): Promise<{ fees: number; rewards: number; count: number }> {
+    const params: any = {};
+    params.generatorPublicKey = filter.generatorPublicKey;
+    params.delegates = this.dposConstants.activeDelegates;
     const timestampClausole: { timestamp?: any } = { timestamp: {} };
 
-    if (typeof(filter.start) !== 'undefined') {
-      timestampClausole.timestamp[Op.gte] = filter.start - this.constants.epochTime.getTime() / 1000;
+    if (typeof filter.start !== 'undefined') {
+      timestampClausole.timestamp[Op.gte] =
+        filter.start - this.constants.epochTime.getTime() / 1000;
     }
 
-    if (typeof(filter.end) !== 'undefined') {
-      timestampClausole.timestamp[Op.lte] = filter.end - this.constants.epochTime.getTime() / 1000;
+    if (typeof filter.end !== 'undefined') {
+      timestampClausole.timestamp[Op.lte] =
+        filter.end - this.constants.epochTime.getTime() / 1000;
     }
 
-    if (typeof(timestampClausole.timestamp[Op.gte]) === 'undefined'
-      && typeof(timestampClausole.timestamp[Op.lte]) === 'undefined') {
+    if (
+      typeof timestampClausole.timestamp[Op.gte] === 'undefined' &&
+      typeof timestampClausole.timestamp[Op.lte] === 'undefined'
+    ) {
       delete timestampClausole.timestamp;
     }
 
     const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
-    const acc          = await this.AccountsModel
-      .findOne({ where: { isDelegate: 1, publicKey: bufPublicKey } });
+    const acc = await this.AccountsModel.findOne({
+      where: { isDelegate: 1, publicKey: bufPublicKey }
+    });
     if (acc === null) {
       throw new Error('Account not found or is not a delegate');
     }
 
-    const res: { count: string, rewards: string } = await this.BlocksModel.findOne({
+    const res: {
+      count: string;
+      rewards: string;
+    } = (await this.BlocksModel.findOne({
       attributes: [
         sequelize.literal('COUNT(1)'),
-        sequelize.literal('SUM("reward") as rewards'),
+        sequelize.literal('SUM("reward") as rewards')
       ],
-      raw       : true,
-      where     : {
+      raw: true,
+      where: {
         ...timestampClausole,
-        generatorPublicKey: bufPublicKey,
-      },
-    }) as any;
+        generatorPublicKey: bufPublicKey
+      }
+    })) as any;
 
     const data = {
-      count  : parseInt(res.count, 10),
-      fees   : (await this.RoundsFeesModel.aggregate('fees', 'sum', {
+      count: parseInt(res.count, 10),
+      fees: (await this.RoundsFeesModel.aggregate('fees', 'sum', {
         where: {
           ...timestampClausole,
-          publicKey: bufPublicKey,
-        },
+          publicKey: bufPublicKey
+        }
       })) as number,
-      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
+      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10)
     };
     if (isNaN(data.fees)) {
       // see https://github.com/sequelize/sequelize/issues/6299
@@ -431,5 +559,4 @@ export class DelegatesAPI {
     }
     return data;
   }
-
 }

@@ -2,7 +2,8 @@ import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
 import {
   IAccountsModel,
   IAccountsModule,
-  IBlocksModule, ISystemModule,
+  IBlocksModule,
+  ISystemModule,
   ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
@@ -10,7 +11,11 @@ import {
   Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, IBaseTransaction, ITransportTransaction } from '@risevision/core-types';
+import {
+  ConstantsType,
+  IBaseTransaction,
+  ITransportTransaction
+} from '@risevision/core-types';
 import {
   assertValidSchema,
   castFieldsToNumberUsingSchema,
@@ -23,7 +28,16 @@ import {
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import * as _ from 'lodash';
-import { Body, Get, JsonController, Post, Put, QueryParam, QueryParams, UseBefore } from 'routing-controllers';
+import {
+  Body,
+  Get,
+  JsonController,
+  Post,
+  Put,
+  QueryParam,
+  QueryParams,
+  UseBefore
+} from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { TXSymbols } from '../txSymbols';
@@ -78,25 +92,38 @@ export class TransactionsAPI {
     _.each(body, (value, key) => {
       const param = String(key).replace(pattern, '');
       // Dealing with array-like parameters (csv comma separated)
-      if (_.includes(['senderIds', 'recipientIds', 'senderPublicKeys', 'recipientPublicKeys'], param)) {
-        value     = String(value).split(',');
+      if (
+        _.includes(
+          [
+            'senderIds',
+            'recipientIds',
+            'senderPublicKeys',
+            'recipientPublicKeys'
+          ],
+          param
+        )
+      ) {
+        value = String(value).split(',');
         body[key] = value;
       }
       // params[param] = value;
     });
     body = castFieldsToNumberUsingSchema(schema.getTransactions, body);
-    assertValidSchema(this.schema, body, { obj: schema.getTransactions, opts: {} });
+    assertValidSchema(this.schema, body, {
+      obj: schema.getTransactions,
+      opts: {}
+    });
 
     const andBody = {};
     Object.keys(body)
       .filter((what) => what.startsWith('and:'))
-      .forEach((k) => andBody[k.split(':')[1]] = body[k]);
+      .forEach((k) => (andBody[k.split(':')[1]] = body[k]));
     const andWhereClause = this.createWhereClause(andBody);
 
     const orBody = {};
     Object.keys(body)
       .filter((what) => !what.startsWith('and:'))
-      .forEach((k) => orBody[k] = body[k]);
+      .forEach((k) => (orBody[k] = body[k]));
     const orWhereClause = this.createWhereClause(orBody);
 
     let orderBy;
@@ -104,23 +131,25 @@ export class TransactionsAPI {
       orderBy = [body.orderBy.split(':')];
     }
 
-    const where = removeEmptyObjKeys({ ...andWhereClause, [Op.or]: orWhereClause }, true);
+    const where = removeEmptyObjKeys(
+      { ...andWhereClause, [Op.or]: orWhereClause },
+      true
+    );
     if (Object.keys(where[Op.or]).length === 0) {
       delete where[Op.or];
     }
     const { rows: transactions, count } = await this.TXModel.findAndCountAll({
-      limit : body.limit || 100,
+      limit: body.limit || 100,
       offset: body.offset || 0,
-      order : orderBy,
-      where,
+      order: orderBy,
+      where
     });
     // Reattach transactions asset
     await this.txLogic.attachAssets(transactions);
 
     return {
       count,
-      transactions: transactions
-        .map((t) => t.toTransport()),
+      transactions: transactions.map((t) => t.toTransport())
     };
   }
 
@@ -131,42 +160,60 @@ export class TransactionsAPI {
 
   @Get('/get')
   @ValidateSchema()
-  public async getTX(
-    @SchemaValid(schema.getTransaction)
-    @QueryParams() params: { id: string }) {
-
+  public async getTX(@SchemaValid(schema.getTransaction)
+  @QueryParams()
+  params: {
+    id: string;
+  }) {
     const { id } = params;
-    const txOBJ  = await this.TXModel.findById(id);
+    const txOBJ = await this.TXModel.findById(id);
     if (txOBJ === null) {
       throw new Error('Transaction not found');
     }
     await this.txLogic.attachAssets([txOBJ]);
 
-    const tx = await this.hookSystem.apply_filters(TXApiGetTxFilter.name, txOBJ.toTransport());
+    const tx = await this.hookSystem.apply_filters(
+      TXApiGetTxFilter.name,
+      txOBJ.toTransport()
+    );
     return { transaction: tx };
   }
 
   @Get('/pending')
   @ValidateSchema()
   public async getPendings(@SchemaValid(schema.getPooledTransactions)
-                           @QueryParams() params: { senderPublicKey?: string, address?: string }) {
+  @QueryParams()
+  params: {
+    senderPublicKey?: string;
+    address?: string;
+  }) {
     const txs = this.pool.pending.txList({ reverse: true });
 
     return {
-      count       : txs.length,
+      count: txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ?
-          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
-          true)
-        .filter((tx) => params.address ? params.address === tx.recipientId : true)
-        .map((tx) => this.TXModel.toTransportTransaction(tx)),
+        .filter(
+          (tx) =>
+            params.senderPublicKey
+              ? Buffer.from(params.senderPublicKey, 'hex').equals(
+                  tx.senderPublicKey
+                )
+              : true
+        )
+        .filter(
+          (tx) => (params.address ? params.address === tx.recipientId : true)
+        )
+        .map((tx) => this.TXModel.toTransportTransaction(tx))
     };
   }
 
   @Get('/pending/get')
   @ValidateSchema()
-  public async getPending(@SchemaValid(schema.getPooledTransaction.properties.id)
-                          @QueryParam('id') id: string) {
+  public async getPending(
+    @SchemaValid(schema.getPooledTransaction.properties.id)
+    @QueryParam('id')
+    id: string
+  ) {
     if (!this.pool.pending.has(id)) {
       throw new HTTPError('Transaction not found', 200);
     }
@@ -177,24 +224,38 @@ export class TransactionsAPI {
   @Get('/queued')
   @ValidateSchema()
   public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
-                            @QueryParams() params: { senderPublicKey?: string, address?: string }) {
+  @QueryParams()
+  params: {
+    senderPublicKey?: string;
+    address?: string;
+  }) {
     const txs = this.pool.queued.txList({ reverse: true });
 
     return {
-      count       : txs.length,
+      count: txs.length,
       transactions: txs
-        .filter((tx) => params.senderPublicKey ?
-          Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
-          true)
-        .filter((tx) => params.address ? params.address === tx.recipientId : true)
-        .map((tx) => this.TXModel.toTransportTransaction(tx)),
+        .filter(
+          (tx) =>
+            params.senderPublicKey
+              ? Buffer.from(params.senderPublicKey, 'hex').equals(
+                  tx.senderPublicKey
+                )
+              : true
+        )
+        .filter(
+          (tx) => (params.address ? params.address === tx.recipientId : true)
+        )
+        .map((tx) => this.TXModel.toTransportTransaction(tx))
     };
   }
 
   @Get('/queued/get')
   @ValidateSchema()
-  public async getQueuedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
-                           @QueryParam('id') id: string) {
+  public async getQueuedTx(
+    @SchemaValid(schema.getPooledTransaction.properties.id)
+    @QueryParam('id')
+    id: string
+  ) {
     if (!this.pool.queued.has(id)) {
       throw new HTTPError('Transaction not found', 200);
     }
@@ -205,61 +266,69 @@ export class TransactionsAPI {
   @Get('/unconfirmed')
   @ValidateSchema()
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
-                                 @QueryParams() params: { senderPublicKey?: string, address?: string }) {
-    const txs = this.pool.unconfirmed.txList({ reverse: true })
+  @QueryParams()
+  params: {
+    senderPublicKey?: string;
+    address?: string;
+  }) {
+    const txs = this.pool.unconfirmed.txList({ reverse: true });
     return {
-      count       : txs.length,
+      count: txs.length,
       transactions: txs
         .filter((tx) => {
           // Either senderPublicKey or address matching as recipientId
           // or all if no params were set.
-          return (!params.senderPublicKey && !params.address) ||
-            (
-              params.senderPublicKey ?
-                Buffer.from(params.senderPublicKey, 'hex').equals(tx.senderPublicKey) :
-                false
-            ) ||
-            (
-              params.address ?
-                params.address === tx.recipientId :
-                false
-            );
+          return (
+            (!params.senderPublicKey && !params.address) ||
+            (params.senderPublicKey
+              ? Buffer.from(params.senderPublicKey, 'hex').equals(
+                  tx.senderPublicKey
+                )
+              : false) ||
+            (params.address ? params.address === tx.recipientId : false)
+          );
         })
-        .map((tx) => this.TXModel.toTransportTransaction(tx)),
+        .map((tx) => this.TXModel.toTransportTransaction(tx))
     };
   }
 
   @Get('/unconfirmed/get')
   @ValidateSchema()
-  public async getUnconfirmedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
-                                @QueryParam('id') id: string) {
+  public async getUnconfirmedTx(
+    @SchemaValid(schema.getPooledTransaction.properties.id)
+    @QueryParam('id')
+    id: string
+  ) {
     if (!this.pool.unconfirmed.has(id)) {
       throw new HTTPError('Transaction not found', 200);
     }
-    const {tx} = this.pool.unconfirmed.get(id);
+    const { tx } = this.pool.unconfirmed.get(id);
     return { transaction: this.TXModel.toTransportTransaction(tx) };
   }
 
   @Post()
   @ValidateSchema()
   @UseBefore(PrivateApisGuard)
-  public async localCreate(
-    @SchemaValid(schema.addTransactions, {castNumbers: true})
-    @Body() body: {
-      secret: string,
-      recipientId: string,
-      amount: number,
-      secondSecret?: string
-    }
-  ) {
+  public async localCreate(@SchemaValid(schema.addTransactions, {
+    castNumbers: true
+  })
+  @Body()
+  body: {
+    secret: string;
+    recipientId: string;
+    amount: number;
+    secondSecret?: string;
+  }) {
     const w = new RISEWallet(body.secret, this.constants.addressSuffix);
-    const second = body.secondSecret ? new RISEWallet(body.secondSecret, this.constants.addressSuffix) : undefined;
+    const second = body.secondSecret
+      ? new RISEWallet(body.secondSecret, this.constants.addressSuffix)
+      : undefined;
     const transaction = w.signTransaction(
       new SendTx()
-      .set('amount', body.amount)
-      .set('timestamp', this.timeToEpoch.getTime())
-      .set('recipientId', body.recipientId)
-      .set('fee', this.systemModule.getFees().fees.send),
+        .set('amount', body.amount)
+        .set('timestamp', this.timeToEpoch.getTime())
+        .set('recipientId', body.recipientId)
+        .set('fee', this.systemModule.getFees().fees.send),
       second
     );
 
@@ -273,25 +342,27 @@ export class TransactionsAPI {
 
   @Put()
   @ValidateSchema()
-  public async put(
-    @SchemaValid({
-      type      : 'object',
-      properties: { transaction: { type: 'object' }, transactions: { type: 'array', maxItems: 10 } }
-    })
-    @Body() body: {
-      transaction?: ITransportTransaction<any>,
-      transactions?: Array<ITransportTransaction<any>>
+  public async put(@SchemaValid({
+    type: 'object',
+    properties: {
+      transaction: { type: 'object' },
+      transactions: { type: 'array', maxItems: 10 }
     }
-  ) {
+  })
+  @Body()
+  body: {
+    transaction?: ITransportTransaction<any>;
+    transactions?: Array<ITransportTransaction<any>>;
+  }) {
     const { transaction } = body;
-    let { transactions }  = body;
+    let { transactions } = body;
     if (transactions && !Array.isArray(transactions)) {
       transactions = [];
     }
 
-    const invalidTxsWithReasons: Array<{ id: string, reason: string }> = [];
-    const validTxsIDs                                                  = [];
-    const allTxs                                                       = [];
+    const invalidTxsWithReasons: Array<{ id: string; reason: string }> = [];
+    const validTxsIDs = [];
+    const allTxs = [];
     if (transaction) {
       allTxs.push(transaction);
     }
@@ -299,7 +370,7 @@ export class TransactionsAPI {
       allTxs.push(...transactions);
     }
 
-    const validTxs: Array<IBaseTransaction<any>>                    = [];
+    const validTxs: Array<IBaseTransaction<any>> = [];
     const transportTxs: { [k: string]: ITransportTransaction<any> } = {};
     for (const tx of allTxs) {
       try {
@@ -316,15 +387,18 @@ export class TransactionsAPI {
     // NOTE: These checks are performed here and then in transactionlogic.
     const accountsMap = await this.accountsModule.txAccounts(validTxs);
 
-    await Promise.all(validTxs.slice().map((tx) => this.transactionsModule
-      .checkTransaction(tx, accountsMap, this.blocksModule.lastBlock.height)
-      .then(() => validTxsIDs.push(tx.id))
-      .catch((err) => {
-        // Remove from valid
-        validTxs.splice(validTxs.findIndex((t) => t.id === tx.id), 1);
-        // Add to invalid
-        invalidTxsWithReasons.push({ id: tx.id, reason: err.message });
-      }))
+    await Promise.all(
+      validTxs.slice().map((tx) =>
+        this.transactionsModule
+          .checkTransaction(tx, accountsMap, this.blocksModule.lastBlock.height)
+          .then(() => validTxsIDs.push(tx.id))
+          .catch((err) => {
+            // Remove from valid
+            validTxs.splice(validTxs.findIndex((t) => t.id === tx.id), 1);
+            // Add to invalid
+            invalidTxsWithReasons.push({ id: tx.id, reason: err.message });
+          })
+      )
     );
     if (validTxs.length > 0) {
       // Schema validation is done in txLogic.objectNormalize.
@@ -339,15 +413,15 @@ export class TransactionsAPI {
 
   // tslint:disable-next-line cognitive-complexity
   private createWhereClause(body: any) {
-    const whereClause          = {
-      amount         : {},
-      blockId        : {},
-      height         : {},
-      recipientId    : {},
-      senderId       : {},
+    const whereClause = {
+      amount: {},
+      blockId: {},
+      height: {},
+      recipientId: {},
+      senderId: {},
       senderPublicKey: {},
-      timestamp      : {},
-      type           : {},
+      timestamp: {},
+      type: {}
     };
     whereClause.amount[Op.lte] = body.maxAmount;
     whereClause.amount[Op.gte] = body.minAmount;
@@ -361,7 +435,9 @@ export class TransactionsAPI {
 
     whereClause.senderId[Op.eq] = body.senderId;
 
-    whereClause.senderPublicKey[Op.eq] = body.senderPublicKey ? Buffer.from(body.senderPublicKey, 'hex') : undefined;
+    whereClause.senderPublicKey[Op.eq] = body.senderPublicKey
+      ? Buffer.from(body.senderPublicKey, 'hex')
+      : undefined;
 
     whereClause.timestamp[Op.lte] = body.toTimestamp;
     whereClause.timestamp[Op.gte] = body.fromTimestamp;
@@ -371,7 +447,9 @@ export class TransactionsAPI {
     // Computed stuff
     if (body.minConfirmations) {
       whereClause.height[Op.lte] = Math.min(
-        Number.isInteger(whereClause.height[Op.lte]) ? whereClause.height[Op.lte] : Number.MAX_SAFE_INTEGER,
+        Number.isInteger(whereClause.height[Op.lte])
+          ? whereClause.height[Op.lte]
+          : Number.MAX_SAFE_INTEGER,
         this.blocksModule.lastBlock.height - body.minConfirmations
       );
     }
@@ -379,44 +457,58 @@ export class TransactionsAPI {
     if (body.fromUnixTime) {
       whereClause.timestamp[Op.gte] = Math.max(
         this.timeToEpoch.getTime(body.fromUnixTime * 1000),
-        Number.isInteger(whereClause.timestamp[Op.gte]) ? whereClause.timestamp[Op.gte] : 0
+        Number.isInteger(whereClause.timestamp[Op.gte])
+          ? whereClause.timestamp[Op.gte]
+          : 0
       );
     }
     if (body.toUnixTime) {
       whereClause.timestamp[Op.lte] = Math.min(
         this.timeToEpoch.getTime(body.toUnixTime * 1000),
-        Number.isInteger(whereClause.timestamp[Op.lte]) ? whereClause.timestamp[Op.lte] : 0
+        Number.isInteger(whereClause.timestamp[Op.lte])
+          ? whereClause.timestamp[Op.lte]
+          : 0
       );
     }
 
     if (Array.isArray(body.senderIds)) {
-      whereClause.senderId = { [Op.in]: body.senderIds.map((item) => item.toUpperCase()) };
+      whereClause.senderId = {
+        [Op.in]: body.senderIds.map((item) => item.toUpperCase())
+      };
       if (body.senderId) {
         whereClause.senderId[Op.in].push(body.senderId.toUpperCase());
       }
     }
 
     if (Array.isArray(body.recipientIds)) {
-      whereClause.recipientId = { [Op.in]: body.recipientIds.map((item) => item.toUpperCase()) };
+      whereClause.recipientId = {
+        [Op.in]: body.recipientIds.map((item) => item.toUpperCase())
+      };
       if (body.recipientId) {
         whereClause.recipientId[Op.in].push(body.recipientId.toUpperCase());
       }
     }
 
     if (Array.isArray(body.senderPublicKeys)) {
-      whereClause.senderPublicKey = { [Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex')) };
+      whereClause.senderPublicKey = {
+        [Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex'))
+      };
       if (body.senderPublicKey) {
-        whereClause.senderPublicKey[Op.in].push(Buffer.from(body.senderPublicKey, 'hex'));
+        whereClause.senderPublicKey[Op.in].push(
+          Buffer.from(body.senderPublicKey, 'hex')
+        );
       }
     }
 
     removeEmptyObjKeys(whereClause, true);
     for (const k in whereClause) {
-      if (Object.keys(whereClause[k]).length === 0 && Object.getOwnPropertySymbols(whereClause[k]).length === 0) {
+      if (
+        Object.keys(whereClause[k]).length === 0 &&
+        Object.getOwnPropertySymbols(whereClause[k]).length === 0
+      ) {
         delete whereClause[k];
       }
     }
     return whereClause;
   }
-
 }

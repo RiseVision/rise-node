@@ -8,28 +8,34 @@
  * @param {string} options
  * @return {Object} error | {sortField, sortMethod}.
  */
-export function OrderBy(orderBy: string,
-                        options: {
-                          quoteField?: boolean,
-                          sortField?: string,
-                          sortMethod?: string,
-                          sortFields?: string[],
-                          fieldPrefix?: string | ((f: string) => string)
-                        }): { sortField: string, sortMethod: 'DESC' | 'ASC', error?: string } {
-
-  options            = (typeof options === 'object') ? options : {};
-  options.sortField  = options.sortField || null;
+export function OrderBy(
+  orderBy: string,
+  options: {
+    quoteField?: boolean;
+    sortField?: string;
+    sortMethod?: string;
+    sortFields?: string[];
+    fieldPrefix?: string | ((f: string) => string);
+  }
+): { sortField: string; sortMethod: 'DESC' | 'ASC'; error?: string } {
+  options = typeof options === 'object' ? options : {};
+  options.sortField = options.sortField || null;
   options.sortMethod = options.sortMethod || null;
-  options.sortFields = Array.isArray(options.sortFields) ? options.sortFields : [];
+  options.sortFields = Array.isArray(options.sortFields)
+    ? options.sortFields
+    : [];
 
-  options.quoteField = typeof (options.quoteField) === 'undefined' ? true : Boolean(options.quoteField);
+  options.quoteField =
+    typeof options.quoteField === 'undefined'
+      ? true
+      : Boolean(options.quoteField);
 
   let sortField;
   let sortMethod;
 
   if (orderBy) {
     const sort = String(orderBy).split(':');
-    sortField  = sort[0].replace(/[^\w\s]/gi, '');
+    sortField = sort[0].replace(/[^\w\s]/gi, '');
 
     if (sort.length === 2) {
       sortMethod = sort[1] === 'desc' ? 'DESC' : 'ASC';
@@ -58,7 +64,9 @@ export function OrderBy(orderBy: string,
 
   const emptyWhiteList = options.sortFields.length === 0;
 
-  const inWhiteList = options.sortFields.length >= 1 && options.sortFields.indexOf(sortField) > -1;
+  const inWhiteList =
+    options.sortFields.length >= 1 &&
+    options.sortFields.indexOf(sortField) > -1;
 
   if (sortField) {
     if (emptyWhiteList || inWhiteList) {

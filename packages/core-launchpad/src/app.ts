@@ -25,7 +25,7 @@ declare const gc; // garbage collection if exposed.
 // tslint:disable-next-line
 
 // if gc is exposed call it every minute
-if (typeof(gc) !== 'undefined') {
+if (typeof gc !== 'undefined') {
   setInterval(gc, 60000);
 }
 
@@ -41,25 +41,31 @@ program
   .option('-s, --snapshot [round]', 'verify snapshot')
   .option('-c, --config <path>', 'custom config path')
   .option('-e, --extra-config <path>', 'partial override config path')
-  .option('-o, --override-config <item>', 'Override single config item', (opt, opts) => {
-    if (typeof(opts) === 'undefined') {
-      opts = [];
-    }
-    const [path, val] = opt.split('=');
-    if (typeof(path) === 'undefined' || typeof(val) === 'undefined') {
-      // tslint:disable-next-line
-      console.warn('Invalid format for invalid config. Correct is -> jsonpath=value');
+  .option(
+    '-o, --override-config <item>',
+    'Override single config item',
+    (opt, opts) => {
+      if (typeof opts === 'undefined') {
+        opts = [];
+      }
+      const [path, val] = opt.split('=');
+      if (typeof path === 'undefined' || typeof val === 'undefined') {
+        // tslint:disable-next-line
+        console.warn(
+          'Invalid format for invalid config. Correct is -> jsonpath=value'
+        );
+        return opts;
+      }
+      try {
+        jp.parse(path);
+      } catch (e) {
+        // tslint:disable-next-line
+        console.warn('JSONPath is invalid', e);
+      }
+      opts.push({ path, val });
       return opts;
     }
-    try {
-      jp.parse(path);
-    } catch (e) {
-      // tslint:disable-next-line
-      console.warn('JSONPath is invalid', e);
-    }
-    opts.push({ path, val });
-    return opts;
-  });
+  );
 
 // Ask modules to extend commander.
 modules.forEach((m) => m.extendCommander(program));
@@ -85,7 +91,12 @@ if (program.extraConfig) {
 let appConfig: AppConfig = extend(
   true,
   {},
-  configCreator(program.config ? program.config : `${process.env.PWD}/etc/${program.net}/config.json`, modules),
+  configCreator(
+    program.config
+      ? program.config
+      : `${process.env.PWD}/etc/${program.net}/config.json`,
+    modules
+  ),
   extraConfig
 );
 
@@ -101,12 +112,15 @@ if (program.address) {
 }
 
 if (program.overrideConfig) {
-  for (const item of program.overrideConfig as Array<{ path: string, val: string }>) {
+  for (const item of program.overrideConfig as Array<{
+    path: string;
+    val: string;
+  }>) {
     const oldValue = jp.value(appConfig, item.path);
 
-    if (typeof(oldValue) === 'number') {
+    if (typeof oldValue === 'number') {
       jp.value(appConfig, item.path, parseFloat(item.val));
-    } else if (typeof(oldValue) === 'object') {
+    } else if (typeof oldValue === 'object') {
       jp.value(appConfig, item.path, JSON.parse(item.val));
     } else {
       jp.value(appConfig, item.path, item.val);
@@ -117,8 +131,10 @@ if (program.overrideConfig) {
 }
 
 if (program.snapshot) {
-  if (typeof(program.snapshot) === 'string') {
-    appConfig.loading.snapshot = Math.abs(Math.floor(parseInt(program.snapshot, 10)));
+  if (typeof program.snapshot === 'string') {
+    appConfig.loading.snapshot = Math.abs(
+      Math.floor(parseInt(program.snapshot, 10))
+    );
   } else {
     appConfig.loading.snapshot = true;
   }
@@ -126,14 +142,14 @@ if (program.snapshot) {
 
 // Let submodules patch config through params provided on the CLI.
 for (const m of modules) {
- if (typeof(m.afterConfigValidation) === 'function') {
-   appConfig = m.patchConfigWithCLIParams(program, appConfig);
- }
+  if (typeof m.afterConfigValidation === 'function') {
+    appConfig = m.patchConfigWithCLIParams(program, appConfig);
+  }
 }
 const logger = loggerCreator({
-  echo      : appConfig.consoleLogLevel,
+  echo: appConfig.consoleLogLevel,
   errorLevel: appConfig.fileLogLevel,
-  filename  : appConfig.logFileName,
+  filename: appConfig.logFileName,
 });
 
 /**

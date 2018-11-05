@@ -1,10 +1,17 @@
 import { PeerState, PeerType } from '@risevision/core-types';
 import { Peer } from '../peer';
 
-export type PeerFilter = { limit?: number, offset?: number, orderBy?: string, ip?: string, port?: number, broadhash?: string, state?: PeerState };
+export type PeerFilter = {
+  limit?: number;
+  offset?: number;
+  orderBy?: string;
+  ip?: string;
+  port?: number;
+  broadhash?: string;
+  state?: PeerState;
+};
 
 export interface IPeersModule {
-
   /**
    * Sets peer state to active and updates it to the list
    */
@@ -24,9 +31,13 @@ export interface IPeersModule {
    * Gets peers list and calculated consensus. (Does not update conensus att application level)
    */
   // tslint:disable-next-line max-line-length
-  list(options: { limit?: number, broadhash?: string, allowedStates?: PeerState[] }): Promise<{ consensus: number, peers: Peer[] }>;
+  list(options: {
+    limit?: number;
+    broadhash?: string;
+    allowedStates?: PeerState[];
+  }): Promise<{ consensus: number; peers: Peer[] }>;
 
-  getPeers(params: { limit?: number, broadhash?: string }): Promise<Peer[]>;
+  getPeers(params: { limit?: number; broadhash?: string }): Promise<Peer[]>;
 
   updateConsensus(): Promise<number>;
 
@@ -38,6 +49,5 @@ export interface IPeersModule {
    * therefore need to aggregate).
    * Gets the list of good peers.
    */
-  findGoodPeers(peers: Peer[]): { height: number, peers: Peer[]};
-
+  findGoodPeers(peers: Peer[]): { height: number; peers: Peer[] };
 }

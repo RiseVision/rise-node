@@ -1,4 +1,11 @@
-import { DBBulkCreateOp, DBCreateOp, DBOp, DBRemoveOp, DBUpdateOp, DBUpsertOp } from '@risevision/core-types';
+import {
+  DBBulkCreateOp,
+  DBCreateOp,
+  DBOp,
+  DBRemoveOp,
+  DBUpdateOp,
+  DBUpsertOp
+} from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import * as sequelize from 'sequelize';
@@ -10,43 +17,47 @@ import { ModelSymbols } from './modelSymbols';
 const squelPostgres = squel.useFlavour('postgres');
 squelPostgres.registerValueHandler(Buffer, (buffer) => {
   return {
-    formatted : true,
+    formatted: true,
     rawNesting: true,
-    value     : "E'\\\\x" + buffer.toString('hex') + "'",
+    value: "E'\\\\x" + buffer.toString('hex') + "'"
   } as any;
 });
 
 @injectable()
 export class DBHelper {
-
   @inject(ModelSymbols.sequelize)
   private sequelize: Sequelize;
 
   public handleUpdate(updateOp: DBUpdateOp<any>) {
-    return this.sequelize.getQueryInterface().QueryGenerator.updateQuery(
-      updateOp.model.getTableName(),
-      updateOp.values,
-      updateOp.options.where,
-      updateOp.options
-    );
+    return this.sequelize
+      .getQueryInterface()
+      .QueryGenerator.updateQuery(
+        updateOp.model.getTableName(),
+        updateOp.values,
+        updateOp.options.where,
+        updateOp.options
+      );
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    return this.sequelize.getQueryInterface().QueryGenerator.insertQuery(
-      insertOp.model.getTableName(),
-      insertOp.values,
-      insertOp.model.rawAttributes,
-      {}
-    );
+    return this.sequelize
+      .getQueryInterface()
+      .QueryGenerator.insertQuery(
+        insertOp.model.getTableName(),
+        insertOp.values,
+        insertOp.model.rawAttributes,
+        {}
+      );
   }
 
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
-    return squelPostgres.insert({
-      autoQuoteFieldNames: true,
-      autoQuoteTableNames: true,
-      nameQuoteCharacter : '"',
-      stringFormatter    : (s) => `'${s}'`,
-    })
+    return squelPostgres
+      .insert({
+        autoQuoteFieldNames: true,
+        autoQuoteTableNames: true,
+        nameQuoteCharacter: '"',
+        stringFormatter: (s) => `'${s}'`
+      })
       .into(insertOp.model.getTableName() as string)
       .setFieldsRows(insertOp.values)
       .toString();
@@ -57,7 +68,14 @@ export class DBHelper {
       upsertOp.model.getTableName(),
       upsertOp.values,
       upsertOp.values,
-      { [Op.or]: [{ [upsertOp.model.primaryKeyAttribute]: upsertOp.values[upsertOp.model.primaryKeyAttribute] }] },
+      {
+        [Op.or]: [
+          {
+            [upsertOp.model.primaryKeyAttribute]:
+              upsertOp.values[upsertOp.model.primaryKeyAttribute]
+          }
+        ]
+      },
       upsertOp.model,
       { raw: true }
       // upsertOp.options.wh
@@ -65,12 +83,14 @@ export class DBHelper {
   }
 
   public handleDelete(deleteOp: DBRemoveOp<any>) {
-    return this.sequelize.getQueryInterface().QueryGenerator.deleteQuery(
-      deleteOp.model.getTableName(),
-      deleteOp.options.where,
-      { ...deleteOp.options, limit: null },
-      deleteOp.model
-    );
+    return this.sequelize
+      .getQueryInterface()
+      .QueryGenerator.deleteQuery(
+        deleteOp.model.getTableName(),
+        deleteOp.options.where,
+        { ...deleteOp.options, limit: null },
+        deleteOp.model
+      );
   }
 
   /**
@@ -79,17 +99,20 @@ export class DBHelper {
    * @param {sequelize.Transaction} transaction
    * @returns {Promise<[Model<string>[] , any]>}
    */
-  public async performOps(what: Array<DBOp<any>>, transaction?: sequelize.Transaction) {
+  public async performOps(
+    what: Array<DBOp<any>>,
+    transaction?: sequelize.Transaction
+  ) {
     const baseOptions: any = { raw: true };
     if (transaction) {
       baseOptions.transaction = transaction;
     }
 
     const opsToDoIterator = this.splitOps(what, 1010);
-    let chunk             = opsToDoIterator.next();
+    let chunk = opsToDoIterator.next();
     while (!chunk.done) {
       chunk = await (async () => {
-        const p         = this.sequelize.query(chunk.value, baseOptions);
+        const p = this.sequelize.query(chunk.value, baseOptions);
         const nextChunk = await wait(1).then(() => opsToDoIterator.next());
         return p.then(() => nextChunk);
       })();
@@ -97,7 +120,10 @@ export class DBHelper {
     await this.sequelize.query(chunk.value, baseOptions);
   }
 
-  public* splitOps(what: Array<DBOp<any>>, chunkSize: number): Iterator<string> {
+  public *splitOps(
+    what: Array<DBOp<any>>,
+    chunkSize: number
+  ): Iterator<string> {
     let tempOps = [];
     for (const op of what) {
       if (op === null) {
@@ -130,5 +156,4 @@ export class DBHelper {
     }
     return tempOps.join(';');
   }
-
 }

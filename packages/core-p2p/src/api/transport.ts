@@ -1,6 +1,12 @@
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import * as express from 'express';
-import { Application, NextFunction, Request, RequestHandler, Response } from 'express';
+import {
+  Application,
+  NextFunction,
+  Request,
+  RequestHandler,
+  Response
+} from 'express';
 import { inject, injectable, postConstruct } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
 import { p2pSymbols } from '../helpers';
@@ -31,17 +37,17 @@ export class TransportAPI {
     // install transport routes..
     this.transportMethods.forEach((tm) => {
       const handles: RequestHandler[] = [
-
         // Install middlewares
-        ... this.transportMiddlewares
-          .map((m) => m.use.bind(m)),
+        ...this.transportMiddlewares.map((m) => m.use.bind(m)),
 
         // Real work.
         async (req: Request, res: Response, next: NextFunction) => {
           try {
-            const resp        = await tm.handleRequest(req.body, req.query);
-            const wrappedResp = await this.transportWrapper
-              .wrapResponse({ success: true, wrappedResponse: resp });
+            const resp = await tm.handleRequest(req.body, req.query);
+            const wrappedResp = await this.transportWrapper.wrapResponse({
+              success: true,
+              wrappedResponse: resp
+            });
             res
               .set('content-type', 'application/octet-stream')
               .send(wrappedResp);
@@ -51,20 +57,22 @@ export class TransportAPI {
         },
 
         // Error handler
-        this.handleError.bind(this),
+        this.handleError.bind(this)
       ];
 
-      router[tm.method === 'GET' ? 'get' : 'post'](
-        tm.baseUrl,
-        handles
-      );
+      router[tm.method === 'GET' ? 'get' : 'post'](tm.baseUrl, handles);
     });
 
     // install router.
     this.express.use(router);
   }
 
-  private handleError(err: any, req: Request, res: Response, next: NextFunction) {
+  private handleError(
+    err: any,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     let message = err;
     if (message instanceof Error) {
       message = message.message;

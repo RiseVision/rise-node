@@ -1,4 +1,4 @@
-import {RequestHandler} from 'express';
+import { RequestHandler } from 'express';
 import * as RateLimit from 'express-rate-limit';
 
 export interface IRateLimiterOpts {
@@ -10,9 +10,9 @@ export interface IRateLimiterOpts {
 
 const defaults: IRateLimiterOpts = {
   delayAfter: 0, // Disabled
-  delayMs   : 0, // Disabled
-  max       : 0, // Disabled
-  windowMs  : 60000, // 1 minute window
+  delayMs: 0, // Disabled
+  max: 0, // Disabled
+  windowMs: 60000 // 1 minute window
 };
 
 /**
@@ -25,9 +25,9 @@ function applyLimits(limits: IRateLimiterOpts): IRateLimiterOpts {
   if (typeof limits === 'object') {
     return {
       delayAfter: Math.floor(limits.delayAfter) || defaults.delayAfter,
-      delayMs   : Math.floor(limits.delayMs) || defaults.delayMs,
-      max       : Math.floor(limits.max) || defaults.max,
-      windowMs  : Math.floor(limits.windowMs) || defaults.windowMs,
+      delayMs: Math.floor(limits.delayMs) || defaults.delayMs,
+      max: Math.floor(limits.max) || defaults.max,
+      windowMs: Math.floor(limits.windowMs) || defaults.windowMs
     };
   } else {
     return defaults;

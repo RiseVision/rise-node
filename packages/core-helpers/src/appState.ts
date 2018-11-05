@@ -20,7 +20,7 @@ export class AppState implements IAppState {
 
   public getComputed(what: string): any {
     const fn = jsonpath.value(this.computed, `$.${what}`);
-    if (typeof(fn) !== 'function') {
+    if (typeof fn !== 'function') {
       return undefined;
     }
     return fn(this);

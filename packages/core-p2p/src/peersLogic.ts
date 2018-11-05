@@ -1,5 +1,10 @@
 import { ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { AppConfig, BasePeerType, PeerState, PeerType } from '@risevision/core-types';
+import {
+  AppConfig,
+  BasePeerType,
+  PeerState,
+  PeerType,
+} from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
@@ -8,7 +13,6 @@ import { Peer } from './peer';
 
 @injectable()
 export class PeersLogic {
-
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
@@ -37,18 +41,17 @@ export class PeersLogic {
    */
   public exists(peer: BasePeerType): boolean {
     const thePeer = this.create(peer);
-    return typeof(this.peers[thePeer.string]) !== 'undefined';
+    return typeof this.peers[thePeer.string] !== 'undefined';
   }
 
   public get(peer: PeerType | string) {
-    if (typeof(peer) === 'string') {
+    if (typeof peer === 'string') {
       return this.peers[peer];
     }
     return this.peers[this.create(peer).string];
   }
 
   public upsert(peer: PeerType, insertOnly: boolean) {
-
     const thePeer = this.create(peer);
     if (this.exists(thePeer)) {
       if (insertOnly) {
@@ -56,11 +59,11 @@ export class PeersLogic {
       }
       // Update peer.
       thePeer.updated = Date.now();
-      const diff      = {};
+      const diff = {};
       Object.keys(peer)
         .filter((k) => k !== 'updated')
         .filter((k) => this.peers[thePeer.string][k] !== thePeer[k])
-        .forEach((k: string) => diff[k] = thePeer[k]);
+        .forEach((k: string) => (diff[k] = thePeer[k]));
 
       this.peers[thePeer.string].update(thePeer);
 
@@ -77,7 +80,7 @@ export class PeersLogic {
       }
       // insert peer!
       if (!_.isEmpty(this.acceptable([thePeer]))) {
-        thePeer.updated            = Date.now();
+        thePeer.updated = Date.now();
         this.peers[thePeer.string] = thePeer;
         this.logger.debug('Inserted new peer', thePeer.string);
       } else {
@@ -86,10 +89,10 @@ export class PeersLogic {
     }
 
     const stats = {
-      alive         : 0,
+      alive: 0,
       emptyBroadhash: 0,
-      emptyHeight   : 0,
-      total         : 0,
+      emptyHeight: 0,
+      total: 0,
     };
 
     Object.keys(this.peers)
@@ -111,7 +114,6 @@ export class PeersLogic {
     this.logger.trace('PeerStats', stats);
 
     return true;
-
   }
 
   public remove(peer: BasePeerType): boolean {
@@ -133,7 +135,7 @@ export class PeersLogic {
   public list(normalize: boolean) {
     return Object.keys(this.peers)
       .map((k) => this.peers[k])
-      .map((peer) => normalize ? peer.object() : peer);
+      .map((peer) => (normalize ? peer.object() : peer));
   }
 
   /**
@@ -148,7 +150,11 @@ export class PeersLogic {
         if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
           return peer.nonce !== this.systemModule.getNonce();
         }
-        return !ip.isPrivate(peer.ip) && peer.nonce !== this.systemModule.getNonce() && (peer.os !== 'lisk-js-api');
+        return (
+          !ip.isPrivate(peer.ip) &&
+          peer.nonce !== this.systemModule.getNonce() &&
+          peer.os !== 'lisk-js-api'
+        );
       })
       .filter((peer) => this.systemModule.versionCompatible(peer.version))
       .value();
@@ -163,7 +169,8 @@ export class PeersLogic {
     if (typeof this.lastRemoved[thePeer.string] === 'undefined') {
       return false;
     }
-    return (Date.now() - this.lastRemoved[thePeer.string]) < this.config.peers.banTime;
+    return (
+      Date.now() - this.lastRemoved[thePeer.string] < this.config.peers.banTime
+    );
   }
-
 }

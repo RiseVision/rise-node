@@ -1,14 +1,13 @@
 export enum TransactionType {
-  SEND         = 0,
-  SIGNATURE    = 1,
-  DELEGATE     = 2,
-  VOTE         = 3,
-  MULTI        = 4,
+  SEND = 0,
+  SIGNATURE = 1,
+  DELEGATE = 2,
+  VOTE = 3,
+  MULTI = 4,
   // DAPP         = 5,
   // IN_TRANSFER  = 6,
   // OUT_TRANSFER = 7,
 }
-
 
 export interface ITransportTransaction<T> {
   type: TransactionType;
@@ -56,5 +55,5 @@ export interface IBytesTransaction {
   hasSignSignature: boolean;
   fee: number;
   relays?: number;
-  signatures?: Buffer[]
+  signatures?: Buffer[];
 }

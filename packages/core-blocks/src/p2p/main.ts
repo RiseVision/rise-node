@@ -31,27 +31,31 @@ export class BlocksP2P extends Extendable {
   private logger: ILogger;
 
   @OnPostApplyBlock(-100)
-  public async onNewBlock(block: SignedAndChainedBlockType & { relays?: number }, broadcast: boolean) {
+  public async onNewBlock(
+    block: SignedAndChainedBlockType & { relays?: number },
+    broadcast: boolean
+  ) {
     if (broadcast) {
       const broadhash = this.systemModule.broadhash;
-      block           = _.cloneDeep(block);
-      block.relays    = block.relays || 0;
+      block = _.cloneDeep(block);
+      block.relays = block.relays || 0;
       if (block.relays < this.broadcaster.maxRelays()) {
         block.relays++;
-        await this.broadcaster.broadcast({
-          filters: { broadhash },
-          options: {
-            immediate: true,
-            method   : this.postBlockRequest,
-            payload: {
-              body: { block },
-              headers: {
-                // We need to advertise ourselves with the new broadhash
-                broadhash: block.payloadHash.toString('hex'),
-              },
-            },
-          },
-        })
+        await this.broadcaster
+          .broadcast({
+            filters: { broadhash },
+            options: {
+              immediate: true,
+              method: this.postBlockRequest,
+              payload: {
+                body: { block },
+                headers: {
+                  // We need to advertise ourselves with the new broadhash
+                  broadhash: block.payloadHash.toString('hex')
+                }
+              }
+            }
+          })
           .catch(logOnly(this.logger));
       }
     }

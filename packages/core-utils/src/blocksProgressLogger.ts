@@ -5,10 +5,14 @@ export class BlockProgressLogger {
   private step: number;
   private applied: number = 0;
 
-  constructor(txCount: number, logsFrequency: number, private msg: string, private logger: ILogger) {
+  constructor(
+    txCount: number,
+    logsFrequency: number,
+    private msg: string,
+    private logger: ILogger
+  ) {
     this.target = txCount;
-    this.step   = Math.floor(txCount / logsFrequency);
-
+    this.step = Math.floor(txCount / logsFrequency);
   }
 
   public reset() {
@@ -22,10 +26,16 @@ export class BlockProgressLogger {
    */
   public applyNext() {
     if (this.applied >= this.target) {
-      throw new Error('Cannot apply transaction over the limit: ' + this.target);
+      throw new Error(
+        'Cannot apply transaction over the limit: ' + this.target
+      );
     }
     this.applied += 1;
-    if (this.applied === 1 || this.applied === this.target || this.applied % this.step === 1) {
+    if (
+      this.applied === 1 ||
+      this.applied === this.target ||
+      this.applied % this.step === 1
+    ) {
       this.log();
     }
   }
@@ -34,7 +44,15 @@ export class BlockProgressLogger {
    * Logs the progress
    */
   private log() {
-    this.logger.info(this.msg, ((this.applied / this.target) * 100).toPrecision(4) + ' %' +
-      ': applied ' + this.applied + ' of ' + this.target + ' transactions');
+    this.logger.info(
+      this.msg,
+      ((this.applied / this.target) * 100).toPrecision(4) +
+        ' %' +
+        ': applied ' +
+        this.applied +
+        ' of ' +
+        this.target +
+        ' transactions'
+    );
   }
 }

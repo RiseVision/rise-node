@@ -1,15 +1,16 @@
 import 'reflect-metadata';
 
 import { IAccountsModel } from '@risevision/core-interfaces';
-import { Column, DataType, DefaultScope, IBuildOptions } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  DefaultScope,
+  IBuildOptions,
+} from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @DefaultScope({
-  attributes: [
-    'secondSignature',
-    'secondPublicKey',
-    'u_secondSignature',
-  ],
+  attributes: ['secondSignature', 'secondPublicKey', 'u_secondSignature'],
 })
 export class AccountsModelWith2ndSign extends IAccountsModel {
   @Column
@@ -19,8 +20,10 @@ export class AccountsModelWith2ndSign extends IAccountsModel {
   @Column
   public u_secondSignature: 0 | 1;
 
-  constructor(values?: FilteredModelAttributes<AccountsModelWith2ndSign>, options?: IBuildOptions) {
+  constructor(
+    values?: FilteredModelAttributes<AccountsModelWith2ndSign>,
+    options?: IBuildOptions
+  ) {
     super(values, options);
   }
-
 }

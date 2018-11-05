@@ -1,13 +1,17 @@
-import { IInnerTXQueue, ListingOptions, QueueEntry } from '@risevision/core-interfaces';
+import {
+  IInnerTXQueue,
+  ListingOptions,
+  QueueEntry,
+} from '@risevision/core-interfaces';
 import { IBaseTransaction } from '@risevision/core-types';
 
-export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }> implements IInnerTXQueue<T> {
+export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
+  implements IInnerTXQueue<T> {
   private transactions: Array<IBaseTransaction<any>> = [];
-  private index: { [k: string]: number }             = {};
-  private payload: { [k: string]: T }                = {};
+  private index: { [k: string]: number } = {};
+  private payload: { [k: string]: T } = {};
 
-  constructor(public identifier: string) {
-  }
+  constructor(public identifier: string) {}
 
   public has(id: string) {
     return id in this.index;
@@ -38,7 +42,7 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
   public add(tx: IBaseTransaction<any>, payload: T) {
     if (!this.has(tx.id)) {
       this.transactions.push(tx);
-      this.index[tx.id]   = this.transactions.indexOf(tx);
+      this.index[tx.id] = this.transactions.indexOf(tx);
       this.payload[tx.id] = payload;
     }
   }
@@ -47,15 +51,19 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
     if (!this.has(txID)) {
       throw new Error(`Transaction not found in this queue ${txID}`);
     }
-    return { tx: this.transactions[this.index[txID]], payload: this.payload[txID] };
+    return {
+      tx: this.transactions[this.index[txID]],
+      payload: this.payload[txID],
+    };
   }
 
   public reindex() {
-    this.transactions = this.transactions
-      .filter((tx) => typeof(tx) !== 'undefined');
+    this.transactions = this.transactions.filter(
+      (tx) => typeof tx !== 'undefined'
+    );
 
     this.index = {};
-    this.transactions.forEach((tx, idx) => this.index[tx.id] = idx);
+    this.transactions.forEach((tx, idx) => (this.index[tx.id] = idx));
   }
 
   // tslint:disable-next-line
@@ -65,10 +73,10 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
       return [];
     }
     let res: Array<QueueEntry<T>> = this.transactions
-      .filter((tx) => typeof(tx) !== 'undefined')
+      .filter((tx) => typeof tx !== 'undefined')
       .map((tx) => ({ tx, payload: this.payload[tx.id] }));
 
-    if (typeof(filterFn) === 'function') {
+    if (typeof filterFn === 'function') {
       res = res.filter(filterFn);
     }
 
@@ -88,5 +96,4 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
   public txList(opts: ListingOptions<T> = {}): Array<IBaseTransaction<any>> {
     return this.list(opts).map((t) => t.tx);
   }
-
 }

@@ -1,7 +1,8 @@
 import {
   BlockType,
   DBOp,
-  IBaseTransaction, IBytesBlock,
+  IBaseTransaction,
+  IBytesBlock,
   IKeypair,
   RawFullBlockListType,
   SignedAndChainedBlockType,
@@ -16,14 +17,18 @@ export interface IBlockLogic {
 
   getId(block: BlockType): string;
 
-  getBytes(block: BlockType | SignedBlockType, includeSignature?: boolean): Buffer;
+  getBytes(
+    block: BlockType | SignedBlockType,
+    includeSignature?: boolean
+  ): Buffer;
 
   getHash(block: BlockType, includeSignature?: boolean): Buffer;
 
   create(data: {
-    keypair: IKeypair, timestamp: number,
-    transactions: Array<IBaseTransaction<any>>,
-    previousBlock?: SignedAndChainedBlockType
+    keypair: IKeypair;
+    timestamp: number;
+    transactions: Array<IBaseTransaction<any>>;
+    previousBlock?: SignedAndChainedBlockType;
   }): SignedAndChainedBlockType;
 
   /**
@@ -52,11 +57,15 @@ export interface IBlockLogic {
    * @param {BlockType} block
    * @returns {BlockType}
    */
-  objectNormalize(block: SignedAndChainedTransportBlockType): SignedAndChainedBlockType;
+  objectNormalize(
+    block: SignedAndChainedTransportBlockType
+  ): SignedAndChainedBlockType;
 
   objectNormalize<T extends BlockType<Buffer | string>>(block: T): T;
 
-  dbRead(rawBlock: RawFullBlockListType): SignedBlockType & { totalForged: string, readonly generatorId: string };
+  dbRead(
+    rawBlock: RawFullBlockListType
+  ): SignedBlockType & { totalForged: string; readonly generatorId: string };
 
   fromProtoBuffer(protoBuffer: Buffer): SignedAndChainedBlockType;
   toProtoBuffer(block: SignedAndChainedBlockType): Buffer;

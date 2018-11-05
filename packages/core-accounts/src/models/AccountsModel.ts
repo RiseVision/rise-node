@@ -4,16 +4,33 @@ import { IAccountsModel } from '@risevision/core-interfaces';
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
-import { Column, DataType, DefaultScope, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  DefaultScope,
+  PrimaryKey,
+  Table
+} from 'sequelize-typescript';
 import { Container } from 'inversify';
 import { BaseModel } from '@risevision/core-models';
 
 @DefaultScope({
-  attributes: ['address', 'publicKey', 'balance', 'blockId', 'producedblocks', 'missedblocks', 'fees', 'rewards', 'virgin', 'u_balance'].sort()
+  attributes: [
+    'address',
+    'publicKey',
+    'balance',
+    'blockId',
+    'producedblocks',
+    'missedblocks',
+    'fees',
+    'rewards',
+    'virgin',
+    'u_balance'
+  ].sort()
 })
 @Table({ tableName: 'mem_accounts' })
-export class AccountsModel extends BaseModel<AccountsModel> implements IAccountsModel {
-
+export class AccountsModel extends BaseModel<AccountsModel>
+  implements IAccountsModel {
   @PrimaryKey
   @Column
   public address: string;
@@ -45,7 +62,7 @@ export class AccountsModel extends BaseModel<AccountsModel> implements IAccounts
 
   private _hexPublicKey: publicKey;
   public get hexPublicKey(): publicKey {
-    if (typeof(this._hexPublicKey) === 'undefined') {
+    if (typeof this._hexPublicKey === 'undefined') {
       if (this.publicKey === null) {
         this._hexPublicKey = null;
       } else {
@@ -53,7 +70,6 @@ export class AccountsModel extends BaseModel<AccountsModel> implements IAccounts
       }
     }
     return this._hexPublicKey;
-
   }
 
   public toPOJO() {
@@ -66,24 +82,41 @@ export class AccountsModel extends BaseModel<AccountsModel> implements IAccounts
     return toRet;
   }
 
-  public applyDiffArray(toWhat: 'delegates' | 'u_delegates' | 'multisignatures' | 'u_multisignatures', diff: any) {
+  public applyDiffArray(
+    toWhat:
+      | 'delegates'
+      | 'u_delegates'
+      | 'multisignatures'
+      | 'u_multisignatures',
+    diff: any
+  ) {
     this[toWhat] = this[toWhat] || [];
-    diff.filter((v) => v.startsWith('-'))
-      .forEach((v) => this[toWhat].splice(this[toWhat].indexOf(v.substr(1)), 1));
-    diff.filter((v) => v.startsWith('+'))
+    diff
+      .filter((v) => v.startsWith('-'))
+      .forEach((v) =>
+        this[toWhat].splice(this[toWhat].indexOf(v.substr(1)), 1)
+      );
+    diff
+      .filter((v) => v.startsWith('+'))
       .forEach((v) => this[toWhat].push(v.substr(1)));
   }
 
   public applyValues(items: Partial<this>) {
-    Object.keys(items).forEach((k) => this[k] = items[k]);
+    Object.keys(items).forEach((k) => (this[k] = items[k]));
   }
 
-  public static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC') {
+  public static searchDelegate(
+    q: string,
+    limit: number,
+    orderBy: string,
+    orderHow: 'ASC' | 'DESC' = 'ASC'
+  ) {
     if (['ASC', 'DESC'].indexOf(orderHow.toLocaleUpperCase()) === -1) {
       throw new Error('Invalid ordering mechanism');
     }
 
-    return pgp.as.format(`
+    return pgp.as.format(
+      `
     WITH
       supply AS (SELECT calcSupply((SELECT height FROM blocks ORDER BY height DESC LIMIT 1))::numeric),
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
@@ -106,31 +139,37 @@ export class AccountsModel extends BaseModel<AccountsModel> implements IAccounts
         WHERE m."isDelegate" = 1
         ORDER BY \${orderBy:name} \${orderHow:raw})
       SELECT * FROM delegates WHERE username LIKE \${q} LIMIT \${limit}
-    `, {
-      q: `%${q}%`,
-      limit,
-      orderBy,
-      orderHow
-    });
-
+    `,
+      {
+        q: `%${q}%`,
+        limit,
+        orderBy,
+        orderHow
+      }
+    );
   }
 
   public static restoreUnconfirmedEntries() {
-    return Promise.resolve(this.update({
-      u_isDelegate     : sequelize.col('isDelegate'),
-      u_balance        : sequelize.col('balance'),
-      u_secondSignature: sequelize.col('secondSignature'),
-      u_username       : sequelize.col('username'),
-    }, {
-      where: {
-        $or: {
-          u_isDelegate     : { [Op.ne]: sequelize.col('isDelegate') },
-          u_balance        : { [Op.ne]: sequelize.col('balance') },
-          u_secondSignature: { [Op.ne]: sequelize.col('secondSignature') },
-          u_username       : { [Op.ne]: sequelize.col('username') },
+    return Promise.resolve(
+      this.update(
+        {
+          u_isDelegate: sequelize.col('isDelegate'),
+          u_balance: sequelize.col('balance'),
+          u_secondSignature: sequelize.col('secondSignature'),
+          u_username: sequelize.col('username')
         },
-      },
-    }));
+        {
+          where: {
+            $or: {
+              u_isDelegate: { [Op.ne]: sequelize.col('isDelegate') },
+              u_balance: { [Op.ne]: sequelize.col('balance') },
+              u_secondSignature: { [Op.ne]: sequelize.col('secondSignature') },
+              u_username: { [Op.ne]: sequelize.col('username') }
+            }
+          }
+        }
+      )
+    );
   }
 
   public static createBulkAccountsSQL(addresses: string[]) {
@@ -141,11 +180,13 @@ export class AccountsModel extends BaseModel<AccountsModel> implements IAccounts
     if (addresses.length === 0) {
       return '';
     }
-    return pgp.as.format(`
+    return pgp.as.format(
+      `
     INSERT into mem_accounts(address)
     SELECT address from (VALUES $1:raw ) i (address)
     LEFT JOIN mem_accounts m1 USING(address)
     WHERE m1.address IS NULL`,
-      addresses.map((address) => pgp.as.format('($1)', address)).join(', '));
+      addresses.map((address) => pgp.as.format('($1)', address)).join(', ')
+    );
   }
 }

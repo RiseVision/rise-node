@@ -12,12 +12,14 @@ export interface IBroadcasterLogic {
   maybeEnqueue<Body, Query, Out>(
     payload: SingleTransportPayload<Body & { relays?: number }, Query>,
     method: BaseTransportMethod<Body, Query, Out>,
-    filters?: BroadcastFilters): boolean;
+    filters?: BroadcastFilters
+  ): boolean;
 
   enqueue<Body, Query, Out>(
     payload: SingleTransportPayload<Body, Query>,
     method: BaseTransportMethod<Body, Query, Out>,
-    filters?: BroadcastFilters): number;
+    filters?: BroadcastFilters
+  ): number;
 
   broadcast(task: BroadcastTask<any, any, any>): Promise<{ peer: PeerType[] }>;
 

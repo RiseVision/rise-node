@@ -11,11 +11,11 @@ export class JobsQueue implements IJobsQueue {
     }
 
     // require('fs').writeSync(1, `registering ${name}\n`);
-    const nextJob   = async () => {
+    const nextJob = async () => {
       await job();
       // require('fs').writeSync(1, `nextJob ${name} - time: ${time} - ${typeof(this.jobs[name]) !== 'undefined'} - ${JSON.stringify(Object.keys(this.jobs).map((k) => `${k}:${typeof(this.jobs[k])}`))}\n`);
       // If it was not cancelled. Lets reschedule it.
-      if (typeof(this.jobs[name]) !== 'undefined') {
+      if (typeof this.jobs[name] !== 'undefined') {
         this.jobs[name] = setTimeout(nextJob, time);
       }
     };
@@ -30,8 +30,6 @@ export class JobsQueue implements IJobsQueue {
   }
 
   public unregisterAll() {
-    Object.keys(this.jobs)
-      .forEach((n) => this.unregister(n));
+    Object.keys(this.jobs).forEach((n) => this.unregister(n));
   }
-
 }

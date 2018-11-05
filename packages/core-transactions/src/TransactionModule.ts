@@ -6,11 +6,16 @@ import {
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { PeersModule } from '@risevision/core-p2p';
-import { ConstantsType, IBaseTransaction, PeerType, SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  ConstantsType,
+  IBaseTransaction,
+  PeerType,
+  SignedAndChainedBlockType,
+} from '@risevision/core-types';
 import { WrapInBalanceSequence } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -18,7 +23,6 @@ import { TransactionPool } from './TransactionPool';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
-
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
@@ -59,13 +63,19 @@ export class TransactionsModule implements ITransactionsModule {
    * @return {Promise<string[]>} already existing ids
    */
   public async filterConfirmedIds(ids: string[]): Promise<string[]> {
-    const idObjs = await this.TXModel.findAll({ attributes: ['id'], raw: true, where: { id: ids } });
+    const idObjs = await this.TXModel.findAll({
+      attributes: ['id'],
+      raw: true,
+      where: { id: ids },
+    });
     return idObjs.map((idObj) => idObj.id);
   }
 
   @WrapInBalanceSequence
-  public async processIncomingTransactions(transactions: Array<IBaseTransaction<any>>,
-                                           peer: PeerType | null) {
+  public async processIncomingTransactions(
+    transactions: Array<IBaseTransaction<any>>,
+    peer: PeerType | null
+  ) {
     // normalize transactions
     const txs: Array<IBaseTransaction<any>> = [];
     for (const tx of transactions) {
@@ -73,8 +83,8 @@ export class TransactionsModule implements ITransactionsModule {
         txs.push(this.transactionLogic.objectNormalize(tx));
       } catch (e) {
         this.logger.debug('Transaction normalization failed', {
-          err   : e.toString(),
-          id    : tx.id,
+          err: e.toString(),
+          id: tx.id,
           module: 'transport',
           tx,
         });
@@ -92,7 +102,11 @@ export class TransactionsModule implements ITransactionsModule {
       if (confirmedIDs.indexOf(tx.id) !== -1) {
         continue; // Transaction already confirmed.
       }
-      this.logger.debug(`Received transaction ${tx.id} ${peer ? `from peer ${peer.string}` : ' '}`);
+      this.logger.debug(
+        `Received transaction ${tx.id} ${
+          peer ? `from peer ${peer.string}` : ' '
+        }`
+      );
       await this.transactionPool.queued.add(tx, { receivedAt: new Date() });
     }
   }
@@ -101,25 +115,42 @@ export class TransactionsModule implements ITransactionsModule {
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
   // tslint:disable-next-line max-line-length
-  public async applyUnconfirmed(transaction: IBaseTransaction<any> & { blockId?: string }, sender: IAccountsModel): Promise<void> {
+  public async applyUnconfirmed(
+    transaction: IBaseTransaction<any> & { blockId?: string },
+    sender: IAccountsModel
+  ): Promise<void> {
     if (!sender) {
       throw new Error('Invalid sender');
     }
     // tslint:disable-next-line max-line-length
-    this.logger.debug(`Applying unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${(sender || { } as any).u_balance}`);
+    this.logger.debug(
+      `Applying unconfirmed transaction ${transaction.id} - AM: ${
+        transaction.amount
+      } - SB: ${(sender || ({} as any)).u_balance}`
+    );
 
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
     } else {
       if (transaction.requesterPublicKey) {
-        const requester = await this.accountsModule.getAccount({ publicKey: transaction.requesterPublicKey });
+        const requester = await this.accountsModule.getAccount({
+          publicKey: transaction.requesterPublicKey,
+        });
         if (!requester) {
           throw new Error('Requester not found');
         }
 
-        await this.dbHelper.performOps(await this.transactionLogic.applyUnconfirmed(transaction, sender, requester));
+        await this.dbHelper.performOps(
+          await this.transactionLogic.applyUnconfirmed(
+            transaction,
+            sender,
+            requester
+          )
+        );
       } else {
-        await this.dbHelper.performOps(await this.transactionLogic.applyUnconfirmed(transaction, sender));
+        await this.dbHelper.performOps(
+          await this.transactionLogic.applyUnconfirmed(transaction, sender)
+        );
       }
     }
   }
@@ -128,18 +159,26 @@ export class TransactionsModule implements ITransactionsModule {
    * Validates account and Undoes unconfirmed transaction.
    */
   public async undoUnconfirmed(transaction): Promise<void> {
-    const sender = await this.accountsModule.getAccount({ publicKey: transaction.senderPublicKey });
+    const sender = await this.accountsModule.getAccount({
+      publicKey: transaction.senderPublicKey,
+    });
     // tslint:disable-next-line max-line-length
-    this.logger.debug(`Undoing unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${sender.u_balance}`);
-    await this.dbHelper.performOps(await this.transactionLogic.undoUnconfirmed(transaction, sender));
+    this.logger.debug(
+      `Undoing unconfirmed transaction ${transaction.id} - AM: ${
+        transaction.amount
+      } - SB: ${sender.u_balance}`
+    );
+    await this.dbHelper.performOps(
+      await this.transactionLogic.undoUnconfirmed(transaction, sender)
+    );
   }
 
   public async count() {
     return {
-      confirmed  : await this.TXModel.count(),
-      pending    : this.transactionPool.pending.count,
-      queued     : this.transactionPool.queued.count,
-      ready      : this.transactionPool.ready.count,
+      confirmed: await this.TXModel.count(),
+      pending: this.transactionPool.pending.count,
+      queued: this.transactionPool.queued.count,
+      ready: this.transactionPool.ready.count,
       unconfirmed: this.transactionPool.unconfirmed.count,
     };
   }
@@ -160,20 +199,25 @@ export class TransactionsModule implements ITransactionsModule {
    * If it does not throw the tx should be valid.
    * NOTE: this must be called with an unconfirmed transaction
    */
-  public async checkTransaction(tx: IBaseTransaction<any>, accountsMap: { [address: string]: IAccountsModel }, height: number): Promise<void> {
+  public async checkTransaction(
+    tx: IBaseTransaction<any>,
+    accountsMap: { [address: string]: IAccountsModel },
+    height: number
+  ): Promise<void> {
     const acc = accountsMap[tx.senderId];
     if (!acc) {
       throw new Error('Cannot find account from accounts');
     }
     let requester = null;
     if (tx.requesterPublicKey) {
-      requester = accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)];
+      requester =
+        accountsMap[
+          this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)
+        ];
       if (!requester) {
         throw new Error('Cannot find requester from accounts');
       }
     }
     await this.transactionLogic.verify(tx, acc, requester, height);
-
   }
-
 }

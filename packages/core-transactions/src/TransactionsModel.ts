@@ -1,14 +1,29 @@
-import { IBlocksModule, ITransactionsModel, Symbols } from '@risevision/core-interfaces';
-import { IBaseTransaction, ITransportTransaction, TransactionType } from '@risevision/core-types';
-import { Column, DataType, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  IBlocksModule,
+  ITransactionsModel,
+  Symbols,
+} from '@risevision/core-interfaces';
+import {
+  IBaseTransaction,
+  ITransportTransaction,
+  TransactionType,
+} from '@risevision/core-types';
+import {
+  Column,
+  DataType,
+  ForeignKey,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
-export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<Asset>> implements ITransactionsModel<Asset> {
-
+export class TransactionsModel<Asset = any>
+  extends BaseModel<TransactionsModel<Asset>>
+  implements ITransactionsModel<Asset> {
   @PrimaryKey
   @Column
   public id: string;
@@ -19,7 +34,12 @@ export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<
   @Column
   public height: number;
 
-  @ForeignKey(() => this.TransactionsModel.container.getNamed(ModelSymbols.model, Symbols.models.blocks))
+  @ForeignKey(() =>
+    this.TransactionsModel.container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.blocks
+    )
+  )
   @Column
   public blockId: string;
 
@@ -55,7 +75,10 @@ export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<
 
   public asset: Asset = null;
 
-  constructor(values?: FilteredModelAttributes<TransactionsModel<Asset>>, options?: IBuildOptions) {
+  constructor(
+    values?: FilteredModelAttributes<TransactionsModel<Asset>>,
+    options?: IBuildOptions
+  ) {
     super(values, options);
     if (values && values.asset) {
       this.asset = values.asset as any;
@@ -83,24 +106,31 @@ export class TransactionsModel<Asset = any> extends BaseModel<TransactionsModel<
     return TransactionsModel.toTransportTransaction(this);
   }
 
-  public static toTransportTransaction<Asset>(t: IBaseTransaction<Asset>): ITransportTransaction<Asset> & { confirmations?: number } {
-    const blocksModule: IBlocksModule = this.container.get(Symbols.modules.blocks);
+  public static toTransportTransaction<Asset>(
+    t: IBaseTransaction<Asset>
+  ): ITransportTransaction<Asset> & { confirmations?: number } {
+    const blocksModule: IBlocksModule = this.container.get(
+      Symbols.modules.blocks
+    );
     let obj;
     if (t instanceof TransactionsModel) {
-      obj = { ... t.toJSON(), asset: t.asset };
+      obj = { ...t.toJSON(), asset: t.asset };
     } else {
       obj = { ...t };
     }
-    ['requesterPublicKey', 'senderPublicKey', 'signSignature', 'signature']
-      .forEach((k) => {
-        if (typeof(obj[k]) !== 'undefined' && obj[k] !== null) {
-          obj[k] = obj[k].toString('hex');
-        }
-      });
+    [
+      'requesterPublicKey',
+      'senderPublicKey',
+      'signSignature',
+      'signature',
+    ].forEach((k) => {
+      if (typeof obj[k] !== 'undefined' && obj[k] !== null) {
+        obj[k] = obj[k].toString('hex');
+      }
+    });
     if (obj.height) {
       obj.confirmations = 1 + blocksModule.lastBlock.height - obj.height;
     }
     return obj as any;
   }
-
 }

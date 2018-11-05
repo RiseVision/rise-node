@@ -18,31 +18,40 @@ export class MyBigNumb extends BigNumber {
    * @param opts
    */
   public static fromBuffer(buf: Buffer, opts?: IToFromBufferOpts): BigNumber {
-    return opts ? MyBigNumb.fromBufferWithOptions(buf, opts) : new BigNumber(buf.toString('hex'), 16);
+    return opts
+      ? MyBigNumb.fromBufferWithOptions(buf, opts)
+      : new BigNumber(buf.toString('hex'), 16);
   }
 
-  public static fromBufferWithOptions(buf: Buffer, opts: IToFromBufferOpts = {}) {
+  public static fromBufferWithOptions(
+    buf: Buffer,
+    opts: IToFromBufferOpts = {}
+  ) {
     const endian = opts.endian || 'big';
 
-    const size = opts.size === 'auto' ? Math.ceil(buf.length) : (opts.size || 1);
+    const size = opts.size === 'auto' ? Math.ceil(buf.length) : opts.size || 1;
 
     if (buf.length % size !== 0) {
-      throw new RangeError('Buffer length (' + buf.length + ')'
-        + ' must be a multiple of size (' + size + ')');
+      throw new RangeError(
+        'Buffer length (' +
+          buf.length +
+          ')' +
+          ' must be a multiple of size (' +
+          size +
+          ')'
+      );
     }
 
     const hex = [];
     for (let i = 0; i < buf.length; i += size) {
       const chunk = [];
       for (let j = 0; j < size; j++) {
-        chunk.push(buf[
-        i + (endian === 'big' ? j : (size - j - 1))
-          ]);
+        chunk.push(buf[i + (endian === 'big' ? j : size - j - 1)]);
       }
 
-      hex.push(chunk
-        .map((c) => `${(c < 16 ? '0' : '')}${c.toString(16)}`)
-        .join(''));
+      hex.push(
+        chunk.map((c) => `${c < 16 ? '0' : ''}${c.toString(16)}`).join('')
+      );
     }
 
     return new BigNumber(hex.join(''), 16);
@@ -57,10 +66,13 @@ export class MyBigNumb extends BigNumber {
 
     let hex = this.toString(16);
     if (hex.charAt(0) === '-') {
-      throw new Error('Converting negative numbers to Buffers not supported yet');
+      throw new Error(
+        'Converting negative numbers to Buffers not supported yet'
+      );
     }
 
-    const size = opts.size === 'auto' ? Math.ceil(hex.length / 2) : (opts.size || 1);
+    const size =
+      opts.size === 'auto' ? Math.ceil(hex.length / 2) : opts.size || 1;
 
     const len = Math.ceil(hex.length / (2 * size)) * size;
 
@@ -77,13 +89,13 @@ export class MyBigNumb extends BigNumber {
 
     const buf = new Buffer(len);
     const hx = hex
-      .split(new RegExp('(.{' + (2 * size) + '})'))
+      .split(new RegExp('(.{' + 2 * size + '})'))
       .filter((s) => s.length > 0);
 
     hx.forEach((chunk, i) => {
       for (let j = 0; j < size; j++) {
         const ix = i * size + (endian === 'big' ? j : size - j - 1);
-        buf[ix]  = parseInt(chunk.slice(j * 2, j * 2 + 2), 16);
+        buf[ix] = parseInt(chunk.slice(j * 2, j * 2 + 2), 16);
       }
     });
 

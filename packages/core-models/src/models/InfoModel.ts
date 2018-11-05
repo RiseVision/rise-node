@@ -8,5 +8,4 @@ export class InfoModel extends Model<InfoModel> implements IInfoModel {
   public key: string;
   @Column
   public value: string;
-
 }

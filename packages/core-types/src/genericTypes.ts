@@ -3,7 +3,6 @@ import { Model } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
 
-
 // tslint:disable-next-line interface-name
 export interface AppConfig {
   port: number;
@@ -19,32 +18,32 @@ export interface AppConfig {
 
   peers: {
     list: Array<{
-      ip: string,
-      port: number
-    }>,
+      ip: string;
+      port: number;
+    }>;
     options: {
       limits: {
-        max: number
-        delayMs: number
-        delayAfter: number
-        windowMs: number
-      },
-      timeout: number
-    }
+        max: number;
+        delayMs: number;
+        delayAfter: number;
+        windowMs: number;
+      };
+      timeout: number;
+    };
   };
 
   transactions: {
-    maxTxsPerQueue: number,
-    bundledInterval: number,
-    bundleLimit: number,
+    maxTxsPerQueue: number;
+    bundledInterval: number;
+    bundleLimit: number;
   };
 
   loading: {
-    verifyOnLoading: false,
-    snapshot?: number | true,
-    loadPerIteration: number,
+    verifyOnLoading: false;
+    snapshot?: number | true;
+    loadPerIteration: number;
   };
 
-  modules: string[],
+  modules: string[];
   nethash: string;
 }

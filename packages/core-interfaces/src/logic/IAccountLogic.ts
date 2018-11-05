@@ -9,12 +9,13 @@ export type AccountFilterData = {
   publicKey?: Buffer;
   limit?: number;
   offset?: number;
-  sort?: string | { [k: string]: -1 | 1 }
+  sort?: string | { [k: string]: -1 | 1 };
 };
 
-export type AccountDiffType = {[k in keyof IAccountsModel]?: IAccountsModel[k]} & {round?: number};
+export type AccountDiffType = {
+  [k in keyof IAccountsModel]?: IAccountsModel[k]
+} & { round?: number };
 export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
-
   /**
    * Updates account from mem_account with diff data belongings to an editable field
    * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"

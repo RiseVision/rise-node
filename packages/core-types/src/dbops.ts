@@ -6,33 +6,34 @@ export type BaseDBOp<T extends Model<T>> = {
   model: (new () => T) & (typeof Model);
 };
 export type DBUpdateOp<T extends Model<T>> = BaseDBOp<T> & {
-  type: 'update',
-  options: UpdateOptions
+  type: 'update';
+  options: UpdateOptions;
   values: FilteredModelAttributes<T>;
 };
 export type DBCreateOp<T extends Model<T>> = BaseDBOp<T> & {
-  type: 'create',
+  type: 'create';
   values: FilteredModelAttributes<T>;
 };
 export type DBBulkCreateOp<T extends Model<T>> = BaseDBOp<T> & {
-  type: 'bulkCreate',
+  type: 'bulkCreate';
   values: Array<FilteredModelAttributes<T>>;
 };
 export type DBRemoveOp<T extends Model<T>> = BaseDBOp<T> & {
-  type: 'remove',
+  type: 'remove';
   options: DestroyOptions;
 };
 export type DBCustomOp<T extends Model<T>> = BaseDBOp<T> & {
-  type: 'custom',
-  query: string
+  type: 'custom';
+  query: string;
 };
 export type DBUpsertOp<T extends Model<T>> = BaseDBOp<T> & {
-  type: 'upsert',
-  values: FilteredModelAttributes<T>,
-  options?: UpsertOptions
+  type: 'upsert';
+  values: FilteredModelAttributes<T>;
+  options?: UpsertOptions;
 };
 
-export type DBOp<T extends Model<T>> = DBCreateOp<T>
+export type DBOp<T extends Model<T>> =
+  | DBCreateOp<T>
   | DBBulkCreateOp<T>
   | DBUpdateOp<T>
   | DBCustomOp<T>

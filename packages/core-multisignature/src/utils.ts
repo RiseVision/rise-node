@@ -1,4 +1,8 @@
-import { ITransactionLogic, Symbols, VerificationType } from '@risevision/core-interfaces';
+import {
+  ITransactionLogic,
+  Symbols,
+  VerificationType,
+} from '@risevision/core-interfaces';
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
@@ -19,14 +23,23 @@ export class MultiSigUtils {
    * @param tx the tx to validate
    * @param sender the sender of such tx.
    */
-  public txMultiSigReady(tx: IBaseTransaction<any>, sender: AccountsModelWithMultisig) {
-    const txKeys           = tx.type === TransactionType.MULTI ? tx.asset.multisignature.keysgroup.map((k) => k.substr(1)) : [];
-    const accountKeys      = sender.isMultisignature() ? sender.multisignatures : [];
+  public txMultiSigReady(
+    tx: IBaseTransaction<any>,
+    sender: AccountsModelWithMultisig
+  ) {
+    const txKeys =
+      tx.type === TransactionType.MULTI
+        ? tx.asset.multisignature.keysgroup.map((k) => k.substr(1))
+        : [];
+    const accountKeys = sender.isMultisignature() ? sender.multisignatures : [];
     const intersectionKeys = _.intersection(accountKeys, txKeys);
-    const givenSignatures  = tx.signatures || [];
+    const givenSignatures = tx.signatures || [];
     // If account is multisig, to change keysgroup the tx needs to be signed by
     if (sender.isMultisignature()) {
-      return givenSignatures.length >= txKeys.length + sender.multimin - intersectionKeys.length;
+      return (
+        givenSignatures.length >=
+        txKeys.length + sender.multimin - intersectionKeys.length
+      );
     } else {
       return givenSignatures.length === txKeys.length;
     }
@@ -37,12 +50,15 @@ export class MultiSigUtils {
    * @param tx the Transaction to check
    * @param pubKey the pubKey to test
    */
-  public isTxSignedByPubKey(tx: IBaseTransaction<any>, pubKey: Buffer): boolean {
+  public isTxSignedByPubKey(
+    tx: IBaseTransaction<any>,
+    pubKey: Buffer
+  ): boolean {
     if (tx.signatures && tx.signatures.length > 0) {
       let verified = false;
       for (let i = 0; i < tx.signatures.length && !verified; i++) {
         const signature = tx.signatures[i];
-        verified        = this.txLogic.verifySignature(
+        verified = this.txLogic.verifySignature(
           tx,
           pubKey,
           signature,

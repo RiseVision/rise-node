@@ -12,15 +12,15 @@ export class Sequence {
   private sequence: IPromiseTask[] = [];
   private namespace: Namespace;
   private config: {
-    onWarning: (curPending: number, warnLimit: number) => void,
-    warningLimit: number
+    onWarning: (curPending: number, warnLimit: number) => void;
+    warningLimit: number;
   };
-  private running: boolean         = false;
+  private running: boolean = false;
 
   constructor(private tag: symbol, cfg) {
     this.config = {
       ...{
-        onWarning   : null,
+        onWarning: null,
         warningLimit: 50,
       },
       ...cfg,
@@ -63,7 +63,10 @@ export class Sequence {
     }
     this.running = true;
     this.namespace.run(async () => {
-      if (this.config.onWarning && this.sequence.length >= this.config.warningLimit) {
+      if (
+        this.config.onWarning &&
+        this.sequence.length >= this.config.warningLimit
+      ) {
         this.config.onWarning(this.sequence.length, this.config.warningLimit);
       }
       this.namespace.set('running', true);
@@ -84,5 +87,4 @@ export class Sequence {
       }
     });
   }
-
 }

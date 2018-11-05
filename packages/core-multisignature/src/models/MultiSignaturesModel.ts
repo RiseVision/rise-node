@@ -6,7 +6,7 @@ import {
   ForeignKey,
   IBuildOptions,
   PrimaryKey,
-  Table,
+  Table
 } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
@@ -22,25 +22,32 @@ export class MultiSignaturesModel extends BaseModel<MultiSignaturesModel> {
   public keysgroup: string;
 
   @PrimaryKey
-  @ForeignKey(() => MultiSignaturesModel.container.getNamed(ModelSymbols.model, Symbols.models.transactions))
+  @ForeignKey(() =>
+    MultiSignaturesModel.container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.transactions
+    )
+  )
   @Column
   public transactionId: string;
 
-  public added: publicKey[]   = [];
+  public added: publicKey[] = [];
   public removed: publicKey[] = [];
 
-  constructor(values?: FilteredModelAttributes<MultiSignaturesModel>, options?: IBuildOptions) {
+  constructor(
+    values?: FilteredModelAttributes<MultiSignaturesModel>,
+    options?: IBuildOptions
+  ) {
     super(values, options);
 
-    if (typeof(this.keysgroup) === 'string') {
-      this.keysgroup.split(',')
-        .forEach((key) => {
-          if (key.startsWith('+')) {
-            this.added.push(key.substr(1));
-          } else if (key.startsWith('-')) {
-            this.removed.push(key.substr(1));
-          }
-        });
+    if (typeof this.keysgroup === 'string') {
+      this.keysgroup.split(',').forEach((key) => {
+        if (key.startsWith('+')) {
+          this.added.push(key.substr(1));
+        } else if (key.startsWith('-')) {
+          this.removed.push(key.substr(1));
+        }
+      });
     }
   }
 }

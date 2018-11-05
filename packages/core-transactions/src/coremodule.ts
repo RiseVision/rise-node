@@ -1,5 +1,9 @@
 import { APISymbols } from '@risevision/core-apis';
-import { IBaseTransactionType, ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import {
+  IBaseTransactionType,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
@@ -21,52 +25,69 @@ const schema = require('../schema/config.json');
 
 export class CoreModule extends BaseCoreModule {
   public configSchema = schema;
-  public constants    = {};
+  public constants = {};
 
   public addElementsToContainer(): void {
-    this.container.bind(TXSymbols.transaction).to(SendTransaction)
+    this.container
+      .bind(TXSymbols.transaction)
+      .to(SendTransaction)
       .inSingletonScope()
       .whenTargetNamed(TXSymbols.sendTX);
 
-    this.container.bind(APISymbols.api)
+    this.container
+      .bind(APISymbols.api)
       .toConstructor(TransactionsAPI)
       .whenTargetNamed(TXSymbols.api.api);
 
-    this.container.bind(ModelSymbols.model)
+    this.container
+      .bind(ModelSymbols.model)
       .toConstructor(TransactionsModel)
       .whenTargetNamed(TXSymbols.model);
 
-    this.container.bind(Symbols.modules.transactions)
-      .to(TransactionsModule).inSingletonScope();
-    this.container.bind(Symbols.logic.transaction)
-      .to(TransactionLogic).inSingletonScope();
-    this.container.bind(Symbols.logic.txpool)
-      .to(TransactionPool).inSingletonScope();
+    this.container
+      .bind(Symbols.modules.transactions)
+      .to(TransactionsModule)
+      .inSingletonScope();
+    this.container
+      .bind(Symbols.logic.transaction)
+      .to(TransactionLogic)
+      .inSingletonScope();
+    this.container
+      .bind(Symbols.logic.txpool)
+      .to(TransactionPool)
+      .inSingletonScope();
 
-    this.container.bind(p2pSymbols.transportMethod)
+    this.container
+      .bind(p2pSymbols.transportMethod)
       .to(GetTransactionsRequest)
       .inSingletonScope()
       .whenTargetNamed(TXSymbols.p2p.getTransactions);
 
-    this.container.bind(p2pSymbols.transportMethod)
+    this.container
+      .bind(p2pSymbols.transportMethod)
       .to(PostTransactionsRequest)
       .inSingletonScope()
       .whenTargetNamed(TXSymbols.p2p.postTxRequest);
 
-    this.container.bind(TXSymbols.poolQueue)
-      .toConstructor(InnerTXQueue);
-    this.container.bind(TXSymbols.poolManager)
+    this.container.bind(TXSymbols.poolQueue).toConstructor(InnerTXQueue);
+    this.container
+      .bind(TXSymbols.poolManager)
       .to(PoolManager)
       .inSingletonScope();
 
-    this.container.bind(TXSymbols.loader)
+    this.container
+      .bind(TXSymbols.loader)
       .to(TXLoader)
       .inSingletonScope();
   }
 
   public async initAppElements() {
-    const TXTypes = this.container.getAll<IBaseTransactionType<any, any>>(TXSymbols.transaction);
-    const txLogic = this.container.get<ITransactionLogic>(Symbols.logic.transaction);
+    const TXTypes = this.container.getAll<IBaseTransactionType<any, any>>(
+      TXSymbols.transaction
+    );
+    const txLogic = this.container.get<ITransactionLogic>(
+      Symbols.logic.transaction
+    );
 
     for (const txType of TXTypes) {
       txLogic.attachAssetType(txType);
@@ -82,9 +103,7 @@ export class CoreModule extends BaseCoreModule {
   }
 
   public async teardown() {
-    await this.container.get<PoolManager>(TXSymbols.poolManager)
-      .cleanup();
+    await this.container.get<PoolManager>(TXSymbols.poolManager).cleanup();
     await this.container.get<TXLoader>(TXSymbols.loader).unHook();
   }
-
 }

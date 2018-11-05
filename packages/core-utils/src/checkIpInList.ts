@@ -1,6 +1,6 @@
-import {Address4, Address6} from 'ip-address';
+import { Address4, Address6 } from 'ip-address';
 
-function getAddressClass(addr: string): Address4|Address6 {
+function getAddressClass(addr: string): Address4 | Address6 {
   const address4 = new Address4(addr);
   if (address4.isValid()) {
     return address4;
@@ -21,8 +21,7 @@ function getAddressClass(addr: string): Address4|Address6 {
  */
 export function checkIpInList(list: string[], addr: string): boolean {
   // Check subnets
-  const l = list
-    .map((entry) => getAddressClass(entry));
+  const l = list.map((entry) => getAddressClass(entry));
 
   const testAddr = getAddressClass(addr);
   for (const entry of l) {

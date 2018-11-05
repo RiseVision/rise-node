@@ -6,19 +6,19 @@
  */
 export function removeEmptyObjKeys<T>(obj: T, recursive: boolean = false): T {
   for (const key in obj) {
-    if (obj[key] === null || typeof(obj[key]) === 'undefined') {
+    if (obj[key] === null || typeof obj[key] === 'undefined') {
       delete obj[key];
     } else {
-      if (typeof(obj[key]) === 'object' && recursive) {
+      if (typeof obj[key] === 'object' && recursive) {
         removeEmptyObjKeys(obj[key], true);
       }
     }
   }
   for (const key of Object.getOwnPropertySymbols(obj)) {
-    if (obj[key] === null || typeof(obj[key]) === 'undefined') {
+    if (obj[key] === null || typeof obj[key] === 'undefined') {
       delete obj[key];
     } else {
-      if (typeof(obj[key]) === 'object' && recursive) {
+      if (typeof obj[key] === 'object' && recursive) {
         removeEmptyObjKeys(obj[key], true);
       }
     }

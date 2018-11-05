@@ -14,21 +14,35 @@ import {
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { DBOp, SignedAndChainedBlockType, SignedBlockType, TransactionType } from '@risevision/core-types';
-import { catchToLoggerAndRemapError, wait, WrapInBalanceSequence } from '@risevision/core-utils';
+import {
+  DBOp,
+  SignedAndChainedBlockType,
+  SignedBlockType,
+  TransactionType
+} from '@risevision/core-types';
+import {
+  catchToLoggerAndRemapError,
+  wait,
+  WrapInBalanceSequence
+} from '@risevision/core-utils';
 import * as deepFreeze from 'js-flock/deepFreeze';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
-import { ApplyBlockDBOps, OnDestroyBlock, OnPostApplyBlock, OnTransactionsSaved, RollbackBlockDBOps } from '../hooks';
+import {
+  ApplyBlockDBOps,
+  OnDestroyBlock,
+  OnPostApplyBlock,
+  OnTransactionsSaved,
+  RollbackBlockDBOps
+} from '../hooks';
 import { BlocksModuleUtils } from './utils';
 import bs = require('binary-search');
 
 @injectable()
 export class BlocksModuleChain {
-
   // Generic
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
@@ -90,12 +104,15 @@ export class BlocksModuleChain {
    */
   public async deleteLastBlock(): Promise<IBlocksModel> {
     const lastBlock = this.blocksModule.lastBlock;
-    this.logger.warn('Deleting last block', { id: lastBlock.id, height: lastBlock.height });
+    this.logger.warn('Deleting last block', {
+      id: lastBlock.id,
+      height: lastBlock.height
+    });
 
     if (lastBlock.height === 1) {
       throw new Error('Cannot delete genesis block');
     }
-    const newLastBlock          = await this.popLastBlock(lastBlock);
+    const newLastBlock = await this.popLastBlock(lastBlock);
     // Set new "new" last block.
     this.blocksModule.lastBlock = newLastBlock;
     return newLastBlock;
@@ -126,7 +143,9 @@ export class BlocksModuleChain {
   public async saveGenesisBlock() {
     const genesis = await this.BlocksModel.findById(this.genesisBlock.id);
     if (!genesis) {
-      return this.BlocksModel.sequelize.transaction((t) => this.saveBlock(this.genesisBlock, t));
+      return this.BlocksModel.sequelize.transaction((t) =>
+        this.saveBlock(this.genesisBlock, t)
+      );
     }
   }
 
@@ -157,17 +176,26 @@ export class BlocksModuleChain {
     try {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        const sender                = await this.accountsModule
-          .assignPublicKeyToAccount({ address: tx.senderId, publicKey: tx.senderPublicKey });
+        const sender = await this.accountsModule.assignPublicKeyToAccount({
+          address: tx.senderId,
+          publicKey: tx.senderPublicKey
+        });
         // Apply tx.
         const ops: Array<DBOp<any>> = [
           {
             model: this.AccountsModel,
             query: this.AccountsModel.createBulkAccountsSQL([tx.recipientId]),
-            type : 'custom',
+            type: 'custom'
           },
-          ... await this.transactionLogic.applyUnconfirmed({ ...tx, blockId: block.id } as any, sender),
-          ... await this.transactionLogic.apply({ ...tx, blockId: block.id } as any, block, sender),
+          ...(await this.transactionLogic.applyUnconfirmed(
+            { ...tx, blockId: block.id } as any,
+            sender
+          )),
+          ...(await this.transactionLogic.apply(
+            { ...tx, blockId: block.id } as any,
+            block,
+            sender
+          ))
         ];
         await this.dbHelper.performOps(ops);
 
@@ -181,35 +209,34 @@ export class BlocksModuleChain {
     this.blocksModule.lastBlock = deepFreeze(
       block instanceof this.BlocksModel ? block.toJSON() : block
     );
-    await this.BlocksModel.sequelize
-      .transaction(async (tx) => {
-          // perform extra operations via filter.
-          await this.dbHelper.performOps(
-            await this.hookSystem.apply_filters(
-              ApplyBlockDBOps.name,
-              [],
-              block,
-              true
-            ),
-            tx
-          );
-          // Perform postApplyHook
-          await this.hookSystem
-            .do_action(
-              OnPostApplyBlock.name,
-              this.blocksModule.lastBlock,
-              tx,
-              false
-            );
-        }
+    await this.BlocksModel.sequelize.transaction(async (tx) => {
+      // perform extra operations via filter.
+      await this.dbHelper.performOps(
+        await this.hookSystem.apply_filters(
+          ApplyBlockDBOps.name,
+          [],
+          block,
+          true
+        ),
+        tx
       );
+      // Perform postApplyHook
+      await this.hookSystem.do_action(
+        OnPostApplyBlock.name,
+        this.blocksModule.lastBlock,
+        tx,
+        false
+      );
+    });
   }
 
   @WrapInBalanceSequence
-  public async applyBlock(block: SignedAndChainedBlockType,
-                          broadcast: boolean,
-                          saveBlock: boolean,
-                          accountsMap: { [address: string]: IAccountsModel }) {
+  public async applyBlock(
+    block: SignedAndChainedBlockType,
+    broadcast: boolean,
+    saveBlock: boolean,
+    accountsMap: { [address: string]: IAccountsModel }
+  ) {
     if (this.isCleaning) {
       return; // Avoid processing a new block if it is cleaning.
     }
@@ -222,31 +249,38 @@ export class BlocksModuleChain {
     // Overlapping txs needs to be undoUnconfirmed since they could eventually exclude a tx
     // bundled within a block
     const allUnconfirmedTxs = this.txPool.unconfirmed.txList({});
-    const allBlockTXIds     = block.transactions.map((tx) => tx.id).sort();
-    const overlappingTXs    = allUnconfirmedTxs.filter((tx) => {
-      const exists = bs(allBlockTXIds, tx.id, (a, b) => a.localeCompare(b)) >= 0;
-      return !exists && typeof(accountsMap[tx.senderId]) !== 'undefined';
+    const allBlockTXIds = block.transactions.map((tx) => tx.id).sort();
+    const overlappingTXs = allUnconfirmedTxs.filter((tx) => {
+      const exists =
+        bs(allBlockTXIds, tx.id, (a, b) => a.localeCompare(b)) >= 0;
+      return !exists && typeof accountsMap[tx.senderId] !== 'undefined';
     });
     // Start atomic block saving.
 
     const ops: Array<DBOp<any>> = [];
 
-    const recipients = _.sortedUniq(block.transactions
-      .map((tx) => tx.recipientId)
-      .filter((recipient) => recipient)
-      .sort()
+    const recipients = _.sortedUniq(
+      block.transactions
+        .map((tx) => tx.recipientId)
+        .filter((recipient) => recipient)
+        .sort()
     );
 
     // undo all overlapping txs.
     for (const overTX of overlappingTXs) {
-      ops.push(... await this.transactionLogic.undoUnconfirmed(overTX, accountsMap[overTX.senderId]));
+      ops.push(
+        ...(await this.transactionLogic.undoUnconfirmed(
+          overTX,
+          accountsMap[overTX.senderId]
+        ))
+      );
     }
 
     if (recipients.length > 0) {
       ops.push({
         model: this.AccountsModel,
         query: await this.AccountsModel.createBulkAccountsSQL(recipients),
-        type : 'custom',
+        type: 'custom'
       });
     }
 
@@ -255,20 +289,28 @@ export class BlocksModuleChain {
         continue;
       }
       ops.push(
-        ... await this.transactionLogic.applyUnconfirmed(
+        ...(await this.transactionLogic.applyUnconfirmed(
           tx,
           accountsMap[tx.senderId],
           tx.requesterPublicKey
-            ? accountsMap[this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)]
+            ? accountsMap[
+                this.accountsModule.generateAddressByPublicKey(
+                  tx.requesterPublicKey
+                )
+              ]
             : undefined
-        )
+        ))
       );
     }
 
     // Apply
     for (const tx of block.transactions) {
       ops.push(
-        ... await this.transactionLogic.apply(tx as any, block, accountsMap[tx.senderId])
+        ...(await this.transactionLogic.apply(
+          tx as any,
+          block,
+          accountsMap[tx.senderId]
+        ))
       );
       this.txPool.unconfirmed.remove(tx.id);
     }
@@ -281,35 +323,41 @@ export class BlocksModuleChain {
     )).filter((op) => op != null);
 
     if (filteredOPs.length > 0 || saveBlock) {
-      await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-        await this.dbHelper.performOps(filteredOPs, dbTX);
+      await this.BlocksModel.sequelize
+        .transaction(async (dbTX) => {
+          await this.dbHelper.performOps(filteredOPs, dbTX);
 
-        if (saveBlock) {
-          try {
-            await this.saveBlock(block, dbTX);
-          } catch (err) {
-            this.logger.error('Failed to save block...');
-            this.logger.error('Block', block.id);
-            throw err;
+          if (saveBlock) {
+            try {
+              await this.saveBlock(block, dbTX);
+            } catch (err) {
+              this.logger.error('Failed to save block...');
+              this.logger.error('Block', block.id);
+              throw err;
+            }
+            this.logger.debug(
+              'Block applied correctly with ' +
+                block.transactions.length +
+                ' transactions'
+            );
           }
-          this.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
-        }
 
-        // await this.bus.message('newBlock', block, broadcast);
+          // await this.bus.message('newBlock', block, broadcast);
 
-        this.blocksModule.lastBlock = deepFreeze(
-          block instanceof this.BlocksModel ? block.toJSON() : block
-        );
-        await this.hookSystem.do_action(
-          OnPostApplyBlock.name,
-          this.blocksModule.lastBlock,
-          broadcast
-        );
-      }).catch((err) => {
-        // Allow cleanup as processing finished even if rollback.
-        this.isProcessing = false;
-        throw err;
-      });
+          this.blocksModule.lastBlock = deepFreeze(
+            block instanceof this.BlocksModel ? block.toJSON() : block
+          );
+          await this.hookSystem.do_action(
+            OnPostApplyBlock.name,
+            this.blocksModule.lastBlock,
+            broadcast
+          );
+        })
+        .catch((err) => {
+          // Allow cleanup as processing finished even if rollback.
+          this.isProcessing = false;
+          throw err;
+        });
     } else {
       this.blocksModule.lastBlock = deepFreeze(
         block instanceof this.BlocksModel ? block.toJSON() : block
@@ -336,17 +384,13 @@ export class BlocksModuleChain {
    */
   public async saveBlock(b: SignedBlockType, dbTX: Transaction) {
     const saveOp = this.blockLogic.dbSaveOp(b);
-    const txOps  = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
+    const txOps = this.transactionLogic.dbSave(b.transactions, b.id, b.height);
 
     await this.dbHelper.performOps([saveOp, ...txOps], dbTX);
 
-    await this.afterSave(b)
-      .catch(
-        catchToLoggerAndRemapError(
-          'Blocks#saveBlock error',
-          this.logger
-        )
-      );
+    await this.afterSave(b).catch(
+      catchToLoggerAndRemapError('Blocks#saveBlock error', this.logger)
+    );
   }
 
   /**
@@ -356,9 +400,13 @@ export class BlocksModuleChain {
    */
   private async afterSave(block: SignedBlockType) {
     // await this.bus.message('transactionsSaved', block.transactions);
-    await this.hookSystem.do_action(OnTransactionsSaved.name, block.transactions, block);
+    await this.hookSystem.do_action(
+      OnTransactionsSaved.name,
+      block.transactions,
+      block
+    );
     // Execute afterSave callbacks for each transaction, depends on tx type
-    for (const tx of  block.transactions) {
+    for (const tx of block.transactions) {
       await this.transactionLogic.afterSave(tx);
     }
   }
@@ -369,12 +417,18 @@ export class BlocksModuleChain {
    * @returns {Promise<SignedBlockType>}
    */
   @WrapInBalanceSequence
-  private async popLastBlock(lb1: SignedAndChainedBlockType): Promise<IBlocksModel> {
-    const lb = await this.BlocksModel.findById(lb1.id, { include: [this.TransactionsModel] });
+  private async popLastBlock(
+    lb1: SignedAndChainedBlockType
+  ): Promise<IBlocksModel> {
+    const lb = await this.BlocksModel.findById(lb1.id, {
+      include: [this.TransactionsModel]
+    });
     if (lb === null) {
       throw new Error('curBlock is null');
     }
-    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, { include: [this.TransactionsModel] });
+    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, {
+      include: [this.TransactionsModel]
+    });
 
     if (previousBlock === null) {
       throw new Error('previousBlock is null');
@@ -386,28 +440,42 @@ export class BlocksModuleChain {
     const txs = lb.transactions.slice().reverse();
 
     await this.BlocksModel.sequelize.transaction(async (dbTX) => {
-      const accountsMap           = await this.accountsModule.txAccounts(txs);
+      const accountsMap = await this.accountsModule.txAccounts(txs);
       const ops: Array<DBOp<any>> = [];
       for (const tx of txs) {
-        ops.push(... await this.transactionLogic.undo(tx, lb, accountsMap[tx.senderId]));
-        ops.push(... await this.transactionLogic.undoUnconfirmed(tx, accountsMap[tx.senderId]));
+        ops.push(
+          ...(await this.transactionLogic.undo(
+            tx,
+            lb,
+            accountsMap[tx.senderId]
+          ))
+        );
+        ops.push(
+          ...(await this.transactionLogic.undoUnconfirmed(
+            tx,
+            accountsMap[tx.senderId]
+          ))
+        );
       }
 
-      await this.dbHelper.performOps(await this.hookSystem
-          .apply_filters(
-            RollbackBlockDBOps.name,
-            ops,
-            lb, // From Block
-            previousBlock // To Block
-          ),
+      await this.dbHelper.performOps(
+        await this.hookSystem.apply_filters(
+          RollbackBlockDBOps.name,
+          ops,
+          lb, // From Block
+          previousBlock // To Block
+        ),
         dbTX
       );
       // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
-      await this.hookSystem.do_action(OnDestroyBlock.name, this.blocksModule.lastBlock, dbTX);
+      await this.hookSystem.do_action(
+        OnDestroyBlock.name,
+        this.blocksModule.lastBlock,
+        dbTX
+      );
     });
 
     return previousBlock;
-
   }
 }

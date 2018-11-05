@@ -1,4 +1,10 @@
-import { IAppState, IBlocksModule, ILoaderModule, ISystemModule, Symbols } from '@risevision/core-interfaces';
+import {
+  IAppState,
+  IBlocksModule,
+  ILoaderModule,
+  ISystemModule,
+  Symbols
+} from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { IoCSymbol } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
@@ -9,7 +15,6 @@ import { CoreSymbols } from '../symbols';
 @IoCSymbol(CoreSymbols.api.loader)
 @injectable()
 export class LoaderAPI {
-
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.generic.constants)
@@ -25,7 +30,7 @@ export class LoaderAPI {
   public getStatus() {
     // To remove? useless.
     return {
-      loaded: true,
+      loaded: true
     };
   }
 
@@ -34,8 +39,8 @@ export class LoaderAPI {
     return {
       broadhash: this.systemModule.broadhash,
       consensus: this.appState.get('node.consensus'),
-      height   : this.blocksModule.lastBlock.height,
-      syncing  : this.loaderModule.isSyncing,
+      height: this.blocksModule.lastBlock.height,
+      syncing: this.loaderModule.isSyncing
     };
   }
 
@@ -43,9 +48,11 @@ export class LoaderAPI {
   public ping() {
     let status = false;
     if (this.blocksModule.lastBlock) {
-      const secondsAgo = Math.floor(Date.now() / 1000) -
-        (Math.floor(this.constants.epochTime.getTime() / 1000) + this.blocksModule.lastBlock.timestamp);
-      status           = secondsAgo < this.constants.blockReceiptTimeOut;
+      const secondsAgo =
+        Math.floor(Date.now() / 1000) -
+        (Math.floor(this.constants.epochTime.getTime() / 1000) +
+          this.blocksModule.lastBlock.timestamp);
+      status = secondsAgo < this.constants.blockReceiptTimeOut;
     }
 
     return { success: status };
