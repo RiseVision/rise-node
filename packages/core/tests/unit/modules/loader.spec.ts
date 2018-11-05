@@ -13,7 +13,7 @@ import {
   IBlocksModule,
   IJobsQueue,
   ISystemModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { CoreSymbols } from '../../../src';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
@@ -51,54 +51,61 @@ describe('modules/loader', () => {
   });
 
   beforeEach(async () => {
-    retryStub        = sandbox.stub();
+    retryStub = sandbox.stub();
     promiseRetryStub = sandbox
       .stub()
       .callsFake(sandbox.spy((w) => Promise.resolve(w(retryStub))));
-    genesisBlock     = {
+    genesisBlock = {
       blockSignature: Buffer.from('10'),
-      id            : 10,
-      payloadHash   : Buffer.from('10'),
+      id: 10,
+      payloadHash: Buffer.from('10'),
     };
-    appConfig        = {
+    appConfig = {
       loading: {
         loadPerIteration: 10,
-        snapshot        : false,
+        snapshot: false,
       },
       forging: {
         transactionsPolling: false,
       },
     };
-    constants        = {
+    constants = {
       activeDelegates: 1,
-      epochTime      : { getTime: sinon.stub().returns(1000) },
-      maxPeers       : 100,
-      blockTime      : 30,
+      epochTime: { getTime: sinon.stub().returns(1000) },
+      maxPeers: 100,
+      blockTime: 30,
     } as any;
-    container        = await createContainer(['core', 'core-helpers', 'core-crypto', 'core-accounts']);
+    container = await createContainer([
+      'core',
+      'core-helpers',
+      'core-crypto',
+      'core-accounts',
+    ]);
 
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);
     container
       .rebind(Symbols.generic.genesisBlock)
       .toConstantValue(genesisBlock);
     container.rebind(Symbols.generic.constants).toConstantValue(constants);
-    container.rebind(CoreSymbols.modules.loader).to(ProxyLoaderModule.LoaderModule);
-    systemModule                                    = container.get(Symbols.modules.system);
-    instance                                        = container.get(CoreSymbols.modules.loader);
-    (instance as any).jobsQueue.register            = sandbox
+    container
+      .rebind(CoreSymbols.modules.loader)
+      .to(ProxyLoaderModule.LoaderModule);
+    systemModule = container.get(Symbols.modules.system);
+    instance = container.get(CoreSymbols.modules.loader);
+    (instance as any).jobsQueue.register = sandbox
       .stub()
       .callsFake((val, fn) => fn());
     (instance as any).defaultSequence.addAndPromise = sandbox
       .stub()
       .callsFake((w) => Promise.resolve(w()));
-    instance                                        = container.get(CoreSymbols.modules.loader);
-    blocksModule                                    = container.get<any>(Symbols.modules.blocks);
-    blocksModule.lastBlock                          = {
+    instance = container.get(CoreSymbols.modules.loader);
+    blocksModule = container.get<any>(Symbols.modules.blocks);
+    blocksModule.lastBlock = {
       height: 1,
-      id    : 1,
+      id: 1,
     } as any;
-    appState                                        = container.get(Symbols.logic.appState);
-    const logger                                    = container.get<LoggerStub>(Symbols.helpers.logger);
+    appState = container.get(Symbols.logic.appState);
+    const logger = container.get<LoggerStub>(Symbols.helpers.logger);
     logger.stubReset();
   });
 
@@ -110,7 +117,7 @@ describe('modules/loader', () => {
     it('should set instance.network to default value after the creation of the object', () => {
       expect((instance as any).network).to.be.deep.equal({
         height: 0,
-        peers : [],
+        peers: [],
       });
     });
   });
@@ -123,15 +130,17 @@ describe('modules/loader', () => {
     let listPEersStub: SinonStub;
     let peersCreateStub: SinonStub;
     beforeEach(() => {
-      peers           = createFakePeers(2);
+      peers = createFakePeers(2);
       peers[0].height = 3;
 
       peersModuleStub = container.get(Symbols.modules.peers);
-      peersLogicStub  = container.get(Symbols.logic.peers);
-      loggerStub      = container.get(Symbols.helpers.logger);
+      peersLogicStub = container.get(Symbols.logic.peers);
+      loggerStub = container.get(Symbols.helpers.logger);
 
-      peersCreateStub = sandbox.stub(peersLogicStub, 'create').callsFake((peer) => peer);
-      listPEersStub   = sandbox.stub(peersModuleStub, 'list');
+      peersCreateStub = sandbox
+        .stub(peersLogicStub, 'create')
+        .callsFake((peer) => peer);
+      listPEersStub = sandbox.stub(peersModuleStub, 'list');
     });
 
     afterEach(() => {
@@ -139,12 +148,12 @@ describe('modules/loader', () => {
     });
 
     it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', async () => {
-      blocksModule.lastBlock    = {
+      blocksModule.lastBlock = {
         height: 0,
       } as any;
       (instance as any).network = {
         height: 1,
-        peers : [],
+        peers: [],
       };
 
       const result = await instance.getNetwork();
@@ -155,7 +164,7 @@ describe('modules/loader', () => {
     it('should call instance.peersModule.list if instance.network.height > 0', async () => {
       (instance as any).network = {
         height: 1,
-        peers : [],
+        peers: [],
       };
       listPEersStub.returns({ peers });
 
@@ -220,7 +229,7 @@ describe('modules/loader', () => {
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
       expect((instance as any).network).to.be.deep.equal({
         height: 0,
-        peers : [],
+        peers: [],
       });
     });
 
@@ -265,7 +274,7 @@ describe('modules/loader', () => {
     let peers: PeerType[];
 
     beforeEach(() => {
-      peers          = createFakePeers(3);
+      peers = createFakePeers(3);
       getNetworkStub = sandbox
         .stub(instance as any, 'getNetwork')
         .resolves({ peers });
@@ -284,7 +293,9 @@ describe('modules/loader', () => {
     });
     it('should reject if no peers', async () => {
       getNetworkStub.resolves({ peers: [] });
-      await expect(instance.getRandomPeer()).rejectedWith('No acceptable peers for the operation');
+      await expect(instance.getRandomPeer()).rejectedWith(
+        'No acceptable peers for the operation'
+      );
     });
   });
 
@@ -293,7 +304,7 @@ describe('modules/loader', () => {
     let appStateGet: SinonStub;
     beforeEach(() => {
       appStateStub = container.get(Symbols.logic.appState);
-      appStateGet  = sandbox.stub(appStateStub, 'get');
+      appStateGet = sandbox.stub(appStateStub, 'get');
     });
 
     it('should call appState.get', () => {
@@ -322,8 +333,11 @@ describe('modules/loader', () => {
     let blocksModel: typeof IBlocksModel;
     let loadStub: SinonStub;
     beforeEach(() => {
-      blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
-      loadStub    = sandbox.stub(instance, 'load').resolves();
+      blocksModel = container.getNamed(
+        ModelSymbols.model,
+        Symbols.models.blocks
+      );
+      loadStub = sandbox.stub(instance, 'load').resolves();
     });
     it('should call load if blocksmodel.count is 1', async () => {
       const stub = sandbox.stub(blocksModel, 'count').resolves(1);
@@ -337,7 +351,7 @@ describe('modules/loader', () => {
       let findGenesisStub: SinonStub;
       const blocksCount = 2;
       beforeEach(() => {
-        countStub       = sandbox.stub(blocksModel, 'count').resolves(blocksCount);
+        countStub = sandbox.stub(blocksModel, 'count').resolves(blocksCount);
         findGenesisStub = sandbox.stub(blocksModel, 'findOne');
       });
       it('should throw if findOne height=1 is a different genesis block', async () => {
@@ -348,7 +362,7 @@ describe('modules/loader', () => {
 
         // Case 2
         findGenesisStub.resolves({
-          id         : genesisBlock.id,
+          id: genesisBlock.id,
           payloadHash: Buffer.from('aa'),
         });
         await expect(instance.loadBlockChain()).to.be.rejectedWith(
@@ -357,8 +371,8 @@ describe('modules/loader', () => {
 
         // Case 3
         findGenesisStub.resolves({
-          id            : genesisBlock.id,
-          payloadHash   : genesisBlock.payloadHash,
+          id: genesisBlock.id,
+          payloadHash: genesisBlock.payloadHash,
           blockSignature: Buffer.from('aa'),
         });
         await expect(instance.loadBlockChain()).to.be.rejectedWith(
@@ -1438,12 +1452,12 @@ describe('modules/loader', () => {
       lastReceipt = 'lastReceipt';
 
       lastReceiptStubs = {
-        get    : sandbox.stub().returns(lastReceipt),
+        get: sandbox.stub().returns(lastReceipt),
         isStale: sandbox.stub().returns(true),
       };
-      jobsQueueStub    = container.get(Symbols.helpers.jobsQueue);
-      loggerStub       = container.get(Symbols.helpers.logger);
-      syncStub         = sandbox
+      jobsQueueStub = container.get(Symbols.helpers.jobsQueue);
+      loggerStub = container.get(Symbols.helpers.logger);
+      syncStub = sandbox
         .stub(instance as any, 'doSync')
         .resolves(Promise.resolve({}));
 
@@ -1452,7 +1466,6 @@ describe('modules/loader', () => {
       getAppStateStub = sandbox.stub(appState, 'get');
       getAppStateStub.onFirstCall().returns(true);
       getAppStateStub.onSecondCall().returns(false);
-
     });
 
     afterEach(() => {
@@ -1475,7 +1488,7 @@ describe('modules/loader', () => {
       );
       expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
         last_receipt: lastReceipt,
-        syncing     : true,
+        syncing: true,
       });
     });
 
@@ -1523,7 +1536,5 @@ describe('modules/loader', () => {
 
       expect(retryStub.notCalled).to.be.true;
     });
-
   });
-
 });

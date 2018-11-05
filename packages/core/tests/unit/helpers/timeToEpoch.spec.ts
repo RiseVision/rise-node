@@ -13,10 +13,15 @@ describe('timeToEpoch', () => {
   let sandbox: SinonSandbox;
   let constants: ConstantsType;
   before(async () => {
-    sandbox   = sinon.createSandbox();
-    container = await createContainer(['core', 'core-helpers', 'core-crypto', 'core-accounts']);
+    sandbox = sinon.createSandbox();
+    container = await createContainer([
+      'core',
+      'core-helpers',
+      'core-crypto',
+      'core-accounts',
+    ]);
     constants = container.get(Symbols.generic.constants);
-    instance  = container.get(Symbols.helpers.timeToEpoch);
+    instance = container.get(Symbols.helpers.timeToEpoch);
   });
 
   it('should derive proper epoch time from unix', () => {
@@ -25,6 +30,8 @@ describe('timeToEpoch', () => {
   });
   it('should derive proper unix time from epoch time', () => {
     expect(instance.fromTimeStamp(0)).eq(constants.epochTime.getTime());
-    expect(instance.fromTimeStamp(15)).eq(constants.epochTime.getTime() + 15000);
+    expect(instance.fromTimeStamp(15)).eq(
+      constants.epochTime.getTime() + 15000
+    );
   });
 });

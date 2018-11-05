@@ -1,35 +1,24 @@
 {
   "compilerOptions": {
-    "target"                      : "es2017",
-    "module"                      : "commonjs",
-    "emitDecoratorMetadata"       : true,
-    "experimentalDecorators"      : true,
-    "allowJs"                     : false,
-    "moduleResolution"            : "node",
-    "outDir"                      : "dist",
-    "declaration"                 : true,
+    "target": "es2017",
+    "module": "commonjs",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowJs": false,
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "declaration": true,
     "allowSyntheticDefaultImports": true,
-    "inlineSourceMap"             : true,
-    "inlineSources"               : true,
-    "baseUrl"                     : ".",
-    "lib"                         : [
-      "dom",
-      "es7"
-    ],
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "baseUrl": ".",
+    "lib": ["dom", "es7"],
     "paths": {
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
       "@risevision/core-utils": ["../core-utils/*"]
     }
   },
-  "include"        : [
-    "./src/**/*"
-  ],
-  "exclude"        : [
-    "tests",
-    "public",
-    "dist",
-    "coverage",
-    "node_modules"
-  ]
+  "include": ["./src/**/*"],
+  "exclude": ["tests", "public", "dist", "coverage", "node_modules"]
 }

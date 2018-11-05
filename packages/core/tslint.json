@@ -1,10 +1,7 @@
 {
-  "extends":        [
-    "tslint:recommended",
-    "tslint-sonarts"
-  ],
-  "jsRules":        {},
-  "rules":          {
+  "extends": ["tslint:recommended", "tslint-sonarts"],
+  "jsRules": {},
+  "rules": {
     "quotemark": [true, "single", "avoid-escape", "avoid-template"],
     "trailing-comma": [
       true,

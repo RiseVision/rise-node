@@ -7,7 +7,11 @@ import { SinonSandbox, SinonStub } from 'sinon';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { SystemModule } from '../../../src/modules';
 import { ConstantsType } from '@risevision/core-types';
-import { IBlocksModel, IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import {
+  IBlocksModel,
+  IBlocksModule,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 
 // tslint:disable no-unused-expression
@@ -15,19 +19,24 @@ describe('modules/system', () => {
   let inst: SystemModule;
   let container: Container;
   const appConfig = {
-    port   : 1234,
+    port: 1234,
     version: '1.0.0',
     forging: {
-      pollingInterval: 1000
-    }
+      pollingInterval: 1000,
+    },
   };
   let constants: ConstantsType;
   let sandbox: SinonSandbox;
   let blocksModule: IBlocksModule;
   before(async () => {
-    container = await createContainer(['core', 'core-helpers', 'core-crypto', 'core-accounts']);
+    container = await createContainer([
+      'core',
+      'core-helpers',
+      'core-crypto',
+      'core-accounts',
+    ]);
     constants = {
-      fees      : [
+      fees: [
         { height: 1, fees: { send: 1 } },
         { height: 2, fees: { send: 2 } },
         { height: 3, fees: { send: 3 } },
@@ -47,9 +56,9 @@ describe('modules/system', () => {
   });
 
   beforeEach(() => {
-    sandbox                = sinon.createSandbox();
-    inst                   = container.get(Symbols.modules.system);
-    blocksModule           = container.get(Symbols.modules.blocks);
+    sandbox = sinon.createSandbox();
+    inst = container.get(Symbols.modules.system);
+    blocksModule = container.get(Symbols.modules.blocks);
     blocksModule.lastBlock = {
       height: 10,
     } as any;
@@ -73,7 +82,8 @@ describe('modules/system', () => {
     });
     it('should return ^0.1.3 for default height taken from blocksModule', () => {
       const origStub = sinon.stub().returns(10);
-      const stub     = sinon.stub(blocksModule.lastBlock, 'height')
+      const stub = sinon
+        .stub(blocksModule.lastBlock, 'height')
         .get(() => origStub());
       expect(inst.getMinVersion()).to.be.eq('^0.1.3');
 
@@ -130,7 +140,8 @@ describe('modules/system', () => {
 
     it('should use height from blockmodule if not provided', () => {
       const origStub = sinon.stub().returns(10);
-      const stub     = sinon.stub(blocksModule.lastBlock, 'height')
+      const stub = sinon
+        .stub(blocksModule.lastBlock, 'height')
         .get(() => origStub());
 
       inst.getFees();
@@ -144,23 +155,32 @@ describe('modules/system', () => {
     let blocksModel: typeof IBlocksModel;
     let findAllStub: SinonStub;
     beforeEach(() => {
-      blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+      blocksModel = container.getNamed(
+        ModelSymbols.model,
+        Symbols.models.blocks
+      );
       findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([]);
     });
     it('should return broadhash from genesisBlock if db.query returns empty array', async () => {
-      expect(await inst.getBroadhash()).to.be.eq('e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6');
+      expect(await inst.getBroadhash()).to.be.eq(
+        'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6'
+      );
     });
     it('should compute broadhash from returned db data', async () => {
       findAllStub.resolves([1, 2, 3, 4].map((id) => ({ id })));
-      expect(await inst.getBroadhash())
-        .to.be.eq('03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4');
-
+      expect(await inst.getBroadhash()).to.be.eq(
+        '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'
+      );
     });
   });
 
   describe('.networkCompatible', () => {
     it('should return true if given is same as headers nethash', () => {
-      expect(inst.networkCompatible('e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6')).is.true;
+      expect(
+        inst.networkCompatible(
+          'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6'
+        )
+      ).is.true;
     });
     it('should return false if given is same as headers nethash', () => {
       expect(inst.networkCompatible('balallaa')).is.false;
@@ -199,7 +219,7 @@ describe('modules/system', () => {
   describe('.update', () => {
     it('should update height and broadhash value', async () => {
       sandbox.stub(inst, 'getBroadhash').resolves('meow');
-      inst.headers.height    = 0;
+      inst.headers.height = 0;
       inst.headers.broadhash = 'haha';
       blocksModule.lastBlock = {
         height: 2,
@@ -211,10 +231,19 @@ describe('modules/system', () => {
   });
 
   describe('.headers', () => {
-    ['os', 'version', 'port', 'height', 'nethash', 'broadhash', 'nonce']
-      .forEach((what) => it(`should contain ${what}`, () => {
+    [
+      'os',
+      'version',
+      'port',
+      'height',
+      'nethash',
+      'broadhash',
+      'nonce',
+    ].forEach((what) =>
+      it(`should contain ${what}`, () => {
         expect(inst.headers).to.haveOwnProperty(what);
-      }));
+      })
+    );
   });
 
   // instance methods
@@ -265,5 +294,4 @@ describe('modules/system', () => {
       expect(inst.broadhash).to.be.deep.eq(inst.headers.broadhash);
     });
   });
-
 });

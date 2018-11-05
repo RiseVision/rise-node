@@ -1,7 +1,7 @@
 import {
   BlocksModuleChain,
   BlocksModuleProcess,
-  BlocksSymbols
+  BlocksSymbols,
 } from '@risevision/core-blocks';
 import {
   IAccountLogic,
@@ -15,14 +15,14 @@ import {
   ISequence,
   ISystemModule,
   ITransactionLogic,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
 import {
   AppConfig,
   ConstantsType,
-  SignedAndChainedBlockType
+  SignedAndChainedBlockType,
 } from '@risevision/core-types';
 import { logOnly } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
@@ -35,7 +35,7 @@ import {
   OnSyncRequested,
   RecreateAccountsTables,
   RestoreUnconfirmedEntries,
-  WhatToSync
+  WhatToSync,
 } from '../hooks';
 
 @injectable()
@@ -99,7 +99,7 @@ export class LoaderModule implements ILoaderModule {
   public initialize() {
     this.network = {
       height: 0,
-      peers: []
+      peers: [],
     };
   }
 
@@ -163,7 +163,7 @@ export class LoaderModule implements ILoaderModule {
     }
 
     const genesisBlock = await this.BlocksModel.findOne({
-      where: { height: 1 }
+      where: { height: 1 },
     });
     // If there's a genesis in db lets check its validity against code version
     if (genesisBlock) {
@@ -284,7 +284,7 @@ export class LoaderModule implements ILoaderModule {
       async () => {
         this.logger.trace('Sync timer trigger', {
           last_receipt: this.blocksModule.lastReceipt.get(),
-          syncing: this.isSyncing
+          syncing: this.isSyncing,
         });
         this.appState.set('loader.isSyncing', true);
         await this.doSync().catch(logOnly(this.logger));

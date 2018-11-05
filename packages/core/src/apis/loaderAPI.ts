@@ -3,7 +3,7 @@ import {
   IBlocksModule,
   ILoaderModule,
   ISystemModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { IoCSymbol } from '@risevision/core-utils';
@@ -30,7 +30,7 @@ export class LoaderAPI {
   public getStatus() {
     // To remove? useless.
     return {
-      loaded: true
+      loaded: true,
     };
   }
 
@@ -40,7 +40,7 @@ export class LoaderAPI {
       broadhash: this.systemModule.broadhash,
       consensus: this.appState.get('node.consensus'),
       height: this.blocksModule.lastBlock.height,
-      syncing: this.loaderModule.isSyncing
+      syncing: this.loaderModule.isSyncing,
     };
   }
 

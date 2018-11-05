@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "pre-commit": "npx prettier packages/*/src/**.ts --write",
+    "pre-commit": "prettier \"packages/*/!(dist)/**/*.ts\" \"packages/*/!(dist)/**/*.json\" --write",
     "start": "node app.js",
     "test-integration": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/integration/**/*.spec.ts'",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts'",

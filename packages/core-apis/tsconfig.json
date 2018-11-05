@@ -1,22 +1,18 @@
 {
   "compilerOptions": {
-    "target":                       "es2017",
-    "module":                       "commonjs",
-    "emitDecoratorMetadata":        true,
-    "experimentalDecorators":       true,
-    "allowJs":                      false,
-    "moduleResolution":             "node",
-    "outDir":                       "dist",
-    "baseUrl":                      ".",
-    "declaration":                  true,
+    "target": "es2017",
+    "module": "commonjs",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowJs": false,
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
     "allowSyntheticDefaultImports": true,
-    "inlineSourceMap":              true,
-    "inlineSources":                true,
-    "lib":                          [
-      "dom",
-      "es7",
-      "es2015"
-    ],
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "lib": ["dom", "es7", "es2015"],
     "paths": {
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],
@@ -27,11 +23,5 @@
       "@risevision/core-p2p": ["../core-p2p/*"]
     }
   },
-  "exclude":         [
-    "tests",
-    "public",
-    "dist",
-    "coverage",
-    "node_modules"
-  ]
+  "exclude": ["tests", "public", "dist", "coverage", "node_modules"]
 }

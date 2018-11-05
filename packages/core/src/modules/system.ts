@@ -3,7 +3,7 @@ import {
   IBlocksModel,
   IBlocksModule,
   ISystemModule,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -11,7 +11,7 @@ import {
   ConstantsType,
   PeerHeaders,
   SignedAndChainedBlockType,
-  SignedBlockType
+  SignedBlockType,
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';
@@ -63,7 +63,7 @@ export class SystemModule extends Extendable implements ISystemModule {
       nonce: this.nonce,
       os: `${os.platform()}${os.release()}`,
       port: this.appConfig.port,
-      version: this.appConfig.version
+      version: this.appConfig.version,
     };
   }
 
@@ -193,7 +193,7 @@ export class SystemModule extends Extendable implements ISystemModule {
       attributes: ['id'],
       limit: 5,
       order: [['height', 'DESC']],
-      raw: true
+      raw: true,
     });
     if (rows.length <= 1) {
       return this.headers.nethash;
@@ -236,7 +236,7 @@ export class SystemModule extends Extendable implements ISystemModule {
       toHeight:
         i === this.constants.fees.length - 1
           ? null
-          : this.constants.fees[i + 1].height - 1
+          : this.constants.fees[i + 1].height - 1,
     };
   }
 

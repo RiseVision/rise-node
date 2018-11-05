@@ -2,7 +2,7 @@ import {
   IForkModule,
   IForkStatsModel,
   ILogger,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ForkType, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
@@ -32,10 +32,10 @@ export class ForkModule implements IForkModule {
         id: block.id,
         timestamp: block.timestamp,
         height: block.height,
-        previousBlock: block.previousBlock
+        previousBlock: block.previousBlock,
       },
       cause,
-      generator: block.generatorPublicKey.toString('hex')
+      generator: block.generatorPublicKey.toString('hex'),
     });
 
     const fork = {
@@ -44,7 +44,7 @@ export class ForkModule implements IForkModule {
       blockTimestamp: block.timestamp,
       cause,
       generatorPublicKey: block.generatorPublicKey,
-      previousBlock: block.previousBlock
+      previousBlock: block.previousBlock,
     };
 
     await this.ForksStatsModel.create(fork);

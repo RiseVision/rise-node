@@ -1,10 +1,14 @@
 export const results = {};
 
-export function reportedIT(name: string, flavors: any[], testRunner: (flavor?: any) => Promise<number>) {
+export function reportedIT(
+  name: string,
+  flavors: any[],
+  testRunner: (flavor?: any) => Promise<number>
+) {
   flavors = flavors || [];
   flavors.forEach((flavor) => {
-    const flavorName = flavor ? JSON.stringify(flavor): '__default';
-    it(`${name} ${flavorName}`, async function () {
+    const flavorName = flavor ? JSON.stringify(flavor) : '__default';
+    it(`${name} ${flavorName}`, async function() {
       const res = await testRunner(flavor);
       results[name] = results[name] || {};
       results[name][flavorName] = res;
@@ -19,7 +23,7 @@ after(() => {
 
 export class SimpleMicroSecondTimer {
   private startTime: [number, number];
-  private intermediate: { [k: string]: [number, number]};
+  private intermediate: { [k: string]: [number, number] };
   public start() {
     this.startTime = process.hrtime();
     this.intermediate = {};
@@ -33,12 +37,14 @@ export class SimpleMicroSecondTimer {
     return now[0] * 1000000 + now[1] / 1000;
   }
 
-  public getAllSteps(): {[k: string]: number} {
+  public getAllSteps(): { [k: string]: number } {
     const toRet = {};
     Object.keys(this.intermediate).forEach((key, index) => {
       let microseconds = 0;
-      if (key !== 'start')  {
-        microseconds = this.intermediate[key][0] * 1000000 + this.intermediate[key][1] / 1000;
+      if (key !== 'start') {
+        microseconds =
+          this.intermediate[key][0] * 1000000 +
+          this.intermediate[key][1] / 1000;
       }
       toRet[key] = microseconds;
     });

@@ -1,27 +1,22 @@
 {
   "compilerOptions": {
-    "target":                       "es2017",
-    "module":                       "commonjs",
-    "emitDecoratorMetadata":        true,
-    "experimentalDecorators":       true,
-    "allowJs":                      false,
-    "moduleResolution":             "node",
-    "outDir":                       "dist",
-    "baseUrl":                      ".",
-    "declaration":                  true,
+    "target": "es2017",
+    "module": "commonjs",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowJs": false,
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
     "allowSyntheticDefaultImports": true,
-    "inlineSourceMap":              true,
-    "skipLibCheck" : true,
-    "inlineSources":                true,
-    "lib":                          [
-      "dom",
-      "es7"
-    ]
+    "inlineSourceMap": true,
+    "skipLibCheck": true,
+    "inlineSources": true,
+    "lib": ["dom", "es7"]
   },
-  "include"        : [
-    "./**/*"
-  ],
-  "exclude":         [
+  "include": ["./**/*"],
+  "exclude": [
     "tests",
     "public",
     "dist",
