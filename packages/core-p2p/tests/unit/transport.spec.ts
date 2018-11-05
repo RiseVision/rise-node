@@ -37,7 +37,7 @@ chai.use(chaiAsPromised);
 const popsicleStub = {} as any;
 const throttleStub = {} as any;
 const proxyTransportModule = proxyquire('../../src/transport', {
-  "popsicle": popsicleStub,
+  popsicle: popsicleStub,
   'promise-parallel-throttle': throttleStub,
 });
 
@@ -190,7 +190,7 @@ describe('src/modules/transport.ts', () => {
         body: undefined,
         headers: {
           ...systemModule.headers,
-          "accept": 'application/octet-stream',
+          accept: 'application/octet-stream',
           'content-type': 'application/octet-stream',
         },
         method: 'put',
@@ -213,10 +213,10 @@ describe('src/modules/transport.ts', () => {
       delete popsicleStub.request.firstCall.args[0].transport;
       expect(popsicleStub.request.firstCall.args[0].headers).to.be.deep.equal({
         ...systemModule.headers,
-        "accept": 'application/octet-stream',
-        "broadhash": 'meow',
+        accept: 'application/octet-stream',
+        broadhash: 'meow',
         'content-type': 'application/octet-stream',
-        "other": 'hey',
+        other: 'hey',
       });
     });
     it('should call popsicle twice (retry) if rejects and return 2nd result', async function() {

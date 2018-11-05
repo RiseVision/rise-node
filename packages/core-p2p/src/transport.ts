@@ -124,7 +124,7 @@ export class TransportModule extends Extendable {
       body: options.data,
       headers: {
         ...(this.systemModule.headers as any),
-        "accept": 'application/octet-stream',
+        accept: 'application/octet-stream',
         'content-type': 'application/octet-stream',
         ...options.headers,
       },
