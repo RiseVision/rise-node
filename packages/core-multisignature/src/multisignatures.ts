@@ -18,6 +18,9 @@ import { MultisigTransportModule } from './transport';
 
 @injectable()
 export class MultisignaturesModule {
+  @inject(Symbols.helpers.sequence)
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
 
@@ -26,10 +29,6 @@ export class MultisignaturesModule {
 
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule<AccountsModelWithMultisig>;
-
-  @inject(Symbols.helpers.sequence)
-  @named(Symbols.names.helpers.balancesSequence)
-  public balancesSequence: ISequence;
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -136,7 +135,7 @@ export class MultisignaturesModule {
   ) {
     // tslint:disable-next-line
     if (
-      tx.asset.multisignature['signatures'] ||
+      tx.asset.multisignature.signatures ||
       tx.signatures.indexOf(signature) !== -1
     ) {
       throw new Error('Permission to sign transaction denied');

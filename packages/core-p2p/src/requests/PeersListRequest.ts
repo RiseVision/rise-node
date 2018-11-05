@@ -1,12 +1,12 @@
+import { Symbols } from '@risevision/core-interfaces';
 import { ConstantsType, PeerType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
+import { p2pSymbols } from '../helpers';
+import { PeersModule } from '../peersModule';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
 } from './BaseProtobufTransportMethod';
-import { Symbols } from '@risevision/core-interfaces';
-import { p2pSymbols } from '../helpers';
-import { PeersModule } from '../peersModule';
 
 // tslint:disable-next-line
 export type PeersListResponse = { peers: PeerType[] };

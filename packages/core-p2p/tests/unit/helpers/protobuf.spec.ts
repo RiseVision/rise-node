@@ -1,11 +1,11 @@
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { expect } from 'chai';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { p2pSymbols, ProtoBufHelper } from '../../../src/helpers/';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Container } from 'inversify';
-import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
-import { Symbols } from '@risevision/core-interfaces';
 
 // tslint:disable no-unused-expression no-big-function object-literal-sort-keys
 describe('helpers/protobuf', () => {

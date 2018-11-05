@@ -12,7 +12,6 @@ import { address, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as sequelize from 'sequelize';
-import { Transaction } from 'sequelize';
 import SocketIO from 'socket.io';
 import {
   DposConstantsType,
@@ -20,8 +19,7 @@ import {
   RoundChanges,
   Slots,
 } from '../helpers';
-import { IRoundLogicNewable, RoundLogicScope } from '../logic/round';
-import { RoundsLogic } from '../logic/rounds';
+import { IRoundLogicNewable, RoundLogicScope, RoundsLogic } from '../logic/';
 import { AccountsModelForDPOS } from '../models/';
 import { DelegatesModule } from './delegates';
 
@@ -125,9 +123,9 @@ export class RoundsModule {
         // so roundDelegates are 101 not 1 (genesis generator) causing genesis to have an extra block accounted.
         // so we fix this glitch by monkeypatching the value and set roundDelegates to the correct genesis generator.
         roundSums = {
+          roundDelegates: [block.generatorPublicKey],
           roundFees: 0,
           roundRewards: [0],
-          roundDelegates: [block.generatorPublicKey],
         };
       }
 

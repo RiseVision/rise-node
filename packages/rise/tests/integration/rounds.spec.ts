@@ -1,19 +1,5 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Sequelize } from 'sequelize-typescript';
-import * as filterObject from 'filter-object';
-import initializer from './common/init';
-import {
-  confirmTransactions,
-  createRandomAccountsWithFunds,
-  createSendTransaction,
-  createVoteTransaction,
-  findDelegateByPkey,
-  findDelegateByUsername,
-} from './common/utils';
-import { dposOffline, LiskWallet } from 'dpos-offline';
-import { Op } from 'sequelize';
+import { SystemModule } from '@risevision/core';
+import { AccountsModule } from '@risevision/core-accounts';
 import {
   BlocksModel,
   BlocksModule,
@@ -25,17 +11,31 @@ import {
   RoundsLogic,
   RoundsModule,
 } from '@risevision/core-consensus-dpos';
-import { AccountsModule } from '@risevision/core-accounts';
+import { Crypto } from '@risevision/core-crypto';
+import { Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   TransactionLogic,
   TransactionPool,
   TransactionsModule,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { SystemModule } from '@risevision/core';
-import { Crypto } from '@risevision/core-crypto';
-import { Symbols } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { dposOffline, LiskWallet } from 'dpos-offline';
+import * as filterObject from 'filter-object';
+import { Op } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
+import initializer from './common/init';
+import {
+  confirmTransactions,
+  createRandomAccountsWithFunds,
+  createSendTransaction,
+  createVoteTransaction,
+  findDelegateByPkey,
+  findDelegateByUsername,
+} from './common/utils';
 
 chai.use(chaiAsPromised);
 describe('rounds', () => {

@@ -9,10 +9,10 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
 import { P2PConstantsType, p2pSymbols } from './helpers';
+import { IBroadcasterLogic } from './interfaces/IBroadcasterLogic';
 import { PeersLogic } from './peersLogic';
 import { PeersModule } from './peersModule';
 import { BaseTransportMethod, SingleTransportPayload } from './requests/';
-import { IBroadcasterLogic } from './interfaces/IBroadcasterLogic';
 
 // tslint:disable-next-line
 export type BroadcastFilters = {

@@ -1,11 +1,11 @@
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import { APISymbols, PrivateApisGuard } from '../../src';
-import { Symbols } from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { APIConfig } from '../../src';
 
 // tslint:disable-next-line no-var-requires

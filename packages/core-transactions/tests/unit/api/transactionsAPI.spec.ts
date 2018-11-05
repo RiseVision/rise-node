@@ -1,10 +1,28 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { Container } from 'inversify';
-import { Op } from 'sequelize';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
+import * as uuid from 'uuid';
+import { APISymbols } from '../../../../core-apis/src/helpers';
+import { Symbols } from '../../../../core-interfaces/src';
+import { ITransactionLogic } from '../../../../core-interfaces/src/logic';
+import { ITransactionsModel } from '../../../../core-interfaces/src/models';
+import {
+  IAccountsModule,
+  IBlocksModule,
+  ITransactionsModule,
+} from '../../../../core-interfaces/src/modules';
+import { ModelSymbols } from '../../../../core-models/src/helpers';
+import {
+  IBaseTransaction,
+  ITransportTransaction,
+} from '../../../../core-types/src';
 import {
   TransactionLogic,
   TransactionPool,
@@ -13,29 +31,11 @@ import {
   TXApiGetTxFilter,
   TXSymbols,
 } from '../../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import {
-  IAccountsModule,
-  IBlocksModule,
-  ITransactionsModule,
-} from '../../../../core-interfaces/src/modules';
-import { ITransactionLogic } from '../../../../core-interfaces/src/logic';
-import { ITransactionsModel } from '../../../../core-interfaces/src/models';
-import { Symbols } from '../../../../core-interfaces/src';
-import { APISymbols } from '../../../../core-apis/src/helpers';
-import { ModelSymbols } from '../../../../core-models/src/helpers';
-import { LiskWallet } from 'dpos-offline';
-import * as uuid from 'uuid';
 import {
   createRandomTransaction,
   createRandomTransactions,
   toBufferedTransaction,
 } from '../utils/txCrafter';
-import {
-  IBaseTransaction,
-  ITransportTransaction,
-} from '../../../../core-types/src';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -212,7 +212,7 @@ describe('apis/transactionsAPI', () => {
 
         @TXApiGetTxFilter()
         public async filterTx(ta: ITransportTransaction<any>) {
-          ta['cat'] = 'meows';
+          ta.cat = 'meows';
           return ta;
         }
       }

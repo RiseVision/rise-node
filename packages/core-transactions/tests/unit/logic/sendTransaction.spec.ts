@@ -1,25 +1,25 @@
 'use strict';
-import 'reflect-metadata';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { DBUpsertOp, IBaseTransaction } from '../../../../core-types/src';
 import { Symbols } from '../../../../core-interfaces/src';
-import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
+import { IAccountLogic } from '../../../../core-interfaces/src/logic';
 import { IAccountsModel } from '../../../../core-interfaces/src/models';
-import { SendTransaction } from '../../../src/sendTransaction';
-import { ModelSymbols } from '../../../../core-models/src/helpers';
 import { ISystemModule } from '../../../../core-interfaces/src/modules';
+import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '../../../../core-models/src/helpers';
+import { DBUpsertOp, IBaseTransaction } from '../../../../core-types/src';
 import { SendTxApplyFilter, SendTxUndoFilter, TXSymbols } from '../../../src';
+import { SendTransaction } from '../../../src/sendTransaction';
 import {
   createSendTransaction,
   toBufferedTransaction,
 } from '../utils/txCrafter';
-import { LiskWallet } from 'dpos-offline';
-import { IAccountLogic } from '../../../../core-interfaces/src/logic';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);

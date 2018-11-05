@@ -7,9 +7,9 @@ import {
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
+import { BlocksSymbols } from '../blocksSymbols';
 import { OnPostApplyBlock, OnReceiveBlock } from '../hooks';
 import { BlocksModuleProcess } from '../modules';
-import { BlocksSymbols } from '../blocksSymbols';
 
 // tslint:disable-next-line
 export type PostBlockRequestDataType = { block: SignedAndChainedBlockType };

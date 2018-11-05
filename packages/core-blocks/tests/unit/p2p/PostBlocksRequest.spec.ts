@@ -1,9 +1,17 @@
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { p2pSymbols } from '@risevision/core-p2p';
+import {
+  createRandomTransactions,
+  toBufferedTransaction,
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { expect } from 'chai';
+import { Container } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { PostBlockRequest } from '../../../src/p2p';
-import { p2pSymbols } from '@risevision/core-p2p';
 import {
   BlocksModel,
   BlocksModule,
@@ -11,16 +19,8 @@ import {
   BlocksModuleUtils,
   BlocksSymbols,
 } from '../../../src';
-import { ModelSymbols } from '@risevision/core-models';
-import { Container } from 'inversify';
+import { PostBlockRequest } from '../../../src/p2p';
 import { createFakeBlock } from '../utils/createFakeBlocks';
-import {
-  createRandomTransactions,
-  toBufferedTransaction,
-} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
-import { Symbols } from '@risevision/core-interfaces';
-import { WordPressHookSystem } from 'mangiafuoco';
 // tslint:disable no-unused-expression
 describe('apis/requests/PostBlockRequest', () => {
   let sandbox: SinonSandbox;

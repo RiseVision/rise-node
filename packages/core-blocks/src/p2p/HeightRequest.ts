@@ -1,9 +1,9 @@
 import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
-import { inject, injectable } from 'inversify';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
 } from '@risevision/core-p2p';
+import { inject, injectable } from 'inversify';
 
 @injectable()
 export class HeightRequest extends BaseProtobufTransportMethod<

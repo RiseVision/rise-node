@@ -1,10 +1,10 @@
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Container } from 'inversify';
 import { BlockRewardLogic, BlocksSymbols } from '../../../src/';
-import { Symbols } from '@risevision/core-interfaces';
 
 const expect = chai.expect;
 

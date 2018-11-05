@@ -12,6 +12,7 @@ import {
   p2pSymbols,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
+import { TXSymbols } from '@risevision/core-transactions';
 import {
   ConstantsType,
   SignedAndChainedBlockType,
@@ -20,7 +21,6 @@ import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlocksModuleUtils } from '../modules';
-import { TXSymbols } from '@risevision/core-transactions';
 
 // tslint:disable-next-line
 export type GetBlocksRequestDataType = { blocks: SignedAndChainedBlockType[] };
@@ -103,6 +103,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     };
   }
 
+  // tslint:disable-next-line
   private async calcNumBlocksToLoad(lastBlock: IBlocksModel): Promise<number> {
     const maxPayloadSize = this.p2pConstants.maxProtoBufPayloadLength;
     // We take 98% of the theoretical value to allow for some overhead

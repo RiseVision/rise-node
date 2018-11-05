@@ -1,17 +1,4 @@
 'use strict';
-import * as ByteBuffer from 'bytebuffer';
-import * as chai from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import {
-  Accounts2MultisignaturesModel,
-  Accounts2U_MultisignaturesModel,
-  MultiSignaturesModel,
-  MultiSignatureTransaction,
-  MultisigSymbols,
-} from '../../../src';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -22,6 +9,9 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
   DBCreateOp,
   DBRemoveOp,
@@ -29,10 +19,20 @@ import {
   DBUpsertOp,
   TransactionType,
 } from '@risevision/core-types';
-import { ModelSymbols } from '@risevision/core-models';
-import { TXSymbols } from '@risevision/core-transactions';
+import * as ByteBuffer from 'bytebuffer';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 import { LiskWallet } from 'dpos-offline';
-import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import {
+  Accounts2MultisignaturesModel,
+  Accounts2U_MultisignaturesModel,
+  MultiSignaturesModel,
+  MultiSignatureTransaction,
+  MultisigSymbols,
+} from '../../../src';
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 
@@ -40,7 +40,7 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys
 describe('logic/transactions/createmultisig', () => {
   let sandbox: SinonSandbox;
   let socketIO: any;

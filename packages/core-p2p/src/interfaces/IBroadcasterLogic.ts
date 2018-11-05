@@ -1,6 +1,6 @@
-import { BaseTransportMethod, SingleTransportPayload } from '../requests';
 import { PeerType } from '@risevision/core-types';
 import { BroadcastFilters, BroadcastTask } from '../broadcaster';
+import { BaseTransportMethod, SingleTransportPayload } from '../requests';
 
 export interface IBroadcasterLogic {
   /**

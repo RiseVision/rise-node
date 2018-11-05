@@ -1,12 +1,37 @@
+import BigNumber from 'bignumber.js';
 import * as chai from 'chai';
 import { expect } from 'chai';
-import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
-import BigNumber from 'bignumber.js';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Sequelize } from 'sequelize-typescript';
+import * as sinon from 'sinon';
+import { SinonSandbox } from 'sinon';
 import initializer from './common/init';
 
+import { SystemModule } from '@risevision/core';
+import { AccountsSymbols } from '@risevision/core-accounts';
+import {
+  BlockLogic,
+  BlocksModule,
+  BlocksModuleChain,
+  BlocksSymbols,
+} from '@risevision/core-blocks';
+import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
+import { Crypto } from '@risevision/core-crypto';
+import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
+import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
+import {
+  TransactionLogic,
+  TransactionPool,
+  TransactionsModule,
+  TXSymbols,
+} from '@risevision/core-transactions';
+import { poolProcess } from '@risevision/core-transactions/tests/integration/utils';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { LiskWallet } from 'dpos-offline';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import {
   createMultiSignTransactionWithSignatures,
   createRandomAccountWithFunds,
@@ -17,33 +42,9 @@ import {
   enqueueAndProcessTransactions,
   getRandomDelegateWallet,
 } from './common/utils';
-import { LiskWallet } from 'dpos-offline';
-import {
-  TransactionLogic,
-  TransactionPool,
-  TransactionsModule,
-  TXSymbols,
-} from '@risevision/core-transactions';
-import {
-  BlockLogic,
-  BlocksModule,
-  BlocksModuleChain,
-  BlocksSymbols,
-} from '@risevision/core-blocks';
-import { AccountsSymbols } from '@risevision/core-accounts';
-import { SystemModule } from '@risevision/core';
-import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
-import { Crypto } from '@risevision/core-crypto';
-import { ModelSymbols } from '@risevision/core-models';
-import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
-import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
-import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
-import { poolProcess } from '@risevision/core-transactions/tests/integration/utils';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
 
 chai.use(chaiAsPromised);
+// tslint:disable no-unused-expression no-big-function
 describe('attackVectors/edgeCases', () => {
   initializer.setup();
   initializer.autoRestoreEach();
@@ -92,7 +93,7 @@ describe('attackVectors/edgeCases', () => {
             senderAccount,
             createRandomWallet().address
           );
-          tx['senderId'] = randomAccount.address;
+          tx.senderId = randomAccount.address;
 
           const preSenderAccPOJO = (await accModule.getAccount({
             address: senderAccount.address,
@@ -140,7 +141,7 @@ describe('attackVectors/edgeCases', () => {
             senderAccount,
             createRandomWallet().address
           );
-          tx['senderId'] = randomAccount.address;
+          tx.senderId = randomAccount.address;
           const preSenderAccPOJO = (await accModule.getAccount({
             address: senderAccount.address,
           })).toPOJO();

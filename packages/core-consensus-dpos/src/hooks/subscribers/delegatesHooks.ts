@@ -22,6 +22,8 @@ decorate(injectable(), Extendable);
 
 @injectable()
 export class DelegatesHooks extends Extendable {
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegates)
   private delegatesModel: typeof DelegatesModel;
@@ -31,9 +33,6 @@ export class DelegatesHooks extends Extendable {
 
   @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
-
-  @inject(Symbols.generic.hookSystem)
-  public hookSystem: WordPressHookSystem;
 
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;

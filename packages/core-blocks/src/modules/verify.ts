@@ -153,6 +153,56 @@ export class BlocksModuleVerify {
     }
   }
 
+  public async checkBlockTransactions(
+    block: SignedBlockType,
+    accountsMap: { [address: string]: IAccountsModel }
+  ) {
+    const allIds = [];
+    for (const tx of block.transactions) {
+      tx.id = this.transactionLogic.getId(tx);
+      // Apply block id to the tx
+      tx.blockId = block.id;
+      allIds.push(tx.id);
+    }
+
+    // Check for duplicated transactions now that ids are set.
+    allIds.sort();
+    let prevId = allIds[0];
+    for (let i = 1; i < allIds.length; i++) {
+      if (prevId === allIds[i]) {
+        throw new Error(
+          `Duplicated transaction found in block with id ${prevId}`
+        );
+      }
+      prevId = allIds[i];
+    }
+
+    // check that none of the transaction exists in db.
+    const confirmedIDs = await this.transactionsModule.filterConfirmedIds(
+      allIds
+    );
+    if (confirmedIDs.length > 0) {
+      // Error, some of the included transactions are confirmed
+      await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
+      for (const confirmedID of confirmedIDs) {
+        if (this.txPool.unconfirmed.remove(confirmedID)) {
+          await this.transactionsModule.undoUnconfirmed(
+            block.transactions.filter((t) => t.id === confirmedID)[0]
+          );
+        }
+      }
+      throw new Error(
+        `Transactions already confirmed: ${confirmedIDs.join(', ')}`
+      );
+    }
+
+    await Promise.all(
+      block.transactions.map((tx) =>
+        this.transactionsModule.checkTransaction(tx, accountsMap, block.height)
+      )
+    );
+  }
+
   /**
    * Verify that given block is not already within last known block ids.
    */
@@ -294,55 +344,5 @@ export class BlocksModuleVerify {
       ];
     }
     return [];
-  }
-
-  async checkBlockTransactions(
-    block: SignedBlockType,
-    accountsMap: { [address: string]: IAccountsModel }
-  ) {
-    const allIds = [];
-    for (const tx of block.transactions) {
-      tx.id = this.transactionLogic.getId(tx);
-      // Apply block id to the tx
-      tx['blockId'] = block.id;
-      allIds.push(tx.id);
-    }
-
-    // Check for duplicated transactions now that ids are set.
-    allIds.sort();
-    let prevId = allIds[0];
-    for (let i = 1; i < allIds.length; i++) {
-      if (prevId === allIds[i]) {
-        throw new Error(
-          `Duplicated transaction found in block with id ${prevId}`
-        );
-      }
-      prevId = allIds[i];
-    }
-
-    // check that none of the transaction exists in db.
-    const confirmedIDs = await this.transactionsModule.filterConfirmedIds(
-      allIds
-    );
-    if (confirmedIDs.length > 0) {
-      // Error, some of the included transactions are confirmed
-      await this.forkModule.fork(block, ForkType.TX_ALREADY_CONFIRMED);
-      for (const confirmedID of confirmedIDs) {
-        if (this.txPool.unconfirmed.remove(confirmedID)) {
-          await this.transactionsModule.undoUnconfirmed(
-            block.transactions.filter((t) => t.id === confirmedID)[0]
-          );
-        }
-      }
-      throw new Error(
-        `Transactions already confirmed: ${confirmedIDs.join(', ')}`
-      );
-    }
-
-    await Promise.all(
-      block.transactions.map((tx) =>
-        this.transactionsModule.checkTransaction(tx, accountsMap, block.height)
-      )
-    );
   }
 }

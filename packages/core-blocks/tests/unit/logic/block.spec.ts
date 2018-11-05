@@ -1,3 +1,7 @@
+import { IAccountLogic, ICrypto, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { ConstantsType, DBCreateOp, IKeypair } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import 'chai-arrays';
@@ -5,11 +9,7 @@ import * as crypto from 'crypto';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
-import { IAccountLogic, ICrypto, Symbols } from '@risevision/core-interfaces';
 import { BlockLogic, BlocksModel, BlocksSymbols } from '../../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, DBCreateOp, IKeypair } from '@risevision/core-types';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 
 // tslint:disable-next-line no-var-requires
@@ -18,7 +18,7 @@ const assertArrays = require('chai-arrays');
 const { expect } = chai;
 chai.use(assertArrays);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys
 describe('logic/block', () => {
   const passphrase =
     'oath polypody manumit effector half sigmoid abound osmium jewfish weed sunproof ramose';
@@ -346,6 +346,7 @@ describe('logic/block', () => {
         'Failed to validate block schema: String is too short'
       );
     });
+    // tslint:disable-next-line
     it('should reject if id is defined invalid', () => {
       const b = createFakeBlock(container, {});
       b.id = 'a1a';
@@ -542,7 +543,7 @@ describe('logic/block', () => {
     //   b.transactions = null;
     //   expect(() => instance.objectNormalize(b))
     //     .to.throw('Missing required property: transactions');
-    //
+    // tslint:disable-next-line
     //   b = createFakeBlock(container, {transactions: createRandomTransactions({send: 2}).map((tx) => toBufferedTransaction(tx))});
     //   instance.objectNormalize(b);
     //   expect(transactionLogicStub.stubs.objectNormalize.callCount).eq(2);

@@ -1,7 +1,7 @@
 import { PeerState, PeerType } from '@risevision/core-types';
 import { Peer } from '../peer';
 
-export type PeerFilter = {
+export interface PeerFilter {
   limit?: number;
   offset?: number;
   orderBy?: string;
@@ -9,7 +9,7 @@ export type PeerFilter = {
   port?: number;
   broadhash?: string;
   state?: PeerState;
-};
+}
 
 export interface IPeersModule {
   /**

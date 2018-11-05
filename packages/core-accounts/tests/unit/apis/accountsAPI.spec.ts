@@ -1,22 +1,22 @@
+import { APISymbols } from '@risevision/core-apis';
+import { IAccountsModel, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { AppConfig } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Container } from 'inversify';
-import * as sinon from 'sinon';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import 'reflect-metadata';
 import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
 import {
   AccountsAPI,
   AccountsModule,
   AccountsSymbols,
   FilterAPIGetAccount,
 } from '../../../src';
-import { APISymbols } from '@risevision/core-apis';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import 'reflect-metadata';
-import { IAccountsModel, Symbols } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig } from '@risevision/core-types';
 
 chai.use(chaiAsPromised);
 
@@ -128,9 +128,9 @@ describe('apis/accountsAPI', () => {
         account: {
           address: '1R',
           balance: '10',
+          meow: true,
           publicKey: 'hey',
           unconfirmedBalance: '11',
-          meow: true,
         },
       });
 
@@ -237,9 +237,9 @@ describe('apis/accountsAPI', () => {
       await instance.topAccounts({});
       expect(getAccountsStub.calledOnce).is.true;
       expect(getAccountsStub.firstCall.args[0]).deep.eq({
-        sort: { balance: -1 },
         limit: 100,
         offset: 0,
+        sort: { balance: -1 },
       });
     });
     it('should query accountsModule.getAccounts with proper params', async () => {
@@ -247,9 +247,9 @@ describe('apis/accountsAPI', () => {
       const res = await instance.topAccounts({ limit: 1, offset: 10 });
       expect(getAccountsStub.calledOnce).is.true;
       expect(getAccountsStub.firstCall.args[0]).deep.eq({
-        sort: { balance: -1 },
         limit: 1,
         offset: 10,
+        sort: { balance: -1 },
       });
       expect(res).to.be.deep.eq({ accounts: [] });
     });

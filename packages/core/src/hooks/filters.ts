@@ -1,6 +1,6 @@
 import { IAccountsModel } from '@risevision/core-interfaces';
-import { createFilterDecorator as createFilter } from '@risevision/core-utils';
 import { SignedBlockType } from '@risevision/core-types';
+import { createFilterDecorator as createFilter } from '@risevision/core-utils';
 
 /**
  * Filter to modify the number of blocks to verify in snapshot verification mode.

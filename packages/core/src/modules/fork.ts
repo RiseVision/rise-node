@@ -4,10 +4,10 @@ import {
   ILogger,
   Symbols,
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { ForkType, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import SocketIO from 'socket.io';
-import { ModelSymbols } from '@risevision/core-models';
 
 @injectable()
 export class ForkModule implements IForkModule {
@@ -29,10 +29,10 @@ export class ForkModule implements IForkModule {
   public async fork(block: SignedBlockType, cause: ForkType) {
     this.logger.info('Fork', {
       block: {
-        id: block.id,
-        timestamp: block.timestamp,
         height: block.height,
+        id: block.id,
         previousBlock: block.previousBlock,
+        timestamp: block.timestamp,
       },
       cause,
       generator: block.generatorPublicKey.toString('hex'),

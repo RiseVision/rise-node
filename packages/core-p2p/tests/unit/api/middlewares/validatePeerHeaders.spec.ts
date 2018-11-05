@@ -1,12 +1,12 @@
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { ValidatePeerHeaders } from '../../../../src/api/middlewares/';
 import { p2pSymbols, PeersLogic, PeersModule } from '../../../../src';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ValidatePeerHeaders } from '../../../../src/api/middlewares/';
 import { createFakePeer } from '../../utils/fakePeersFactory';
 
 // tslint:disable-next-line no-var-requires

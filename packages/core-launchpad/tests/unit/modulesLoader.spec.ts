@@ -1,5 +1,5 @@
-import { fetchCoreModuleImplementations } from '../../src/modulesLoader';
 import { expect } from 'chai';
+import { fetchCoreModuleImplementations } from '../../src/modulesLoader';
 
 describe('modulesLoader', () => {
   it('should return modules sorted by dependencies', () => {

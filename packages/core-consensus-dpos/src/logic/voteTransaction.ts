@@ -27,6 +27,7 @@ import {
 import { DelegatesModule } from '../modules/';
 import { RoundsLogic } from './rounds';
 
+// tslint:disable-next-line
 const voteSchema = require('../../schema/vote.json');
 
 // tslint:disable-next-line interface-over-type-literal
@@ -61,6 +62,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   private VotesModel: typeof VotesModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.accounts2UDelegates)
+  // tslint:disable-next-line
   private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.accounts2Delegates)
@@ -71,11 +73,6 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   constructor() {
     super(TransactionType.VOTE);
-  }
-
-  @postConstruct()
-  private postConstruct() {
-    voteSchema.properties.votes.maxItems = this.dposConstants.maxVotesPerTransaction;
   }
 
   public calculateFee(
@@ -279,6 +276,36 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     };
   }
 
+  public async attachAssets(txs: Array<IConfirmedTransaction<VoteAsset>>) {
+    const res = await this.VotesModel.findAll({
+      where: { transactionId: txs.map((tx) => tx.id) },
+    });
+
+    const indexes = {};
+    res.forEach((tx, idx) => (indexes[tx.transactionId] = idx));
+
+    txs.forEach((tx) => {
+      if (typeof indexes[tx.id] === 'undefined') {
+        throw new Error(`Couldn't restore asset for Vote tx: ${tx.id}`);
+      }
+      const info = res[indexes[tx.id]];
+      tx.asset = {
+        votes: info.votes.split(','),
+      };
+    });
+  }
+
+  public getMaxBytesSize(): number {
+    let size = super.getMaxBytesSize();
+    size += this.dposConstants.maxVotesPerTransaction * 65; // 64 bytes for pubkey + "sign"
+    return size;
+  }
+
+  @postConstruct()
+  private postConstruct() {
+    voteSchema.properties.votes.maxItems = this.dposConstants.maxVotesPerTransaction;
+  }
+
   private assertValidVote(vote: string) {
     if (typeof vote !== 'string') {
       throw new Error('Invalid vote type');
@@ -329,8 +356,8 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
         model,
         type: 'bulkCreate',
         values: addedPks.map((pk) => ({
-          dependentId: pk,
           accountId: senderAddress,
+          dependentId: pk,
         })),
       });
     }
@@ -344,30 +371,5 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
       });
     }
     return ops;
-  }
-
-  public async attachAssets(txs: Array<IConfirmedTransaction<VoteAsset>>) {
-    const res = await this.VotesModel.findAll({
-      where: { transactionId: txs.map((tx) => tx.id) },
-    });
-
-    const indexes = {};
-    res.forEach((tx, idx) => (indexes[tx.transactionId] = idx));
-
-    txs.forEach((tx) => {
-      if (typeof indexes[tx.id] === 'undefined') {
-        throw new Error(`Couldn't restore asset for Vote tx: ${tx.id}`);
-      }
-      const info = res[indexes[tx.id]];
-      tx.asset = {
-        votes: info.votes.split(','),
-      };
-    });
-  }
-
-  public getMaxBytesSize(): number {
-    let size = super.getMaxBytesSize();
-    size += this.dposConstants.maxVotesPerTransaction * 65; // 64 bytes for pubkey + "sign"
-    return size;
   }
 }

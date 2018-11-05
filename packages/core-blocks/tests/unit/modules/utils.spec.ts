@@ -1,9 +1,3 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
 import {
   IAccountsModel,
   IBlockLogic,
@@ -13,12 +7,18 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { BlocksModule, BlocksModuleUtils, BlocksSymbols } from '../../../src';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { ModelSymbols } from '@risevision/core-models';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import { CommonHeightsToQuery } from '../../../src/hooks';
 import { Op } from 'sequelize';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { BlocksModule, BlocksModuleUtils, BlocksSymbols } from '../../../src';
+import { CommonHeightsToQuery } from '../../../src/hooks';
 
 // tslint:disable no-unused-expression max-line-length
 chai.use(chaiAsPromised);
@@ -88,7 +88,7 @@ describe('modules/utils', () => {
     let findOneStub: SinonStub;
     beforeEach(() => {
       findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({});
-      inst['TransactionsModel'] = 'txModel' as any; // useful for chai deep equality.
+      inst.TransactionsModel = 'txModel' as any; // useful for chai deep equality.
     });
     it('should query db', async () => {
       await inst.loadLastBlock();
@@ -210,7 +210,7 @@ describe('modules/utils', () => {
       dbSequenceStub = sandbox
         .stub(dbSequence, 'addAndPromise')
         .callsFake((b) => b());
-      inst['TransactionsModel'] = 'txModel' as any;
+      inst.TransactionsModel = 'txModel' as any;
     });
     it('should disallow passing both id and lastId', async () => {
       await expect(

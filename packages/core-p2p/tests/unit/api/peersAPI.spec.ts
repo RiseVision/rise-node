@@ -1,13 +1,13 @@
+import { APISymbols } from '@risevision/core-apis';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { PeerState } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { p2pSymbols, PeersModule } from '../../../src/';
-import { PeerState } from '@risevision/core-types';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { APISymbols } from '@risevision/core-apis';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');

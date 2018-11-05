@@ -1,6 +1,15 @@
+import { generateAccount } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { p2pSymbols } from '@risevision/core-p2p';
+import {
+  createRandomTransaction,
+  toBufferedTransaction,
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { IBaseTransaction } from '@risevision/core-types';
+import { expect } from 'chai';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { expect } from 'chai';
 import {
   MultisignaturesModule,
   MultisigSymbols,
@@ -8,15 +17,6 @@ import {
   PostSignaturesRequest,
   PostSignaturesRequestDataType,
 } from '../../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { p2pSymbols } from '@risevision/core-p2p';
-import { Container } from 'inversify';
-import {
-  createRandomTransaction,
-  toBufferedTransaction,
-} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { generateAccount } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
-import { IBaseTransaction } from '@risevision/core-types';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PostSignaturesRequest', () => {

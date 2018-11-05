@@ -1,17 +1,17 @@
-import { Container } from 'inversify';
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { DelegatesHooks } from '../../../../src/hooks/subscribers';
-import { dPoSSymbols } from '../../../../src/helpers';
-import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
-import { DelegatesModel } from '../../../../src/models';
-import { ModelSymbols } from '@risevision/core-models';
 import { OnCheckIntegrity } from '@risevision/core';
 import { AccountsModel, AccountsSymbols } from '@risevision/core-accounts';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
+import { SinonSandbox } from 'sinon';
+import * as sinon from 'sinon';
+import { dPoSSymbols } from '../../../../src/helpers';
+import { DelegatesHooks } from '../../../../src/hooks/subscribers';
+import { DelegatesModel } from '../../../../src/models';
 
 chai.use(chaiAsPromised);
 

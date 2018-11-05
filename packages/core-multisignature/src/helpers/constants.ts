@@ -1,16 +1,16 @@
 export const constants = {
   multisigConstraints: {
-    min: {
-      minimum: 1,
-      maximum: 15,
+    keysgroup: {
+      maxItems: 15,
+      minItems: 1,
     },
     lifetime: {
-      minimum: 1,
       maximum: 72,
+      minimum: 1,
     },
-    keysgroup: {
-      minItems: 1,
-      maxItems: 15,
+    min: {
+      maximum: 15,
+      minimum: 1,
     },
   },
 };

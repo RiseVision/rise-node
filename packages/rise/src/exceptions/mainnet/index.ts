@@ -1,15 +1,16 @@
+import { DelegatesModule, dPoSSymbols } from '@risevision/core-consensus-dpos';
 import {
   ExceptionsManager,
   setupExceptionOnInstance,
 } from '@risevision/core-exceptions';
-import { Container } from 'inversify';
-import { DelegatesModule, dPoSSymbols } from '@risevision/core-consensus-dpos';
-import { excSymbols } from './symbols';
-import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
 import { IExceptionHandler } from '@risevision/core-exceptions';
 import { ITransactionLogic } from '@risevision/core-interfaces';
 import { TXSymbols } from '@risevision/core-transactions';
+import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
+import { Container } from 'inversify';
+import { excSymbols } from './symbols';
 
+// tslint:disable max-line-length no-identical-functions
 export async function registerExceptions(
   excManager: ExceptionsManager,
   container: Container

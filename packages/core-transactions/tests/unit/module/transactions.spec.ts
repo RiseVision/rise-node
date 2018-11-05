@@ -1,15 +1,3 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
-import {
-  TransactionPool,
-  TransactionsModel,
-  TransactionsModule,
-  TXSymbols,
-} from '../../../src';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -17,22 +5,34 @@ import {
   ITransactionLogic,
   Symbols,
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import * as sinon from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import { generateAccount } from '../../../../core-accounts/tests/unit/utils/accountsUtils';
+import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
 import {
   IBaseTransaction,
   SignedAndChainedBlockType,
 } from '../../../../core-types/src';
-import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
+import { StubbedInstance } from '../../../../core-utils/tests/unit/stubs';
+import {
+  TransactionPool,
+  TransactionsModel,
+  TransactionsModule,
+  TXSymbols,
+} from '../../../src';
 import { InnerTXQueue } from '../../../src/poolTXsQueue';
 import {
   createRandomTransaction,
   toBufferedTransaction,
 } from '../utils/txCrafter';
-import { ModelSymbols } from '@risevision/core-models';
-import { StubbedInstance } from '../../../../core-utils/tests/unit/stubs';
-import { generateAccount } from '../../../../core-accounts/tests/unit/utils/accountsUtils';
 
 chai.use(chaiAsPromised);
-
+// tslint:disable
 class StubTxQueue extends StubbedInstance(InnerTXQueue) {}
 
 class StubTxPool extends StubbedInstance(TransactionPool) {
@@ -72,7 +72,7 @@ describe('modules/transactions', () => {
     sandbox = sinon.createSandbox();
     instance = container.get(TXSymbols.module);
     txPool = container.get(TXSymbols.pool);
-    instance['transactionPool'] = txPool;
+    instance.transactionPool = txPool;
     accountsModule = container.get(Symbols.modules.accounts);
     AccountsModel = container.getNamed(
       ModelSymbols.model,

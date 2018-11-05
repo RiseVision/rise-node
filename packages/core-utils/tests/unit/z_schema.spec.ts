@@ -3,7 +3,7 @@ import * as sinon from 'sinon';
 import { SinonSpy } from 'sinon';
 import { castFieldsToNumberUsingSchema, z_schema } from '../../src';
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys no-identical-functions
 describe('helpers/z_schema', () => {
   const validator = new z_schema({});
 

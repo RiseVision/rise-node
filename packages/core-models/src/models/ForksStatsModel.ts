@@ -1,5 +1,5 @@
-import { ForkType } from '@risevision/core-types';
 import { IForkStatsModel } from '@risevision/core-interfaces';
+import { ForkType } from '@risevision/core-types';
 import {
   Column,
   DataType,

@@ -1,8 +1,8 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
 import { ExceptionsManager } from './exceptionManager';
 import { ExceptionModel } from './ExceptionModel';
 import { ExceptionSymbols } from './symbols';
-import { ModelSymbols } from '@risevision/core-models';
 
 export class CoreModule extends BaseCoreModule<any> {
   public configSchema = {};

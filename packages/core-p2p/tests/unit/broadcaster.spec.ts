@@ -1,7 +1,15 @@
+import { IJobsQueue, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ConstantsType } from '@risevision/core-types';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { expect } from 'chai';
 import { Container } from 'inversify';
-import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import {
+  TransactionLogic,
+  TransactionsModule,
+} from '../../../core-transactions/src';
 import {
   BroadcasterLogic,
   BroadcastTaskOptions,
@@ -10,14 +18,6 @@ import {
   PeersLogic,
   PeersModule,
 } from '../../src';
-import { IJobsQueue, Symbols } from '@risevision/core-interfaces';
-import {
-  TransactionLogic,
-  TransactionsModule,
-} from '../../../core-transactions/src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ConstantsType } from '@risevision/core-types';
-import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { StubbedRequest } from './utils/StubbedRequest';
 
 // tslint:disable no-unused-expression

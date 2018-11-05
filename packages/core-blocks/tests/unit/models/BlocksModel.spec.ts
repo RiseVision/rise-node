@@ -1,9 +1,9 @@
-import { expect } from 'chai';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Container } from 'inversify';
-import { ModelSymbols } from '@risevision/core-models';
-import { BlocksSymbols } from '../../../src/';
 import { IBlocksModel } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { expect } from 'chai';
+import { Container } from 'inversify';
+import { BlocksSymbols } from '../../../src/';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 
 describe('BlocksModel', () => {

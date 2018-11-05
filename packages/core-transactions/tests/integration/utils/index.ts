@@ -1,7 +1,7 @@
+import { p2pSymbols, Peer } from '@risevision/core-p2p';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { Container } from 'inversify';
 import { PoolManager, PostTransactionsRequest, TXSymbols } from '../../../src';
-import { p2pSymbols, Peer } from '@risevision/core-p2p';
 import { toBufferedTransaction } from '../../unit/utils/txCrafter';
 
 export const txBroadcast = (

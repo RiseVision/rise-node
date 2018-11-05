@@ -1,3 +1,4 @@
+// tslint:disable object-literal-sort-keys
 export const MultisigSymbols = {
   api: Symbol.for('rise.multisig.API'),
   hooksListener: Symbol.for('rise.multisig.Hookslistener'),

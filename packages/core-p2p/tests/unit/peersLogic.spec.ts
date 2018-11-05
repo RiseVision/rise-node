@@ -1,12 +1,12 @@
+import { SystemModule } from '@risevision/core';
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { P2pConfig, p2pSymbols, Peer, PeersLogic } from '../../src';
-import { SystemModule } from '@risevision/core';
-import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Symbols } from '@risevision/core-interfaces';
 
 const expect = chai.expect;
 

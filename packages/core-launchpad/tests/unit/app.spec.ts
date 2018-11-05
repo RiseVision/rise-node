@@ -1,13 +1,13 @@
-import * as pq from 'proxyquire';
-import * as program from 'commander';
-
-import * as sinon from 'sinon';
-import { AppManager } from '../../src/AppManager';
 import { expect } from 'chai';
-import { wait } from '../../../core-utils/src';
+import * as program from 'commander';
+import * as pq from 'proxyquire';
+import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
+import { wait } from '../../../core-utils/src';
 import { StubbedInstance } from '../../../core-utils/tests/unit/stubs';
+import { AppManager } from '../../src/AppManager';
 
+// tslint:disable no-unused-expression no-hardcoded-credentials no-empty
 const stubExitHook: any = (cb) => cb();
 stubExitHook.unhandledRejectionHandler = () => {};
 

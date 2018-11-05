@@ -1,4 +1,4 @@
-import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
+import { PrivateApisGuard } from '@risevision/core-apis';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -25,9 +25,10 @@ import {
   SchemaValid,
   ValidateSchema,
 } from '@risevision/core-utils';
+import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
 import { inject, injectable, named } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
 import * as _ from 'lodash';
+import { WordPressHookSystem } from 'mangiafuoco';
 import {
   Body,
   Get,
@@ -40,10 +41,9 @@ import {
 } from 'routing-controllers';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
-import { TXSymbols } from '../txSymbols';
 import { TXApiGetTxFilter } from '../hooks/filters';
 import { TransactionPool } from '../TransactionPool';
-import { PrivateApisGuard } from '@risevision/core-apis';
+import { TXSymbols } from '../txSymbols';
 
 // tslint:disable-next-line
 const schema = require('../../schema/api.json');

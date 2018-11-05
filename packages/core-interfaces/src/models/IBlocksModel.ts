@@ -1,7 +1,7 @@
 import { SignedBlockType } from '@risevision/core-types';
+import { IBlocksModule } from '../modules';
 import { IBaseModel } from './IBaseModel';
 import { ITransactionsModel } from './ITransactionsModel';
-import { IBlocksModule } from '../modules';
 
 export class IBlocksModel extends IBaseModel<IBlocksModel> {
   public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {

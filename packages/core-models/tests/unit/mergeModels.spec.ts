@@ -1,3 +1,4 @@
+import { expect } from 'chai';
 import {
   Column,
   DefaultScope,
@@ -5,11 +6,11 @@ import {
   Scopes,
   Table,
 } from 'sequelize-typescript';
-import { expect } from 'chai';
 import { mergeModels } from '../../src/helpers/utils';
 import { BaseModel } from '../../src/models';
 import { createNewTestSequelize } from '../utils/createNewTestSequelize';
 
+// tslint:disable no-unused-expression max-classes-per-file
 describe('helpers/mergeModels', () => {
   it('should merge attributes', () => {
     @Table({ modelName: 'hey_brotha' })
@@ -118,6 +119,7 @@ describe('helpers/mergeModels', () => {
 
     expect(a.methodInA()).eq('a');
     expect(a.methodInBoth()).eq('both-b');
-    expect(a['methodInB']()).eq('b');
+    // @ts-ignore
+    expect(a.methodInB()).eq('b');
   });
 });

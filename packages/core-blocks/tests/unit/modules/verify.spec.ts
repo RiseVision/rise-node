@@ -1,16 +1,3 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
-import {
-  BlocksModule,
-  BlocksModuleChain,
-  BlocksModuleVerify,
-  BlocksSymbols,
-} from '../../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -22,19 +9,32 @@ import {
   ITransactionsModule,
   Symbols,
 } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { createFakeBlock } from '../utils/createFakeBlocks';
-import { ForkType, SignedBlockType } from '@risevision/core-types';
 import {
   createRandomTransactions,
   toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { ForkType, SignedBlockType } from '@risevision/core-types';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import { SinonSandbox } from 'sinon';
+import * as sinon from 'sinon';
+import {
+  BlocksModule,
+  BlocksModuleChain,
+  BlocksModuleVerify,
+  BlocksSymbols,
+} from '../../../src';
 import { VerifyReceipt } from '../../../src/hooks';
+import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys max-line-length no-identical-functions max-classes-per-file
 describe('modules/blocks/verify', () => {
   let inst: BlocksModuleVerify;
   let container: Container;
@@ -111,8 +111,9 @@ describe('modules/blocks/verify', () => {
         .stub(blocksModel, 'findAll')
         .resolves([{ id: '1' }, { id: '2' }, { id: '3' }]);
       await inst.onBlockchainReady();
-      // tslint:disable-next-line: no-string-literalahusdhuahsud
-      expect(inst['lastNBlockIds']).to.be.deep.eq(['1', '2', '3']);
+      // tslint:disable-next-line: no-string-literal
+      // @ts-ignore
+      expect(inst.lastNBlockIds).to.be.deep.eq(['1', '2', '3']);
     });
   });
 

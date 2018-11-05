@@ -1,9 +1,4 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
 import { AppState, JobsQueue } from '@risevision/core-helpers';
 import {
   IAccountsModule,
@@ -14,22 +9,27 @@ import {
   ITransactionsModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { dPoSSymbols, Slots } from '../../../src/helpers';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   BroadcasterLogic,
   IPeersModule,
   p2pSymbols,
 } from '@risevision/core-p2p';
-import { DelegatesModule, ForgeModule } from '../../../src/modules';
-import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { LiskWallet } from 'dpos-offline';
 import { ConstantsType } from '@risevision/core-types';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
+import { Container } from 'inversify';
+import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { dPoSSymbols, Slots } from '../../../src/helpers';
+import { DelegatesModule, ForgeModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function
 describe('modules/forge', () => {
   let sandbox: SinonSandbox;
   let container: Container;
@@ -103,7 +103,7 @@ describe('modules/forge', () => {
         bbbb: true,
         cccc: true,
       };
-      instance['keypairs'] = {
+      instance.keypairs = {
         aaaa: { publicKey: Buffer.from('aaaa', 'hex') },
         bbbb: { publicKey: Buffer.from('bbbb', 'hex') },
         cccc: { publicKey: Buffer.from('cccc', 'hex') },
@@ -152,7 +152,7 @@ describe('modules/forge', () => {
 
       it('should store the keypair in this.keypairs', () => {
         instance.isForgeEnabledOn(pk);
-        expect(instance['keypairs'][hex]).to.be.deep.equal(pk);
+        expect(instance.keypairs[hex]).to.be.deep.equal(pk);
       });
 
       it('should return true if the public key is enabled', () => {
@@ -171,12 +171,12 @@ describe('modules/forge', () => {
 
   describe('enableForge', () => {
     beforeEach(() => {
-      instance['enabledKeys'] = {
+      instance.enabledKeys = {
         aaaa: false,
         bbbb: false,
         cccc: true,
       } as any;
-      instance['keypairs'] = {
+      instance.keypairs = {
         aaaa: {},
         bbbb: {},
         cccc: {},
@@ -194,8 +194,8 @@ describe('modules/forge', () => {
 
     it('should set the passed key to true in enabledKeys', () => {
       instance.enableForge({
-        publicKey: Buffer.from('bbbb', 'hex'),
         privateKey: Buffer.from('0'),
+        publicKey: Buffer.from('bbbb', 'hex'),
       });
       expect(instance.enabledKeys).to.be.deep.equal({
         aaaa: false,
@@ -206,11 +206,12 @@ describe('modules/forge', () => {
 
     it('should store the passed key in keypairs', () => {
       const kp = {
-        publicKey: Buffer.from('dddd', 'hex'),
         privateKey: Buffer.from('0'),
+        publicKey: Buffer.from('dddd', 'hex'),
       };
       instance.enableForge(kp);
-      expect(instance['keypairs'].dddd).to.be.deep.equal(kp);
+      // @ts-ignore
+      expect(instance.keypairs.dddd).to.be.deep.equal(kp);
     });
   });
 
@@ -220,7 +221,8 @@ describe('modules/forge', () => {
         bbbb: true,
         cccc: true,
       };
-      instance['keypairs'] = {
+      // @ts-ignore
+      instance.keypairs = {
         bbbb: {},
         cccc: {},
       } as any;
@@ -326,14 +328,16 @@ describe('modules/forge', () => {
     describe('When not ready to forge', () => {
       it('should call appState.get', async () => {
         appStateGetStub.returns(true);
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(appStateGetStub.calledOnce).to.be.true;
         expect(appStateGetStub.firstCall.args[0]).to.be.equal(
           'loader.isSyncing'
         );
         appStateGetStub.resetHistory();
         appStateGetStub.returns(false);
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(appStateGetStub.calledTwice).to.be.true;
         expect(appStateGetStub.firstCall.args[0]).to.be.equal(
           'loader.isSyncing'
@@ -342,8 +346,8 @@ describe('modules/forge', () => {
         appStateGetStub.resetHistory();
         appStateGetStub.onFirstCall().returns(false);
         appStateGetStub.returns(true);
-
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(appStateGetStub.calledTwice).to.be.true;
         expect(appStateGetStub.firstCall.args[0]).to.be.equal(
           'loader.isSyncing'
@@ -355,7 +359,8 @@ describe('modules/forge', () => {
 
       it('should call return if rounds is ticking', async () => {
         appStateGetStub.onSecondCall().returns(true);
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(loadDelegatesStub.notCalled).to.be.true;
       });
     });
@@ -367,8 +372,10 @@ describe('modules/forge', () => {
       });
 
       it('should call loadDelegates if keypairs is empty', async () => {
-        instance['keypairs'] = {};
-        await instance['forge']();
+        // @ts-ignore
+        instance.keypairs = {};
+        // @ts-ignore
+        await instance.forge();
         expect(loadDelegatesStub.calledOnce).to.be.true;
       });
     });
@@ -386,7 +393,8 @@ describe('modules/forge', () => {
       });
 
       it('should call slots.getSlotNumber twice', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(getSlotNumberStub.calledTwice).to.be.true;
         expect(getSlotNumberStub.firstCall.args.length).to.be.equal(0);
         expect(getSlotNumberStub.secondCall.args[0]).to.be.equal(
@@ -395,7 +403,8 @@ describe('modules/forge', () => {
       });
 
       it('should return if currentSlot is the same of last Block', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(getBlockSlotDataStub.notCalled).to.be.true;
       });
     });
@@ -418,7 +427,8 @@ describe('modules/forge', () => {
       });
 
       it('should call getBlockSlotData', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(getBlockSlotDataStub.calledOnce).to.be.true;
         expect(getBlockSlotDataStub.firstCall.args[0]).to.be.equal(97);
         expect(getBlockSlotDataStub.firstCall.args[1]).to.be.equal(
@@ -428,13 +438,15 @@ describe('modules/forge', () => {
 
       it('should return if getBlockSlotData returns null', async () => {
         getBlockSlotDataStub.resolves(null);
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         // Called twice means that function returns
         expect(getSlotNumberStub.calledTwice).to.be.true;
       });
 
       it('should call slots.getSlotNumber five times', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(getSlotNumberStub.callCount).to.be.equal(5);
         expect(getSlotNumberStub.getCall(0).args.length).to.be.equal(0);
         expect(getSlotNumberStub.getCall(1).args.length).to.be.equal(1);
@@ -448,13 +460,13 @@ describe('modules/forge', () => {
       });
 
       it('should call return if not current slot', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(sequenceStub.addAndPromise.notCalled).to.be.true;
       });
     });
 
     describe('When OK', () => {
-      let getBlockSlotDataStub: SinonStub;
       let getComputedStub: SinonStub;
       let getSlotNumberStub: SinonStub;
       let getPeersStub: SinonStub;
@@ -484,7 +496,8 @@ describe('modules/forge', () => {
       });
 
       it('should call broadcasterLogic.getPeers (in sequence worker)', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(getPeersStub.calledOnce).to.be.true;
         expect(getPeersStub.firstCall.args[0]).to.be.deep.equal({
           limit: constants.maxPeers,
@@ -492,7 +505,8 @@ describe('modules/forge', () => {
       });
 
       it('should call appState.getComputed (in sequence worker)', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(getComputedStub.calledOnce).to.be.true;
         expect(getComputedStub.firstCall.args[0]).to.be.equal(
           'node.poorConsensus'
@@ -501,13 +515,15 @@ describe('modules/forge', () => {
 
       it('should throw if node has poor consensus (in sequence worker)', async () => {
         getComputedStub.returns(true);
-        await expect(instance['forge']()).to.be.rejectedWith(
+        // @ts-ignore
+        await expect(instance.forge()).to.be.rejectedWith(
           'Inadequate broadhash consensus 10 %'
         );
       });
 
       it('should call blocksProcessModule.generateBlock (in sequence worker)', async () => {
-        await instance['forge']();
+        // @ts-ignore
+        await instance.forge();
         expect(genBlockStub.calledOnce).to.be.true;
         expect(genBlockStub.firstCall.args[0]).to.be.deep.equal({});
         expect(genBlockStub.firstCall.args[1]).to.be.equal(11111);
@@ -515,7 +531,8 @@ describe('modules/forge', () => {
 
       it('should call catchToLoggerAndRemapError if addAndPromise promise is rejected', async () => {
         genBlockStub.rejects(new Error('hey'));
-        await expect(instance['forge']()).to.be.rejectedWith(
+        // @ts-ignore
+        await expect(instance.forge()).to.be.rejectedWith(
           'Failed to generate block within delegate slot'
         );
       });
@@ -547,13 +564,16 @@ describe('modules/forge', () => {
 
     it('should return if no forging.secret or empty forging.secret', async () => {
       fakeConfig.forging.secret = false;
-      await instance['loadDelegates']();
+      // @ts-ignore
+      await instance.loadDelegates();
       fakeConfig.forging.secret = [];
-      await instance['loadDelegates']();
+      // @ts-ignore
+      await instance.loadDelegates();
     });
 
     it('should call ed.makeKeypair with the hash', async () => {
-      await instance['loadDelegates']();
+      // @ts-ignore
+      await instance.loadDelegates();
       expect(makeKeyPairStub.callCount).to.be.equal(2);
       expect(
         makeKeyPairStub.firstCall.args[0].toString('hex')
@@ -568,7 +588,8 @@ describe('modules/forge', () => {
     });
 
     it('should call accountsModule.getAccount', async () => {
-      await instance['loadDelegates']();
+      // @ts-ignore
+      await instance.loadDelegates();
       expect(getAccountStub.callCount).to.be.equal(2);
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
         publicKey:
@@ -584,13 +605,17 @@ describe('modules/forge', () => {
       getAccountStub.resolves(false);
       const e =
         'Account with publicKey: pu5b11618c2e44027877d0cd0921ed166b9f176f50587fc91e7534dd2946db77d6 not found';
-      await expect(instance['loadDelegates']()).to.be.rejectedWith(e);
+      // @ts-ignore
+      await expect(instance.loadDelegates()).to.be.rejectedWith(e);
     });
 
     it('should add the keypair to this.keypairs if account is a delegate', async () => {
-      let before = { ...instance['keypairs'] };
-      await instance['loadDelegates']();
-      expect(instance['keypairs']).to.be.deep.equal({
+      // @ts-ignore
+      const before = { ...instance.keypairs };
+      // @ts-ignore
+      await instance.loadDelegates();
+      // @ts-ignore
+      expect(instance.keypairs).to.be.deep.equal({
         ...before,
         pu35224d0d3465d74e855f8d69a136e79c744ea35a675d3393360a327cbf6359a2: {
           privateKey:
@@ -609,7 +634,8 @@ describe('modules/forge', () => {
 
     it('should call this.enableForge', async () => {
       const enableForgeStub = sandbox.stub(instance, 'enableForge');
-      await instance['loadDelegates']();
+      // @ts-ignore
+      await instance.loadDelegates();
       expect(enableForgeStub.calledOnce).to.be.true;
     });
   });
@@ -617,12 +643,12 @@ describe('modules/forge', () => {
   describe('getBlockSlotData', () => {
     const delegates = {
       puk1: {
-        publicKey: Buffer.from(new LiskWallet('puk1', 'R').publicKey, 'hex'),
         privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex'),
+        publicKey: Buffer.from(new LiskWallet('puk1', 'R').publicKey, 'hex'),
       },
       puk2: {
-        publicKey: Buffer.from(new LiskWallet('puk2', 'R').publicKey, 'hex'),
         privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex'),
+        publicKey: Buffer.from(new LiskWallet('puk2', 'R').publicKey, 'hex'),
       },
     };
 
@@ -638,31 +664,36 @@ describe('modules/forge', () => {
     });
 
     it('should call delegatesModule.generateDelegateList', async () => {
-      await instance['getBlockSlotData'](0, 12345);
+      // @ts-ignore
+      await instance.getBlockSlotData(0, 12345);
       expect(generateDelegateListStub.calledOnce).to.be.true;
       expect(generateDelegateListStub.firstCall.args[0]).to.be.equal(12345);
     });
 
     it('should call slots.getLastSlot', async () => {
-      await instance['getBlockSlotData'](0, 12345);
+      // @ts-ignore
+      await instance.getBlockSlotData(0, 12345);
       expect(lastSlotStub.calledOnce).to.be.true;
       expect(lastSlotStub.firstCall.args[0]).to.be.equal(0);
     });
 
     describe('if a valid delegate is found in the list and it is enabled to forge', () => {
       beforeEach(() => {
+        // @ts-ignore
+        instance.keypairs.puk2 = delegates.puk2;
         instance.enabledKeys.puk2 = true;
-        instance['keypairs'].puk2 = delegates.puk2;
       });
 
       it('should call slots.getSlotTime for the slot corresponding to the enabled delegate', async () => {
-        await instance['getBlockSlotData'](0, 12345);
+        // @ts-ignore
+        await instance.getBlockSlotData(0, 12345);
         expect(getSlotTimeStub.callCount).to.be.eq(1);
         expect(getSlotTimeStub.firstCall.args[0]).to.be.equal(1);
       });
 
       it('should return an object with keypair and slotTime', async () => {
-        const retVal = await instance['getBlockSlotData'](0, 12345);
+        // @ts-ignore
+        const retVal = await instance.getBlockSlotData(0, 12345);
         expect(retVal).to.be.deep.eq({
           keypair: delegates.puk2,
           time: 1000,
@@ -672,12 +703,14 @@ describe('modules/forge', () => {
 
     describe('else', () => {
       it('should return null', async () => {
-        const retVal = await instance['getBlockSlotData'](0, 12345);
+        // @ts-ignore
+        const retVal = await instance.getBlockSlotData(0, 12345);
         expect(retVal).to.be.null;
       });
 
       it('should NOT call slots.getSlotTime', async () => {
-        await instance['getBlockSlotData'](0, 12345);
+        // @ts-ignore
+        await instance.getBlockSlotData(0, 12345);
         expect(getSlotTimeStub.notCalled).to.be.true;
       });
     });

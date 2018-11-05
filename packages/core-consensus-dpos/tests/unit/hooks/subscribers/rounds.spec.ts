@@ -1,22 +1,22 @@
-import { Container } from 'inversify';
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { RoundsHooks } from '../../../../src/hooks/subscribers';
-import { dPoSSymbols } from '../../../../src/helpers';
-import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
-import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
-import { Symbols } from '@risevision/core-interfaces';
-import { RoundsModule } from '../../../../src/modules';
 import {
   SnapshotBlocksCountFilter,
   UtilsCommonHeightList,
 } from '@risevision/core';
-import { AppConfig } from '@risevision/core-types';
 import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
+import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { AppConfig } from '@risevision/core-types';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
+import { SinonSandbox } from 'sinon';
+import * as sinon from 'sinon';
+import { dPoSSymbols } from '../../../../src/helpers';
+import { RoundsHooks } from '../../../../src/hooks/subscribers';
+import { RoundsModule } from '../../../../src/modules';
 
 chai.use(chaiAsPromised);
 

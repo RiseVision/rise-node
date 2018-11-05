@@ -1,10 +1,30 @@
+import {
+  IAccountLogic,
+  IAccountsModel,
+  ICrypto,
+  ILogger,
+  Symbols,
+  VerificationType,
+} from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { DBBulkCreateOp } from '@risevision/core-types';
+import { MyBigNumb } from '@risevision/core-utils';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
+import { LiskWallet } from 'dpos-offline';
 import { Container } from 'inversify';
-import * as sinon from 'sinon';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { createFakeBlock } from '../../../../core-blocks/tests/unit/utils/createFakeBlocks';
+import {
+  IBaseTransaction,
+  SignedAndChainedBlockType,
+  SignedBlockType,
+} from '../../../../core-types/src';
 import {
   TransactionLogic,
   TransactionsModel,
@@ -16,39 +36,19 @@ import {
   TxUndoFilter,
   TxUndoUnconfirmedFilter,
 } from '../../../src';
-import {
-  IAccountLogic,
-  IAccountsModel,
-  ICrypto,
-  ILogger,
-  Symbols,
-  VerificationType,
-} from '@risevision/core-interfaces';
 import { SendTransaction } from '../../../src/sendTransaction';
-import {
-  IBaseTransaction,
-  SignedAndChainedBlockType,
-  SignedBlockType,
-} from '../../../../core-types/src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { DummyTxType } from '../utils/dummyTxType';
 import {
   createSendTransaction,
   toBufferedTransaction,
 } from '../utils/txCrafter';
-import { LiskWallet } from 'dpos-offline';
-import { ModelSymbols } from '@risevision/core-models';
-import { MyBigNumb } from '@risevision/core-utils';
-import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import { createFakeBlock } from '../../../../core-blocks/tests/unit/utils/createFakeBlocks';
-import { DBBulkCreateOp } from '@risevision/core-types';
-import { DummyTxType } from '../utils/dummyTxType';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable-next-line no-var-requires
 const expect = chai.expect;
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys max-line-length
 describe('logic/transaction', () => {
   let AccountsModel: typeof IAccountsModel;
   let instance: TransactionLogic;
@@ -809,7 +809,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call apply_filter over operations', async () => {
-      let stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
+      const stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
 
       // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {
@@ -870,7 +870,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call apply_filter over operations', async () => {
-      let stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
+      const stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
 
       // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {
@@ -939,7 +939,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call apply_filter over operations', async () => {
-      let stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
+      const stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
 
       // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {
@@ -997,7 +997,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call apply_filter over operations', async () => {
-      let stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
+      const stub = sandbox.stub().callsFake((ops) => ['meow'].concat(ops));
 
       // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {
@@ -1085,7 +1085,7 @@ describe('logic/transaction', () => {
     });
 
     it('should cluster multiple txs together in single bulkCreate and append sub assets db ops', () => {
-      instance['types'][2] = new DummyTxType(2);
+      instance.types[2] = new DummyTxType(2);
 
       const txs = [
         createSendTransaction(account, '1R', 10, { amount: 1 }),

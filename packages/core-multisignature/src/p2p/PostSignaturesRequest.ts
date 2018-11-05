@@ -3,11 +3,11 @@ import {
   BaseProtobufTransportMethod,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
+import { logOnly } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { MultisigSymbols } from '../helpers';
 import { MultisignaturesModule } from '../multisignatures';
-import { logOnly } from '@risevision/core-utils';
 
 // tslint:disable-next-line
 export type Signature = {

@@ -5,7 +5,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { DBHelper } from '../../src';
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression max-classes-per-file object-literal-sort-keys
 describe('helpers/db', () => {
   class FakeModel extends Model<FakeModel> {
     public test: string;
@@ -23,7 +23,9 @@ describe('helpers/db', () => {
   });
   beforeEach(() => {
     instance = new DBHelper();
-    instance['sequelize'] = {
+    // @ts-ignore
+    // tslint:disable no-empty
+    instance.sequelize = {
       query() {},
       qi: {
         insertQuery() {},
@@ -35,7 +37,9 @@ describe('helpers/db', () => {
         return { QueryGenerator: this.qi };
       },
     } as any;
-    stubQuery = sandbox.stub(instance['sequelize'], 'query').resolves('yeah');
+    // tslint:enable  no-empty
+    // @ts-ignore
+    stubQuery = sandbox.stub(instance.sequelize, 'query').resolves('yeah');
   });
   afterEach(() => {
     sandbox.restore();
@@ -124,7 +128,8 @@ describe('helpers/db', () => {
 
   it('handleUpdate should call sequelize.querygenerator.updateQuery', () => {
     FakeModel.getTableName = () => 'theTable';
-    const stub = sandbox.stub(instance['sequelize']['qi'], 'updateQuery');
+    // @ts-ignore
+    const stub = sandbox.stub(instance.sequelize.qi, 'updateQuery');
     instance.handleUpdate({
       type: 'update',
       values: { test: 'hey' },
@@ -140,7 +145,8 @@ describe('helpers/db', () => {
   it('handleInsert should call sequelize.querygenerator.insertQuery', () => {
     FakeModel.getTableName = () => 'theTable';
     FakeModel.rawAttributes = { test: 'string' } as any;
-    const stub = sandbox.stub(instance['sequelize']['qi'], 'insertQuery');
+    // @ts-ignore
+    const stub = sandbox.stub(instance.sequelize.qi, 'insertQuery');
     instance.handleInsert({
       type: 'create',
       model: FakeModel,
@@ -154,7 +160,8 @@ describe('helpers/db', () => {
   });
   it('handleUpsert should call sequelize.querygenerator.upsertQuery', () => {
     FakeModel.getTableName = () => 'theTable';
-    const stub = sandbox.stub(instance['sequelize']['qi'], 'upsertQuery');
+    // @ts-ignore
+    const stub = sandbox.stub(instance.sequelize.qi, 'upsertQuery');
     instance.handleUpsert({
       type: 'upsert',
       values: { test: 'hey' },
@@ -164,13 +171,13 @@ describe('helpers/db', () => {
     expect(stub.firstCall.args[0]).to.be.eq('theTable');
     expect(stub.firstCall.args[1]).to.be.deep.eq({ test: 'hey' });
     expect(stub.firstCall.args[2]).to.be.deep.eq({ test: 'hey' });
-    // expect(stub.firstCall.args[3]).to.be.deep.eq({where: {test: 'hAy'}}); // TODO: Check when sinon supports obj with symbol keys
     expect(stub.firstCall.args[4]).to.be.deep.eq(FakeModel);
     expect(stub.firstCall.args[5]).to.be.deep.eq({ raw: true });
   });
   it('handleDelete should call sequelize.querygenerator.deleteQuery', () => {
     FakeModel.getTableName = () => 'theTable';
-    const stub = sandbox.stub(instance['sequelize']['qi'], 'deleteQuery');
+    // @ts-ignore
+    const stub = sandbox.stub(instance.sequelize.qi, 'deleteQuery');
     instance.handleDelete({
       type: 'remove',
       model: FakeModel,

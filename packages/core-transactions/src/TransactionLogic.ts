@@ -10,6 +10,7 @@ import {
   VerificationType,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
   ConstantsType,
   DBBulkCreateOp,
@@ -39,7 +40,6 @@ import {
   TxUndoUnconfirmedFilter,
 } from './hooks/filters';
 import { TXSymbols } from './txSymbols';
-import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 
 // tslint:disable-next-line no-var-requires
 const txSchema = require('../schema/transaction.json');

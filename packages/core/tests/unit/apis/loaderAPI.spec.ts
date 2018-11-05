@@ -1,10 +1,4 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import { SinonSandbox } from 'sinon';
-import * as sinon from 'sinon';
-import { LoaderAPI } from '../../../src/apis';
+import { APISymbols } from '@risevision/core-apis';
 import {
   IAppState,
   IBlocksModule,
@@ -12,9 +6,15 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { APISymbols } from '@risevision/core-apis';
-import { LoaderModule } from '../../../src/modules';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { SinonSandbox } from 'sinon';
+import * as sinon from 'sinon';
 import { CoreSymbols } from '../../../src';
+import { LoaderAPI } from '../../../src/apis';
+import { LoaderModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 

@@ -1,20 +1,20 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
-import { GetSignaturesRequest } from '../../../src';
+import { generateAccount } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
+import { ITransactionPool } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { p2pSymbols } from '@risevision/core-p2p';
-import { Container } from 'inversify';
-import { MultisigSymbols } from '../../../src';
-import { ITransactionPool } from '@risevision/core-interfaces';
+import { TXSymbols } from '@risevision/core-transactions';
 import {
   createRandomTransaction,
   toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { generateAccount } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
-import { TXSymbols } from '@risevision/core-transactions';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { SinonSandbox } from 'sinon';
+import * as sinon from 'sinon';
+import { GetSignaturesRequest } from '../../../src';
+import { MultisigSymbols } from '../../../src';
 
 chai.use(chaiAsPromised);
 

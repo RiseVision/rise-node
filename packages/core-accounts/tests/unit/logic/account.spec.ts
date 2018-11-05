@@ -1,22 +1,23 @@
+// tslint:disable object-literal-sort-keys no-big-function
+import { IAccountsModel } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { DBUpdateOp } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { AccountLogic } from '../../../src/';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { AccountsSymbols } from '../../../src';
-import { IAccountsModel } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { DBUpdateOp } from '@risevision/core-types';
 import { Op } from 'sequelize';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { AccountsSymbols } from '../../../src';
+import { AccountLogic } from '../../../src/';
 
 chai.use(chaiAsPromised);
 
 const table = 'mem_accounts';
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression max-line-length no-identical-functions
 
 describe('logic/account', () => {
   let sandbox: SinonSandbox;
@@ -44,7 +45,8 @@ describe('logic/account', () => {
 
   describe('fields', () => {
     it('should correctly fill in editable fields', () => {
-      expect(instance['editable']).deep.eq([
+      // @ts-ignore
+      expect(instance.editable).deep.eq([
         'isDelegate',
         'u_isDelegate',
         'secondSignature',
@@ -201,16 +203,16 @@ describe('logic/account', () => {
       it('should filter out non existing fields', async () => {
         await instance.getAll({
           address: '1',
-          publicKey: new Buffer('1'),
-          isDelegate: 1,
-          username: 'user',
           brother: 'thers a place to rediscovar',
+          isDelegate: 1,
+          publicKey: new Buffer('1'),
+          username: 'user',
         } as any);
 
         expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
           address: '1',
-          publicKey: new Buffer('1'),
           isDelegate: 1,
+          publicKey: new Buffer('1'),
           username: 'user',
         });
       });

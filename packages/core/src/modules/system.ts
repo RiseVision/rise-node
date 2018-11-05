@@ -26,8 +26,14 @@ decorate(injectable(), Extendable);
 
 @injectable()
 export class SystemModule extends Extendable implements ISystemModule {
+  public get broadhash() {
+    return this.headers.broadhash;
+  }
   public headers: PeerHeaders;
   public minVersion: string;
+
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
   private lastMinVer: string;
   private minVersionChar: string;
 
@@ -38,9 +44,6 @@ export class SystemModule extends Extendable implements ISystemModule {
   private constants: ConstantsType;
   @inject(Symbols.generic.nonce)
   private nonce: string;
-
-  @inject(Symbols.generic.hookSystem)
-  public hookSystem: WordPressHookSystem;
 
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
@@ -177,10 +180,6 @@ export class SystemModule extends Extendable implements ISystemModule {
 
     // ignore versionChar, check only version
     return semver.satisfies(version, this.minVersion);
-  }
-
-  public get broadhash() {
-    return this.headers.broadhash;
   }
 
   /**

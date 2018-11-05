@@ -1,5 +1,27 @@
-import * as chai from 'chai';
+import { SystemModule } from '@risevision/core';
+import { AccountsSymbols } from '@risevision/core-accounts';
+import {
+  BlocksModule,
+  BlocksModuleChain,
+  BlocksSymbols,
+} from '@risevision/core-blocks';
+import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
+import {
+  MultisignaturesModule,
+  MultisigSymbols,
+} from '@risevision/core-multisignature';
+import {
+  PoolManager,
+  TransactionLogic,
+  TransactionPool,
+  TransactionsModel,
+  TransactionsModule,
+  TXSymbols,
+} from '@risevision/core-transactions';
 import { expect } from 'chai';
+import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import {
   CreateSignatureTx,
@@ -8,6 +30,10 @@ import {
   SendTx,
 } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import {
+  createSendTransaction,
+  toBufferedTransaction,
+} from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import initializer from '../common/init';
 import {
   createMultiSignAccount,
@@ -19,35 +45,9 @@ import {
   createSendTransaction as createAndConfirmSendTransaction,
   getRandomDelegateWallet,
 } from '../common/utils';
-import {
-  BlocksModule,
-  BlocksModuleChain,
-  BlocksSymbols,
-} from '@risevision/core-blocks';
-import {
-  PoolManager,
-  TransactionLogic,
-  TransactionPool,
-  TransactionsModel,
-  TransactionsModule,
-  TXSymbols,
-} from '@risevision/core-transactions';
-import {
-  createSendTransaction,
-  toBufferedTransaction,
-} from '../../../../core-transactions/tests/unit/utils/txCrafter';
-import { AccountsSymbols } from '@risevision/core-accounts';
-import { SystemModule } from '@risevision/core';
-import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
-import {
-  MultisignaturesModule,
-  MultisigSymbols,
-} from '@risevision/core-multisignature';
-import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
-import { ModelSymbols } from '@risevision/core-models';
 
 chai.use(chaiAsPromised);
-// tslint:disable no-unused-expression no-big-function no-identical-function
+// tslint:disable no-unused-expression no-big-function no-identical-functions object-literal-sort-keys
 
 describe('functionalities.multisignature', () => {
   initializer.setup();

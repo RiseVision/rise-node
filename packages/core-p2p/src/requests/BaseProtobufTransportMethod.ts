@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
-import { BaseTransportMethod } from './BaseTransportMethod';
 import { MyConvOptions } from '../helpers';
+import { BaseTransportMethod } from './BaseTransportMethod';
 
 // tslint:disable-next-line
 export type ProtoIdentifier<T> = {

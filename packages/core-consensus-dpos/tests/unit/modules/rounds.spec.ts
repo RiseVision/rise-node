@@ -1,14 +1,5 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { DelegatesModule, RoundsModule } from '../../../src/modules';
-import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { SignedBlockType } from '@risevision/core-types';
-import { RoundLogic, RoundLogicScope } from '../../../src/logic/round';
+import { BlocksSymbols } from '@risevision/core-blocks';
+import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
 import {
   IAccountsModule,
   IAppState,
@@ -16,15 +7,24 @@ import {
   IDBHelper,
   Symbols,
 } from '@risevision/core-interfaces';
-import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
-import { dPoSSymbols, Slots } from '../../../src/helpers';
-import { RoundsLogic } from '../../../src/logic/rounds';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { BlocksSymbols } from '@risevision/core-blocks';
+import { SignedBlockType } from '@risevision/core-types';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
+import { dPoSSymbols, Slots } from '../../../src/helpers';
+import { RoundLogic, RoundLogicScope } from '../../../src/logic/round';
+import { RoundsLogic } from '../../../src/logic/rounds';
+import { DelegatesModule, RoundsModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys
 describe('modules/rounds', () => {
   let instance: RoundsModule;
   let container: Container;

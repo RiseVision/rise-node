@@ -1,26 +1,26 @@
-import * as chai from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import * as filterObject from 'filter-object';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { APISymbols } from '@risevision/core-apis';
 import {
   IAccountsModule,
   ITransactionLogic,
   ITransactionPool,
   Symbols,
 } from '@risevision/core-interfaces';
-import { Accounts2MultisignaturesModel } from '../../../src/models';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
+import * as filterObject from 'filter-object';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
 import {
   AccountsModelWithMultisig,
   MultiSignaturesApi,
   MultisigSymbols,
 } from '../../../src';
-import { ModelSymbols } from '@risevision/core-models';
-import { APISymbols } from '@risevision/core-apis';
-import { LiskWallet } from 'dpos-offline';
-import { TXSymbols } from '@risevision/core-transactions';
+import { Accounts2MultisignaturesModel } from '../../../src/models';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -28,7 +28,7 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-big-function object-literal-sort-keys no-unused-expression
 describe('apis/multisignatureAPI', () => {
   let sandbox: SinonSandbox;
   let container: Container;
@@ -218,8 +218,8 @@ describe('apis/multisignatureAPI', () => {
         publicKey: new LiskWallet('meow').publicKey,
       });
 
-      const accounts = [];
-      accounts.push(
+      const accts = [];
+      accts.push(
         filterObject(
           {
             ...account1.toPOJO(),
@@ -230,7 +230,7 @@ describe('apis/multisignatureAPI', () => {
           '!publicKey'
         )
       );
-      accounts.push(
+      accts.push(
         filterObject(
           {
             ...account2.toPOJO(),
@@ -241,7 +241,7 @@ describe('apis/multisignatureAPI', () => {
           '!publicKey'
         )
       );
-      expect(result).to.deep.equal({ accounts });
+      expect(result).to.deep.equal({ accounts: accts });
 
       expect(getAccountsStub.callCount).to.equal(3);
       expect(getAccountsStub.args[0][0]).to.deep.equal({

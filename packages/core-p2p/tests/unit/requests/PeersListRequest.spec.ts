@@ -1,13 +1,13 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { PeerType } from '@risevision/core-types';
 import { expect } from 'chai';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { PeersListRequest } from '../../../src/requests';
-import { Container } from 'inversify';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { p2pSymbols } from '../../../src/helpers';
-import { createFakePeers } from '../utils/fakePeersFactory';
-import { PeerType } from '@risevision/core-types';
 import { PeersModule } from '../../../src';
+import { p2pSymbols } from '../../../src/helpers';
+import { PeersListRequest } from '../../../src/requests';
+import { createFakePeers } from '../utils/fakePeersFactory';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PeersListRequest', () => {

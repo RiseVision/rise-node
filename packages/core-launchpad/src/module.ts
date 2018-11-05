@@ -70,7 +70,9 @@ export abstract class BaseCoreModule<ConfigType = any>
     return config;
   }
 
-  public addElementsToContainer() {}
+  public addElementsToContainer() {
+    return void 0;
+  }
 
   public initAppElements(): Promise<void> | void {
     return null;

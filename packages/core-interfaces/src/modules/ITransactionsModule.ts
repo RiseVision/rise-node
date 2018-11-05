@@ -45,8 +45,8 @@ export interface ITransactionsModule {
   ): Promise<void>;
 
   /**
-   * Loops over the received transactions, Checks tx is ok by normalizing it and eventually remove peer if tx is not valid
-   * Also checks tx is not already confirmed.
+   * Loops over the received transactions, Checks tx is ok by normalizing it and
+   * eventually remove peer if tx is not valid. Also checks tx is not already confirmed.
    * calls processUnconfirmedTransaction over it.
    * @returns {Promise<void>}
    */

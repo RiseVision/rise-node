@@ -4,6 +4,20 @@ import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 
+import { APIConfig, APISymbols } from '@risevision/core-apis';
+import {
+  IBlocksModule,
+  ITransactionsModule,
+  Symbols,
+} from '@risevision/core-interfaces';
+import {
+  PoolManager,
+  TransactionPool,
+  TXSymbols,
+} from '@risevision/core-transactions';
+import { TransactionType } from '@risevision/core-types';
+import { wait } from '@risevision/core-utils';
+import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import {
   createRandomAccountWithFunds,
   createRandomWallet,
@@ -21,22 +35,8 @@ import {
   checkRequiredParam,
   checkReturnObjKeyVal,
 } from './utils';
-import {
-  IBlocksModule,
-  ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
-import { wait } from '@risevision/core-utils';
-import { TransactionType } from '@risevision/core-types';
-import {
-  PoolManager,
-  TransactionPool,
-  TXSymbols,
-} from '@risevision/core-transactions';
-import { APIConfig, APISymbols } from '@risevision/core-apis';
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-identical-functions no-big-function object-literal-sort-keys
 describe('api/transactions', () => {
   initializer.setup();
 

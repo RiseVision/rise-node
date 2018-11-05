@@ -1,3 +1,4 @@
+// tslint:disable max-union-size
 export type IModelFilter = (
   | {
       type: 'string';

@@ -1,13 +1,13 @@
+import { APISymbols } from '@risevision/core-apis';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { SignaturesAPI } from '../../src/signatureAPI';
 import { SigSymbols } from '../../src/symbols';
-import { APISymbols } from '@risevision/core-apis';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');

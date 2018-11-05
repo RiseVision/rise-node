@@ -1,6 +1,7 @@
 import { APISymbols } from '@risevision/core-apis';
 import { IInfoModel, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
 import * as _ from 'lodash';
 import * as uuid from 'uuid';
 import { LoaderAPI } from './apis';
@@ -8,7 +9,6 @@ import { constants } from './constants';
 import { TimeToEpoch } from './helpers';
 import { ForkModule, LoaderModule, SystemModule } from './modules';
 import { CoreSymbols } from './symbols';
-import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
 
 export class CoreModule extends BaseCoreModule<void>
   implements ICoreModuleWithModels {
@@ -46,8 +46,8 @@ export class CoreModule extends BaseCoreModule<void>
     );
     // Create or restore nonce!
     const [val] = await infoModel.findOrCreate({
-      where: { key: 'nonce' },
       defaults: { value: uuid.v4() },
+      where: { key: 'nonce' },
     });
 
     this.container.bind(Symbols.generic.nonce).toConstantValue(val.value);

@@ -1,16 +1,16 @@
+import { ITransactionLogic } from '@risevision/core-interfaces';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
+import { expect } from 'chai';
+import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { expect } from 'chai';
 import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
 import {
   PostTransactionsRequest,
   TransactionsModule,
   TXSymbols,
 } from '../../../src';
-import { Container } from 'inversify';
-import { ITransactionLogic } from '@risevision/core-interfaces';
 import { createRandomTransactions } from '../utils/txCrafter';
-import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PostTransactionsRequest', () => {

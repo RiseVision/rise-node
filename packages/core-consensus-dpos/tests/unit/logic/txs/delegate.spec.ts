@@ -1,26 +1,26 @@
 'use strict';
-import * as chai from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
 import {
   IAccountsModule,
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { RegisterDelegateTransaction } from '../../../../src/logic/delegateTransaction';
-import { AccountsModelForDPOS, DelegatesModel } from '../../../../src/models';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { dPoSSymbols } from '../../../../src/helpers';
-import { DBUpdateOp, TransactionType } from '@risevision/core-types';
 import { TXSymbols } from '@risevision/core-transactions';
+import { DBUpdateOp, TransactionType } from '@risevision/core-types';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { dPoSSymbols } from '../../../../src/helpers';
+import { RegisterDelegateTransaction } from '../../../../src/logic/delegateTransaction';
+import { AccountsModelForDPOS, DelegatesModel } from '../../../../src/models';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys no-identical-functions
 describe('logic/transactions/delegate', () => {
   let sandbox: SinonSandbox;
   let accountsModuleStub: IAccountsModule;

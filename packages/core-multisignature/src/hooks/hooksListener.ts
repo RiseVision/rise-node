@@ -1,3 +1,4 @@
+import { FilterAPIGetAccount } from '@risevision/core-accounts';
 import {
   ITransactionLogic,
   Symbols,
@@ -11,10 +12,9 @@ import {
 import { IBaseTransaction } from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import { MultisigSymbols } from '../helpers';
 import { AccountsModelWithMultisig } from '../models/AccountsModelWithMultisig';
 import { MultiSigUtils } from '../utils';
-import { MultisigSymbols } from '../helpers';
-import { FilterAPIGetAccount } from '@risevision/core-accounts';
 
 const ExtendableClass = WPHooksSubscriber(Object);
 decorate(injectable(), ExtendableClass);

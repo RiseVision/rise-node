@@ -1,9 +1,3 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
 import {
   IAccountsModule,
   IInnerTXQueue,
@@ -12,6 +6,17 @@ import {
   ITransactionPool,
   Symbols,
 } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
+import { IBaseTransaction, TransactionType } from '@risevision/core-types';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
 import SocketIO from 'socket.io';
 import {
   AccountsModelWithMultisig,
@@ -19,15 +24,10 @@ import {
   MultiSignatureTransaction,
   MultisigSymbols,
 } from '../../../src';
-import { IBaseTransaction, TransactionType } from '@risevision/core-types';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { LiskWallet } from 'dpos-offline';
-import { TXSymbols } from '@risevision/core-transactions';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys
 describe('modules/multisignatures', () => {
   let instance: MultisignaturesModule;
   let container: Container;

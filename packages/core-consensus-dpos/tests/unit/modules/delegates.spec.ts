@@ -1,28 +1,28 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { AccountsModelForDPOS } from '../../../src/models';
-import { ModelSymbols } from '@risevision/core-models';
 import { generateWallets } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
+import { BlockRewardLogic } from '@risevision/core-blocks';
 import {
   IAccountsModule,
   IBlocksModel,
   IBlocksModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { DelegatesModule } from '../../../src/modules';
-import { RoundsLogic } from '../../../src/logic/rounds';
-import { BlockRewardLogic } from '@risevision/core-blocks';
-import { DposConstantsType, dPoSSymbols, Slots } from '../../../src/helpers';
-import { ConstantsType, SignedBlockType } from '@risevision/core-types';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { ConstantsType, SignedBlockType } from '@risevision/core-types';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { DposConstantsType, dPoSSymbols, Slots } from '../../../src/helpers';
+import { RoundsLogic } from '../../../src/logic/rounds';
+import { AccountsModelForDPOS } from '../../../src/models';
+import { DelegatesModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function
 describe('modules/delegates', () => {
   let sandbox: SinonSandbox;
   let container: Container;
@@ -341,9 +341,9 @@ describe('modules/delegates', () => {
 
     it('should return the expected object', async () => {
       const retVal = await instance.getDelegates({
-        orderBy: 'votes',
         limit: 50,
         offset: 40,
+        orderBy: 'votes',
       });
       expect(retVal.count).to.be.equal(testAccounts.length);
       expect(Array.isArray(retVal.delegates)).to.be.true;
@@ -372,17 +372,17 @@ describe('modules/delegates', () => {
 
     it('should limit correctly when limit passed', async () => {
       const retVal = await instance.getDelegates({
-        orderBy: 'votes',
         limit: 50,
+        orderBy: 'votes',
       });
       expect(retVal.limit).to.be.equal(50);
     });
 
     it('should limit correctly when offset passed', async () => {
       const retVal = await instance.getDelegates({
-        orderBy: 'votes',
         limit: 50,
         offset: 50,
+        orderBy: 'votes',
       });
       expect(retVal.limit).to.be.equal(100);
     });
@@ -439,6 +439,7 @@ describe('modules/delegates', () => {
 
   describe('getKeysSortByVote', () => {
     let getAccountsStub: SinonStub;
+    // tslint:disable-next-line
     beforeEach(() => {
       getAccountsStub = sandbox
         .stub(accountsModule, 'getAccounts')

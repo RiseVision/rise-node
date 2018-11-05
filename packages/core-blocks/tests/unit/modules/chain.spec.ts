@@ -1,28 +1,28 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import { Op } from 'sequelize';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import {
-  BlocksModel,
-  BlocksModule,
-  BlocksModuleChain,
-  BlocksSymbols,
-} from '../../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import {
   IAccountsModule,
   IDBHelper,
   ITransactionLogic,
   Symbols,
 } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { Op } from 'sequelize';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import {
+  BlocksModel,
+  BlocksModule,
+  BlocksModuleChain,
+  BlocksSymbols,
+} from '../../../src';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression object-literal-sort-keys max-line-length
 describe('modules/blocks/chain', () => {
   let instance: BlocksModuleChain;
   let blocksModel: typeof BlocksModel;

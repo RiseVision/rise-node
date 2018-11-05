@@ -1,8 +1,8 @@
 import { ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
-import { IoCSymbol } from '@risevision/core-utils';
 import { p2pSymbols } from '../../helpers';
 
 @injectable()

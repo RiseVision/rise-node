@@ -1,15 +1,15 @@
+import { Symbols } from '@risevision/core-interfaces';
+import { PeersLogic } from '@risevision/core-p2p';
+import { PeerState, PeerType } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
+import { createFakePeers } from '../../../../core-p2p/tests/unit/utils/fakePeersFactory';
 import initializer from '../common/init';
 import {
   checkIntParam,
   checkRequiredParam,
   checkReturnObjKeyVal,
 } from './utils';
-import { Symbols } from '@risevision/core-interfaces';
-import { PeerState, PeerType } from '@risevision/core-types';
-import { createFakePeers } from '../../../../core-p2p/tests/unit/utils/fakePeersFactory';
-import { PeersLogic } from '@risevision/core-p2p';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/peers', () => {

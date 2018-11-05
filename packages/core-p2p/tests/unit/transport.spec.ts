@@ -1,11 +1,24 @@
+import { SystemModule } from '@risevision/core';
+import { AppState, JobsQueue, Sequence } from '@risevision/core-helpers';
+import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { PeerState } from '@risevision/core-types';
+import { wait } from '@risevision/core-utils';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as Throttle from 'promise-parallel-throttle';
 import * as proxyquire from 'proxyquire';
-import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import * as SocketIO from 'socket.io';
+import { createFakeBlock } from '../../../core-blocks/tests/unit/utils/createFakeBlocks';
+import {
+  TransactionLogic,
+  TransactionsModule,
+} from '../../../core-transactions';
 import {
   BroadcasterLogic,
   p2pSymbols,
@@ -14,20 +27,7 @@ import {
   PingRequest,
   TransportModule,
 } from '../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
-import * as SocketIO from 'socket.io';
-import { AppState, JobsQueue, Sequence } from '@risevision/core-helpers';
-import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
-import {
-  TransactionLogic,
-  TransactionsModule,
-} from '../../../core-transactions';
-import { SystemModule } from '@risevision/core';
-import { createFakeBlock } from '../../../core-blocks/tests/unit/utils/createFakeBlocks';
 import { StubbedRequest } from './utils/StubbedRequest';
-import { PeerState } from '@risevision/core-types';
-import { wait } from '@risevision/core-utils';
 
 chai.use(chaiAsPromised);
 
@@ -37,7 +37,7 @@ chai.use(chaiAsPromised);
 const popsicleStub = {} as any;
 const throttleStub = {} as any;
 const proxyTransportModule = proxyquire('../../src/transport', {
-  popsicle: popsicleStub,
+  "popsicle": popsicleStub,
   'promise-parallel-throttle': throttleStub,
 });
 
@@ -190,7 +190,7 @@ describe('src/modules/transport.ts', () => {
         body: undefined,
         headers: {
           ...systemModule.headers,
-          accept: 'application/octet-stream',
+          "accept": 'application/octet-stream',
           'content-type': 'application/octet-stream',
         },
         method: 'put',
@@ -213,10 +213,10 @@ describe('src/modules/transport.ts', () => {
       delete popsicleStub.request.firstCall.args[0].transport;
       expect(popsicleStub.request.firstCall.args[0].headers).to.be.deep.equal({
         ...systemModule.headers,
-        accept: 'application/octet-stream',
+        "accept": 'application/octet-stream',
         'content-type': 'application/octet-stream',
-        other: 'hey',
-        broadhash: 'meow',
+        "other": 'hey',
+        "broadhash": 'meow',
       });
     });
     it('should call popsicle twice (retry) if rejects and return 2nd result', async function() {

@@ -5,9 +5,10 @@
   "workspaces": [
     "packages/*"
   ],
-  "pre-commit": ["prettier"],
+  "pre-commit": ["prettier", "tslint"],
   "scripts": {
     "prettier": "prettier \"packages/*/!(dist)/**/*.ts\" \"packages/*/!(dist)/**/*.json\" --write",
+    "tslint": "tslint -c ./tslint.json 'packages/*/!(dist)/**/*.ts' --fix",
     "start": "node app.js",
     "test-integration": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/integration/**/*.spec.ts'",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts'",

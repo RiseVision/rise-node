@@ -28,7 +28,8 @@ const recalcVotesSQL = fs.readFileSync(
   { encoding: 'utf8' }
 );
 
-export type RoundLogicScope = {
+// tslint:disable-next-line
+export interface RoundLogicScope {
   backwards: boolean;
   round: number;
   // List of address which missed a block in this round
@@ -51,7 +52,7 @@ export type RoundLogicScope = {
   block: SignedBlockType;
   // must be populated with the votes in round when is needed
   votes?: Array<{ delegate: string; amount: number }>;
-};
+}
 
 export interface IRoundLogicNewable {
   new (scope: RoundLogicScope, slots: Slots): RoundLogic;
@@ -173,8 +174,8 @@ export class RoundLogic {
       const delegate = delegates[i];
       const changes = roundChanges.at(i);
       this.scope.library.logger.trace('Delegate changes', {
-        delegate: delegate.toString('hex'),
         changes,
+        delegate: delegate.toString('hex'),
       });
 
       // merge Account in the direction.

@@ -1,10 +1,10 @@
 import { DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { Model } from 'sequelize-typescript';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
-export type BaseDBOp<T extends Model<T>> = {
+export interface BaseDBOp<T extends Model<T>> {
   model: (new () => T) & (typeof Model);
-};
+}
 export type DBUpdateOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'update';
   options: UpdateOptions;

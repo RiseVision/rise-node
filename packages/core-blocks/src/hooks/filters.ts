@@ -1,9 +1,9 @@
-import { createFilterDecorator } from '@risevision/core-utils';
 import {
   DBOp,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
+import { createFilterDecorator } from '@risevision/core-utils';
 
 export const CommonHeightsToQuery = createFilterDecorator<
   (heights: number[], height: number) => Promise<number[]>

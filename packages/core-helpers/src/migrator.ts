@@ -10,12 +10,13 @@ import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
-type MigrationEntry = {
+// tslint:disable-next-line interface-name
+interface MigrationEntry {
   id: BigNumber;
   name: string;
   path: string;
   moduleName: string;
-};
+}
 @injectable()
 export class Migrator {
   @inject(ModelSymbols.model)

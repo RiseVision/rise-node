@@ -1,14 +1,14 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { p2pSymbols } from '@risevision/core-p2p';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { GetBlocksRequest } from '../../../src/p2p';
-import { ModelSymbols } from '@risevision/core-models';
-import { BlocksModel, BlocksModuleUtils, BlocksSymbols } from '../../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { p2pSymbols } from '@risevision/core-p2p';
 import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { BlocksModel, BlocksModuleUtils, BlocksSymbols } from '../../../src';
+import { GetBlocksRequest } from '../../../src/p2p';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);

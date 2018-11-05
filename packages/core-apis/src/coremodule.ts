@@ -112,6 +112,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       controllers = this.container.getAll<any>(APISymbols.api);
     } catch (e) {
       // Amen
+      // tslint:disable-next-line
       console.log(e);
     }
     let middlewares: any[] = [];
@@ -119,6 +120,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       middlewares = this.container.getAll<any>(APISymbols.middleware);
     } catch (e) {
       // Amen
+      // tslint:disable-next-line
       console.log(e);
     }
 

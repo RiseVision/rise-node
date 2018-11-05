@@ -1,33 +1,33 @@
+import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonSpy } from 'sinon';
-import * as chai from 'chai';
+import { ModelSymbols } from '@risevision/core-models';
+import { TxReadyFilter } from '@risevision/core-transactions';
+import {
+  createRandomTransaction,
+  fromBufferedTransaction,
+  toBufferedTransaction,
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { IBaseTransaction } from '@risevision/core-types';
 import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { createTransactionFromOBJ } from 'dpos-offline/dist/es5/utils/txFactory';
+import { Container } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { SinonSandbox, SinonSpy } from 'sinon';
+import * as sinon from 'sinon';
+import uuid = require('uuid');
 import {
   AccountsModelWithMultisig,
   MultisigSymbols,
   MultiSigUtils,
 } from '../../src';
 import { MultisigHooksListener } from '../../src/hooks/hooksListener';
-import { WordPressHookSystem } from 'mangiafuoco';
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
-import { TxReadyFilter } from '@risevision/core-transactions';
-import { IBaseTransaction } from '@risevision/core-types';
-import {
-  createRandomTransaction,
-  fromBufferedTransaction,
-  toBufferedTransaction,
-} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { ModelSymbols } from '@risevision/core-models';
-import { LiskWallet } from 'dpos-offline';
-import * as chaiAsPromised from 'chai-as-promised';
-import { createTransactionFromOBJ } from 'dpos-offline/dist/es5/utils/txFactory';
-import uuid = require('uuid');
 
 chai.use(chaiAsPromised);
-
+// tslint:disable no-big-function object-literal-sort-keys no-unused-expression
 describe('HooksListener', () => {
   let container: Container;
   let instance: MultisigHooksListener;

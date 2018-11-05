@@ -14,7 +14,7 @@ import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
-import { RoundsLogic } from '../logic/rounds';
+import { RoundsLogic } from '../logic/';
 import { AccountsModelForDPOS, DelegatesModel } from '../models';
 
 @injectable()
@@ -276,8 +276,8 @@ export class DelegatesModule {
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
       const del = await this.accountsModule.getAccount({
-        publicKey: new Buffer(curPK, 'hex'),
         isDelegate: 1,
+        publicKey: new Buffer(curPK, 'hex'),
       });
       if (!del) {
         throw new Error('Delegate not found');

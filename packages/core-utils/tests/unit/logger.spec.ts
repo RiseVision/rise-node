@@ -12,7 +12,7 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function no-identical-functions
 describe('helpers/logger', () => {
   let sandbox: SinonSandbox;
   let instance: ILogger;

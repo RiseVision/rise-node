@@ -1,7 +1,14 @@
+import {
+  IAccountsModule,
+  ISystemModule,
+  Symbols,
+} from '@risevision/core-interfaces';
+import { AppConfig } from '@risevision/core-types';
 import { expect } from 'chai';
+import { LiskWallet } from 'dpos-offline';
 import * as supertest from 'supertest';
+import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import initializer from '../common/init';
-import { checkAddress, checkIntParam, checkPubKey } from './utils';
 import {
   confirmTransactions,
   createRandomAccountsWithFunds,
@@ -11,16 +18,9 @@ import {
   easyCreateMultiSignAccount,
   findDelegateByUsername,
 } from '../common/utils';
-import { LiskWallet } from 'dpos-offline';
-import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
-import { AppConfig } from '@risevision/core-types';
-import {
-  IAccountsModule,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
+import { checkAddress, checkIntParam, checkPubKey } from './utils';
 
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function object-literal-sort-keys no-identical-functions
 describe('api/accounts', () => {
   initializer.setup();
   initializer.autoRestoreEach();
@@ -311,7 +311,7 @@ describe('api/accounts', () => {
       );
       ac.topAccounts = true;
       const { body } = await supertest(initializer.apiExpress)
-        .get(`/api/accounts/top`)
+        .get('/api/accounts/top')
         .expect(200);
       expect(body.accounts.length).eq(100);
       // just check first as the sequence check is done in the next test

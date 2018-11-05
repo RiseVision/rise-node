@@ -1,15 +1,15 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { PeerState, PeerType } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
 import * as ip from 'ip';
 import * as proxyquire from 'proxyquire';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { p2pSymbols, TransportModule, TransportWrapper } from '../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Container } from 'inversify';
-import { PeerState, PeerType } from '@risevision/core-types';
-import { StubbedRequest } from './utils/StubbedRequest';
 import { createFakePeer } from './utils/fakePeersFactory';
+import { StubbedRequest } from './utils/StubbedRequest';
 
 const expect = chai.expect;
 const ProxyPeerLogic = proxyquire('../../src/peer.ts', { ip });

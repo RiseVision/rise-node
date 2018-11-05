@@ -1,13 +1,3 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import {
-  createRandomTransactions,
-  toBufferedTransaction,
-} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -18,18 +8,28 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { TransactionPool } from '@risevision/core-transactions';
+import {
+  createRandomTransactions,
+  toBufferedTransaction,
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
 import {
   BlocksModuleProcess,
   BlocksModuleVerify,
   BlocksSymbols,
 } from '../../../src';
-import { ModelSymbols } from '@risevision/core-models';
-import { LiskWallet } from 'dpos-offline';
-import { TransactionPool } from '@risevision/core-transactions';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression object-literal-sort-keys max-line-length no-big-function
 describe('modules/blocks/process', () => {
   let txModule: ITransactionsModule;
   let txPool: TransactionPool;
@@ -395,7 +395,7 @@ describe('modules/blocks/process', () => {
   //
   describe('generateBlock', () => {
     let txs;
-    let stubs = {
+    const stubs = {
       amGettAccount: null as SinonStub,
       txModuleFilterConfirmedIds: null as SinonStub,
     };
@@ -435,10 +435,12 @@ describe('modules/blocks/process', () => {
     });
     it('should filter transactions by verifying them', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
-      const txs = createRandomTransactions(3).map((t) =>
+      const ttxs = createRandomTransactions(3).map((t) =>
         toBufferedTransaction(t)
       );
-      txs.forEach((t) => txPool.unconfirmed.add(t, { receivedAt: new Date() }));
+      ttxs.forEach((t) =>
+        txPool.unconfirmed.add(t, { receivedAt: new Date() })
+      );
 
       const stub = sandbox.stub(txLogic, 'verify').resolves();
       stub.onCall(2).rejects();
@@ -453,16 +455,18 @@ describe('modules/blocks/process', () => {
 
       expect(createSpy.firstCall.args[0].transactions.length).eq(2);
       expect(createSpy.firstCall.args[0].transactions).deep.eq([
-        txs[0],
-        txs[1],
+        ttxs[0],
+        ttxs[1],
       ]);
     });
     it('should filter transactions that are not ready', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
-      const txs = createRandomTransactions(3).map((t) =>
+      const ttxs = createRandomTransactions(3).map((t) =>
         toBufferedTransaction(t)
       );
-      txs.forEach((t) => txPool.unconfirmed.add(t, { receivedAt: new Date() }));
+      ttxs.forEach((t) =>
+        txPool.unconfirmed.add(t, { receivedAt: new Date() })
+      );
 
       const stub = sandbox.stub(txLogic, 'ready').resolves(true);
       sandbox.stub(txLogic, 'verify').resolves(true);
@@ -478,8 +482,8 @@ describe('modules/blocks/process', () => {
 
       expect(createSpy.firstCall.args[0].transactions.length).eq(2);
       expect(createSpy.firstCall.args[0].transactions).deep.eq([
-        txs[0],
-        txs[1],
+        ttxs[0],
+        ttxs[1],
       ]);
     });
   });

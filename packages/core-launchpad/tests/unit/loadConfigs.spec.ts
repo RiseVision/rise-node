@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { configCreator } from '../../src/loadConfigs';
 import { CoreModuleStub } from './stubs/CoreModuleStub';
 
+// tslint:disable no-unused-expression
 describe('configCreator', () => {
   const oldPWD = process.cwd();
   const nowPwd = `${__dirname}/assets/app/etc/mainnet`;
@@ -9,7 +10,8 @@ describe('configCreator', () => {
   after(() => process.chdir(oldPWD));
   it('should load configData from process.pwd if not provided', () => {
     const config = configCreator(null, []);
-    expect(config['testasset']).true;
+    // @ts-ignore
+    expect(config.testasset).true;
   });
   it('should load configData from provided path', () => {
     expect(() => configCreator(`${nowPwd}/hey.json`, [])).to.throw(
@@ -20,8 +22,8 @@ describe('configCreator', () => {
     const coreModuleStub = new CoreModuleStub();
     const coreModuleStub2 = new CoreModuleStub();
     coreModuleStub.stubs.afterConfigValidation.returns({
-      disappear: 'hey',
       common: true,
+      disappear: 'hey',
       first: '1',
     });
     coreModuleStub2.stubs.afterConfigValidation.returns({

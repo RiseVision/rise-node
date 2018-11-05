@@ -1,13 +1,13 @@
-import { inject, injectable } from 'inversify';
-import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { TXSymbols } from '../txSymbols';
+import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
+import { inject, injectable } from 'inversify';
 import { TransactionPool } from '../TransactionPool';
+import { TXSymbols } from '../txSymbols';
 
 // tslint:disable-next-line
 export type GetTransactionsRequestDataType = {

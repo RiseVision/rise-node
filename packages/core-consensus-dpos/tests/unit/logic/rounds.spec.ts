@@ -1,10 +1,10 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { RoundsLogic } from '../../../src/logic/rounds';
 import { dPoSSymbols, Slots } from '../../../src/helpers';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { RoundsLogic } from '../../../src/logic/rounds';
 
 const expect = chai.expect;
 

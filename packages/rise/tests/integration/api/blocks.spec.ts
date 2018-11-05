@@ -1,12 +1,9 @@
+import { BlocksModule } from '@risevision/core-blocks';
+import { Symbols } from '@risevision/core-interfaces';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
+import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import initializer from '../common/init';
-import {
-  checkIntParam,
-  checkPubKey,
-  checkRequiredParam,
-  checkReturnObjKeyVal,
-} from './utils';
 import {
   createRandomAccountsWithFunds,
   createRandomAccountWithFunds,
@@ -17,9 +14,12 @@ import {
   createVoteTransaction,
   getRandomDelegateWallet,
 } from '../common/utils';
-import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
-import { BlocksModule } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
+import {
+  checkIntParam,
+  checkPubKey,
+  checkRequiredParam,
+  checkReturnObjKeyVal,
+} from './utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/blocks', () => {

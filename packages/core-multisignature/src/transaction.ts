@@ -28,9 +28,9 @@ import { MultisigConstantsType, MultisigSymbols } from './helpers';
 import {
   Accounts2MultisignaturesModel,
   Accounts2U_MultisignaturesModel,
+  AccountsModelWithMultisig,
   MultiSignaturesModel,
 } from './models/';
-import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
 import { MultiSigUtils } from './utils';
 
 // tslint:disable-next-line interface-over-type-literal
@@ -153,6 +153,7 @@ export class MultiSignatureTransaction extends BaseTx<
     };
   }
 
+  // tslint:disable-next-line cognitive-complexity
   public async verify(
     tx: IBaseTransaction<MultisigAsset>,
     sender: AccountsModelWithMultisig
@@ -261,8 +262,8 @@ export class MultiSignatureTransaction extends BaseTx<
       // clean up memaccounts2u_multisignatures
       {
         model: this.Accounts2UMultisignaturesModel,
-        type: 'remove',
         options: { where: { accountId: sender.address } },
+        type: 'remove',
       },
       // copy confirmed values from 2_multisignatures to 2u_multisignatures.
       ...(sender.multisignatures || []).map(
@@ -399,8 +400,8 @@ export class MultiSignatureTransaction extends BaseTx<
       sender.multisignatures = [];
       sender.applyDiffArray('multisignatures', asset.multisignature.keysgroup);
       sender.applyValues({
-        multimin: asset.multisignature.min,
         multilifetime: asset.multisignature.lifetime,
+        multimin: asset.multisignature.min,
       });
     } else {
       sender.u_multisignatures = [];
@@ -409,8 +410,8 @@ export class MultiSignatureTransaction extends BaseTx<
         asset.multisignature.keysgroup
       );
       sender.applyValues({
-        u_multimin: asset.multisignature.min,
         u_multilifetime: asset.multisignature.lifetime,
+        u_multimin: asset.multisignature.min,
       });
     }
 
@@ -474,6 +475,7 @@ export class MultiSignatureTransaction extends BaseTx<
     return ops;
   }
 
+  // tslint:disable-next-line cognitive-complexity
   private assertValidFormat(tx: IBaseTransaction<MultisigAsset>) {
     if (!tx.asset || !tx.asset.multisignature) {
       throw new Error('Invalid transaction asset');
@@ -567,25 +569,25 @@ export class MultiSignatureTransaction extends BaseTx<
   private postConstruct() {
     this.multisigSchema = {
       id: 'Multisignature',
-      type: 'object',
       properties: {
-        min: {
-          type: 'integer',
-          minimum: this.constants.multisigConstraints.min.minimum,
-          maximum: this.constants.multisigConstraints.min.maximum,
-        },
         keysgroup: {
-          type: 'array',
-          minItems: this.constants.multisigConstraints.keysgroup.minItems,
           maxItems: this.constants.multisigConstraints.keysgroup.maxItems,
+          minItems: this.constants.multisigConstraints.keysgroup.minItems,
+          type: 'array',
         },
         lifetime: {
-          type: 'integer',
-          minimum: this.constants.multisigConstraints.lifetime.minimum,
           maximum: this.constants.multisigConstraints.lifetime.maximum,
+          minimum: this.constants.multisigConstraints.lifetime.minimum,
+          type: 'integer',
+        },
+        min: {
+          maximum: this.constants.multisigConstraints.min.maximum,
+          minimum: this.constants.multisigConstraints.min.minimum,
+          type: 'integer',
         },
       },
       required: ['min', 'keysgroup', 'lifetime'],
+      type: 'object',
     };
   }
 }

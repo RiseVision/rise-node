@@ -13,7 +13,6 @@ export class JobsQueue implements IJobsQueue {
     // require('fs').writeSync(1, `registering ${name}\n`);
     const nextJob = async () => {
       await job();
-      // require('fs').writeSync(1, `nextJob ${name} - time: ${time} - ${typeof(this.jobs[name]) !== 'undefined'} - ${JSON.stringify(Object.keys(this.jobs).map((k) => `${k}:${typeof(this.jobs[k])}`))}\n`);
       // If it was not cancelled. Lets reschedule it.
       if (typeof this.jobs[name] !== 'undefined') {
         this.jobs[name] = setTimeout(nextJob, time);

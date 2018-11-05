@@ -25,8 +25,9 @@ import {
   wait,
   WrapInBalanceSequence,
 } from '@risevision/core-utils';
-import * as deepFreeze from 'js-flock/deepFreeze';
+import bs = require('binary-search');
 import { inject, injectable, named } from 'inversify';
+import * as deepFreeze from 'js-flock/deepFreeze';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Op, Transaction } from 'sequelize';
@@ -39,7 +40,6 @@ import {
   RollbackBlockDBOps,
 } from '../hooks';
 import { BlocksModuleUtils } from './utils';
-import bs = require('binary-search');
 
 @injectable()
 export class BlocksModuleChain {
@@ -105,8 +105,8 @@ export class BlocksModuleChain {
   public async deleteLastBlock(): Promise<IBlocksModel> {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', {
-      id: lastBlock.id,
       height: lastBlock.height,
+      id: lastBlock.id,
     });
 
     if (lastBlock.height === 1) {
@@ -231,6 +231,7 @@ export class BlocksModuleChain {
   }
 
   @WrapInBalanceSequence
+  // tslint:disable-next-line
   public async applyBlock(
     block: SignedAndChainedBlockType,
     broadcast: boolean,

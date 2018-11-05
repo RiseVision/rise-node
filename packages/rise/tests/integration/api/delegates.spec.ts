@@ -1,4 +1,23 @@
+import { APIConfig } from '@risevision/core-apis';
+import { BlocksModel } from '@risevision/core-blocks';
+import { DposAppConfig, Slots } from '@risevision/core-consensus-dpos';
+import { dPoSSymbols, ForgeModule } from '@risevision/core-consensus-dpos';
+import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
+import { TransactionsModel } from '@risevision/core-transactions';
+import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+import * as chai from 'chai';
+import * as chaiSorted from 'chai-sorted';
+import * as supertest from 'supertest';
 import initializer from '../common/init';
+import {
+  confirmTransactions,
+  createRandomAccountWithFunds,
+  createSendTransaction,
+  createVoteTransaction,
+  createWallet,
+  getRandomDelegateWallet,
+} from '../common/utils';
 import {
   checkEnumParam,
   checkIntParam,
@@ -8,32 +27,13 @@ import {
   checkRequiredParam,
   checkReturnObjKeyVal,
 } from './utils';
-import * as supertest from 'supertest';
-import * as chai from 'chai';
-import * as chaiSorted from 'chai-sorted';
-import {
-  confirmTransactions,
-  createRandomAccountWithFunds,
-  createSendTransaction,
-  createVoteTransaction,
-  createWallet,
-  getRandomDelegateWallet,
-} from '../common/utils';
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
-import { TransactionsModel } from '@risevision/core-transactions';
-import { BlocksModel } from '@risevision/core-blocks';
-import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
-import { dPoSSymbols, ForgeModule } from '@risevision/core-consensus-dpos';
-import { DposAppConfig, Slots } from '@risevision/core-consensus-dpos';
-import { ModelSymbols } from '@risevision/core-models';
-import { APIConfig } from '@risevision/core-apis';
 
 chai.use(chaiSorted);
 
 const { expect } = chai;
 
+// tslint:disable no-unused-expression max-line-length no-identical-functions object-literal-sort-keys no-var-requires max-line-length
 const delegates = require('../../../../core-launchpad/tests/unit/assets/genesisDelegates.json');
-// tslint:disable no-unused-expression max-line-length
 describe('api/delegates', () => {
   initializer.setup();
   initializer.autoRestoreEach();

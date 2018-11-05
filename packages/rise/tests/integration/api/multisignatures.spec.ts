@@ -1,7 +1,18 @@
+import { BlocksModule } from '@risevision/core-blocks';
+import { Crypto } from '@risevision/core-crypto';
+import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import {
+  MultisigSymbols,
+  PostSignaturesRequest,
+} from '@risevision/core-multisignature';
+import { p2pSymbols } from '@risevision/core-p2p';
+import { PoolManager, TXSymbols } from '@risevision/core-transactions';
+import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { expect } from 'chai';
+import { LiskWallet } from 'dpos-offline';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
-import { checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
 import {
   createMultiSignTransaction,
   createRandomAccountWithFunds,
@@ -9,18 +20,7 @@ import {
   enqueueAndProcessTransactions,
   getSelfTransportPeer,
 } from '../common/utils';
-import { LiskWallet } from 'dpos-offline';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
-import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { Crypto } from '@risevision/core-crypto';
-import {
-  MultisigSymbols,
-  PostSignaturesRequest,
-} from '@risevision/core-multisignature';
-import { p2pSymbols } from '@risevision/core-p2p';
-import { BlocksModule } from '@risevision/core-blocks';
-import { PoolManager, TXSymbols } from '@risevision/core-transactions';
+import { checkPubKey, checkRequiredParam, checkReturnObjKeyVal } from './utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/multisignatures', () => {

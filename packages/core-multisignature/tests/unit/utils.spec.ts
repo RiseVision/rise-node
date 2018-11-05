@@ -1,14 +1,14 @@
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Container } from 'inversify';
-import { expect } from 'chai';
-import * as uuid from 'uuid';
-import { MultisigSymbols, MultiSigUtils } from '../../src';
-import { IBaseTransaction } from '@risevision/core-types';
 import {
   createRandomTransaction,
   toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { IBaseTransaction } from '@risevision/core-types';
+import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline';
+import { Container } from 'inversify';
+import * as uuid from 'uuid';
+import { MultisigSymbols, MultiSigUtils } from '../../src';
 
 // TODO: fill in these tests.
 describe('multisigUtils', () => {
@@ -43,7 +43,7 @@ describe('multisigUtils', () => {
     let tx: IBaseTransaction<any>;
     let accounts: LiskWallet[];
     beforeEach(() => {
-      let t = createRandomTransaction();
+      const t = createRandomTransaction();
       tx = toBufferedTransaction(t);
       accounts = new Array(100)
         .fill(null)

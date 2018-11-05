@@ -40,6 +40,16 @@ import {
 
 @injectable()
 export class LoaderModule implements ILoaderModule {
+  /**
+   * Checks if we're syncing or not.
+   */
+  public get isSyncing(): boolean {
+    return this.appState.get('loader.isSyncing') || false;
+  }
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.helpers.sequence)
+  @named(Symbols.names.helpers.defaultSequence)
+  public defaultSequence: ISequence;
   private network: { height: number; peers: Peer[] };
 
   // Generic
@@ -60,10 +70,6 @@ export class LoaderModule implements ILoaderModule {
   private logger: ILogger;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
-  // tslint:disable-next-line member-ordering
-  @inject(Symbols.helpers.sequence)
-  @named(Symbols.names.helpers.defaultSequence)
-  public defaultSequence: ISequence;
 
   // Logic
   @inject(Symbols.logic.account)
@@ -122,13 +128,6 @@ export class LoaderModule implements ILoaderModule {
       throw new Error('No acceptable peers for the operation');
     }
     return peers[Math.floor(Math.random() * peers.length)];
-  }
-
-  /**
-   * Checks if we're syncing or not.
-   */
-  public get isSyncing(): boolean {
-    return this.appState.get('loader.isSyncing') || false;
   }
 
   public cleanup() {
@@ -196,40 +195,6 @@ export class LoaderModule implements ILoaderModule {
     this.syncTimer();
   }
 
-  private async verifySnapshot(blocksCount: number, limit: number) {
-    this.logger.info('Snapshot mode enabled');
-
-    blocksCount = await this.hookSystem.apply_filters(
-      'core/loader/snapshot/blocksCount',
-      blocksCount
-    );
-
-    this.config.loading.snapshot = blocksCount;
-    this.appState.set('rounds.snapshot', blocksCount);
-
-    this.logger.info(
-      `Snapshotting to end of round: ${this.config.loading.snapshot}`,
-      blocksCount
-    );
-
-    await this.load(blocksCount, limit, 'Blocks Verification enabled', false);
-
-    if (this.blocksModule.lastBlock.height !== blocksCount) {
-      // tslint:disable-next-line max-line-length
-      this.logger.error(
-        `LastBlock height does not expected block. Expected: ${blocksCount} - Received: ${
-          this.blocksModule.lastBlock.height
-        }`
-      );
-      process.exit(1);
-    }
-
-    // Clip blockchain
-    await this.blocksChainModule.deleteAfterBlock(
-      this.blocksModule.lastBlock.height
-    );
-  }
-
   public async load(
     count: number,
     limitPerIteration: number,
@@ -262,6 +227,40 @@ export class LoaderModule implements ILoaderModule {
       await this.hookSystem.do_action(OnBlockchainReady.name);
       this.syncTimer();
     }
+  }
+
+  private async verifySnapshot(blocksCount: number, limit: number) {
+    this.logger.info('Snapshot mode enabled');
+
+    blocksCount = await this.hookSystem.apply_filters(
+      'core/loader/snapshot/blocksCount',
+      blocksCount
+    );
+
+    this.config.loading.snapshot = blocksCount;
+    this.appState.set('rounds.snapshot', blocksCount);
+
+    this.logger.info(
+      `Snapshotting to end of round: ${this.config.loading.snapshot}`,
+      blocksCount
+    );
+
+    await this.load(blocksCount, limit, 'Blocks Verification enabled', false);
+
+    if (this.blocksModule.lastBlock.height !== blocksCount) {
+      // tslint:disable-next-line max-line-length
+      this.logger.error(
+        `LastBlock height does not expected block. Expected: ${blocksCount} - Received: ${
+          this.blocksModule.lastBlock.height
+        }`
+      );
+      process.exit(1);
+    }
+
+    // Clip blockchain
+    await this.blocksChainModule.deleteAfterBlock(
+      this.blocksModule.lastBlock.height
+    );
   }
 
   private async doSync() {

@@ -25,6 +25,7 @@ import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
 
+// tslint:disable-next-line
 const blocksSchema = require('../../schema/blocks.json');
 
 @JsonController('/api/blocks')
@@ -34,14 +35,14 @@ export class BlocksAPI {
   // Generic
   @inject(LaunchpadSymbols.zschema)
   public schema: z_schema;
-
-  // Helpers
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
   // tslint:disable-next-line
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.dbSequence)
   public dbSequence: Sequence;
+
+  // Helpers
+  @inject(Symbols.generic.constants)
+  private constants: ConstantsType;
 
   // Logic
   @inject(Symbols.logic.blockReward)
@@ -63,12 +64,6 @@ export class BlocksAPI {
   @inject(ModelSymbols.model)
   @named(ModelSymbols.names.transactions)
   private TransactionsModel: typeof ITransactionsModel;
-
-  @postConstruct()
-  private postConstruct() {
-    blocksSchema.getBlocks.properties.totalAmount.maximum = this.constants.maxAmount;
-    blocksSchema.getBlocks.properties.totalFee.maximum = this.constants.maxAmount;
-  }
 
   @Get('/')
   @ValidateSchema()
@@ -104,8 +99,8 @@ export class BlocksAPI {
     await Promise.all(
       blocks.map((b) =>
         this.TransactionsModel.findAll({
-          where: { blockId: b.id },
           order: [['rowId', 'asc']],
+          where: { blockId: b.id },
         })
           .then((txs) => {
             b.transactions = txs;
@@ -165,10 +160,12 @@ export class BlocksAPI {
   }) {
     const fees = this.systemModule.getFees(params.height);
     return {
+      // tslint:disable object-literal-sort-keys
       fee: fees.fees.send,
       fromHeight: fees.fromHeight,
       toHeight: fees.toHeight,
       height: fees.height,
+      // tslint:enable object-literal-sort-keys
     };
   }
 
@@ -227,5 +224,11 @@ export class BlocksAPI {
       reward: this.blockRewardLogic.calcReward(lastBlock.height),
       supply: this.blockRewardLogic.calcSupply(lastBlock.height),
     };
+  }
+
+  @postConstruct()
+  private postConstruct() {
+    blocksSchema.getBlocks.properties.totalAmount.maximum = this.constants.maxAmount;
+    blocksSchema.getBlocks.properties.totalFee.maximum = this.constants.maxAmount;
   }
 }

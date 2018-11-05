@@ -1,10 +1,10 @@
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import BigNumber from 'bignumber.js';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
-import initializer from '../common/init';
 import * as url from 'url';
-import { ProtoBufHelper, p2pSymbols } from '@risevision/core-p2p';
-
+import initializer from '../common/init';
+// tslint:disable no-unused-expression max-line-length no-identical-function
 export const checkAddress = (paramName: string, baseUrl: string) => {
   it(`should throw if ${paramName} is not a valid address`, async () => {
     return supertest(initializer.apiExpress)
@@ -24,7 +24,6 @@ export const checkPubKey = (paramName: string, baseUrl: string) => {
       .get(`${baseUrl}?${paramName}=1`)
       .expect(200)
       .then((response) => {
-        console.log(response.body);
         expect(response.body.success).is.false;
         expect(response.body.error).to.contain(
           `${paramName} - Object didn't pass validation for format publicKey`

@@ -1,20 +1,9 @@
-import * as chai from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { IAccountLogic } from '@risevision/core-interfaces';
-import { RoundsLogic } from '../../../../src/logic/rounds';
-import { DelegatesModule } from '../../../../src/modules';
 import { SystemModule } from '@risevision/core';
-import { VoteTransaction } from '../../../../src/logic/voteTransaction';
-import {
-  Accounts2DelegatesModel,
-  Accounts2U_DelegatesModel,
-  AccountsModelForDPOS,
-  VotesModel,
-} from '../../../../src/models';
+import { Symbols } from '@risevision/core-interfaces';
+import { IAccountLogic } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
 import {
   DBBulkCreateOp,
   DBCreateOp,
@@ -23,10 +12,21 @@ import {
   DBUpdateOp,
   TransactionType,
 } from '@risevision/core-types';
-import { Symbols } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { dPoSSymbols } from '../../../../src/helpers';
-import { TXSymbols } from '@risevision/core-transactions';
+import { RoundsLogic } from '../../../../src/logic/rounds';
+import { VoteTransaction } from '../../../../src/logic/voteTransaction';
+import {
+  Accounts2DelegatesModel,
+  Accounts2U_DelegatesModel,
+  AccountsModelForDPOS,
+  VotesModel,
+} from '../../../../src/models';
+import { DelegatesModule } from '../../../../src/modules';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -35,7 +35,7 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys no-identical-functions
 describe('logic/transactions/vote', () => {
   let sandbox: SinonSandbox;
   let accountLogicStub: IAccountLogic;
@@ -53,6 +53,7 @@ describe('logic/transactions/vote', () => {
   let accountsModel: typeof AccountsModelForDPOS;
   let votesModel: typeof VotesModel;
   let accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+  // tslint:disable-next-line
   let accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
   before(async () => {
     container = await createContainer([

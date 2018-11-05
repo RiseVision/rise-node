@@ -1,3 +1,4 @@
+import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
 import * as dposTXCrafter from '@risevision/core-consensus-dpos/tests/utils/tx';
 import { Crypto } from '@risevision/core-crypto';
 import {
@@ -18,8 +19,8 @@ import {
   TransactionPool,
   TXSymbols,
 } from '@risevision/core-transactions';
-import * as txCrafter from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import * as txCrafter from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as crypto from 'crypto';
@@ -28,7 +29,6 @@ import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import * as uuid from 'uuid';
 import initializer from './init';
-import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
 
 const delegates = require('../../../../core-launchpad/tests/unit/assets/genesisDelegates.json');
 const genesisBlock = require('../../../../core-launchpad/tests/unit/assets/genesisBlock.json');
@@ -165,7 +165,7 @@ export const createVoteTransaction = async (
       ...obj,
     }
   );
-  tx['senderId'] = initializer.appManager.container
+  tx.senderId = initializer.appManager.container
     .get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
   if (confirmations > 0) {
@@ -294,7 +294,7 @@ export const createMultiSignTransaction = (
       ...extra,
     }
   );
-  tx['senderId'] = initializer.appManager.container
+  tx.senderId = initializer.appManager.container
     .get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
   return tx;
@@ -323,7 +323,7 @@ export const createRegDelegateTransaction = async (
       ...obj,
     }
   );
-  tx['senderId'] = initializer.appManager.container
+  tx.senderId = initializer.appManager.container
     .get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
   if (confirmations > 0) {
@@ -348,7 +348,7 @@ export const createSendTransaction = async (
     systemModule.getFees().fees.send,
     { ...{ amount }, ...opts }
   );
-  tx['senderId'] = initializer.appManager.container
+  tx.senderId = initializer.appManager.container
     .get<IAccountsModule>(Symbols.modules.accounts)
     .generateAddressByPublicKey(Buffer.from(tx.senderPublicKey, 'hex'));
   tx.asset = null;

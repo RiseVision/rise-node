@@ -17,11 +17,11 @@ export class BaseTransportMethod<Data, Query, Out>
   public readonly requestSchema?: any;
   public readonly responseSchema?: any;
 
-  @inject(Symbols.generic.zschema)
-  private schema: z_schema;
-
   @inject(p2pSymbols.helpers.protoBuf)
   public protoBufHelper: ProtoBufHelper;
+
+  @inject(Symbols.generic.zschema)
+  private schema: z_schema;
 
   public async createRequestOptions(
     req: SingleTransportPayload<Data, Query> = { body: null }

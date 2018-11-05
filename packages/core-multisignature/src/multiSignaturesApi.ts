@@ -14,10 +14,13 @@ import { inject, injectable, named } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { MultisigSymbols } from './helpers';
-import { Accounts2MultisignaturesModel } from './models';
-import { AccountsModelWithMultisig } from './models/AccountsModelWithMultisig';
+import {
+  Accounts2MultisignaturesModel,
+  AccountsModelWithMultisig,
+} from './models';
 import { MultiSigUtils } from './utils';
 
+// tslint:disable-next-line no-var-requires
 const apiSchema = require('../schema/apischema.json');
 
 @JsonController('/api/multisignatures')

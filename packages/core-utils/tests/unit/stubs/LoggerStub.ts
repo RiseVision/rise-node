@@ -1,5 +1,5 @@
 import * as sinon from 'sinon';
-
+// tslint:disable object-literal-sort-keys
 export class LoggerStub {
   public stubs;
 

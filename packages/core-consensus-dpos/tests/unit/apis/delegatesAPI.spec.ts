@@ -1,11 +1,4 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import * as filterObject from 'filter-object';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { DelegatesAPI } from '../../../src/apis';
+import { APISymbols } from '@risevision/core-apis';
 import {
   IAccountsModule,
   IBlocksModel,
@@ -14,21 +7,27 @@ import {
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { DelegatesModule, ForgeModule } from '../../../src/modules';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
+import * as filterObject from 'filter-object';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { DelegatesAPI } from '../../../src/apis';
 import { dPoSSymbols, Slots } from '../../../src/helpers';
 import {
   Accounts2DelegatesModel,
   AccountsModelForDPOS,
 } from '../../../src/models';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { APISymbols } from '@risevision/core-apis';
-import { LiskWallet } from 'dpos-offline';
+import { DelegatesModule, ForgeModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-unused-expression max-line-length
-
+// tslint:disable no-shadowed-variable no-unused-expression no-big-function object-literal-sort-keys no-identical-functions max-line-length
 describe('apis/delegatesAPI', () => {
   let sandbox: SinonSandbox;
   let container: Container;

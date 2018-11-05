@@ -1,11 +1,11 @@
-import { AccountsModel as AMTYpe } from '../../../src/';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import { expect } from 'chai';
+import { Container } from 'inversify';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
-import { Container } from 'inversify';
-import { ModelSymbols } from '@risevision/core-models';
 import { AccountsSymbols } from '../../../src';
+import { AccountsModel as AMTYpe } from '../../../src/';
 
 describe('AccountsModel', () => {
   let sandbox: SinonSandbox;

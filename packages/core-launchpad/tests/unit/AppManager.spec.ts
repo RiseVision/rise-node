@@ -4,11 +4,12 @@ import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { AppManager } from '../../src/AppManager';
 import { LoggerStub } from '../../../core-utils/tests/unit/stubs/';
+import { AppManager } from '../../src/AppManager';
 import { OnFinishBoot, OnInitContainer } from '../../src/hooks';
 import { CoreModuleStub } from './stubs/CoreModuleStub';
 
+// tslint:disable no-var-requires no-unused-expression
 const genesisBlock = require('./assets/genesisBlock.json');
 const config = require('./assets/config.json');
 describe('AppManager', () => {
@@ -42,7 +43,8 @@ describe('AppManager', () => {
 
       expect(inst.container).to.be.an.instanceof(Container);
       expect(inst.hookSystem).to.be.an.instanceof(WordPressHookSystem);
-      expect(inst['isCleaning']).false;
+      // @ts-ignore
+      expect(inst.isCleaning).false;
     });
     it('should set nethash from genesisBlock', () => {
       const inst = new AppManager(
@@ -52,7 +54,8 @@ describe('AppManager', () => {
         genesisBlock,
         []
       );
-      expect(inst['appConfig'].nethash).deep.eq(
+      // @ts-ignore
+      expect(inst.appConfig.nethash).deep.eq(
         'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6'
       );
     });
@@ -95,7 +98,8 @@ describe('AppManager', () => {
       await instance.initAppElements();
       for (const m of modules) {
         expect(m.container).deep.eq(instance.container);
-        expect(m.config).deep.eq(instance['appConfig']);
+        // @ts-ignore
+        expect(m.config).deep.eq(instance.appConfig);
       }
     });
     it('should call addElementsToContainer for each module and then initAppElements', async () => {
@@ -135,6 +139,7 @@ describe('AppManager', () => {
     });
     it('should fire core/init/onFinishBoot', async () => {
       const stub = sinon.stub();
+      // tslint:disable-next-line
       class X extends WPHooksSubscriber(Object) {
         public hookSystem = instance.hookSystem;
         @OnFinishBoot()

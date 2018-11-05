@@ -23,6 +23,7 @@ import { dPoSSymbols } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from '../modules';
 
+// tslint:disable-next-line no-var-requires
 const schema = require('../../schema/accountsAPI.json');
 
 @JsonController('/api/accounts')

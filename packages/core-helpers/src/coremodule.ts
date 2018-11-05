@@ -27,7 +27,9 @@ export class CoreModule extends BaseCoreModule<AppConfig>
     let logger;
     try {
       logger = this.container.get(Symbols.helpers.logger);
-    } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
     if (!logger) {
       logger = loggerCreator({
         echo: this.config.consoleLogLevel,

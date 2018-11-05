@@ -5,7 +5,7 @@ import {
   setupExceptionOnInstance,
   setupExceptionOnType,
 } from '../../src';
-
+// tslint:disable no-unused-expression no-big-function max-classes-per-file
 describe('setupException', () => {
   let excManager: ExceptionsManager;
 

@@ -1,22 +1,22 @@
 'use strict';
-import * as chai from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
 import {
   IAccountsModule,
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
-import { SignaturesModel } from '../../src/SignaturesModel';
-import { SecondSignatureTransaction } from '../../src/secondSignature';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { DBUpdateOp, TransactionType } from '@risevision/core-types';
 import { ModelSymbols } from '@risevision/core-models';
-import { SigSymbols } from '../../src/symbols';
 import { TXSymbols } from '@risevision/core-transactions';
+import { DBUpdateOp, TransactionType } from '@risevision/core-types';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
+import { SecondSignatureTransaction } from '../../src/secondSignature';
+import { SignaturesModel } from '../../src/SignaturesModel';
+import { SigSymbols } from '../../src/symbols';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);

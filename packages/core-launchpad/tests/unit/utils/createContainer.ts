@@ -1,25 +1,25 @@
+import { HelpersSymbols } from '@risevision/core-helpers';
+import { IBaseModel, IJobsQueue, Symbols } from '@risevision/core-interfaces';
+import * as activeHandles from 'active-handles';
+import * as fs from 'fs';
 import { Container, interfaces } from 'inversify';
+import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
+import * as path from 'path';
+import { Models, Sequelize } from 'sequelize';
+import { IBlockLogic } from '../../../../core-interfaces/src/logic';
+import { ModelSymbols } from '../../../../core-models/src/helpers';
+import { SignedAndChainedBlockType } from '../../../../core-types/dist';
+import { z_schema } from '../../../../core-utils';
+import { LoggerStub } from '../../../../core-utils/tests/unit/stubs';
+import { ICoreModule, LaunchpadSymbols } from '../../../src';
 import {
   loadCoreSortedModules,
   resolveModule,
 } from '../../../src/modulesLoader';
-import { z_schema } from '../../../../core-utils';
-import { WordPressHookSystem, InMemoryFilterModel } from 'mangiafuoco';
-import { LoggerStub } from '../../../../core-utils/tests/unit/stubs';
-import { SignedAndChainedBlockType } from '../../../../core-types/dist';
-import * as path from 'path';
-import { ICoreModule, LaunchpadSymbols } from '../../../src';
-import { IBlockLogic } from '../../../../core-interfaces/src/logic';
-import { ModelSymbols } from '../../../../core-models/src/helpers';
-import { Symbols, IJobsQueue, IBaseModel } from '@risevision/core-interfaces';
-import * as activeHandles from 'active-handles';
-import * as fs from 'fs';
-import { Models, Sequelize } from 'sequelize';
-import { HelpersSymbols } from '@risevision/core-helpers';
 
 activeHandles.hookSetInterval();
 
-let curContainer: Container = new Container();
+const curContainer: Container = new Container();
 
 curContainer.snapshot();
 curContainer
@@ -83,7 +83,8 @@ export async function createContainer(
   // const infoModel = container.getNamed<IBaseModel>(ModelSymbols.model, ModelSymbols.names.info);
   for (const sm of sortedModules) {
     if (sm.name === '@risevision/core') {
-      sm['onPostInitModels'] = () => null;
+      // @ts-ignore
+      sm.onPostInitModels = () => null;
     }
   }
   const s = container.get<Sequelize>(ModelSymbols.sequelize);
@@ -106,7 +107,7 @@ export async function createContainer(
   return container;
 }
 
-let firstRun = true;
+const firstRun = true;
 
 export async function tearDownContainer() {
   const container = curContainer;
@@ -115,11 +116,13 @@ export async function tearDownContainer() {
     try {
       await m.teardown();
     } catch (e) {
+      // tslint:disable-next-line
       console.log(e);
     }
   }
 
-  const bd = container['_bindingDictionary'] as interfaces.Lookup<
+  // @ts-ignore
+  const bd = container._bindingDictionary as interfaces.Lookup<
     interfaces.Binding<any>
   >;
   // console.log(modules.map((m) => m.directory));
@@ -158,33 +161,3 @@ export async function tearDownContainer() {
   container.restore();
   container.snapshot();
 }
-
-const Memwatch = require('memwatch-next');
-const Util = require('util');
-/**
- * Check for memory leaks
- */
-let hd = null;
-Memwatch.on('leak', (info) => {
-  console.log('memwatch::leak');
-  console.error(info);
-  // if (!hd) {
-  //   hd = new Memwatch.HeapDiff();
-  // }
-  // else {console.log('ciao');
-  //   const diff = hd.end();
-  //   console.error(Util.inspect(diff, true, null));
-  //   console.log('memwatch::leak', {
-  //     HeapDiff: hd
-  //   });
-  //   hd = null;
-  // }
-});
-
-// Memwatch.on('stats', (stats) => {
-//   console.log('memwatch::stats');
-//   console.error(Util.inspect(stats, true, null));
-//   console.log('memwatch::stats', {
-//     Stats: stats
-//   });
-// });

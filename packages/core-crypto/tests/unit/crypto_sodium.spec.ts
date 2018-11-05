@@ -1,7 +1,7 @@
-import 'reflect-metadata';
 import { IKeypair } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as proxyquire from 'proxyquire';
+import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import * as sodium from 'sodium';

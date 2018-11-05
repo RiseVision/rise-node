@@ -1,12 +1,12 @@
 // ### Chain module hooks
 import { IBlocksModel } from '@risevision/core-interfaces';
-import { createActionDecorator as createAction } from '@risevision/core-utils';
-import { Transaction } from 'sequelize';
 import {
   IConfirmedTransaction,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
+import { createActionDecorator as createAction } from '@risevision/core-utils';
+import { Transaction } from 'sequelize';
 
 /**
  * Called Before core module starts issuing any database query.

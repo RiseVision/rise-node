@@ -8,8 +8,8 @@ import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { p2pSymbols } from '../../helpers';
 import { PeersLogic, PeersModule } from '../../';
+import { p2pSymbols } from '../../helpers';
 
 const transportSchema = require('../../../schema/transport.json');
 

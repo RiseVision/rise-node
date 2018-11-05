@@ -4,6 +4,7 @@ import {
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
 import {
   DBCreateOp,
@@ -18,8 +19,8 @@ import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
 import { AccountsModelForDPOS, DelegatesModel } from '../models/';
-import { ModelSymbols } from '@risevision/core-models';
 
+// tslint:disable-next-line no-var-requires
 const delegateAssetSchema = require('../../schema/asset.json');
 
 // tslint:disable-next-line interface-over-type-literal
@@ -162,6 +163,7 @@ export class RegisterDelegateTransaction extends BaseTx<
       isDelegate: 1 as any,
       u_isDelegate: 1 as any,
       vote: 0,
+      // tslint:disable-next-line
       u_username: tx.asset.delegate.username,
       username: tx.asset.delegate.username,
     };
@@ -188,6 +190,7 @@ export class RegisterDelegateTransaction extends BaseTx<
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
       vote: 0,
+      // tslint:disable-next-line
       username: null,
       u_username: tx.asset.delegate.username,
     };
@@ -215,6 +218,7 @@ export class RegisterDelegateTransaction extends BaseTx<
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
       username: null,
+      // tslint:disable-next-line
       u_username: tx.asset.delegate.username,
     };
     if (sender.u_isDelegate === 1) {
@@ -241,6 +245,7 @@ export class RegisterDelegateTransaction extends BaseTx<
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 0 as 0 | 1,
       username: null,
+      // tslint:disable-next-line
       u_username: null,
     };
     sender.applyValues(data);

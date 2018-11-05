@@ -1,21 +1,21 @@
+import { IAccountsModel, IBlocksModel } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import * as chai from 'chai';
 import * as fs from 'fs';
-import { Op } from 'sequelize';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
 import { Container } from 'inversify';
-import { IAccountsModel, IBlocksModel } from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Symbols } from '@risevision/core-interfaces';
+import { Op } from 'sequelize';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
 import { dPoSSymbols, RoundChanges } from '../../../src/helpers';
 import { RoundLogic } from '../../../src/logic/round';
-import { ModelSymbols } from '@risevision/core-models';
 
 const expect = chai.expect;
 
 const pgpStub = { as: undefined } as any;
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys no-identical-functions
 describe('logic/round', () => {
   let sandbox: SinonSandbox;
   let instance;

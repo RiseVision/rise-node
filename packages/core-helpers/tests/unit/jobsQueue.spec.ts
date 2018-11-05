@@ -1,6 +1,6 @@
-import 'reflect-metadata';
 import { IJobsQueue } from '@risevision/core-interfaces';
 import { expect } from 'chai';
+import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { JobsQueue } from '../../src';
 
@@ -73,7 +73,6 @@ describe('helpers/jobsQueue', () => {
       expect(spy.called).to.be.false;
       // Ensure it ran more than once
       expect(runCount).to.be.greaterThan(1);
-      console.log(runCount);
     });
   });
 });

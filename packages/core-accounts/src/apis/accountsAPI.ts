@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { CoreSymbols } from '@risevision/core';
 import { DeprecatedAPIError } from '@risevision/core-apis';
 import {
@@ -24,6 +23,7 @@ import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import * as isEmpty from 'is-empty';
 import { WordPressHookSystem } from 'mangiafuoco';
+import 'reflect-metadata';
 import {
   Body,
   Get,
@@ -32,8 +32,8 @@ import {
   QueryParams,
 } from 'routing-controllers';
 import * as z_schema from 'z-schema';
-import { AccountsSymbols } from '../symbols';
 import { FilterAPIGetAccount } from '../hooks';
+import { AccountsSymbols } from '../symbols';
 
 const accountSchema = require('../../schema/accounts.json');
 @JsonController('/api/accounts')

@@ -1,18 +1,18 @@
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { Container } from 'inversify';
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { BlocksP2P } from '../../../src/p2p';
+import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { IBroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
-import { BlocksSymbols, OnPostApplyBlock } from '../../../src';
-import { WordPressHookSystem } from 'mangiafuoco';
-import { Symbols } from '@risevision/core-interfaces';
-import { createFakeBlock } from '../utils/createFakeBlocks';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { WordPressHookSystem } from 'mangiafuoco';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { BlocksSymbols, OnPostApplyBlock } from '../../../src';
+import { BlocksP2P } from '../../../src/p2p';
+import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);
 
@@ -94,7 +94,7 @@ describe('blocks/p2p/main', () => {
   });
   it('should incrementa relays to +1 if set and not exceeding maxRelays', async () => {
     const block = createFakeBlock(container);
-    block['relays'] = 1;
+    block.relays = 1;
     await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(
       broadcastStub.firstCall.args[0].options.payload.body.block.relays

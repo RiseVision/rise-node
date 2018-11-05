@@ -1,18 +1,17 @@
+import { IAccountsModel, IAccountsModule } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { LiskWallet } from 'dpos-offline';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { IAccountsModel, IAccountsModule } from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { AccountLogic, AccountsSymbols } from '../../../src';
-import { ModelSymbols } from '@risevision/core-models';
-import { LiskWallet } from 'dpos-offline';
 
 chai.use(chaiAsPromised);
-
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-big-function object-literal-sort-keys max-line-length no-identical-functions max-classes-per-file
 const validPubKey = Buffer.from(new Array(32).fill('aa').join(''), 'hex');
 const validAddress = '2355684370867218400R';
 describe('modules/accounts', () => {

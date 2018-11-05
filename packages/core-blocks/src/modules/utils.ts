@@ -81,8 +81,8 @@ export class BlocksModuleUtils {
   public async loadLastBlock(): Promise<IBlocksModel> {
     const b = await this.BlocksModel.findOne({
       include: [this.TransactionsModel],
-      order: [['height', 'DESC']],
       limit: 1,
+      order: [['height', 'DESC']],
     });
     // attach transaction assets
     await this.transactionLogic.attachAssets(b.transactions);
@@ -185,10 +185,6 @@ export class BlocksModuleUtils {
           )
         )
       )
-      .catch((E) => {
-        console.log(E);
-        return Promise.reject(E);
-      })
       .catch(
         catchToLoggerAndRemapError<IBlocksModel[]>(
           'Blocks#loadBlockData error',

@@ -3,8 +3,8 @@ import * as chaiAsPromised from 'chai-as-promised';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { IoCSymbol } from '../../../src/decorators/';
 import { UtilsSymbols } from '../../../src';
+import { IoCSymbol } from '../../../src/decorators/';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');

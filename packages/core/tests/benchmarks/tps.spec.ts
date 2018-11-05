@@ -1,14 +1,14 @@
-import initializer from '../integration/common/init';
 import { dposOffline, LiskWallet } from 'dpos-offline';
+import { Sequelize } from 'sequelize-typescript';
+import constants from '../../src/helpers/constants';
+import { IBlocksModule, ISystemModule } from '../../src/ioc/interfaces/modules';
+import { Symbols } from '../../src/ioc/symbols';
+import initializer from '../integration/common/init';
 import {
   confirmTransactions,
   createRandomWallet,
   findDelegateByUsername,
 } from '../integration/common/utils';
-import { Symbols } from '../../src/ioc/symbols';
-import constants from '../../src/helpers/constants';
-import { Sequelize } from 'sequelize-typescript';
-import { IBlocksModule, ISystemModule } from '../../src/ioc/interfaces/modules';
 import { reportedIT } from './benchutils';
 
 const numTransactions = 90000;
@@ -147,7 +147,7 @@ describe('TPS', function() {
       );
 
       for (let i = 0; i < blockSize; i++) {
-        const del = findDelegateByUsername(`genesisDelegate1`);
+        const del = findDelegateByUsername('genesisDelegate1');
         const t = new dposOffline.transactions.SendTx()
           .set('amount', sendFee + sendFee * blocks * 2)
           .set('fee', sendFee)
@@ -155,7 +155,7 @@ describe('TPS', function() {
           .set('recipientId', accounts[i].address)
           .sign(new LiskWallet(del.secret, 'R'));
 
-        t['senderId'] = del.address;
+        t.senderId = del.address;
         txs.push(t);
       }
       await confirmTransactions(txs, false);
@@ -175,7 +175,7 @@ describe('TPS', function() {
           t.set('timestamp', b * blockSize + i);
           t.set('recipientId', sender.address);
           const signedTx = t.sign(sender);
-          signedTx['senderId'] = sender.address;
+          signedTx.senderId = sender.address;
           txs.push(signedTx);
         }
       }

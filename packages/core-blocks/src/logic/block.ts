@@ -7,6 +7,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
   BlockType,
   ConstantsType,
@@ -27,7 +28,6 @@ import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlockRewardLogic } from './blockReward';
-import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 
 const blockSchema = require('../../schema/block.json');
 

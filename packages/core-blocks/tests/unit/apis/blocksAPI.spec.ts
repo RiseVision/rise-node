@@ -1,22 +1,22 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
 import { APISymbols } from '@risevision/core-apis';
-import { BlocksModule, BlocksSymbols } from '../../../src';
-import { SignedBlockType } from '@risevision/core-types';
-import { createFakeBlock } from '../utils/createFakeBlocks';
-import { BlocksAPI } from '../../../src/apis/blocksAPI';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import {
   IBlocksModel,
   ISystemModule,
   ITransactionsModel,
   Symbols,
 } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
+import { SignedBlockType } from '@risevision/core-types';
+import { expect } from 'chai';
+import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { BlocksModule, BlocksSymbols } from '../../../src';
+import { BlocksAPI } from '../../../src/apis/blocksAPI';
+import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);
 

@@ -1,20 +1,20 @@
+import {
+  IBlocksModel,
+  IBlocksModule,
+  Symbols,
+} from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { ConstantsType } from '@risevision/core-types';
 import { expect } from 'chai';
 import 'chai-as-promised';
 import { Container } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { SystemModule } from '../../../src/modules';
-import { ConstantsType } from '@risevision/core-types';
-import {
-  IBlocksModel,
-  IBlocksModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression no-identical-functions object-literal-sort-keys no-big-function
 describe('modules/system', () => {
   let inst: SystemModule;
   let container: Container;

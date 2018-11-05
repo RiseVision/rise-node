@@ -1,3 +1,4 @@
+// tslint:disable no-unused-expression
 import { OnCheckIntegrity, RecreateAccountsTables } from '@risevision/core';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
@@ -8,7 +9,6 @@ import * as fs from 'fs';
 import { Container } from 'inversify';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as path from 'path';
-import { Op } from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import {
@@ -49,6 +49,7 @@ describe('accounts/hooks/loaderSubscriber', () => {
     const dropStub = sandbox.stub(accModel, 'drop').resolves();
     const queryStub = sandbox.stub(accModel.sequelize, 'query').resolves();
     await hookSystem.do_action(RecreateAccountsTables.name);
+
     expect(dropStub.calledOnce).is.true;
     expect(queryStub.calledOnce).is.true;
     expect(

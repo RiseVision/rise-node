@@ -12,6 +12,7 @@ export function checkIsModule(packageJSONPath: string) {
   return true;
 }
 
+// tslint:disable forin
 // tslint:disable-next-line
 type ModuleInfo = {
   name: string;

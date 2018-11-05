@@ -1,20 +1,20 @@
+import { SystemModule } from '@risevision/core';
+import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { BasePeerType, PeerState } from '@risevision/core-types';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { expect } from 'chai';
 import 'chai-as-promised';
 import { Container } from 'inversify';
 import 'reflect-metadata';
-import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import * as sinon from 'sinon';
 import { Peer, PeersLogic, PeersModule } from '../../src';
-import { BasePeerType, PeerState } from '@risevision/core-types';
-import { createFakePeer, createFakePeers } from './utils/fakePeersFactory';
-import { SystemModule } from '@risevision/core';
-import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { p2pSymbols } from '../../src/helpers';
-import { ModelSymbols } from '@risevision/core-models';
+import { createFakePeer, createFakePeers } from './utils/fakePeersFactory';
 
-// tslint:disable no-unused-expression
+// tslint:disable no-unused-expression object-literal-sort-keys no-identical-functions no-big-function
 describe('modules/peers', () => {
   let inst: PeersModule;
   let container: Container;

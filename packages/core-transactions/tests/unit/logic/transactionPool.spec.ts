@@ -1,3 +1,4 @@
+// tslint:disable max-line-length
 // import * as chai from 'chai';
 // import * as chaiAsPromised from 'chai-as-promised';
 // import {Container} from 'inversify';

@@ -1,14 +1,14 @@
-import * as crypto from 'crypto';
-import { Container } from 'inversify';
-import * as uuid from 'uuid';
+import { ICrypto, Symbols } from '@risevision/core-interfaces';
 import {
   IBaseTransaction,
   IKeypair,
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
-import { BlockLogic } from '../../../src/logic';
+import * as crypto from 'crypto';
+import { Container } from 'inversify';
+import * as uuid from 'uuid';
 import { BlocksSymbols } from '../../../src/';
-import { ICrypto, Symbols } from '@risevision/core-interfaces';
+import { BlockLogic } from '../../../src/logic';
 
 /**
  * Creates a fake "but valid" block

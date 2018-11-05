@@ -4,7 +4,7 @@ import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
 import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
 import * as uuid from 'uuid';
 // import { generateAccount } from './accountsUtils';
-
+// tslint:disable object-literal-sort-keys
 export const toBufferedTransaction = <T>(
   t: ITransaction<any>
 ): IBaseTransaction<T> & { senderId: string } => {
@@ -52,27 +52,6 @@ export const fromBufferedTransaction = <T>(
   };
 };
 
-// export const createRandomTransactions = (config: { send?: number, vote?: number, signature?: number, delegate?: number } = {}): Array<ITransaction> => {
-//   const send      = config.send || 0;
-//   const vote      = config.vote || 0;
-//   const signature = config.signature || 0;
-//   const delegate  = config.delegate || 0;
-//
-//   const toRet = [];
-//   for (let i = 0; i < send; i++) {
-//     toRet.push(createSendTransaction(generateAccount(), generateAccount().address, 1, { amount: i + 1000 }));
-//   }
-//   for (let i = 0; i < vote; i++) {
-//     toRet.push(createVoteTransaction(generateAccount(), 1, { asset: { votes: [`+${generateAccount().publicKey}`] } }));
-//   }
-//   for (let i = 0; i < signature; i++) {
-//     toRet.push(create2ndSigTX(generateAccount(), 1, { asset: { signature: { publicKey: generateAccount().publicKey } } }));
-//   }
-//   for (let i = 0; i < delegate; i++) {
-//     toRet.push(createRegDelegateTX(generateAccount(), 1, { asset: { delegate: { username: `del${i}_${generateAccount().publicKey.substr(0, 4) }` } } }));
-//   }
-//   return toRet;
-// };
 export const createRandomTransaction = (
   wallet: LiskWallet = new LiskWallet(uuid.v4(), 'R')
 ): ITransaction => {

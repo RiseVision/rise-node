@@ -1,21 +1,12 @@
-import 'reflect-metadata';
-// import { IAccountsModel } from '@risevision/core-interfaces';
-import { utils as modelsUtils } from '@risevision/core-models';
-import {
-  Column,
-  DataType,
-  DefaultScope,
-  Model,
-  Sequelize,
-} from 'sequelize-typescript';
-import * as sequelize from 'sequelize';
-import { publicKey } from '@risevision/core-types';
 import { IAccountsModel } from '@risevision/core-interfaces';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { publicKey } from '@risevision/core-types';
+import 'reflect-metadata';
+import * as sequelize from 'sequelize';
+import { Column, DataType, DefaultScope } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
-// import * as extend from 'extend';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
-const buildArrayArgAttribute = function(table: string): any {
+const buildArrayArgAttribute = (table: string): any => {
   return [
     sequelize.literal(
       `(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`
@@ -23,7 +14,7 @@ const buildArrayArgAttribute = function(table: string): any {
     table,
   ];
 };
-
+// tslint:disable variable-name
 // tslint:disable-next-line
 
 @DefaultScope({

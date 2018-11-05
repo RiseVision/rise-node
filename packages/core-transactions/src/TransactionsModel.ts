@@ -3,6 +3,7 @@ import {
   ITransactionsModel,
   Symbols,
 } from '@risevision/core-interfaces';
+import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   IBaseTransaction,
   ITransportTransaction,
@@ -17,13 +18,56 @@ import {
 } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { BaseModel, ModelSymbols } from '@risevision/core-models';
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
 export class TransactionsModel<Asset = any>
   extends BaseModel<TransactionsModel<Asset>>
   implements ITransactionsModel<Asset> {
+  @Column(DataType.BLOB)
+  public get signatures(): Buffer[] {
+    if (this.getDataValue('signatures')) {
+      return this.getDataValue('signatures').split(',');
+    }
+    return [];
+  }
+
+  public set signatures(value: Buffer[]) {
+    this.setDataValue(
+      'signatures',
+      Array.isArray(value)
+        ? value.map((s: Buffer) => s.toString('hex')).join(',')
+        : value
+    );
+  }
+
+  public static toTransportTransaction<Asset>(
+    t: IBaseTransaction<Asset>
+  ): ITransportTransaction<Asset> & { confirmations?: number } {
+    const blocksModule: IBlocksModule = this.container.get(
+      Symbols.modules.blocks
+    );
+    let obj;
+    if (t instanceof TransactionsModel) {
+      obj = { ...t.toJSON(), asset: t.asset };
+    } else {
+      obj = { ...t };
+    }
+    [
+      'requesterPublicKey',
+      'senderPublicKey',
+      'signSignature',
+      'signature',
+    ].forEach((k) => {
+      if (typeof obj[k] !== 'undefined' && obj[k] !== null) {
+        obj[k] = obj[k].toString('hex');
+      }
+    });
+    if (obj.height) {
+      obj.confirmations = 1 + blocksModule.lastBlock.height - obj.height;
+    }
+    return obj as any;
+  }
   @PrimaryKey
   @Column
   public id: string;
@@ -85,52 +129,7 @@ export class TransactionsModel<Asset = any>
     }
   }
 
-  @Column(DataType.BLOB)
-  public get signatures(): Buffer[] {
-    if (this.getDataValue('signatures')) {
-      return this.getDataValue('signatures').split(',');
-    }
-    return [];
-  }
-
-  public set signatures(value: Buffer[]) {
-    this.setDataValue(
-      'signatures',
-      Array.isArray(value)
-        ? value.map((s: Buffer) => s.toString('hex')).join(',')
-        : value
-    );
-  }
-
   public toTransport(): ITransportTransaction<Asset> {
     return TransactionsModel.toTransportTransaction(this);
-  }
-
-  public static toTransportTransaction<Asset>(
-    t: IBaseTransaction<Asset>
-  ): ITransportTransaction<Asset> & { confirmations?: number } {
-    const blocksModule: IBlocksModule = this.container.get(
-      Symbols.modules.blocks
-    );
-    let obj;
-    if (t instanceof TransactionsModel) {
-      obj = { ...t.toJSON(), asset: t.asset };
-    } else {
-      obj = { ...t };
-    }
-    [
-      'requesterPublicKey',
-      'senderPublicKey',
-      'signSignature',
-      'signature',
-    ].forEach((k) => {
-      if (typeof obj[k] !== 'undefined' && obj[k] !== null) {
-        obj[k] = obj[k].toString('hex');
-      }
-    });
-    if (obj.height) {
-      obj.confirmations = 1 + blocksModule.lastBlock.height - obj.height;
-    }
-    return obj as any;
   }
 }

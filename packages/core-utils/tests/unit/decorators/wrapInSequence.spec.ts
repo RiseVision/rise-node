@@ -1,16 +1,16 @@
+import { ISequence, Symbols } from '@risevision/core-interfaces';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container, injectable } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
+import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
 import {
   WrapInBalanceSequence,
   WrapInDBSequence,
   WrapInDefaultSequence,
 } from '../../../src/decorators';
-import { ISequence, Symbols } from '@risevision/core-interfaces';
-import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
 
 // tslint:disable next-line no-var-requires max-classes-per-file
 const assertArrays = require('chai-arrays');

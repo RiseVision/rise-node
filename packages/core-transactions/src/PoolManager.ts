@@ -13,29 +13,29 @@ import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { TXAppConfig } from './helpers/appconfig';
 import { OnNewUnconfirmedTransation } from './hooks/actions';
+import { TxExpireTimeout } from './hooks/filters';
 import { PostTransactionsRequest } from './p2p';
 import { TransactionLogic } from './TransactionLogic';
 import { TransactionsModule } from './TransactionModule';
 import { TransactionPool } from './TransactionPool';
 import { TXSymbols } from './txSymbols';
-import { TxExpireTimeout } from './hooks/filters';
 
 @injectable()
 export class PoolManager {
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
+  @inject(Symbols.helpers.sequence)
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
-  @inject(Symbols.generic.hookSystem)
-  public hookSystem: WordPressHookSystem;
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
-  @inject(Symbols.helpers.sequence)
-  @named(Symbols.names.helpers.balancesSequence)
-  public balancesSequence: ISequence;
   @inject(Symbols.logic.broadcaster)
   private broadcasterLogic: BroadcasterLogic;
   @inject(Symbols.modules.accounts)

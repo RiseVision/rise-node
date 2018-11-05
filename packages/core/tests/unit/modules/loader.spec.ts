@@ -1,12 +1,3 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as proxyquire from 'proxyquire';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { LoaderModule } from '../../../src/modules';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import {
   IAppState,
   IBlocksModel,
@@ -15,20 +6,28 @@ import {
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { CoreSymbols } from '../../../src';
-import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
-import { PeerType } from '@risevision/core-types';
-import { createFakePeers } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
-import { IPeersModule, PeersLogic } from '@risevision/core-p2p';
-import { wait } from '@risevision/core-utils';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
+import { IPeersModule, PeersLogic } from '@risevision/core-p2p';
+import { createFakePeers } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
+import { PeerType } from '@risevision/core-types';
+import { wait } from '@risevision/core-utils';
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import * as proxyquire from 'proxyquire';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { CoreSymbols } from '../../../src';
+import { LoaderModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 
 let promiseRetryStub: any;
 
-// tslint:disable no-unused-expression
-// tslint:disable no-unused-expression max-line-length
+// tslint:disable no-unused-expression max-line-length no-big-function object-literal-sort-keys
 const ProxyLoaderModule = proxyquire('../../../src/modules/loader', {
   'promise-retry': (...args) => {
     return promiseRetryStub.apply(this, args);

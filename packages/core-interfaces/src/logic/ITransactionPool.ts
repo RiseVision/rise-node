@@ -1,16 +1,16 @@
 import { IBaseTransaction } from '@risevision/core-types';
 export type QueueType = 'queued' | 'pending' | 'ready' | 'unconfirmed';
-
-export type QueueEntry<T extends { receivedAt: Date }> = {
+// tslint:disable interface-name
+export interface QueueEntry<T extends { receivedAt: Date }> {
   tx: IBaseTransaction<any>;
   payload: T;
-};
-export type ListingOptions<T extends { receivedAt: Date }> = {
+}
+export interface ListingOptions<T extends { receivedAt: Date }> {
   reverse?: boolean;
   limit?: number;
   filterFn?: (entry: QueueEntry<T>) => boolean;
   sortFn?: (a: QueueEntry<T>, b: QueueEntry<T>) => number;
-};
+}
 
 export interface IInnerTXQueue<
   T extends { receivedAt: Date } = { receivedAt: Date }

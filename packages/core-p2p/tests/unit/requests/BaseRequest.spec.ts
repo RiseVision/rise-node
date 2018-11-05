@@ -1,11 +1,11 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { PeerType } from '@risevision/core-types';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
+import { p2pSymbols } from '../../../src/helpers';
 import { BaseTransportMethod } from '../../../src/requests';
 import { ProtoBufHelperStub } from '../stubs/protobufhelperStub';
-import { PeerType } from '@risevision/core-types';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { p2pSymbols } from '../../../src/helpers';
 import { createFakePeer } from '../utils/fakePeersFactory';
 
 class TestRequest extends BaseTransportMethod<any, any, any> {

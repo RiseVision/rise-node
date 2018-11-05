@@ -1,19 +1,19 @@
-import { Container } from 'inversify';
-import * as uuid from 'uuid';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { createContainer } from '../../../core-launchpad/tests/unit/utils/createContainer';
-import { ITransactionLogic } from '../../../core-interfaces/src/logic';
-import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
-import { ModelSymbols } from '../../../core-models/src/helpers';
-import { Symbols } from '../../../core-interfaces/src';
 import { LiskWallet } from 'dpos-offline';
+import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { Container } from 'inversify';
+import * as uuid from 'uuid';
+import { Symbols } from '../../../core-interfaces/src';
+import { ITransactionLogic } from '../../../core-interfaces/src/logic';
+import { createContainer } from '../../../core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '../../../core-models/src/helpers';
 import {
   createRandomTransaction,
   toBufferedTransaction,
 } from '../../../core-transactions/tests/unit/utils/txCrafter';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
 
 chai.use(chaiAsPromised);
 describe('secondSignHooks', () => {

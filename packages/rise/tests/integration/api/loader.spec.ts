@@ -1,10 +1,10 @@
-import initializer from '../common/init';
-import { checkReturnObjKeyVal } from './utils';
-import * as supertest from 'supertest';
-import { expect } from 'chai';
 import { BlocksModule } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
+import { expect } from 'chai';
+import * as supertest from 'supertest';
+import initializer from '../common/init';
+import { checkReturnObjKeyVal } from './utils';
 
 // tslint:disable no-unused-expression max-line-length
 describe('api/loader/status', () => {

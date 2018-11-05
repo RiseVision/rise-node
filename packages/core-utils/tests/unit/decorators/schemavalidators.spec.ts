@@ -16,8 +16,8 @@ const ProxySchemaValidators = proxyquire(
   }
 );
 const { SchemaValid, ValidateSchema } = ProxySchemaValidators;
+// tslint:disable
 
-// tslint:disable no-unused-expression max-classes-per-file
 describe('helpers/decorators', () => {
   describe('SchemaValid', () => {
     // Schemas:

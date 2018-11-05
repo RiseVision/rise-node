@@ -1,16 +1,3 @@
-import 'reflect-metadata';
-import { expect } from 'chai';
-import {
-  createRandomAccountsWithFunds,
-  createRegDelegateTransaction,
-  createSecondSignTransaction,
-  createVoteTransaction,
-  easyCreateMultiSignAccount,
-} from './common/utils';
-import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
-import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
-import initializer from './common/init';
-import * as supertest from 'supertest';
 import {
   BlocksModule,
   BlocksModuleChain,
@@ -18,7 +5,21 @@ import {
 } from '@risevision/core-blocks';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
+import { expect } from 'chai';
+import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
+import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
+import 'reflect-metadata';
+import * as supertest from 'supertest';
+import initializer from './common/init';
+import {
+  createRandomAccountsWithFunds,
+  createRegDelegateTransaction,
+  createSecondSignTransaction,
+  createVoteTransaction,
+  easyCreateMultiSignAccount,
+} from './common/utils';
 
+// tslint:disable no-unused-expression
 describe('blockProcessing', async function() {
   this.timeout(100000);
   let blocksModule: BlocksModule;

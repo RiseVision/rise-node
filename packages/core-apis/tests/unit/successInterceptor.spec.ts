@@ -1,9 +1,9 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { APISuccessInterceptor } from '../../src';
 import { APISymbols } from '../../src';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');

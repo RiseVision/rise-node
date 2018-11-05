@@ -23,6 +23,12 @@ import { TransactionPool } from './TransactionPool';
 
 @injectable()
 export class TransactionsModule implements ITransactionsModule {
+  @inject(Symbols.helpers.sequence)
+  @named(Symbols.names.helpers.balancesSequence)
+  public balancesSequence: ISequence;
+
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
@@ -39,16 +45,9 @@ export class TransactionsModule implements ITransactionsModule {
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
 
-  @inject(Symbols.helpers.sequence)
-  @named(Symbols.names.helpers.balancesSequence)
-  public balancesSequence: ISequence;
-
   @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)
   private TXModel: typeof ITransactionsModel;
-
-  @inject(Symbols.generic.hookSystem)
-  public hookSystem: WordPressHookSystem;
 
   @inject(Symbols.modules.peers)
   private peersModule: PeersModule;

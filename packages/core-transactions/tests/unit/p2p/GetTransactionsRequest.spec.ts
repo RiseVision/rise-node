@@ -1,20 +1,20 @@
+import { Symbols } from '@risevision/core-interfaces';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { p2pSymbols } from '@risevision/core-p2p';
+import { createFakePeer } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
 import { expect } from 'chai';
+import { Container } from 'inversify';
+import { generateAccount } from '../../../../core-accounts/tests/unit/utils/accountsUtils';
+import { ConstantsType } from '../../../../core-types/src';
 import {
   GetTransactionsRequest,
   TransactionPool,
   TXSymbols,
 } from '../../../src/';
-import { createFakePeer } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Container } from 'inversify';
-import { p2pSymbols } from '@risevision/core-p2p';
 import {
   createRandomTransaction,
   toBufferedTransaction,
 } from '../utils/txCrafter';
-import { Symbols } from '@risevision/core-interfaces';
-import { ConstantsType } from '../../../../core-types/src';
-import { generateAccount } from '../../../../core-accounts/tests/unit/utils/accountsUtils';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetTransactionsRequest', () => {

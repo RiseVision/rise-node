@@ -8,6 +8,7 @@ export interface ISpiedInstance {
 export function SpiedInstance<T extends { new (...args: any[]): {} }>(
   constructor: T
 ) {
+  // tslint:disable-next-line
   return class __SpiedInstance__ extends constructor implements ISpiedInstance {
     public spies: { [X in keyof this]: SinonSpy } = {} as any;
     public sandbox = sinon.createSandbox();
@@ -41,6 +42,7 @@ export interface IStubbedInstance<X> {
 export function StubbedInstance<T extends { new (...args: any[]): any }>(
   Base: T
 ) {
+  // tslint:disable-next-line
   const thaClass = class __StubbedInstance__ extends Base
     implements IStubbedInstance<InstanceType<T>> {
     public static instances: Array<IStubbedInstance<InstanceType<T>>> = [];

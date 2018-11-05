@@ -1,5 +1,5 @@
-import { IModelField } from './modelField';
 import { ConstantsType } from '@risevision/core-types';
+import { IModelField } from './modelField';
 // tslint:disable
 /**
  * @typedef {Object} account

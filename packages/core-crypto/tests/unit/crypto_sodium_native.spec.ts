@@ -1,7 +1,7 @@
-import 'reflect-metadata';
 import { IKeypair } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as proxyquire from 'proxyquire';
+import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import * as sodium from 'sodium-native';
@@ -76,8 +76,8 @@ describe('helpers/crypto(sodium-native)', () => {
         new Buffer('12345678901234567890123456789012')
       );
       expect(retval).to.be.deep.eq({
-        publicKey: spy.firstCall.args[0],
         privateKey: spy.firstCall.args[1],
+        publicKey: spy.firstCall.args[0],
       });
       spy.restore();
     });

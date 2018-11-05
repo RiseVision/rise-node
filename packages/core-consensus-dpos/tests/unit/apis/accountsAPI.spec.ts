@@ -1,21 +1,21 @@
-import * as chai from 'chai';
-import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
-import { Container } from 'inversify';
-import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
-import { AccountsAPI } from '../../../src/apis';
+import { APISymbols } from '@risevision/core-apis';
 import {
   IAccountsModule,
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { DelegatesModule } from '../../../src/modules';
-import { dPoSSymbols } from '../../../src/helpers';
-import { AccountsModelForDPOS } from '../../../src/models';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { APISymbols } from '@risevision/core-apis';
+import * as chai from 'chai';
+import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
+import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
+import * as sinon from 'sinon';
+import { AccountsAPI } from '../../../src/apis';
+import { dPoSSymbols } from '../../../src/helpers';
+import { AccountsModelForDPOS } from '../../../src/models';
+import { DelegatesModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
 
