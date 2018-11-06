@@ -134,10 +134,7 @@ export class MultisignaturesModule {
     sender: AccountsModelWithMultisig
   ) {
     // tslint:disable-next-line
-    if (
-      tx.asset.multisignature.signatures ||
-      tx.signatures.indexOf(signature) !== -1
-    ) {
+    if (tx.signatures.indexOf(signature) !== -1) {
       throw new Error('Permission to sign transaction denied');
     }
     let verify = false;

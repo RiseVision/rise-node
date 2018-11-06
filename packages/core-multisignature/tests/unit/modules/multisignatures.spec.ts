@@ -358,13 +358,6 @@ describe('modules/multisignatures', () => {
         .returns(true);
     });
 
-    it('should throw if tx already has the multisignature.signatures asset', async () => {
-      tx.asset.multisignature.signatures = [];
-      await expect(
-        (instance as any).processMultiSigSignature(tx, signature, sender)
-      ).to.be.rejectedWith('Permission to sign transaction denied');
-    });
-
     it('should throw if tx.signatures already contains the passed signature', async () => {
       tx.signatures = [signature];
       await expect(

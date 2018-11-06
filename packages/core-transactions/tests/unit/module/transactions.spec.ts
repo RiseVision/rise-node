@@ -72,7 +72,7 @@ describe('modules/transactions', () => {
     sandbox = sinon.createSandbox();
     instance = container.get(TXSymbols.module);
     txPool = container.get(TXSymbols.pool);
-    instance.transactionPool = txPool;
+    (instance as any).transactionPool = txPool;
     accountsModule = container.get(Symbols.modules.accounts);
     AccountsModel = container.getNamed(
       ModelSymbols.model,

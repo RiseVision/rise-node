@@ -281,9 +281,9 @@ describe('src/modules/transport.ts', () => {
     it('should validate response headers against schema and eventually removePeer', async () => {
       res.headers.nethash = 'meow';
       await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(
-        'Invalid response headers {"nethash":"meow","version":"1.1.1","port":' +
+        'Invalid response headers {"height":100,"nethash":"meow","port":' +
           peer.port +
-          ',"height":100,"state":1} put http://127.0.0.1:' +
+          ',"version":"1.1.1","state":1} put http://127.0.0.1:' +
           peer.port +
           'url.com'
       );

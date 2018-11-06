@@ -94,7 +94,7 @@ describe('blocks/p2p/main', () => {
   });
   it('should incrementa relays to +1 if set and not exceeding maxRelays', async () => {
     const block = createFakeBlock(container);
-    block.relays = 1;
+    (block as any).relays = 1;
     await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(
       broadcastStub.firstCall.args[0].options.payload.body.block.relays

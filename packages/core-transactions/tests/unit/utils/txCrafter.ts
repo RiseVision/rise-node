@@ -30,7 +30,7 @@ export const toBufferedTransaction = <T>(
 
 export const fromBufferedTransaction = <T>(
   t: IBaseTransaction<T>
-): ITransaction<any> => {
+): ITransaction<any> & { blockId?: string } => {
   return {
     ...t,
     requesterPublicKey:

@@ -88,7 +88,7 @@ describe('modules/utils', () => {
     let findOneStub: SinonStub;
     beforeEach(() => {
       findOneStub = sandbox.stub(blocksModel, 'findOne').resolves({});
-      inst.TransactionsModel = 'txModel' as any; // useful for chai deep equality.
+      (inst as any).TransactionsModel = 'txModel' as any; // useful for chai deep equality.
     });
     it('should query db', async () => {
       await inst.loadLastBlock();
@@ -210,7 +210,7 @@ describe('modules/utils', () => {
       dbSequenceStub = sandbox
         .stub(dbSequence, 'addAndPromise')
         .callsFake((b) => b());
-      inst.TransactionsModel = 'txModel' as any;
+      (inst as any).TransactionsModel = 'txModel' as any;
     });
     it('should disallow passing both id and lastId', async () => {
       await expect(

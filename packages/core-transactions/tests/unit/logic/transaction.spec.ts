@@ -1086,7 +1086,7 @@ describe('logic/transaction', () => {
     });
 
     it('should cluster multiple txs together in single bulkCreate and append sub assets db ops', () => {
-      instance.types[2] = new DummyTxType(2);
+      (instance as any).types[2] = new DummyTxType(2);
 
       const txs = [
         createSendTransaction(account, '1R', 10, { amount: 1 }),

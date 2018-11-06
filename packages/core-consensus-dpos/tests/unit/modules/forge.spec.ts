@@ -103,7 +103,7 @@ describe('modules/forge', () => {
         bbbb: true,
         cccc: true,
       };
-      instance.keypairs = {
+      (instance as any).keypairs = {
         aaaa: { publicKey: Buffer.from('aaaa', 'hex') },
         bbbb: { publicKey: Buffer.from('bbbb', 'hex') },
         cccc: { publicKey: Buffer.from('cccc', 'hex') },
@@ -152,7 +152,7 @@ describe('modules/forge', () => {
 
       it('should store the keypair in this.keypairs', () => {
         instance.isForgeEnabledOn(pk);
-        expect(instance.keypairs[hex]).to.be.deep.equal(pk);
+        expect((instance as any).keypairs[hex]).to.be.deep.equal(pk);
       });
 
       it('should return true if the public key is enabled', () => {
@@ -176,7 +176,7 @@ describe('modules/forge', () => {
         bbbb: false,
         cccc: true,
       } as any;
-      instance.keypairs = {
+      (instance as any).keypairs = {
         aaaa: {},
         bbbb: {},
         cccc: {},
