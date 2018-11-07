@@ -10,6 +10,7 @@ import {
 import { inject, injectable, postConstruct } from 'inversify';
 import { ExpressMiddlewareInterface } from 'routing-controllers';
 import { p2pSymbols } from '../helpers';
+import { Peer } from '../peer';
 import { ITransportMethod } from '../requests';
 import { TransportWrapper } from '../utils/TransportWrapper';
 
@@ -41,9 +42,17 @@ export class TransportAPI {
         ...this.transportMiddlewares.map((m) => m.use.bind(m)),
 
         // Real work.
-        async (req: Request, res: Response, next: NextFunction) => {
+        async (
+          req: Request & { peer: Peer },
+          res: Response,
+          next: NextFunction
+        ) => {
           try {
-            const resp = await tm.handleRequest(req.body, req.query);
+            const resp = await tm.handleRequest({
+              body: req.body,
+              query: req.query,
+              requester: req.peer,
+            });
             const wrappedResp = await this.transportWrapper.wrapResponse({
               success: true,
               wrappedResponse: resp,

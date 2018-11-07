@@ -65,14 +65,15 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
     }
 
     // Add peer only if not firewalled
+    const p = this.peersLogic.create(this.computeBasePeerType(request));
+    p.applyHeaders(request.headers as any);
     if (
       typeof request.headers.firewalled === 'undefined' ||
       request.headers.firewalled === 'false'
     ) {
-      const p = this.peersLogic.create(this.computeBasePeerType(request));
-      p.applyHeaders(request.headers as any);
       this.peersModule.update(p);
     }
+    (request as any).peer = p;
     next();
   }
 

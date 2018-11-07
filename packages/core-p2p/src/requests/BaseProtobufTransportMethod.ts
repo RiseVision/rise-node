@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import { MyConvOptions } from '../helpers';
 import { BaseTransportMethod } from './BaseTransportMethod';
+import { SingleTransportPayload } from './ITransportMethod';
 
 // tslint:disable-next-line
 export type ProtoIdentifier<T> = {
@@ -29,12 +30,14 @@ export class BaseProtobufTransportMethod<
     );
   }
 
-  protected async decodeRequest(buf: Buffer): Promise<Data> {
-    if (buf === null || !this.protoRequest) {
+  protected async decodeRequest(
+    req: SingleTransportPayload<Data, Query> & { body: Buffer }
+  ): Promise<Data> {
+    if (req.body === null || !this.protoRequest) {
       return null;
     }
     return this.protoBufHelper.decodeToObj(
-      buf,
+      req.body,
       this.protoRequest.namespace,
       this.protoRequest.messageType,
       this.protoRequest.convOptions
