@@ -33,7 +33,10 @@ describe('apis/requests/PeersListRequest', () => {
     it('bau', async () => {
       const peersModule = container.get<PeersModule>(p2pSymbols.modules.peers);
       const stub = sandbox.stub(peersModule, 'list').resolves({ peers });
-      const buf = await peerRequestFactory.handleRequest(null, null);
+      const buf = await peerRequestFactory.handleRequest({
+        body: null,
+        query: null,
+      });
       expect(buf.length).gte(10);
 
       // try decoding

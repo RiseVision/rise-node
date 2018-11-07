@@ -1,4 +1,5 @@
 import { injectable } from 'inversify';
+import { Overwrite } from 'utility-types';
 import { MyConvOptions } from '../helpers';
 import { BaseTransportMethod } from './BaseTransportMethod';
 import { SingleTransportPayload } from './ITransportMethod';
@@ -31,7 +32,7 @@ export class BaseProtobufTransportMethod<
   }
 
   protected async decodeRequest(
-    req: SingleTransportPayload<Data, Query> & { body: Buffer }
+    req: Overwrite<SingleTransportPayload<Data, Query>, { body?: Buffer }>
   ): Promise<Data> {
     if (req.body === null || !this.protoRequest) {
       return null;

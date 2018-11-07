@@ -31,7 +31,7 @@ export interface ITransportMethod<Data, Query, Out> {
    * @param req the request object
    * NOTE: all errors should be handled here.
    */
-  handleRequest(req: SingleTransportPayload<Data, Query>): Promise<Buffer>;
+  handleRequest(req: SingleTransportPayload<Buffer, Query>): Promise<Buffer>;
 
   /**
    * handles response

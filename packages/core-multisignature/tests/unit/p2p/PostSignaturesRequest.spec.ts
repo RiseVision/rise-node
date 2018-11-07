@@ -62,7 +62,11 @@ describe('apis/requests/PostSignaturesRequest', () => {
 
   async function createRequest(body: PostSignaturesRequestDataType) {
     const r = await instance.createRequestOptions({ body });
-    const resp = await instance.handleRequest(r.data, r.query);
+    const resp = await instance.handleRequest({
+      body: r.data,
+      query: r.query,
+      requester: null,
+    });
     return instance.handleResponse(null, resp);
   }
 

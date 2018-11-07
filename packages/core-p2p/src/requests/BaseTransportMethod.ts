@@ -53,7 +53,7 @@ export class BaseTransportMethod<Data, Query, Out>
    * NOTE: all errors should be handled here.
    */
   public async handleRequest(
-    req: SingleTransportPayload<Data, Query> & { body: Buffer }
+    req: SingleTransportPayload<Buffer, Query>
   ): Promise<Buffer> {
     // Rewrite body so that furthyes
     // er calls can process pojo data.
@@ -105,7 +105,7 @@ export class BaseTransportMethod<Data, Query, Out>
    * Decodes requests from buffer to pojo
    */
   protected decodeRequest(
-    req: SingleTransportPayload<Data, Query>
+    req: SingleTransportPayload<Buffer, Query>
   ): Promise<Data> {
     return null;
   }
