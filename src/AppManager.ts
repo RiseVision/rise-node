@@ -320,6 +320,7 @@ export class AppManager {
 
     // Move the genesis from string signatures to buffer signatures
     this.genesisBlock.previousBlock = '1'; // exception for genesisblock
+    this.genesisBlock.previousBlockIDSignature = Buffer.from('00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', 'hex'); // exception for genesisblock
     this.container.get<IBlockLogic>(Symbols.logic.block).objectNormalize(this.genesisBlock);
     this.genesisBlock.previousBlock = null;
 

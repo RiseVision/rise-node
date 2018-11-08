@@ -98,6 +98,7 @@ describe('modules/forge', () => {
     blocksModuleStub.lastBlock = BlocksModel.classFromPOJO({
       blockSignature      : Buffer.from('blockSignature'),
       generatorPublicKey  : Buffer.from('pubKey'),
+      previousBlockSignature  : Buffer.from('previousBlockSignature'),
       height              : 12422,
       id                  : 'blockID',
       numberOfTransactions: 0,

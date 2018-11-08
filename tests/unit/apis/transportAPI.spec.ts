@@ -86,7 +86,23 @@ describe('apis/transportAPI', () => {
     sandbox                = sinon.createSandbox();
     txs                    = createRandomTransactions({ send: 10 }).map((t) => toBufferedTransaction(t));
     fakeBlock              = createFakeBlock({
-      previousBlock: { id: '1', height: 100 } as any,
+      previousBlock: {
+        id: '1',
+        height: 100,
+        totalAmount: 0,
+        totalFee: 0,
+        version: 0,
+        reward: 0,
+        payloadHash: Buffer.alloc(0),
+        payloadLength: 0,
+        previousBlockSignature: Buffer.alloc(0),
+        blockSignature: Buffer.alloc(0),
+        previousBlock: '1',
+        numberOfTransactions: 0,
+        timestamp: 0,
+        transactions: [],
+        generatorPublicKey: Buffer.alloc(0)
+      } ,
       timestamp    : constants.timestamp,
       transactions : txs,
     });

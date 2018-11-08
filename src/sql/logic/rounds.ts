@@ -31,7 +31,7 @@ export default {
 
   clearVotesSnapshot: 'DROP TABLE IF EXISTS mem_votes_snapshot',
 
-  performVotesSnapshot: 'CREATE TABLE mem_votes_snapshot AS SELECT address, vote FROM mem_accounts WHERE "isDelegate" = 1',
+  performVotesSnapshot: 'CREATE TABLE mem_votes_snapshot AS SELECT address, vote, "votesWeight" FROM mem_accounts WHERE "isDelegate" = 1',
 
-  restoreVotesSnapshot: 'UPDATE mem_accounts m SET vote = b.vote FROM mem_votes_snapshot b WHERE m.address = b.address',
+  restoreVotesSnapshot: 'UPDATE mem_accounts m SET vote = b.vote, "votesWeight" = b."votesWeight" FROM mem_votes_snapshot b WHERE m.address = b.address',
 };

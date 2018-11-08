@@ -56,6 +56,7 @@ export class RoundsModel extends Model<RoundsModel> {
             SELECT m."delegate", SUM(m."amount") AS "amount", "round" FROM mem_round m GROUP BY m."delegate", m."round"
           ) AS d
         WHERE "round" = (:round)::bigint
+        OR "round" = (:round)::bigint - 1
        ) as sub
        WHERE "publicKey" = decode(sub.delegate, 'hex');`,
       { round },

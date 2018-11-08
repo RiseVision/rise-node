@@ -9,6 +9,8 @@ import { createContainer } from '../../utils/containerCreator';
 import { Container } from 'inversify';
 import { Symbols } from '../../../src/ioc/symbols';
 import { AccountsModel, BlocksModel, RoundsModel } from '../../../src/models';
+import { RoundLogicScope } from '../../../src/logic';
+import { createFakeBlock } from '../../utils/blockCrafter';
 
 const expect = chai.expect;
 
@@ -23,7 +25,7 @@ const ProxyRound = proxyquire('../../../src/logic/round.ts', {
 describe('logic/round', () => {
   let sandbox: SinonSandbox;
   let instance;
-  let scope;
+  let scope: RoundLogicScope;
   let container: Container;
   let accountsModel: typeof AccountsModel;
   let roundsModel: typeof RoundsModel;
@@ -35,24 +37,23 @@ describe('logic/round', () => {
     roundsModel   = container.get(Symbols.models.rounds);
     blocksModel   = container.get(Symbols.models.blocks);
 
-    scope    = {
+    scope   = {
       backwards     : false,
-      block         : {
-        generatorPublicKey: Buffer.from('9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f', 'hex'),
-        height            : 2,
-        id                : '1',
-      },
+      dposV2: false,
+      finishRound: false,
+      preFinishRound: false,
+      block         : createFakeBlock(),
       library       : {
         logger: {
           debug: sandbox.stub(),
           trace: sandbox.stub(),
-        },
+        } as any,
       },
       modules       : {
         accounts: {
           generateAddressByPublicKey: sandbox.stub().returns(1),
           mergeAccountAndGetOPs     : sandbox.stub().returns([]),
-        },
+        } as any,
       },
       models        : {
         AccountsModel: container.get(Symbols.models.accounts),
@@ -60,10 +61,10 @@ describe('logic/round', () => {
         RoundsModel  : container.get(Symbols.models.rounds),
       },
       round         : 10,
-      roundDelegates: [{}],
+      roundDelegates: [{} as any],
       roundFees     : {},
       roundOutsiders: ['1', '2', '3'],
-      roundRewards  : {},
+      roundRewards  : [],
     };
     instance = new ProxyRound.RoundLogic(scope, container.get(Symbols.helpers.slots));
   });
@@ -129,8 +130,8 @@ describe('logic/round', () => {
   describe('mergeBlockGenerator', () => {
     it('should call mergeAccountAndGetOPs', async () => {
       await instance.mergeBlockGenerator();
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.calledOnce).to.equal(true);
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]).to.deep.equal({
+      expect((scope.modules.accounts.mergeAccountAndGetOPs as any).calledOnce).to.equal(true);
+      expect((scope.modules.accounts.mergeAccountAndGetOPs as any).firstCall.args[0]).to.deep.equal({
         blockId       : scope.block.id,
         producedblocks: scope.backwards ? -1 : 1,
         publicKey     : scope.block.generatorPublicKey,
@@ -273,28 +274,28 @@ describe('logic/round', () => {
       expect(at.firstCall.args.length).to.equal(1);
       expect(at.firstCall.args[0]).to.equal(0);
       expect(at.secondCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledThrice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
+      expect((scope.library.logger.trace as any).calledThrice).to.be.true;
+      expect((scope.library.logger.trace as any).firstCall.args.length).to.be.equal(2);
+      expect((scope.library.logger.trace as any).firstCall.args[0]).to.be.equal(
         'Delegate changes'
       );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
+      expect((scope.library.logger.trace as any).firstCall.args[1]).to.deep.equal({
         changes : {
           feesRemaining: 10,
         },
         delegate: {},
       });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
+      expect((scope.library.logger.trace as any).secondCall.args.length).to.be.equal(2);
+      expect((scope.library.logger.trace as any).secondCall.args[0]).to.be.equal(
         'Fees remaining'
       );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
+      expect((scope.library.logger.trace as any).secondCall.args[1]).to.deep.equal({
         delegate: {},
         fees    : 10,
         index   : 0,
       });
-      expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
+      expect((scope.library.logger.trace as any).thirdCall.args.length).to.be.equal(2);
+      expect((scope.library.logger.trace as any).thirdCall.args[0]).to.be.equal(
         'Applying round'
       );
       // TODO: Check this ->
@@ -317,19 +318,19 @@ describe('logic/round', () => {
       expect(at.secondCall.args[0]).to.equal(1);
       expect(at.thirdCall.args[0]).to.equal(1);
 
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.calledThrice).is.true;
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]).is.deep.eq({
+      expect((scope.modules.accounts.mergeAccountAndGetOPs as SinonStub).calledThrice).is.true;
+      expect((scope.modules.accounts.mergeAccountAndGetOPs as SinonStub).firstCall.args[0]).is.deep.eq({
         balance: 10,
-        blockId: '1',
+        blockId: scope.block.id,
         fees: 5,
         publicKey: Buffer.from('aa', 'hex'),
         rewards: 4,
         u_balance: 10,
         round: 10
       });
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]).is.deep.eq({
+      expect((scope.modules.accounts.mergeAccountAndGetOPs as SinonStub).secondCall.args[0]).is.deep.eq({
         balance: 10,
-        blockId: '1',
+        blockId: scope.block.id,
         fees: 5,
         publicKey: Buffer.from('bb', 'hex'),
         rewards: 4,
@@ -337,9 +338,9 @@ describe('logic/round', () => {
         round: 10
       });
       // Remainder of 1 feesRemaining
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]).is.deep.eq({
+      expect((scope.modules.accounts.mergeAccountAndGetOPs as SinonStub).thirdCall.args[0]).is.deep.eq({
         balance: 1,
-        blockId: '1',
+        blockId: scope.block.id,
         fees: 1,
         publicKey: Buffer.from('bb', 'hex'),
         u_balance: 1,
@@ -352,16 +353,26 @@ describe('logic/round', () => {
   });
 
   describe('land', () => {
-    it('should call correct methods', async () => {
-      const updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
-      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
-      const flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
-      const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
-      const reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
+    let updateVotes: SinonStub;
+    let updateMissedBlocks: SinonStub;
+    let flushRound: SinonStub;
+    let applyRound: SinonStub;
+    let reCalcVotes: SinonStub;
+    beforeEach(() => {
+      updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
+      updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
+      flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
+      applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
+      reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
       reCalcVotes.onCall(0).returns({reCalcVotes: 1});
       reCalcVotes.onCall(1).returns({reCalcVotes: 2});
 
-      const res = instance.land();
+    });
+    it('should call correct methods for finishRound v1', async () => {
+      scope.finishRound = true;
+      scope.preFinishRound = false;
+      scope.dposV2 = false;
+      const res = instance.apply();
 
       expect(updateVotes.calledTwice).to.be.true;
       expect(updateMissedBlocks.calledOnce).to.be.true;
@@ -384,24 +395,80 @@ describe('logic/round', () => {
         { updateVote: true},
         { reCalcVotes: 2},
         { flushRound: true},
+        { type: 'custom', query: roundSQL.clearRoundSnapshot, model: scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.clearVotesSnapshot, model: scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.performRoundSnapshot, model: scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.performVotesSnapshot, model: scope.models.RoundsModel },
+      ]);
+    });
+
+    it('should return proper ops for finishRound v2', async () => {
+      scope.finishRound = true;
+      scope.preFinishRound = false;
+      scope.dposV2 = true;
+
+      const r = instance.apply();
+      expect(r).deep.eq([
+        {flushRound: true},
+        {apply: 1},
+        {apply: 2},
+      ]);
+
+    });
+
+    it ('should return proper ops for preFinishRound v1', async () => {
+      scope.finishRound = false;
+      scope.preFinishRound = true;
+      scope.dposV2 = false;
+
+      const r = instance.apply();
+      expect(r).deep.eq([]);
+
+    });
+
+    it('should return proper ops for preFinishRound v2', async () => {
+      scope.finishRound = false;
+      scope.preFinishRound = true;
+      scope.dposV2 = true;
+
+      const r = instance.apply();
+
+      expect(r).deep.eq([
+        { updateVote: true },
+        { reCalcVotes: 1 },
+        { type: 'custom', query: roundSQL.clearRoundSnapshot, model: scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.clearVotesSnapshot, model: scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.performRoundSnapshot, model: scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.performVotesSnapshot, model: scope.models.RoundsModel },
       ]);
     });
 
   });
 
   describe('backwardLand', () => {
-    it('should call correct methods', async () => {
-      const updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
-      const updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
-      const flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
-      const applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
-      const restoreRoundSnapshot = sandbox.stub(instance, 'restoreRoundSnapshot').returns({restoreRound: true});
-      const restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').returns({restorevotes: true});
-      const reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
+    let updateVotes: SinonStub;
+    let updateMissedBlocks: SinonStub;
+    let flushRound: SinonStub;
+    let applyRound: SinonStub;
+    let restoreRoundSnapshot: SinonStub;
+    let restoreVotesSnapshot: SinonStub;
+    let reCalcVotes: SinonStub;
+    beforeEach(() => {
+      updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
+      updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
+      flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
+      applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
+      restoreRoundSnapshot = sandbox.stub(instance, 'restoreRoundSnapshot').returns({restoreRound: true});
+      restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').returns({restorevotes: true});
+      reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
       reCalcVotes.onCall(0).returns({reCalcVotes: 1});
       reCalcVotes.onCall(1).returns({reCalcVotes: 2});
-
-      const res = instance.backwardLand();
+    })
+    it('should call correct methods and return proper data for v1 finishRound', async () => {
+      scope.dposV2 = false;
+      scope.finishRound = true;
+      scope.preFinishRound = false;
+      const res = instance.undo();
 
       expect(updateVotes.calledTwice).to.be.true;
       expect(updateMissedBlocks.calledOnce).to.be.true;
@@ -428,6 +495,37 @@ describe('logic/round', () => {
         { flushRound: true},
         { restoreRound: true},
         { restorevotes: true},
+      ]);
+    });
+    it('should return proper ops for v1 preFinishRound', async () => {
+      scope.dposV2 = false;
+      scope.finishRound = false;
+      scope.preFinishRound = true;
+      const res = instance.undo();
+
+      expect(res).deep.eq([]);
+    });
+    it('should return proper ops for v2 prefinishRound', async () => {
+      scope.dposV2 = true;
+      scope.finishRound = false;
+      scope.preFinishRound = true;
+      const res = instance.undo();
+
+      expect(res).deep.eq([
+        { restoreRound: true},
+        { restorevotes: true},
+      ]);
+    });
+    it('should return proper ops for v2 finishRound', async () => {
+      scope.dposV2 = true;
+      scope.finishRound = true;
+      scope.preFinishRound = false;
+      const res = instance.undo();
+
+      expect(res).deep.eq([
+        { updateMissed: true },
+        { apply: 1 },
+        { apply: 2 }
       ]);
     });
 

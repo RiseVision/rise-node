@@ -59,12 +59,12 @@ export interface IRoundLogic {
   applyRound(): Array<DBOp<any>>;
 
   /**
-   * Performs operations to go to the next round.
+   * Performs operations to go to the next block
    */
-  land(): Array<DBOp<any>>;
+  apply(): Array<DBOp<any>>;
 
   /**
-   * Land back from a future round
+   * go back from a future block
    */
-  backwardLand(): Array<DBOp<any>>;
+  undo(): Array<DBOp<any>>;
 }

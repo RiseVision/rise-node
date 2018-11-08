@@ -7,7 +7,6 @@ import { IAccountsModule, IDelegatesModule, IRoundsModule } from '../ioc/interfa
 import { Symbols } from '../ioc/symbols';
 import { RoundLogicScope, SignedBlockType } from '../logic/';
 import { AccountsModel, BlocksModel, RoundsModel } from '../models';
-import roundsSQL from '../sql/logic/rounds';
 import { DBOp } from '../types/genericTypes';
 import { address } from '../types/sanityTypes';
 
@@ -76,10 +75,7 @@ export class RoundsModule implements IRoundsModule {
 
       const roundLogic            = new this.RoundLogic(roundLogicScope, this.slots);
       const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
-      if (roundLogicScope.finishRound) {
-        // call backwardLand only if this was the last block in round.
-        ops.push(... roundLogic.backwardLand());
-      }
+      ops.push(... roundLogic.undo());
       ops.push(roundLogic.markBlockId());
       return this.dbHelper.performOps(ops, transaction);
     });
@@ -97,8 +93,8 @@ export class RoundsModule implements IRoundsModule {
           this.getSnapshotRounds() > 0 && this.getSnapshotRounds() === roundLogicScope.round
         );
         const ops: Array<DBOp<any>> = [...roundLogic.mergeBlockGenerator()];
+        ops.push(... roundLogic.apply());
         if (roundLogicScope.finishRound) {
-          ops.push(... roundLogic.land());
           if (snapshotRound) {
             ops.push(roundLogic.truncateBlocks());
           }
@@ -107,23 +103,6 @@ export class RoundsModule implements IRoundsModule {
         await this.dbHelper.performOps(ops, transaction);
         if (roundLogicScope.finishRound) {
           await this.bus.message('finishRound', roundLogicScope.round);
-        }
-      },
-      async () => {
-        // Check if we are one block before last block of round, if yes - perform round snapshot
-        // TODO: Check either logic or comment one of the 2 seems off.
-        if ((block.height + 1) % this.slots.delegates === 0) {
-          this.logger.debug('Performing round snapshot...');
-
-          await this.dbHelper.performOps([
-              roundsSQL.clearRoundSnapshot,
-              roundsSQL.performRoundSnapshot,
-              roundsSQL.clearVotesSnapshot,
-              roundsSQL.performVotesSnapshot,
-            ].map<DBOp<any>>((query) => ({ model: this.RoundsModel, query, type: 'custom' })),
-            transaction);
-
-          this.logger.trace('Round snapshot done');
         }
       });
 
@@ -147,6 +126,7 @@ export class RoundsModule implements IRoundsModule {
     const finishRound = (
       (nextRound !== round) || (block.height === 1)
     );
+    const preFinishRound = !finishRound && this.roundsLogic.calcRound(block.height + 2) !== round;
     try {
       // Set ticking flag to true
       this.appStateLogic.set('rounds.isTicking', true);
@@ -163,6 +143,7 @@ export class RoundsModule implements IRoundsModule {
       const roundLogicScope: RoundLogicScope = {
         backwards,
         block,
+        dposV2: block.height >= this.constants.dposv2.firstBlock,
         finishRound,
         library: {
           logger: this.logger,
@@ -175,6 +156,7 @@ export class RoundsModule implements IRoundsModule {
         modules: {
           accounts: this.accountsModule,
         },
+        preFinishRound,
         round,
         roundOutsiders,
         ...roundSums,

@@ -17,6 +17,10 @@ export default {
       type  : 'object',
       format: 'signatureBuf',
     },
+    previousBlockIDSignature : {
+      type  : 'object',
+      format: 'signatureBuf',
+    },
     generatorPublicKey  : {
       type  : 'object',
       format: 'publicKeyBuf',

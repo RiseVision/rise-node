@@ -88,6 +88,7 @@ describe('modules/delegates', () => {
     sha256Spy = sandbox.spy(supersha, 'sha256');
     const lastBlock                                   = {
       blockSignature      : Buffer.from('blockSignature'),
+      previousBlockSignature : Buffer.from('previousblockSignature'),
       generatorPublicKey  : Buffer.from('genPublicKey'),
       height              : 12422,
       id                  : 'blockID',

@@ -2,8 +2,8 @@ import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
-import z_schema from 'z-schema';
 import * as supersha from 'supersha';
+import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import {IAccountLogic, IBlockLogic, ITransactionLogic} from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
@@ -28,6 +28,7 @@ export type BlockType<T = Buffer> = {
   numberOfTransactions: number;
   payloadLength: number;
   previousBlock: string;
+  previousBlockIDSignature: T;
   generatorPublicKey: T;
   transactions?: Array<IBaseTransaction<any>>;
 };
@@ -64,6 +65,7 @@ export class BlockLogic implements IBlockLogic {
     'timestamp',
     'height',
     'previousBlock',
+    'previousBlockIDSignature',
     'numberOfTransactions',
     'totalAmount',
     'totalFee',
@@ -144,20 +146,24 @@ export class BlockLogic implements IBlockLogic {
     }
 
     const block: SignedAndChainedBlockType = {
-      blockSignature      : undefined,
-      generatorPublicKey  : data.keypair.publicKey,
-      height              : data.previousBlock.height + 1,
-      id                  : undefined,
-      numberOfTransactions: blockTransactions.length,
-      payloadHash         : payloadHash.digest(),
-      payloadLength       : size,
-      previousBlock       : data.previousBlock.id,
+      blockSignature        : undefined,
+      generatorPublicKey    : data.keypair.publicKey,
+      height                : data.previousBlock.height + 1,
+      id                    : undefined,
+      numberOfTransactions  : blockTransactions.length,
+      payloadHash           : payloadHash.digest(),
+      payloadLength         : size,
+      previousBlock         : data.previousBlock.id,
+      previousBlockIDSignature: this.ed.sign(
+        supersha.sha256(Buffer.from(data.previousBlock.id, 'utf8')),
+        data.keypair
+      ),
       reward,
-      timestamp           : data.timestamp,
+      timestamp             : data.timestamp,
       totalAmount,
       totalFee,
-      transactions        : blockTransactions,
-      version             : 0,
+      transactions          : blockTransactions,
+      version               : 0,
     };
 
     block.blockSignature = this.sign(block, data.keypair);
@@ -222,8 +228,8 @@ export class BlockLogic implements IBlockLogic {
       }
     }
 
-    ['generatorPublicKey', 'payloadHash', 'blockSignature'].forEach((bufKey) => {
-      if (!Buffer.isBuffer(block[bufKey])) {
+    ['generatorPublicKey', 'payloadHash', 'blockSignature', 'previousBlockIDSignature'].forEach((bufKey) => {
+      if (block[bufKey] && !Buffer.isBuffer(block[bufKey])) {
         block[bufKey] = Buffer.from(block[bufKey], 'hex');
       }
     });
@@ -251,23 +257,24 @@ export class BlockLogic implements IBlockLogic {
     } else {
       const self = this;
       const block       = {
-        blockSignature      : Buffer.from(rawBlock.b_blockSignature, 'hex'),
+        blockSignature        : Buffer.from(rawBlock.b_blockSignature, 'hex'),
         get generatorId() {
           return self.accountLogic.generateAddressByPublicKey(rawBlock.b_generatorPublicKey);
         },
-        generatorPublicKey  : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
-        height              : parseInt(`${rawBlock.b_height}`, 10),
-        id                  : rawBlock.b_id,
-        numberOfTransactions: parseInt(`${rawBlock.b_numberOfTransactions}`, 10),
-        payloadHash         : Buffer.from(rawBlock.b_payloadHash, 'hex'),
-        payloadLength       : parseInt(`${rawBlock.b_payloadLength}`, 10),
-        previousBlock       : rawBlock.b_previousBlock,
-        reward              : parseInt(`${rawBlock.b_reward}`, 10),
-        timestamp           : parseInt(`${rawBlock.b_timestamp}`, 10),
-        totalAmount         : parseInt(`${rawBlock.b_totalAmount}`, 10),
-        totalFee            : parseInt(`${rawBlock.b_totalFee}`, 10),
-        totalForged         : '',
-        version             : parseInt(`${rawBlock.b_version}`, 10),
+        generatorPublicKey    : Buffer.from(rawBlock.b_generatorPublicKey, 'hex'),
+        height                : parseInt(`${rawBlock.b_height}`, 10),
+        id                    : rawBlock.b_id,
+        numberOfTransactions  : parseInt(`${rawBlock.b_numberOfTransactions}`, 10),
+        payloadHash           : Buffer.from(rawBlock.b_payloadHash, 'hex'),
+        payloadLength         : parseInt(`${rawBlock.b_payloadLength}`, 10),
+        previousBlock         : rawBlock.b_previousBlock,
+        previousBlockIDSignature: null, // Used only in transport v1 - TODO: kill me!
+        reward                : parseInt(`${rawBlock.b_reward}`, 10),
+        timestamp             : parseInt(`${rawBlock.b_timestamp}`, 10),
+        totalAmount           : parseInt(`${rawBlock.b_totalAmount}`, 10),
+        totalFee              : parseInt(`${rawBlock.b_totalFee}`, 10),
+        totalForged           : '',
+        version               : parseInt(`${rawBlock.b_version}`, 10),
       };
       block.totalForged = new BigNum(block.totalFee).plus(new BigNum(block.reward)).toString();
       return block;
@@ -288,7 +295,7 @@ export class BlockLogic implements IBlockLogic {
   }
 
   public getBytes(block: BlockType | SignedBlockType, includeSignature: boolean = true): Buffer {
-    const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
+    const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64 + 64;
     const bb   = new ByteBuffer(size, true /* little endian */);
     bb.writeInt(block.version);
     bb.writeInt(block.timestamp);
@@ -328,6 +335,15 @@ export class BlockLogic implements IBlockLogic {
       bb.writeByte(generatorPublicKeyBuffer[i]);
     }
 
+    // If prevBlockSignature exists use it and add it to the bytes.
+    const prevBlockSignBuffer = block.previousBlockIDSignature
+      ? block.previousBlockIDSignature
+      : Buffer.alloc(0);
+
+    for (let i = 0; i < prevBlockSignBuffer.length; i++) {
+      bb.writeByte(prevBlockSignBuffer[i]);
+    }
+
     if (typeof((block as SignedBlockType).blockSignature) !== 'undefined' && includeSignature) {
       const blockSignatureBuffer = (block as SignedBlockType).blockSignature;
       // tslint:disable-next-line
@@ -364,16 +380,17 @@ export class BlockLogic implements IBlockLogic {
     const previousBlock = previousValid ?
       BigNum.fromBuffer(previousIdBytes).toString() : null;
 
-    const numberOfTransactions = bb.readInt(16);
-    const totalAmount = bb.readLong(20).toNumber();
-    const totalFee = bb.readLong(28).toNumber();
-    const reward = bb.readLong(36).toNumber();
-    const payloadLength = bb.readInt(44);
-    const payloadHash = blk.bytes.slice(48, 80);
-    const generatorPublicKey = blk.bytes.slice(80, 112);
-    const blockSignature = blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
-    const id = this.getIdFromBytes(blk.bytes);
-    const transactions = blk.transactions.map((tx) => {
+    const numberOfTransactions   = bb.readInt(16);
+    const totalAmount            = bb.readLong(20).toNumber();
+    const totalFee               = bb.readLong(28).toNumber();
+    const reward                 = bb.readLong(36).toNumber();
+    const payloadLength          = bb.readInt(44);
+    const payloadHash            = blk.bytes.slice(48, 80);
+    const generatorPublicKey     = blk.bytes.slice(80, 112);
+    const previousBlockIDSignature  = blk.bytes.length === 176 ? null : blk.bytes.slice(112, 176);
+    const blockSignature         = previousBlockIDSignature ? blk.bytes.slice(177, 177 + 64) : blk.bytes.slice(112, 176);
+    const id                     = this.getIdFromBytes(blk.bytes);
+    const transactions           = blk.transactions.map((tx) => {
       const baseTx = this.transaction.fromBytes(tx);
       return {
         ...baseTx,
@@ -395,11 +412,12 @@ export class BlockLogic implements IBlockLogic {
       reward,
       payloadLength,
       payloadHash,
+      previousBlockIDSignature,
       generatorPublicKey,
       blockSignature,
       transactions,
-      height: blk.height,
-      relays: blk.relays,
+      height            : blk.height,
+      relays            : blk.relays,
     };
   }
 

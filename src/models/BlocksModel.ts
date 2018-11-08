@@ -53,6 +53,9 @@ export class BlocksModel extends Model<BlocksModel> {
   public payloadLength: number;
 
   @Column(DataType.BLOB)
+  public previousBlockIDSignature: Buffer;
+
+  @Column(DataType.BLOB)
   public payloadHash: Buffer;
 
   @Column(DataType.BLOB)
@@ -93,10 +96,11 @@ export class BlocksModel extends Model<BlocksModel> {
     }
     const toRet = {
       ...b,
-      blockSignature    : b.blockSignature.toString('hex'),
-      transactions      : txs as any,
-      generatorPublicKey: b.generatorPublicKey.toString('hex'),
-      payloadHash       : b.payloadHash.toString('hex'),
+      blockSignature          : b.blockSignature.toString('hex'),
+      generatorPublicKey      : b.generatorPublicKey.toString('hex'),
+      payloadHash             : b.payloadHash.toString('hex'),
+      previousBlockIDSignature: b.previousBlockIDSignature ? b.previousBlockIDSignature.toString('hex') : null,
+      transactions            : txs as any,
     };
     return toRet;
   }

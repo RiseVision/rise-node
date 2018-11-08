@@ -18,6 +18,8 @@ export type RoundLogicScope = {
   roundDelegates: Buffer[];
   roundFees: any;
   roundRewards: number[];
+  preFinishRound: boolean;
+  dposV2: boolean;
   finishRound: boolean;
   library: {
     logger: ILogger
@@ -238,7 +240,46 @@ export class RoundLogic implements IRoundLogic {
   /**
    * Performs operations to go to the next round.
    */
-  public land(): Array<DBOp<any>> {
+  public apply(): Array<DBOp<any>> {
+    if (this.scope.finishRound) {
+      if (this.scope.dposV2) {
+        return this.closeRoundV2();
+      } else {
+        return this.closeRoundV1();
+      }
+    } else if (this.scope.dposV2 && this.scope.preFinishRound) {
+      return [
+        { type: 'custom', query: roundSQL.clearRoundSnapshot, model: this.scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.clearVotesSnapshot, model: this.scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.performRoundSnapshot, model: this.scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.performVotesSnapshot, model: this.scope.models.RoundsModel },
+        this.updateVotes(),
+        this.reCalcVotes(),
+        this.flushRound(),
+      ];
+    }
+    return [];
+  }
+
+  /**
+   * Land back from a future round
+   */
+  public undo(): Array<DBOp<any>> {
+    if (this.scope.finishRound) {
+      if (this.scope.dposV2) {
+        return this.backwardCloseRoundV2();
+      }
+      return this.backwardCloseRoundV1();
+    } else if (this.scope.dposV2 && this.scope.preFinishRound) {
+      return [
+        this.restoreRoundSnapshot(),
+        this.restoreVotesSnapshot(),
+      ];
+    }
+    return [];
+  }
+
+  private closeRoundV1(): Array<DBOp<any>> {
     return [
       this.updateVotes(),
       this.reCalcVotes(),
@@ -248,13 +289,20 @@ export class RoundLogic implements IRoundLogic {
       this.updateVotes(),
       this.reCalcVotes(),
       this.flushRound(),
+      { type: 'custom', query: roundSQL.clearRoundSnapshot, model: this.scope.models.RoundsModel },
+      { type: 'custom', query: roundSQL.clearVotesSnapshot, model: this.scope.models.RoundsModel },
+      { type: 'custom', query: roundSQL.performRoundSnapshot, model: this.scope.models.RoundsModel },
+      { type: 'custom', query: roundSQL.performVotesSnapshot, model: this.scope.models.RoundsModel },
     ];
   }
 
-  /**
-   * Land back from a future round
-   */
-  public backwardLand(): Array<DBOp<any>> {
+  private closeRoundV2(): Array<DBOp<any>> {
+    return [
+      ... this.applyRound(),
+    ];
+  }
+
+  private backwardCloseRoundV1() {
     return [
       this.updateVotes(),
       this.reCalcVotes(),
@@ -268,4 +316,17 @@ export class RoundLogic implements IRoundLogic {
       this.restoreVotesSnapshot(),
     ];
   }
+
+  private backwardCloseRoundV2() {
+    return [
+      this.updateMissedBlocks(),
+      {
+        model  : this.scope.models.RoundsModel,
+        options: { where: { round: this.scope.round } },
+        type   : 'remove',
+      } as any,
+      ... this.applyRound(),
+    ];
+  }
+
 }

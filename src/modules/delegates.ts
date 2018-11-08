@@ -69,56 +69,63 @@ export class DelegatesModule implements IDelegatesModule {
     return this.checkDelegates(account, votes, 'unconfirmed');
   }
 
+  private delegatesCacheByRound: {[round: number]: Buffer[]} = {};
   /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.
    * @return {Promise<publicKey[]>}
    */
   public async generateDelegateList(height: number): Promise<Buffer[]> {
-    let delegates  = await this.getKeysSortByVote();
-    const seedSource = this.roundsLogic.calcRound(height).toString();
+    const round = this.roundsLogic.calcRound(height);
+    if (!this.delegatesCacheByRound[round]) {
+      let delegates    = await this.getKeysSortByVote(height);
+      const seedSource = this.roundsLogic.calcRound(height).toString();
 
-    // If dposv2 is on, do a Weighted Random Selection of the round forgers.
-    if (height >= this.constants.dposv2.firstBlock) {
-      let pool: Array<{publicKey: Buffer, vote: number, weight?: number}>;
+      // If dposv2 is on, do a Weighted Random Selection of the round forgers.
+      if (height >= this.constants.dposv2.firstBlock) {
+        let pool: Array<{ publicKey: Buffer, vote: number, weight?: number }>;
 
-      // Initialize source random numbers that will generate a predictable sequence, given the seed.
-      const generator = new MersenneTwister(await this.calculateSafeRoundSeed(height));
+        // Initialize source random numbers that will generate a predictable sequence, given the seed.
+        const generator = new MersenneTwister(await this.calculateSafeRoundSeed(height));
 
-      // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
-      pool = delegates.map((delegate) => {
-        const rand = generator.random(); // 0 >= rand < 1
-        return {
-          ...delegate,
-          weight: rand ** ( 1 / delegate.vote ), // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
-        };
-      });
+        // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
+        pool = delegates.map((delegate) => {
+          const rand = generator.random(); // 0 >= rand < 1
+          return {
+            ...delegate,
+            weight: rand ** (1 / delegate.vote), // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
+          };
+        });
 
-      // Sort by weight
-      pool.sort((a, b) => {
-        // If two elements have the same weight, publicKey defines the position (higher value first)
-        if (a.weight === b.weight) {
-          return Buffer.compare(b.publicKey, a.publicKey);
-        }
-        return a.weight > b.weight ? -1 : 1;
-      });
-      delegates = pool.slice(0, this.constants.activeDelegates);
-    }
-
-    // Shuffle the delegates.
-    let currentSeed  = supersha.sha256(Buffer.from(seedSource, 'utf8'));
-
-    for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
-      for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
-        const newIndex  = currentSeed[x] % delegatesCount;
-        const b         = delegates[newIndex];
-        delegates[newIndex] = delegates[i];
-        delegates[i]        = b;
+        // Sort by weight
+        pool.sort((a, b) => {
+          // If two elements have the same weight, publicKey defines the position (higher value first)
+          if (a.weight === b.weight) {
+            return Buffer.compare(b.publicKey, a.publicKey);
+          }
+          return a.weight > b.weight ? -1 : 1;
+        });
+        delegates = pool.slice(0, this.constants.activeDelegates);
       }
-      currentSeed = supersha.sha256(currentSeed);
-    }
 
-    return delegates.slice(0, this.slots.delegates).map((d) => d.publicKey);
+      // Shuffle the delegates.
+      let currentSeed = supersha.sha256(Buffer.from(seedSource, 'utf8'));
+
+      for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
+        for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
+          const newIndex      = currentSeed[x] % delegatesCount;
+          const b             = delegates[newIndex];
+          delegates[newIndex] = delegates[i];
+          delegates[i]        = b;
+        }
+        currentSeed = supersha.sha256(currentSeed);
+      }
+
+      this.delegatesCacheByRound[round] = delegates
+        .slice(0, this.slots.delegates)
+        .map((d) => d.publicKey);
+    }
+    return this.delegatesCacheByRound[round];
   }
 
   /**
@@ -221,17 +228,18 @@ export class DelegatesModule implements IDelegatesModule {
   }
 
   public onRoundBackwardTick(block: SignedAndChainedBlockType) {
-    // Delete round seed cache for this round
-    delete this.roundSeeds[this.roundsLogic.calcRound(block.height)];
+    // Delete round seed cache for next round that is not valid anymore.
+    delete this.roundSeeds[this.roundsLogic.calcRound(block.height) + 1];
+    delete this.delegatesCacheByRound[this.roundsLogic.calcRound(block.height) + 1];
   }
 
   /**
    * Get delegates public keys sorted by descending vote.
    */
-  private async getKeysSortByVote(): Promise<Array<{publicKey: Buffer, vote: number}>> {
+  private async getKeysSortByVote(height: number): Promise<Array<{publicKey: Buffer, vote: number}>> {
     const fields: FieldsInModel<AccountsModel> = ['publicKey'];
     let sort: string | { [k: string]: -1 | 1 };
-    if (this.blocksModule.lastBlock.height < this.constants.dposv2.firstBlock) {
+    if (height < this.constants.dposv2.firstBlock) {
       sort = {vote: -1, publicKey: 1};
       fields.push('vote');
     } else {

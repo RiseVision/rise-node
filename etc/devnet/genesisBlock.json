@@ -8,6 +8,7 @@
   "payloadLength": 37262,
   "reward": 0,
   "previousBlock": null,
+  "previousBlockIDSignature": "01",
   "generatorPublicKey": "b181c550a298e7ca762ed70f02b31e2a4b35de95697ebce2b0c38701fab0c40b",
   "transactions": [
     {

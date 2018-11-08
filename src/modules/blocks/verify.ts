@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import { inject, injectable } from 'inversify';
-import { constants as constantsType, ForkType, ILogger, Slots } from '../../helpers/';
+import * as supersha from 'supersha';
+import { constants as constantsType, Ed, ForkType, ILogger, Slots } from '../../helpers/';
 import { IBlockLogic, IBlockReward, ITransactionLogic } from '../../ioc/interfaces/logic';
 import {
   IAccountsModule,
@@ -26,6 +27,9 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private logger: ILogger;
   @inject(Symbols.helpers.slots)
   private slots: Slots;
+
+  @inject(Symbols.helpers.ed)
+  private ed: Ed;
 
   // Logic
   @inject(Symbols.logic.block)
@@ -69,12 +73,12 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Verifies block before fork detection and return all possible errors related to block
    */
   public verifyReceipt(block: SignedBlockType): { errors: string[], verified: boolean } {
-    const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
+    const lastBlock = this.blocksModule.lastBlock;
 
     block.height           = lastBlock.height + 1;
     const errors: string[] = [
       this.verifySignature(block),
-      this.verifyPreviousBlock(block),
+      this.verifyPreviousBlock(block, lastBlock),
       this.verifyBlockSlotWindow(block),
       this.verifyBlockAgainstLastIds(block),
       this.verifyVersion(block),
@@ -95,11 +99,11 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Verify block before processing and return all possible errors related to block
    */
   public async verifyBlock(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }> {
-    const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
+    const lastBlock = this.blocksModule.lastBlock;
 
     const errors = [
       this.verifySignature(block),
-      this.verifyPreviousBlock(block),
+      this.verifyPreviousBlock(block, lastBlock),
       this.verifyVersion(block),
       this.verifyReward(block),
       this.verifyId(block),
@@ -229,9 +233,19 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   /**
    * Verifies that block has a previousBlock
    */
-  private verifyPreviousBlock(block: SignedBlockType): string[] {
-    if (!block.previousBlock && block.height !== 1) {
+  private verifyPreviousBlock(block: SignedBlockType, prevBlock: SignedAndChainedBlockType): string[] {
+    if (block.height === 1) {
+      return [];
+    }
+    if (block.previousBlock !== prevBlock.id) {
       return ['Invalid previous block'];
+    }
+    if (this.constants.dposv2.firstBlock <= block.height && !this.ed.verify(
+      supersha.sha256(Buffer.from(prevBlock.id, 'utf8')),
+      block.previousBlockIDSignature,
+      block.generatorPublicKey
+      )) {
+      return ['Invalid previous block signature'];
     }
     return [];
   }
