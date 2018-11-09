@@ -31,7 +31,6 @@ describe('Fair vote system', async () => {
   initializer.setup();
   beforeEach(async () => {
     blocksModule  = initializer.appManager.container.get(Symbols.modules.blocks);
-    console.log('curblock', blocksModule.lastBlock.height);
     accountsModel = initializer.appManager.container.get<typeof AccountsModel>(Symbols.models.accounts);
     // Each Delegate has a genesis balance of 108910891000000 and voted for himself. We transfer 1 third of balance
     // of a random genesis delegate to a new account that will vote for himself. This will give enough funds to increase
@@ -135,7 +134,4 @@ describe('Fair vote system', async () => {
     expect(accAfter.votesWeight).to.be.eq(Math.round(accAfter.vote * 0.66666));
   });
 
-  describe('transport', () => {
-    it('should propagate blockIdSignature as well');
-  });
 });
