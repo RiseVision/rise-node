@@ -565,7 +565,7 @@ describe('logic/block', () => {
         'timestamp',
         'height',
         'previousBlock',
-        'previousBlockSignature',
+        'previousBlockIDSignature',
         'numberOfTransactions',
         'totalAmount',
         'totalFee',

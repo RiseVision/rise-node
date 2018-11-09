@@ -360,36 +360,12 @@ export class AccountLogic implements IAccountLogic {
           }
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
             update[fieldName] = sequelize.literal(`${fieldName} + ${Math.floor(trueValue)}`);
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
-            }
           } else if (trueValue < 0) {
             update[fieldName] = sequelize.literal(`${fieldName} - ${Math.floor(Math.abs(trueValue))}`);
             // If decrementing u_balance on account
             if (update.u_balance) {
               // Remove virginity and ensure marked columns become immutable
               update.virgin = 0;
-            }
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
             }
           }
           break;

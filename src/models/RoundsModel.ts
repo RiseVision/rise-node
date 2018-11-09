@@ -42,43 +42,4 @@ export class RoundsModel extends Model<RoundsModel> {
     return res;
   }
 
-  /**
-   * Generates SQL to update mem_accounts based on data in mem_rounds
-   * @param {number} round
-   * @return {string}
-   */
-  public static updateVotesSQL(round: number): string {
-    return sequelizeUtils.formatNamedParameters(
-      `UPDATE mem_accounts SET "vote" = "vote" + sub.amount::bigint
-       FROM (
-        SELECT d."delegate", d."amount"
-          FROM (
-            SELECT m."delegate", SUM(m."amount") AS "amount", "round" FROM mem_round m GROUP BY m."delegate", m."round"
-          ) AS d
-        WHERE "round" = (:round)::bigint
-        OR "round" = (:round)::bigint - 1
-       ) as sub
-       WHERE "publicKey" = decode(sub.delegate, 'hex');`,
-      { round },
-      'postgres'
-    );
-  }
-
-  public static insertMemRoundBalanceSQL(params: { address: string, amount: number, blockId: string, round: number }) {
-    return sequelizeUtils.formatNamedParameters(
-      // tslint:disable-next-line
-      'INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT :address, (:amount)::bigint, "dependentId", :blockId, :round FROM mem_accounts2delegates WHERE "accountId" = :address',
-      params,
-      'postgres'
-    );
-  }
-
-  public static insertMemRoundDelegatesSQL(params: { add: boolean, address: string, delegate: string, blockId: string, round: number }) {
-    return sequelizeUtils.formatNamedParameters(
-      // tslint:disable-next-line
-      `INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT :address, (${params.add ? '' : '-'}balance)::bigint, :delegate, :blockId, :round FROM mem_accounts WHERE address = :address`,
-      params,
-      'postgres'
-    );
-  }
 }

@@ -95,7 +95,7 @@ describe('apis/transportAPI', () => {
         reward: 0,
         payloadHash: Buffer.alloc(0),
         payloadLength: 0,
-        previousBlockSignature: Buffer.alloc(0),
+        previousBlockIDSignature: null,
         blockSignature: Buffer.alloc(0),
         previousBlock: '1',
         numberOfTransactions: 0,

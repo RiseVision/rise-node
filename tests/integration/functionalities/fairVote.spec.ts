@@ -31,6 +31,7 @@ describe('Fair vote system', async () => {
   initializer.setup();
   beforeEach(async () => {
     blocksModule  = initializer.appManager.container.get(Symbols.modules.blocks);
+    console.log('curblock', blocksModule.lastBlock.height);
     accountsModel = initializer.appManager.container.get<typeof AccountsModel>(Symbols.models.accounts);
     // Each Delegate has a genesis balance of 108910891000000 and voted for himself. We transfer 1 third of balance
     // of a random genesis delegate to a new account that will vote for himself. This will give enough funds to increase
@@ -107,7 +108,8 @@ describe('Fair vote system', async () => {
     await initializer.rawDeleteBlocks(blocksToDelete);
     expect(accAfter.producedblocks).to.be.eq(201);
     expect(accAfter.missedblocks).to.be.eq(201);
-    expect(accAfter.votesWeight).to.be.eq(Math.floor(accAfter.balance * 0.5));
+
+    expect(accAfter.votesWeight).to.be.eq(Math.floor(accAfter.vote * 0.5));
   });
   it('should work even with 66.666% productivity', async function() {
     this.timeout(1000000);
@@ -130,7 +132,10 @@ describe('Fair vote system', async () => {
     await initializer.rawDeleteBlocks(blocksToDelete);
     expect(accAfter.producedblocks).to.be.eq(66666);
     expect(accAfter.missedblocks).to.be.eq(100000 - 66666);
-    expect(accAfter.votesWeight).to.be.eq(Math.round(accAfter.balance * 0.66666));
+    expect(accAfter.votesWeight).to.be.eq(Math.round(accAfter.vote * 0.66666));
   });
 
+  describe('transport', () => {
+    it('should propagate blockIdSignature as well');
+  });
 });

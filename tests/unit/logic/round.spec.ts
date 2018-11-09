@@ -61,7 +61,7 @@ describe('logic/round', () => {
         RoundsModel  : container.get(Symbols.models.rounds),
       },
       round         : 10,
-      roundDelegates: [{} as any],
+      roundDelegates: [Buffer.from('aa', 'hex'), Buffer.from('bb', 'hex')],
       roundFees     : {},
       roundOutsiders: ['1', '2', '3'],
       roundRewards  : [],
@@ -165,18 +165,6 @@ describe('logic/round', () => {
     });
   });
 
-
-  describe('updateVotes', () => {
-
-    it('should return custom DBOp with RoundsModel SQL', () => {
-      scope.round = 10;
-      const ret   = instance.updateVotes();
-      expect(ret.type).is.eq('custom');
-      expect(ret.model).is.deep.eq(accountsModel);
-      expect(ret.query).is.deep.eq(roundsModel.updateVotesSQL(10));
-    });
-  });
-
   describe('reCalcVotes', () => {
 
     it('should return custom DBOp with reCalcVotes SQL', () => {
@@ -205,17 +193,6 @@ describe('logic/round', () => {
 
   });
 
-  describe('flushRound', () => {
-    it('should return a remove operation over roundsModel using round as where', () => {
-      const res = instance.flushRound();
-
-      expect(res.model).to.be.deep.eq(roundsModel);
-      expect(res.type).to.be.deep.eq('remove');
-      expect(res.options).to.be.deep.eq({
-        where: { round: scope.round }
-      });
-    });
-  });
 
   describe('truncateBlocks', () => {
     it('should return a remove operation over blocksModel for heights > than given block height', () => {
@@ -224,15 +201,6 @@ describe('logic/round', () => {
       expect(res.type).to.be.deep.eq('remove');
       expect(res.options).to.be.deep.eq({where: { height: { [Op.gt]: scope.block.height }}});
       expect(res.options.where.height[Op.gt]).to.be.deep.eq(scope.block.height);
-    });
-  });
-
-  describe('restoreRoundSnapshot', () => {
-    it('should return custom op over roundsModel', () => {
-      const res = instance.restoreRoundSnapshot();
-      expect(res.model).to.be.deep.eq(roundsModel);
-      expect(res.type).to.be.deep.eq('custom');
-      // TODO: test query?
     });
   });
 
@@ -268,36 +236,13 @@ describe('logic/round', () => {
         feesRemaining: 10,
       });
 
+      scope.roundDelegates = [Buffer.from('aa', 'hex')];
       const retVal = await instance.applyRound();
 
       expect(at.calledTwice).to.be.true;
       expect(at.firstCall.args.length).to.equal(1);
       expect(at.firstCall.args[0]).to.equal(0);
       expect(at.secondCall.args[0]).to.equal(0);
-      expect((scope.library.logger.trace as any).calledThrice).to.be.true;
-      expect((scope.library.logger.trace as any).firstCall.args.length).to.be.equal(2);
-      expect((scope.library.logger.trace as any).firstCall.args[0]).to.be.equal(
-        'Delegate changes'
-      );
-      expect((scope.library.logger.trace as any).firstCall.args[1]).to.deep.equal({
-        changes : {
-          feesRemaining: 10,
-        },
-        delegate: {},
-      });
-      expect((scope.library.logger.trace as any).secondCall.args.length).to.be.equal(2);
-      expect((scope.library.logger.trace as any).secondCall.args[0]).to.be.equal(
-        'Fees remaining'
-      );
-      expect((scope.library.logger.trace as any).secondCall.args[1]).to.deep.equal({
-        delegate: {},
-        fees    : 10,
-        index   : 0,
-      });
-      expect((scope.library.logger.trace as any).thirdCall.args.length).to.be.equal(2);
-      expect((scope.library.logger.trace as any).thirdCall.args[0]).to.be.equal(
-        'Applying round'
-      );
       // TODO: Check this ->
       expect(retVal).to.deep.equal([]);
     });
@@ -353,15 +298,11 @@ describe('logic/round', () => {
   });
 
   describe('land', () => {
-    let updateVotes: SinonStub;
     let updateMissedBlocks: SinonStub;
-    let flushRound: SinonStub;
     let applyRound: SinonStub;
     let reCalcVotes: SinonStub;
     beforeEach(() => {
-      updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
       updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
-      flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
       applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
       reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
       reCalcVotes.onCall(0).returns({reCalcVotes: 1});
@@ -374,31 +315,19 @@ describe('logic/round', () => {
       scope.dposV2 = false;
       const res = instance.apply();
 
-      expect(updateVotes.calledTwice).to.be.true;
       expect(updateMissedBlocks.calledOnce).to.be.true;
-      expect(flushRound.calledTwice).to.be.true;
       expect(applyRound.calledOnce).to.be.true;
-      expect(reCalcVotes.calledTwice).to.be.true;
+      expect(reCalcVotes.calledOnce).to.be.true;
 
-      updateVotes.restore();
       updateMissedBlocks.restore();
-      flushRound.restore();
       applyRound.restore();
 
       expect(res).to.be.deep.eq([
-        { updateVote: true},
-        { reCalcVotes: 1},
-        { updateMissed: true},
-        { flushRound: true},
-        { apply: 1},
-        { apply: 2},
-        { updateVote: true},
-        { reCalcVotes: 2},
-        { flushRound: true},
-        { type: 'custom', query: roundSQL.clearRoundSnapshot, model: scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.clearVotesSnapshot, model: scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.performRoundSnapshot, model: scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.performVotesSnapshot, model: scope.models.RoundsModel },
+        { updateMissed: true },
+        { apply: 1 },
+        { apply: 2 },
+        { type: 'custom', query: roundSQL.performVotesSnapshot, model: scope.models.AccountsModel },
+        { reCalcVotes: 1 },
       ]);
     });
 
@@ -409,7 +338,6 @@ describe('logic/round', () => {
 
       const r = instance.apply();
       expect(r).deep.eq([
-        {flushRound: true},
         {apply: 1},
         {apply: 2},
       ]);
@@ -434,31 +362,21 @@ describe('logic/round', () => {
       const r = instance.apply();
 
       expect(r).deep.eq([
-        { updateVote: true },
-        { reCalcVotes: 1 },
-        { type: 'custom', query: roundSQL.clearRoundSnapshot, model: scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.clearVotesSnapshot, model: scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.performRoundSnapshot, model: scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.performVotesSnapshot, model: scope.models.RoundsModel },
+        { type: 'custom', query: roundSQL.performVotesSnapshot, model: scope.models.AccountsModel },
+        { reCalcVotes: 1 }
       ]);
     });
 
   });
 
   describe('backwardLand', () => {
-    let updateVotes: SinonStub;
     let updateMissedBlocks: SinonStub;
-    let flushRound: SinonStub;
     let applyRound: SinonStub;
-    let restoreRoundSnapshot: SinonStub;
     let restoreVotesSnapshot: SinonStub;
     let reCalcVotes: SinonStub;
     beforeEach(() => {
-      updateVotes        = sandbox.stub(instance, 'updateVotes').returns({updateVote: true});
       updateMissedBlocks = sandbox.stub(instance, 'updateMissedBlocks').returns({updateMissed: true});
-      flushRound         = sandbox.stub(instance, 'flushRound').returns({flushRound: true});
       applyRound         = sandbox.stub(instance, 'applyRound').returns([{apply: 1}, {apply: 2}]);
-      restoreRoundSnapshot = sandbox.stub(instance, 'restoreRoundSnapshot').returns({restoreRound: true});
       restoreVotesSnapshot = sandbox.stub(instance, 'restoreVotesSnapshot').returns({restorevotes: true});
       reCalcVotes        = sandbox.stub(instance, 'reCalcVotes');
       reCalcVotes.onCall(0).returns({reCalcVotes: 1});
@@ -470,30 +388,17 @@ describe('logic/round', () => {
       scope.preFinishRound = false;
       const res = instance.undo();
 
-      expect(updateVotes.calledTwice).to.be.true;
       expect(updateMissedBlocks.calledOnce).to.be.true;
-      expect(flushRound.calledTwice).to.be.true;
       expect(applyRound.calledOnce).to.be.true;
-      expect(restoreRoundSnapshot.calledOnce).to.be.true;
       expect(restoreVotesSnapshot.calledOnce).to.be.true;
 
-      updateVotes.restore();
       updateMissedBlocks.restore();
-      flushRound.restore();
       applyRound.restore();
-      restoreRoundSnapshot.restore();
 
       expect(res).to.be.deep.eq([
-        { updateVote: true},
-        { reCalcVotes: 1},
         { updateMissed: true},
-        { flushRound: true},
         { apply: 1},
         { apply: 2},
-        { updateVote: true},
-        { reCalcVotes: 2},
-        { flushRound: true},
-        { restoreRound: true},
         { restorevotes: true},
       ]);
     });
@@ -512,7 +417,6 @@ describe('logic/round', () => {
       const res = instance.undo();
 
       expect(res).deep.eq([
-        { restoreRound: true},
         { restorevotes: true},
       ]);
     });

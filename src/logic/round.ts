@@ -5,7 +5,7 @@ import { IRoundLogic } from '../ioc/interfaces/logic/';
 import { IAccountsModule } from '../ioc/interfaces/modules';
 import { AccountsModel, BlocksModel, RoundsModel } from '../models';
 import roundSQL from '../sql/logic/rounds';
-import { DBCustomOp, DBOp } from '../types/genericTypes';
+import { DBOp } from '../types/genericTypes';
 import { address } from '../types/sanityTypes';
 import { SignedBlockType } from './block';
 
@@ -94,17 +94,6 @@ export class RoundLogic implements IRoundLogic {
   }
 
   /**
-   * Update votes for the round
-   */
-  public updateVotes(): DBCustomOp<any> {
-    return {
-      model: this.scope.models.AccountsModel,
-      query: this.scope.models.RoundsModel.updateVotesSQL(this.scope.round),
-      type : 'custom',
-    };
-  }
-
-  /**
    * In case of backwards calls updateBlockId with '0';
    */
   public markBlockId(): DBOp<any> {
@@ -123,17 +112,6 @@ export class RoundLogic implements IRoundLogic {
       };
     }
     return null;
-  }
-
-  /**
-   * Calls sql flush, deletes round from mem_round
-   */
-  public flushRound(): DBOp<any> {
-    return {
-      model  : this.scope.models.RoundsModel,
-      options: { where: { round: this.scope.round } },
-      type   : 'remove',
-    };
   }
 
   /**
@@ -160,24 +138,23 @@ export class RoundLogic implements IRoundLogic {
 
   /**
    * Performed when rollbacking last block of a round.
-   * It restores the round snapshot from sql
-   */
-  public restoreRoundSnapshot(): DBOp<RoundsModel> {
-    return {
-      model: this.scope.models.RoundsModel,
-      query: roundSQL.restoreRoundSnapshot,
-      type: 'custom',
-    };
-  }
-
-  /**
-   * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
   public restoreVotesSnapshot(): DBOp<AccountsModel> {
     return {
       model: this.scope.models.AccountsModel,
       query: roundSQL.restoreVotesSnapshot,
+      type: 'custom',
+    };
+  }
+  /**
+   * Performed when rollbacking last block of a round.
+   * It restores the votes snapshot from sql
+   */
+  public performVoteSnapshot(): DBOp<AccountsModel> {
+    return {
+      model: this.scope.models.AccountsModel,
+      query: roundSQL.performVotesSnapshot,
       type: 'custom',
     };
   }
@@ -194,7 +171,6 @@ export class RoundLogic implements IRoundLogic {
     for (let i = 0; i < delegates.length; i++) {
       const delegate = delegates[i];
       const changes  = roundChanges.at(i);
-      this.scope.library.logger.trace('Delegate changes', { delegate, changes });
 
       // merge Account in the direction.
       queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
@@ -209,18 +185,16 @@ export class RoundLogic implements IRoundLogic {
     }
 
     // last delegate will always get the remainder fees.
-    const remainderIndex    = this.scope.backwards ? 0 : delegates.length - 1;
-    const remainderDelegate = delegates[remainderIndex];
+    const remainderDelegate = delegates[delegates.length - 1];
 
-    const remainderChanges = roundChanges.at(remainderIndex);
+    const remainderChanges = roundChanges.at(delegates.length - 1);
 
     if (remainderChanges.feesRemaining > 0) {
       const feesRemaining = (this.scope.backwards ? -remainderChanges.feesRemaining : remainderChanges.feesRemaining);
 
       this.scope.library.logger.trace('Fees remaining', {
-        delegate: remainderDelegate,
+        delegate: remainderDelegate.toString('hex'),
         fees    : feesRemaining,
-        index   : remainderIndex,
       });
 
       queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
@@ -249,13 +223,8 @@ export class RoundLogic implements IRoundLogic {
       }
     } else if (this.scope.dposV2 && this.scope.preFinishRound) {
       return [
-        { type: 'custom', query: roundSQL.clearRoundSnapshot, model: this.scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.clearVotesSnapshot, model: this.scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.performRoundSnapshot, model: this.scope.models.RoundsModel },
-        { type: 'custom', query: roundSQL.performVotesSnapshot, model: this.scope.models.RoundsModel },
-        this.updateVotes(),
+        this.performVoteSnapshot(),
         this.reCalcVotes(),
-        this.flushRound(),
       ];
     }
     return [];
@@ -271,28 +240,17 @@ export class RoundLogic implements IRoundLogic {
       }
       return this.backwardCloseRoundV1();
     } else if (this.scope.dposV2 && this.scope.preFinishRound) {
-      return [
-        this.restoreRoundSnapshot(),
-        this.restoreVotesSnapshot(),
-      ];
+      return [ this.restoreVotesSnapshot() ];
     }
     return [];
   }
 
   private closeRoundV1(): Array<DBOp<any>> {
     return [
-      this.updateVotes(),
-      this.reCalcVotes(),
       this.updateMissedBlocks(),
-      this.flushRound(),
       ...this.applyRound(),
-      this.updateVotes(),
+      this.performVoteSnapshot(),
       this.reCalcVotes(),
-      this.flushRound(),
-      { type: 'custom', query: roundSQL.clearRoundSnapshot, model: this.scope.models.RoundsModel },
-      { type: 'custom', query: roundSQL.clearVotesSnapshot, model: this.scope.models.RoundsModel },
-      { type: 'custom', query: roundSQL.performRoundSnapshot, model: this.scope.models.RoundsModel },
-      { type: 'custom', query: roundSQL.performVotesSnapshot, model: this.scope.models.RoundsModel },
     ];
   }
 
@@ -302,17 +260,11 @@ export class RoundLogic implements IRoundLogic {
     ];
   }
 
+  // tslint:disable-next-line no-identical-functions
   private backwardCloseRoundV1() {
     return [
-      this.updateVotes(),
-      this.reCalcVotes(),
       this.updateMissedBlocks(),
-      this.flushRound(),
       ...this.applyRound(),
-      this.updateVotes(),
-      this.reCalcVotes(),
-      this.flushRound(),
-      this.restoreRoundSnapshot(),
       this.restoreVotesSnapshot(),
     ];
   }
@@ -320,11 +272,6 @@ export class RoundLogic implements IRoundLogic {
   private backwardCloseRoundV2() {
     return [
       this.updateMissedBlocks(),
-      {
-        model  : this.scope.models.RoundsModel,
-        options: { where: { round: this.scope.round } },
-        type   : 'remove',
-      } as any,
       ... this.applyRound(),
     ];
   }

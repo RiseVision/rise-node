@@ -262,7 +262,6 @@ describe('api/delegates', () => {
         .get('/api/delegates/search?q=33')
         .expect(200)
         .then((response) => {
-          console.log(response.body);
           expect(response.body.success).is.true;
           expect(response.body.delegates).to.be.deep.equal([{
             username: 'genesisDelegate33',

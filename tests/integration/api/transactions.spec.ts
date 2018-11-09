@@ -422,7 +422,6 @@ describe('api/transactions', () => {
         .send({secret: s, recipientId: createRandomWallet().address, amount: 10})
         .expect(200)
         .then(async (r) => {
-          console.log(r.body);
           expect(r.body.success).true;
           expect(r.body.transactionId).not.empty;
           await wait(1000);

@@ -614,6 +614,7 @@ describe('highlevel checks', function () {
           relays: 1
         };
         const fromBytesBlock = blockLogic.fromBytes(bytesBlock);
+        delete fromBytesBlock.previousBlockIDSignature;
         expect(fromBytesBlock).to.be.deep.eq(block);
       });
   });

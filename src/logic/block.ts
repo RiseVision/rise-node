@@ -5,7 +5,7 @@ import { inject, injectable } from 'inversify';
 import * as supersha from 'supersha';
 import z_schema from 'z-schema';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
-import {IAccountLogic, IBlockLogic, ITransactionLogic} from '../ioc/interfaces/logic/';
+import { IAccountLogic, IBlockLogic, ITransactionLogic } from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
 import { BlocksModel } from '../models';
 import logicBlockSchema from '../schema/logic/block';
@@ -77,6 +77,9 @@ export class BlockLogic implements IBlockLogic {
   ];
   @inject(Symbols.generic.zschema)
   public zschema: z_schema;
+
+  @inject(Symbols.helpers.constants)
+  private consts: typeof constants;
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
@@ -154,10 +157,10 @@ export class BlockLogic implements IBlockLogic {
       payloadHash           : payloadHash.digest(),
       payloadLength         : size,
       previousBlock         : data.previousBlock.id,
-      previousBlockIDSignature: this.ed.sign(
+      previousBlockIDSignature: this.consts.dposv2.firstBlock <= data.previousBlock.height + 1 ? this.ed.sign(
         supersha.sha256(Buffer.from(data.previousBlock.id, 'utf8')),
         data.keypair
-      ),
+      ) : null,
       reward,
       timestamp             : data.timestamp,
       totalAmount,
@@ -168,6 +171,7 @@ export class BlockLogic implements IBlockLogic {
 
     block.blockSignature = this.sign(block, data.keypair);
     block.id = this.getId(block);
+
     return this.objectNormalize(block);
   }
 
@@ -189,10 +193,6 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    */
   public verifySignature(block: SignedBlockType): boolean {
-    // console.log(block);
-    // const res = new OldImplementation(this.ed, this.zschema, this.transaction, null)
-    //  .verifySignature(block);
-    // console.log(res);
     return this.ed.verify(
       this.getHash(block, false),
       block.blockSignature,
@@ -388,7 +388,7 @@ export class BlockLogic implements IBlockLogic {
     const payloadHash            = blk.bytes.slice(48, 80);
     const generatorPublicKey     = blk.bytes.slice(80, 112);
     const previousBlockIDSignature  = blk.bytes.length === 176 ? null : blk.bytes.slice(112, 176);
-    const blockSignature         = previousBlockIDSignature ? blk.bytes.slice(177, 177 + 64) : blk.bytes.slice(112, 176);
+    const blockSignature         = previousBlockIDSignature ? blk.bytes.slice(176, 176 + 64) : blk.bytes.slice(112, 176);
     const id                     = this.getIdFromBytes(blk.bytes);
     const transactions           = blk.transactions.map((tx) => {
       const baseTx = this.transaction.fromBytes(tx);

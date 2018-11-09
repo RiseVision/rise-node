@@ -121,23 +121,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
   public async apply(tx: IConfirmedTransaction<VoteAsset>, block: SignedBlockType, sender: AccountsModel): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx, sender);
     sender.applyDiffArray('delegates', tx.asset.votes);
-    const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, tx.asset.votes, sender.address);
-    ops.push(... tx.asset.votes.map<DBCustomOp<RoundsModel>>((vote) => {
-      const add      = vote[0] === '+';
-      const delegate = vote.substr(1);
-      return {
-        model: this.RoundsModel,
-        query: this.RoundsModel.insertMemRoundDelegatesSQL({
-          add,
-          address: sender.address,
-          blockId: block.id,
-          delegate,
-          round  : this.roundsLogic.calcRound(block.height),
-        }),
-        type : 'custom',
-      };
-    }));
-    return ops;
+    return this.calculateOPs(this.Accounts2DelegatesModel, block.id, tx.asset.votes, sender.address);
   }
 
   // tslint:disable-next-line max-line-length
@@ -145,24 +129,7 @@ export class VoteTransaction extends BaseTransactionType<VoteAsset, VotesModel> 
     this.objectNormalize(tx);
     const invertedVotes = Diff.reverse(tx.asset.votes);
     sender.applyDiffArray('delegates', invertedVotes);
-    const ops = this.calculateOPs(this.Accounts2DelegatesModel, block.id, invertedVotes, sender.address);
-    // tslint:disable-next-line
-    ops.push(... invertedVotes.map<DBCustomOp<RoundsModel>>((vote) => {
-      const add      = vote[0] === '+';
-      const delegate = vote.substr(1);
-      return {
-        model: this.RoundsModel,
-        query: this.RoundsModel.insertMemRoundDelegatesSQL({
-          add,
-          address: sender.address,
-          blockId: block.id,
-          delegate,
-          round  : this.roundsLogic.calcRound(block.height),
-        }),
-        type : 'custom',
-      };
-    }));
-    return ops;
+    return this.calculateOPs(this.Accounts2DelegatesModel, block.id, invertedVotes, sender.address);
   }
 
   public async applyUnconfirmed(tx: IBaseTransaction<VoteAsset>, sender: AccountsModel): Promise<Array<DBOp<any>>> {

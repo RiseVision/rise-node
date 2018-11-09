@@ -709,6 +709,7 @@ describe('v2/peer/transport', function() {
         return blk;
       });
       for (let i = 0; i < r.blocks.length; i++) {
+        delete r.blocks[i].previousBlockIDSignature;
         expect(r.blocks[i]).deep.eq(blocks[i]);
       }
     });

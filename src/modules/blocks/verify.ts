@@ -78,7 +78,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     block.height           = lastBlock.height + 1;
     const errors: string[] = [
       this.verifySignature(block),
-      this.verifyPreviousBlock(block, lastBlock),
+      this.verifyPreviousBlock(block),
       this.verifyBlockSlotWindow(block),
       this.verifyBlockAgainstLastIds(block),
       this.verifyVersion(block),
@@ -103,7 +103,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
 
     const errors = [
       this.verifySignature(block),
-      this.verifyPreviousBlock(block, lastBlock),
+      this.verifyPreviousBlock(block),
       this.verifyVersion(block),
       this.verifyReward(block),
       this.verifyId(block),
@@ -233,15 +233,12 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   /**
    * Verifies that block has a previousBlock
    */
-  private verifyPreviousBlock(block: SignedBlockType, prevBlock: SignedAndChainedBlockType): string[] {
-    if (block.height === 1) {
-      return [];
-    }
-    if (block.previousBlock !== prevBlock.id) {
+  private verifyPreviousBlock(block: SignedBlockType): string[] {
+    if (!block.previousBlock && block.height !== 1) {
       return ['Invalid previous block'];
     }
     if (this.constants.dposv2.firstBlock <= block.height && !this.ed.verify(
-      supersha.sha256(Buffer.from(prevBlock.id, 'utf8')),
+      supersha.sha256(Buffer.from(block.previousBlock, 'utf8')),
       block.previousBlockIDSignature,
       block.generatorPublicKey
       )) {

@@ -16,4 +16,10 @@ export default {
   getDelegates: 'SELECT ENCODE("publicKey", \'hex\') FROM mem_accounts WHERE "isDelegate" = 1',
 
   countDuplicatedDelegates: 'WITH duplicates AS (SELECT COUNT(1) FROM delegates GROUP BY "transactionId" HAVING COUNT(1) > 1) SELECT count(1) FROM duplicates',
+
+  clearVotesSnapshot: 'DROP TABLE IF EXISTS mem_votes_snapshot',
+
+  performVotesSnapshot: 'CREATE TABLE mem_votes_snapshot AS SELECT address, vote, "votesWeight" FROM mem_accounts WHERE "isDelegate" = 1',
+
+  restoreVotesSnapshot: 'UPDATE mem_accounts m SET vote = b.vote, "votesWeight" = b."votesWeight" FROM mem_votes_snapshot b WHERE m.address = b.address',
 };
