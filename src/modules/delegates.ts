@@ -79,7 +79,6 @@ export class DelegatesModule implements IDelegatesModule {
     const round = this.roundsLogic.calcRound(height);
     if (!this.delegatesCacheByRound[round]) {
       let delegates    = await this.getKeysSortByVote(height);
-      const seedSource = this.roundsLogic.calcRound(height).toString();
 
       // If dposv2 is on, do a Weighted Random Selection of the round forgers.
       if (height >= this.constants.dposv2.firstBlock) {
@@ -108,8 +107,9 @@ export class DelegatesModule implements IDelegatesModule {
         delegates = pool.slice(0, this.constants.activeDelegates);
       }
 
-      // Shuffle the delegates.
-      let currentSeed = supersha.sha256(Buffer.from(seedSource, 'utf8'));
+      // Shuffle the delegates, using the round number as a seed.
+      const scrambleSeed = this.roundsLogic.calcRound(height).toString();
+      let currentSeed = supersha.sha256(Buffer.from(scrambleSeed, 'utf8'));
 
       for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
         for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
@@ -325,7 +325,6 @@ export class DelegatesModule implements IDelegatesModule {
    * @param {number} height
    * @returns {Promise<number[]>}
    */
-  // TODO: Maybe separate cache from calculation logic ?
   private async calculateSafeRoundSeed(height: number): Promise<number[]> {
     const currentRound = this.roundsLogic.calcRound(height);
     // Calculation is expensive, let's keep a cache of seeds
@@ -337,14 +336,14 @@ export class DelegatesModule implements IDelegatesModule {
       const keys = Object.keys(this.roundSeeds);
       if (keys.length >= 100) {
         for (let i = 0; i <= keys.length - 100; i++) {
-          delete this.roundSeeds[keys[0]];
+          delete this.roundSeeds[keys[i]];
         }
       }
     }
     const previousRoundLastBlockHeight = this.roundsLogic.lastInRound(currentRound - 1);
     // Get the last block of previous round from database
     const block = await this.BlocksModel.findOne({
-      attributes: ['id'],
+      attributes: ['id', 'previousBlockIDSignature'],
       limit     : 1,
       where     : { height: { [Op.eq]: previousRoundLastBlockHeight } },
     });
@@ -352,14 +351,14 @@ export class DelegatesModule implements IDelegatesModule {
     if (block === null) {
       throw new Error(`Error in Round Seed calculation, block ${previousRoundLastBlockHeight} not found`);
     }
-
-    // Hash the Block ID several times. This is here to discourage attempts to alter block ID by forgers to get a
-    // higher chance to get forging in the next round.
-    let seedSource = supersha.sha256(Buffer.from(block.id, 'utf8'));
-    for (let i = 0; i < 10000; i++) {
-      seedSource = supersha.sha256(seedSource);
+    if (!block.previousBlockIDSignature) {
+      throw new Error(`block has no previousBlockIDSignature ${JSON.stringify(block)}`);
     }
-
+    // As a seed source we use the previousBlockIDSignature field of the last block in previous round.
+    // This is a precaution against a coordinated attack that would allow the two last producers to attempt manipulation
+    // of the seed to force their inclusion in next round. Votes are recalculated on the penultimate block of the round,
+    // preventing the forger of the last block from using transactions to modify its ranking.
+    const seedSource = block.previousBlockIDSignature;
     // Convert the sha256 buffer to an array of 32-bit unsigned integers
     const seed: number[] = [];
     for (let i = 0; i < seedSource.length; i += 4) {

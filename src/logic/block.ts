@@ -148,25 +148,33 @@ export class BlockLogic implements IBlockLogic {
       payloadHash.update(bytes);
     }
 
-    const block: SignedAndChainedBlockType = {
-      blockSignature        : undefined,
-      generatorPublicKey    : data.keypair.publicKey,
-      height                : data.previousBlock.height + 1,
-      id                    : undefined,
-      numberOfTransactions  : blockTransactions.length,
-      payloadHash           : payloadHash.digest(),
-      payloadLength         : size,
-      previousBlock         : data.previousBlock.id,
-      previousBlockIDSignature: this.consts.dposv2.firstBlock <= data.previousBlock.height + 1 ? this.ed.sign(
+    let previousBlockIDSignature: Buffer = null;
+    // We need to add previousBlockIDSignature 1 block before dposv2 begins
+    const startSigningPrevBlockAt = this.consts.dposv2.firstBlock - 1;
+    const newBlockHeight = data.previousBlock.height + 1;
+    if (newBlockHeight >= startSigningPrevBlockAt) {
+      previousBlockIDSignature = this.ed.sign(
         supersha.sha256(Buffer.from(data.previousBlock.id, 'utf8')),
         data.keypair
-      ) : null,
+      );
+    }
+
+    const block: SignedAndChainedBlockType = {
+      blockSignature      : undefined,
+      generatorPublicKey  : data.keypair.publicKey,
+      height              : newBlockHeight,
+      id                  : undefined,
+      numberOfTransactions: blockTransactions.length,
+      payloadHash         : payloadHash.digest(),
+      payloadLength       : size,
+      previousBlock       : data.previousBlock.id,
+      previousBlockIDSignature,
       reward,
-      timestamp             : data.timestamp,
+      timestamp           : data.timestamp,
       totalAmount,
       totalFee,
-      transactions          : blockTransactions,
-      version               : 0,
+      transactions        : blockTransactions,
+      version             : 0,
     };
 
     block.blockSignature = this.sign(block, data.keypair);

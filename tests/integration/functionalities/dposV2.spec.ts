@@ -103,7 +103,7 @@ describe('dposv2', () => {
     }
 
     let accounts: LiskWallet[];
-    beforeEach(async function () {
+    beforeEach(async function() {
       // Reorder delegates by name. genesis1 will have 1 satoshi more of voting power compared to genesis2 ...
       this.timeout(100000);
       const toRet = await createRandomAccountsWithFunds(101, funds);
@@ -146,7 +146,6 @@ describe('dposv2', () => {
           .to.be.deep.eq(filterObject(await getmappedDelObj(), ['!*.mb', '!*.pb']));
       }
       await initializer.rawMineBlocks(1);
-      // Che check?
       expect(filterObject(preOBJ, ['!*.mb', '!*.pb']))
         .to
         .not
