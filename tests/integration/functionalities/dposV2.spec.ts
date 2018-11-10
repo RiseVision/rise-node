@@ -14,7 +14,7 @@ import {
   findDelegateByUsername, getRandomDelegateWallet
 } from '../common/utils';
 import { Symbols } from '../../../src/ioc/symbols';
-import { IRoundsLogic, ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
+import { IPeerLogic, IRoundsLogic, ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
 import {
   IAccountsModule,
   IBlocksModule,
@@ -29,7 +29,10 @@ import { dposOffline, LiskWallet } from 'dpos-offline';
 import { BlocksModel } from '../../../src/models';
 import { Op } from 'sequelize';
 import constants from '../../../src/helpers/constants';
-import { BlockLogic, IBytesBlock } from '../../../src/logic';
+import { BasePeerType, BlockLogic, IBytesBlock } from '../../../src/logic';
+import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';
+import { PostBlocksRequest, PostBlocksRequestDataType } from '../../../src/apis/requests/PostBlocksRequest';
+import { requestSymbols } from '../../../src/apis/requests/requestSymbols';
 
 chai.use(chaiAsPromised);
 describe('dposv2', () => {
@@ -359,7 +362,24 @@ describe('dposv2', () => {
       });
     });
     describe('transport', () => {
-      it('should send and receive same block using transportv2');
+      it('should send and receive same block using transportv2', async () => {
+        const senderAccount     = getRandomDelegateWallet();
+        const block = await initializer.generateBlock([(await createSendTransaction(0, 1, senderAccount, senderAccount.address))]);
+        const peerFactory = initializer.appManager.container.get<(peer: BasePeerType) => IPeerLogic>(Symbols.logic.peerFactory);
+        const appConfig = initializer.appManager.container.get<any>(Symbols.generic.appConfig);
+
+        const peer = peerFactory({ip: '127.0.0.1', port: appConfig.port});
+        let pbFactory: RequestFactoryType<PostBlocksRequestDataType, PostBlocksRequest>;
+        pbFactory = initializer.appManager.container.get<any>(requestSymbols.postBlocks);
+
+        const response = await peer.makeRequest(pbFactory({
+          data: { block },
+        }));
+        expect(response.success).is.true;
+        expect(response.blockId).is.eq(block.id);
+        expect(blocksModule.lastBlock.id).is.eq(block.id);
+
+      });
     });
   });
 
