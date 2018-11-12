@@ -2,12 +2,14 @@ import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
-import { ExpressMiddlewareInterface } from 'routing-controllers';
 import { p2pSymbols } from '../../helpers';
+import { ITransportMiddleware } from '../../interfaces/ITransportMiddleware';
 
 @injectable()
 @IoCSymbol(p2pSymbols.transportMiddlewares.attachPeerHeaders)
-export class AttachPeerHeaders implements ExpressMiddlewareInterface {
+export class AttachPeerHeaders implements ITransportMiddleware {
+  public when: 'before';
+
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 

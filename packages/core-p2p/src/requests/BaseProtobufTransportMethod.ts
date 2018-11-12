@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import { Overwrite } from 'utility-types';
 import { MyConvOptions } from '../helpers';
+import { Peer } from '../peer';
 import { BaseTransportMethod } from './BaseTransportMethod';
 import { SingleTransportPayload } from './ITransportMethod';
 
@@ -20,7 +21,10 @@ export class BaseProtobufTransportMethod<
   protected readonly protoRequest: ProtoIdentifier<Data>;
   protected readonly protoResponse: ProtoIdentifier<Out>;
 
-  protected async encodeRequest(data: Data | null = null): Promise<Buffer> {
+  protected async encodeRequest(
+    data: Data | null = null,
+    peer: Peer
+  ): Promise<Buffer> {
     if (data === null) {
       return null;
     }
@@ -45,7 +49,7 @@ export class BaseProtobufTransportMethod<
     );
   }
 
-  protected async decodeResponse(res: Buffer): Promise<Out> {
+  protected async decodeResponse(res: Buffer, peer: Peer): Promise<Out> {
     if (res === null || !this.protoResponse) {
       return null;
     }
@@ -57,7 +61,10 @@ export class BaseProtobufTransportMethod<
     );
   }
 
-  protected async encodeResponse(data: Out): Promise<Buffer> {
+  protected async encodeResponse(
+    data: Out,
+    req: SingleTransportPayload<Data, Query>
+  ): Promise<Buffer> {
     if (data === null) {
       return null;
     }
