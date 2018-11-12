@@ -604,9 +604,9 @@ describe('logic/account', () => {
         round            : 10,
         vote             : 10, username: 'meow', u_username: 'meow', address: '2R', secondPublicKey: new Buffer('aa'),
       } as any);
-      expect(ops.length).to.be.eq(2);
+      expect(ops.length).to.be.eq(1);
 
-      const updateOp = ops[1] as DBUpdateOp<any>;
+      const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({
         vote          : { val: 'vote + 10' },
@@ -622,9 +622,8 @@ describe('logic/account', () => {
     });
     it('should handle balance', () => {
       const ops: any = account.merge('1R', { balance: 10, blockId: '1', round: 1 });
-      expect(ops[0].type).to.be.eq('custom');
-      expect((ops[0] as DBCustomOp<any>).query).to.be.eq('INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'1R\', (10)::bigint, "dependentId", \'1\', 1 FROM mem_accounts2delegates WHERE "accountId" = \'1R\'');
-      expect((ops[1] as DBUpdateOp<any>).values).to.be.deep.eq({ balance: { val: 'balance + 10' }, blockId: '1' })
+      expect(ops[0].type).to.be.eq('update');
+      expect((ops[0] as DBUpdateOp<any>).values).to.be.deep.eq({ balance: { val: 'balance + 10' }, blockId: '1' })
     });
 
     it('should remove account virginity on u_balance', () => {

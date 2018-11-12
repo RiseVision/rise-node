@@ -84,6 +84,7 @@ describe('modules/rounds', () => {
 
     roundLogicScope = {
       backwards     : false,
+      dposV2: false,
       block         : {
         generatorPublicKey: block.generatorPublicKey,
         height            : block.height,
@@ -115,10 +116,10 @@ describe('modules/rounds', () => {
       return Promise.resolve('innerTick DONE');
     });
     roundLogicStub.stubs.mergeBlockGenerator.resolves();
-    roundLogicStub.stubs.backwardLand.resolves();
+    roundLogicStub.stubs.undo.resolves();
     roundLogicStub.stubs.markBlockId.resolves();
     roundLogicStub.stubs.truncateBlocks.resolves();
-    roundLogicStub.stubs.land.resolves();
+    roundLogicStub.stubs.apply.resolves();
     busStub.stubs.message.returns(void 0);
   });
 
@@ -186,7 +187,7 @@ describe('modules/rounds', () => {
       let dbHelpersStub: DbStub;
       beforeEach(() => {
         roundLogicStub.stubs.mergeBlockGenerator.returns(['mergeBlockOp1', 'mergeBlockOp2']);
-        roundLogicStub.stubs.backwardLand.returns(['backwardLandOp1', 'backwardLandOp2']);
+        roundLogicStub.stubs.undo.returns(['backwardLandOp1', 'backwardLandOp2']);
         roundLogicStub.stubs.markBlockId.returns('markBlockIdOp');
         dbHelpersStub = container.get(Symbols.helpers.db);
         dbHelpersStub.enqueueResponse('performOps', Promise.resolve());
@@ -217,7 +218,7 @@ describe('modules/rounds', () => {
       it('should then call backwardLand if passed scope.finishRound is true', async () => {
         roundLogicScope.finishRound = true;
         await doCall();
-        expect(roundLogicStub.stubs.backwardLand.calledOnce).to.be.true;
+        expect(roundLogicStub.stubs.undo.calledOnce).to.be.true;
 
         expect(dbHelpersStub.stubs.performOps.firstCall.args).to.be.deep.eq([
           [
@@ -231,10 +232,10 @@ describe('modules/rounds', () => {
         ]);
       });
 
-      it('should then not call backwardLand if passed scope.finishRound is false', async () => {
+      it('should should call undo even if passed scope.finishRound is false', async () => {
         roundLogicScope.finishRound = false;
         await doCall();
-        expect(roundLogicStub.stubs.backwardLand.notCalled).to.be.true;
+        expect(roundLogicStub.stubs.undo.called).to.be.true;
       });
 
       it('should then call markBlockId', async () => {
@@ -242,17 +243,7 @@ describe('modules/rounds', () => {
         expect(roundLogicStub.stubs.markBlockId.calledOnce).to.be.true;
       });
 
-      it('should call performOps with correct data', async () => {
-        await doCall();
-        expect(dbHelpersStub.stubs.performOps.firstCall.args).to.be.deep.eq([
-          [
-            'mergeBlockOp1',
-            'mergeBlockOp2',
-            'markBlockIdOp',
-          ],
-          'tx',
-        ]);
-      });
+
     });
   });
 
@@ -281,7 +272,7 @@ describe('modules/rounds', () => {
       beforeEach(() => {
         getSnapshotRoundsStub = sandbox.stub(instance as any, 'getSnapshotRounds').returns(0);
         roundLogicStub.stubs.mergeBlockGenerator.returns(['mergeBlockOp1', 'mergeBlockOp2']);
-        roundLogicStub.stubs.backwardLand.returns(['backwardLandOp1', 'backwardLandOp2']);
+        roundLogicStub.stubs.apply.returns(['apply1', 'apply2']);
         roundLogicStub.stubs.markBlockId.returns('markBlockIdOp');
         dbHelpersStub = container.get(Symbols.helpers.db);
         dbHelpersStub.enqueueResponse('performOps', Promise.resolve());
@@ -323,6 +314,8 @@ describe('modules/rounds', () => {
           [
             'mergeBlockOp1',
             'mergeBlockOp2',
+            'apply1',
+            'apply2',
             'markBlockIdOp',
           ],
           'tx',
@@ -332,12 +325,12 @@ describe('modules/rounds', () => {
       describe('then, if this was the last block in round', () => {
         beforeEach(() => {
           roundLogicScope.finishRound = true;
-          roundLogicStub.stubs.land.returns(['roundLogicLandOp1']);
+          roundLogicStub.stubs.apply.returns(['roundLogicLandOp1']);
         });
 
         it('should call roundLogic.land', async () => {
           await doCall();
-          expect(roundLogicStub.stubs.land.calledOnce).to.be.true;
+          expect(roundLogicStub.stubs.apply.calledOnce).to.be.true;
           expect(dbHelpersStub.stubs.performOps.firstCall.args).to.be.deep.eq([
             [
               'mergeBlockOp1',
@@ -354,7 +347,7 @@ describe('modules/rounds', () => {
           expect(busStub.stubs.message.calledOnce).to.be.true;
           expect(busStub.stubs.message.firstCall.args[0]).to.be.equal('finishRound');
           expect(busStub.stubs.message.firstCall.args[1]).to.be.equal(roundLogicScope.round);
-          expect(roundLogicStub.stubs.land.calledBefore(busStub.stubs.message)).to.be.true;
+          expect(roundLogicStub.stubs.apply.calledBefore(busStub.stubs.message)).to.be.true;
         });
 
         it('should then call roundLogic.truncateBlocks if snapshotRound is true', async () => {
@@ -362,7 +355,7 @@ describe('modules/rounds', () => {
           await doCall();
           expect(roundLogicStub.stubs.truncateBlocks.calledOnce).to.be.true;
           expect(busStub.stubs.message.calledBefore(roundLogicStub.stubs.truncateBlocks));
-          expect(roundLogicStub.stubs.land.calledBefore(roundLogicStub.stubs.truncateBlocks));
+          expect(roundLogicStub.stubs.apply.calledBefore(roundLogicStub.stubs.truncateBlocks));
         });
       });
 
@@ -371,9 +364,9 @@ describe('modules/rounds', () => {
           roundLogicScope.finishRound = false;
         });
 
-        it('should not call roundLogic.land, bus.message, roundLogic.truncateBlocks', async () => {
+        it('should call roundLogic.land, NOT bus.message, & NOT roundLogic.truncateBlocks', async () => {
           await doCall();
-          expect(roundLogicStub.stubs.land.notCalled).to.be.true;
+          expect(roundLogicStub.stubs.apply.called).to.be.true;
           expect(busStub.stubs.message.notCalled).to.be.true;
           expect(roundLogicStub.stubs.truncateBlocks.notCalled).to.be.true;
         });
@@ -383,54 +376,6 @@ describe('modules/rounds', () => {
         await doCall();
         expect(roundLogicStub.stubs.markBlockId.calledOnce).to.be.true;
         expect(roundLogicStub.stubs.mergeBlockGenerator.calledBefore(roundLogicStub.stubs.markBlockId)).to.be.true;
-      });
-    });
-
-    describe('in afterTxPromise', () => {
-      let dbHelperStub: DbStub;
-      const doCall = async () => {
-        await instance.tick(block, 'tx' as any);
-        return afterTxPromise();
-      };
-
-      beforeEach(() => {
-        // (block.height + 1) % this.slots.delegates === 0
-        block.height = 100;
-        dbHelperStub = container.get(Symbols.helpers.db);
-        dbHelperStub.enqueueResponse('performOps', Promise.resolve());
-      });
-
-      it('should not call anything if (block.height + 1) % this.slots.delegates !== 0', async () => {
-        block.height = 1;
-        await doCall();
-        expect(dbHelperStub.stubs.performOps.called).is.false;
-        expect(loggerStub.stubs.debug.notCalled).to.be.true;
-        expect(loggerStub.stubs.error.notCalled).to.be.true;
-        expect(loggerStub.stubs.trace.notCalled).to.be.true;
-      });
-
-      it('should call logger.debug', async () => {
-        await doCall();
-        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
-        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Performing round snapshot...');
-      });
-
-      it('should call db.tx', async () => {
-        await doCall();
-        expect(dbHelperStub.stubs.performOps.called).is.true;
-      });
-
-      it('should reject if round tx fails', async () => {
-        const theError = new Error('test');
-        dbHelperStub.stubs.performOps.rejects(theError);
-        await expect(doCall()).to.be.rejectedWith(theError);
-      });
-
-      it('should call logger.trace after db.performOps', async () => {
-        await doCall();
-        expect(loggerStub.stubs.trace.calledOnce).to.be.true;
-        expect(loggerStub.stubs.trace.firstCall.args[0]).to.be.equal('Round snapshot done');
-        expect(dbHelperStub.stubs.performOps.calledBefore(loggerStub.stubs.trace)).to.be.true;
       });
     });
   });
@@ -526,6 +471,7 @@ describe('modules/rounds', () => {
         modules       : {
           accounts: accountsModuleStub,
         },
+        dposV2: false,
         round         : 1,
         roundOutsiders: null,
       });
@@ -556,10 +502,13 @@ describe('modules/rounds', () => {
       await (instance as any).innerTick(block, 'tx', backwards, txGeneratorStub, afterTxPromiseStub);
       let generatedRoundLogicScope = txGeneratorStub.firstCall.args[0];
       delete generatedRoundLogicScope.models;
+      // delete generatedRoundLogicScope.block;
+
       expect(generatedRoundLogicScope).to.be.deep.equal({
         backwards,
         block,
         finishRound   : false,
+        dposV2        : false,
         library       : {
           logger: loggerStub,
         },
@@ -582,6 +531,7 @@ describe('modules/rounds', () => {
         backwards,
         block,
         finishRound   : true,
+        dposV2        : false,
         library       : {
           logger: loggerStub,
         },
@@ -605,6 +555,7 @@ describe('modules/rounds', () => {
         backwards,
         block,
         finishRound   : true,
+        dposV2        : false,
         library       : {
           logger: loggerStub,
         },

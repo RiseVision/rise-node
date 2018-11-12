@@ -53,12 +53,12 @@ export class RoundLogicStub extends BaseStubClass implements IRoundLogic {
   }
 
   @stubMethod()
-  public land(): Array<DBOp<any>> {
+  public apply(): Array<DBOp<any>> {
     return null;
   }
 
   @stubMethod()
-  public backwardLand(): Array<DBOp<any>> {
+  public undo(): Array<DBOp<any>> {
     return null;
   }
 }

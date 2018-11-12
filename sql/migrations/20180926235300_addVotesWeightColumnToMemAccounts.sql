@@ -24,7 +24,8 @@ UPDATE "mem_accounts" AS m SET "votesWeight" = vote_weight FROM (
                 ON ma_group."accountId"=ma2."address"
          WHERE ma_group.divider>0
         ) ma3
-        ON ma2d."accountId"=ma3."address" WHERE ma."isDelegate"=1 GROUP BY ma."address"
+        ON ma2d."accountId"=ma3."address"
+    WHERE ma."isDelegate"=1 GROUP BY ma."address"
     ) as vv
 WHERE vv."address"=m."address" AND m."isDelegate"=1;
 

@@ -51,6 +51,7 @@
     "promise-retry": "^1.1.1",
     "protobufjs": "^6.8.6",
     "redis": "^2.8.0",
+    "risejs": "^1.4.1",
     "routing-controllers": "=0.7.7",
     "semver": "=5.5.0",
     "sequelize": "=4.38.0",
@@ -62,9 +63,9 @@
     "source-map-support": "=0.5.6",
     "squel": "=5.12.2",
     "strftime": "=0.10.0",
+    "supersha": "0.0.1",
     "traverse": "^0.6.6",
     "uuid": "=3.3.2",
-    "supersha": "0.0.1",
     "z-schema": "=3.22.0"
   },
   "devDependencies": {

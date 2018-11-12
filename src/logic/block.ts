@@ -183,10 +183,6 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    */
   public verifySignature(block: SignedBlockType): boolean {
-    // console.log(block);
-    // const res = new OldImplementation(this.ed, this.zschema, this.transaction, null)
-    //  .verifySignature(block);
-    // console.log(res);
     return this.ed.verify(
       this.getHash(block, false),
       block.blockSignature,

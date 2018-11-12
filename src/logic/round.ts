@@ -18,6 +18,7 @@ export type RoundLogicScope = {
   roundDelegates: Buffer[];
   roundFees: any;
   roundRewards: number[];
+  dposV2: boolean;
   finishRound: boolean;
   library: {
     logger: ILogger
@@ -92,17 +93,6 @@ export class RoundLogic implements IRoundLogic {
   }
 
   /**
-   * Update votes for the round
-   */
-  public updateVotes(): DBCustomOp<any> {
-    return {
-      model: this.scope.models.AccountsModel,
-      query: this.scope.models.RoundsModel.updateVotesSQL(this.scope.round),
-      type : 'custom',
-    };
-  }
-
-  /**
    * In case of backwards calls updateBlockId with '0';
    */
   public markBlockId(): DBOp<any> {
@@ -121,17 +111,6 @@ export class RoundLogic implements IRoundLogic {
       };
     }
     return null;
-  }
-
-  /**
-   * Calls sql flush, deletes round from mem_round
-   */
-  public flushRound(): DBOp<any> {
-    return {
-      model  : this.scope.models.RoundsModel,
-      options: { where: { round: this.scope.round } },
-      type   : 'remove',
-    };
   }
 
   /**
@@ -158,24 +137,23 @@ export class RoundLogic implements IRoundLogic {
 
   /**
    * Performed when rollbacking last block of a round.
-   * It restores the round snapshot from sql
-   */
-  public restoreRoundSnapshot(): DBOp<RoundsModel> {
-    return {
-      model: this.scope.models.RoundsModel,
-      query: roundSQL.restoreRoundSnapshot,
-      type: 'custom',
-    };
-  }
-
-  /**
-   * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
   public restoreVotesSnapshot(): DBOp<AccountsModel> {
     return {
       model: this.scope.models.AccountsModel,
       query: roundSQL.restoreVotesSnapshot,
+      type: 'custom',
+    };
+  }
+  /**
+   * Performed when rollbacking last block of a round.
+   * It restores the votes snapshot from sql
+   */
+  public performVoteSnapshot(): DBOp<AccountsModel> {
+    return {
+      model: this.scope.models.AccountsModel,
+      query: roundSQL.performVotesSnapshot,
       type: 'custom',
     };
   }
@@ -192,7 +170,6 @@ export class RoundLogic implements IRoundLogic {
     for (let i = 0; i < delegates.length; i++) {
       const delegate = delegates[i];
       const changes  = roundChanges.at(i);
-      this.scope.library.logger.trace('Delegate changes', { delegate, changes });
 
       // merge Account in the direction.
       queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
@@ -207,18 +184,16 @@ export class RoundLogic implements IRoundLogic {
     }
 
     // last delegate will always get the remainder fees.
-    const remainderIndex    = this.scope.backwards ? 0 : delegates.length - 1;
-    const remainderDelegate = delegates[remainderIndex];
+    const remainderDelegate = delegates[delegates.length - 1];
 
-    const remainderChanges = roundChanges.at(remainderIndex);
+    const remainderChanges = roundChanges.at(delegates.length - 1);
 
     if (remainderChanges.feesRemaining > 0) {
       const feesRemaining = (this.scope.backwards ? -remainderChanges.feesRemaining : remainderChanges.feesRemaining);
 
       this.scope.library.logger.trace('Fees remaining', {
-        delegate: remainderDelegate,
+        delegate: remainderDelegate.toString('hex'),
         fees    : feesRemaining,
-        index   : remainderIndex,
       });
 
       queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
@@ -238,34 +213,30 @@ export class RoundLogic implements IRoundLogic {
   /**
    * Performs operations to go to the next round.
    */
-  public land(): Array<DBOp<any>> {
-    return [
-      this.updateVotes(),
-      this.reCalcVotes(),
-      this.updateMissedBlocks(),
-      this.flushRound(),
-      ...this.applyRound(),
-      this.updateVotes(),
-      this.reCalcVotes(),
-      this.flushRound(),
-    ];
+  public apply(): Array<DBOp<any>> {
+    if (this.scope.finishRound) {
+      return [
+        this.updateMissedBlocks(),
+        ...this.applyRound(),
+        this.performVoteSnapshot(),
+        this.reCalcVotes(),
+      ];
+    }
+    return [];
   }
 
   /**
    * Land back from a future round
    */
-  public backwardLand(): Array<DBOp<any>> {
-    return [
-      this.updateVotes(),
-      this.reCalcVotes(),
-      this.updateMissedBlocks(),
-      this.flushRound(),
-      ...this.applyRound(),
-      this.updateVotes(),
-      this.reCalcVotes(),
-      this.flushRound(),
-      this.restoreRoundSnapshot(),
-      this.restoreVotesSnapshot(),
-    ];
+  public undo(): Array<DBOp<any>> {
+    if (this.scope.finishRound) {
+      return [
+        this.updateMissedBlocks(),
+        ...this.applyRound(),
+        this.restoreVotesSnapshot(),
+      ];
+    }
+    return [];
   }
+
 }

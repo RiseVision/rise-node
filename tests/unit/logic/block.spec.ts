@@ -16,7 +16,7 @@ import { BlocksModel } from '../../../src/models';
 import { IBlockLogic } from '../../../src/ioc/interfaces/index';
 import { DBCreateOp } from '../../../src/types/genericTypes';
 import { z_schema } from '../../../src/helpers/z_schema';
-import { createFakeBlock } from '../../utils/blockCrafter';
+import { createFakeBlock, getFakePrevBlock } from '../../utils/blockCrafter';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
 import AccountLogicStub from '../../stubs/logic/AccountLogicStub';
 
@@ -129,7 +129,7 @@ describe('logic/block', () => {
 
     data = {
       keypair: dummyKeypair,
-      previousBlock: { id: '1', height: 10 },
+      previousBlock: getFakePrevBlock(),
       timestamp: Date.now(),
       transactions: dummyTransactions,
     };

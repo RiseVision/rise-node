@@ -107,7 +107,8 @@ describe('Fair vote system', async () => {
     await initializer.rawDeleteBlocks(blocksToDelete);
     expect(accAfter.producedblocks).to.be.eq(201);
     expect(accAfter.missedblocks).to.be.eq(201);
-    expect(accAfter.votesWeight).to.be.eq(Math.floor(accAfter.balance * 0.5));
+
+    expect(accAfter.votesWeight).to.be.eq(Math.floor(accAfter.vote * 0.5));
   });
   it('should work even with 66.666% productivity', async function() {
     this.timeout(1000000);
@@ -130,7 +131,7 @@ describe('Fair vote system', async () => {
     await initializer.rawDeleteBlocks(blocksToDelete);
     expect(accAfter.producedblocks).to.be.eq(66666);
     expect(accAfter.missedblocks).to.be.eq(100000 - 66666);
-    expect(accAfter.votesWeight).to.be.eq(Math.round(accAfter.balance * 0.66666));
+    expect(accAfter.votesWeight).to.be.eq(Math.round(accAfter.vote * 0.66666));
   });
 
 });

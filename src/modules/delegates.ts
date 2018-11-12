@@ -59,7 +59,7 @@ export class DelegatesModule implements IDelegatesModule {
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
-  private roundSeeds: {[seed: number]: number[]} = {};
+  private roundSeeds: {[seed: number]: Uint32Array} = {};
 
   public async checkConfirmedDelegates(account: AccountsModel, votes: string[]) {
     return this.checkDelegates(account, votes, 'confirmed');
@@ -69,56 +69,67 @@ export class DelegatesModule implements IDelegatesModule {
     return this.checkDelegates(account, votes, 'unconfirmed');
   }
 
+  private delegatesCacheByRound: {[round: number]: Buffer[]} = {};
   /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.
    * @return {Promise<publicKey[]>}
    */
   public async generateDelegateList(height: number): Promise<Buffer[]> {
-    let delegates  = await this.getKeysSortByVote();
-    const seedSource = this.roundsLogic.calcRound(height).toString();
+    const round = this.roundsLogic.calcRound(height);
+    if (!this.delegatesCacheByRound[round]) {
+      let delegates    = await this.getKeysSortByVote(height);
 
-    // If dposv2 is on, do a Weighted Random Selection of the round forgers.
-    if (height >= this.constants.dposv2.firstBlock) {
-      let pool: Array<{publicKey: Buffer, vote: number, weight?: number}>;
+      // Shuffle the delegates, using the round number as a seed.
+      let currentSeed: Buffer;
+      // If dposv2 is on, do a Weighted Random Selection of the round forgers.
+      if (height >= this.constants.dposv2.firstBlock) {
+        let pool: Array<{ publicKey: Buffer, vote: number, weight?: number }>;
 
-      // Initialize source random numbers that will generate a predictable sequence, given the seed.
-      const generator = new MersenneTwister(await this.calculateSafeRoundSeed(height));
+        // Initialize source random numbers that will generate a predictable sequence, given the seed.
+        const roundSeed = await this.calculateSafeRoundSeed(height);
+        const generator = new MersenneTwister([... roundSeed]);
 
-      // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
-      pool = delegates.map((delegate) => {
-        const rand = generator.random(); // 0 >= rand < 1
-        return {
-          ...delegate,
-          weight: rand ** ( 1 / delegate.vote ), // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
-        };
-      });
+        // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
+        pool = delegates.map((delegate) => {
+          const rand = generator.random(); // 0 >= rand < 1
+          return {
+            ...delegate,
+            weight: rand ** (1 / delegate.vote), // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
+          };
+        });
 
-      // Sort by weight
-      pool.sort((a, b) => {
-        // If two elements have the same weight, publicKey defines the position (higher value first)
-        if (a.weight === b.weight) {
-          return Buffer.compare(b.publicKey, a.publicKey);
-        }
-        return a.weight > b.weight ? -1 : 1;
-      });
-      delegates = pool.slice(0, this.constants.activeDelegates);
-    }
-
-    // Shuffle the delegates.
-    let currentSeed  = supersha.sha256(Buffer.from(seedSource, 'utf8'));
-
-    for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
-      for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
-        const newIndex  = currentSeed[x] % delegatesCount;
-        const b         = delegates[newIndex];
-        delegates[newIndex] = delegates[i];
-        delegates[i]        = b;
+        // Sort by weight
+        pool.sort((a, b) => {
+          // If two elements have the same weight, publicKey defines the position (higher value first)
+          if (a.weight === b.weight) {
+            return Buffer.compare(b.publicKey, a.publicKey);
+          }
+          return a.weight > b.weight ? -1 : 1;
+        });
+        delegates = pool.slice(0, this.constants.activeDelegates);
+        currentSeed = new Buffer(roundSeed.buffer);
+      } else {
+        const scrambleSeed = this.roundsLogic.calcRound(height).toString();
+        currentSeed = supersha.sha256(Buffer.from(scrambleSeed, 'utf8'));
       }
-      currentSeed = supersha.sha256(currentSeed);
+
+      for (let i = 0, delegatesCount = delegates.length; i < delegatesCount; i++) {
+        for (let x = 0; x < 4 && i < delegatesCount; i++, x++) {
+          const newIndex      = currentSeed[x] % delegatesCount;
+          const b             = delegates[newIndex];
+          delegates[newIndex] = delegates[i];
+          delegates[i]        = b;
+        }
+        currentSeed = supersha.sha256(currentSeed);
+      }
+
+      this.delegatesCacheByRound[round] = delegates
+        .slice(0, this.slots.delegates)
+        .map((d) => d.publicKey);
     }
 
-    return delegates.slice(0, this.slots.delegates).map((d) => d.publicKey);
+    return this.delegatesCacheByRound[round];
   }
 
   /**
@@ -221,17 +232,18 @@ export class DelegatesModule implements IDelegatesModule {
   }
 
   public onRoundBackwardTick(block: SignedAndChainedBlockType) {
-    // Delete round seed cache for this round
-    delete this.roundSeeds[this.roundsLogic.calcRound(block.height)];
+    // Delete round seed cache for next round that is not valid anymore.
+    delete this.roundSeeds[this.roundsLogic.calcRound(block.height) + 1];
+    delete this.delegatesCacheByRound[this.roundsLogic.calcRound(block.height) + 1];
   }
 
   /**
    * Get delegates public keys sorted by descending vote.
    */
-  private async getKeysSortByVote(): Promise<Array<{publicKey: Buffer, vote: number}>> {
+  private async getKeysSortByVote(height: number): Promise<Array<{publicKey: Buffer, vote: number}>> {
     const fields: FieldsInModel<AccountsModel> = ['publicKey'];
     let sort: string | { [k: string]: -1 | 1 };
-    if (this.blocksModule.lastBlock.height < this.constants.dposv2.firstBlock) {
+    if (height < this.constants.dposv2.firstBlock) {
       sort = {vote: -1, publicKey: 1};
       fields.push('vote');
     } else {
@@ -317,8 +329,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @param {number} height
    * @returns {Promise<number[]>}
    */
-  // TODO: Maybe separate cache from calculation logic ?
-  private async calculateSafeRoundSeed(height: number): Promise<number[]> {
+  private async calculateSafeRoundSeed(height: number): Promise<Uint32Array> {
     const currentRound = this.roundsLogic.calcRound(height);
     // Calculation is expensive, let's keep a cache of seeds
     if (typeof this.roundSeeds[currentRound] !== 'undefined') {
@@ -329,7 +340,7 @@ export class DelegatesModule implements IDelegatesModule {
       const keys = Object.keys(this.roundSeeds);
       if (keys.length >= 100) {
         for (let i = 0; i <= keys.length - 100; i++) {
-          delete this.roundSeeds[keys[0]];
+          delete this.roundSeeds[keys[i]];
         }
       }
     }
@@ -345,22 +356,9 @@ export class DelegatesModule implements IDelegatesModule {
       throw new Error(`Error in Round Seed calculation, block ${previousRoundLastBlockHeight} not found`);
     }
 
-    // Hash the Block ID several times. This is here to discourage attempts to alter block ID by forgers to get a
-    // higher chance to get forging in the next round.
-    let seedSource = supersha.sha256(Buffer.from(block.id, 'utf8'));
-    for (let i = 0; i < 10000; i++) {
-      seedSource = supersha.sha256(seedSource);
-    }
-
+    const seedSource: Buffer = supersha.sha256(Buffer.from(block.id, 'utf8'));
     // Convert the sha256 buffer to an array of 32-bit unsigned integers
-    const seed: number[] = [];
-    for (let i = 0; i < seedSource.length; i += 4) {
-      const chunk = seedSource.slice(i, i + 4);
-      // Reverse for little-endianness
-      chunk.reverse();
-      const u32 = new Uint32Array(new Uint8Array(chunk).buffer);
-      seed.push(u32[0]);
-    }
+    const seed = new Uint32Array(seedSource.buffer);
 
     // Save in cache
     this.roundSeeds[currentRound] = seed;
