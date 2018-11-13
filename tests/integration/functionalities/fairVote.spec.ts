@@ -13,13 +13,19 @@ import initializer from '../common/init';
 import { Symbols } from '../../../src/ioc/symbols';
 import { toBufferedTransaction } from '../../utils/txCrafter';
 import constants from '../../../src/helpers/constants';
-import { AccountsModel } from '../../../src/models';
+import { AccountsModel, BlocksModel } from '../../../src/models';
 import * as uuid from 'uuid';
+import { RoundsLogic } from '../../../src/logic';
+import { IDelegatesModule } from '../../../src/ioc/interfaces/modules';
 
 describe('Fair vote system', async () => {
   let blocksModule: BlocksModule;
+  let blocksModel: typeof BlocksModel;
   let accountsModel: typeof AccountsModel;
+  let delegatesModule: IDelegatesModule;
   let newDelegateWallet: LiskWallet;
+  let newDelegateWalletNoVotes: LiskWallet;
+  let roundsLogic: RoundsLogic;
   const dposv2FirstBlock = constants.dposv2.firstBlock;
   before(() => {
     // Start with dposv2 algorithm afer the first round.
@@ -30,14 +36,20 @@ describe('Fair vote system', async () => {
   });
   initializer.setup();
   beforeEach(async () => {
-    blocksModule  = initializer.appManager.container.get(Symbols.modules.blocks);
-    accountsModel = initializer.appManager.container.get<typeof AccountsModel>(Symbols.models.accounts);
+    blocksModel     = initializer.appManager.container.get(Symbols.models.blocks);
+    blocksModule    = initializer.appManager.container.get(Symbols.modules.blocks);
+    roundsLogic     = initializer.appManager.container.get(Symbols.logic.rounds);
+    accountsModel   = initializer.appManager.container.get<typeof AccountsModel>(Symbols.models.accounts);
+    delegatesModule = initializer.appManager.container.get(Symbols.modules.delegates);
     // Each Delegate has a genesis balance of 108910891000000 and voted for himself. We transfer 1 third of balance
     // of a random genesis delegate to a new account that will vote for himself. This will give enough funds to increase
     // the forging chances, but not with normal dpos algorithm.
-    const secret      = uuid.v4();
-    newDelegateWallet = createWallet(secret);
+    const secret             = uuid.v4();
+    newDelegateWallet        = createWallet(secret);
+    const secret2            = uuid.v4();
+    newDelegateWalletNoVotes = createWallet(secret2);
     await createRandomAccountWithFunds(Math.floor(108910891000000 / 3), newDelegateWallet);
+    await createRandomAccountWithFunds(Math.floor(108910891000000 / 3), newDelegateWalletNoVotes);
     addNewDelegate({
       address : newDelegateWallet.address,
       keypair : {
@@ -47,16 +59,27 @@ describe('Fair vote system', async () => {
       secret,
       username: 'outsider',
     });
-    const tx = await createRegDelegateTransaction(0, newDelegateWallet, 'outsider');
-    await initializer.rawMineBlockWithTxs([toBufferedTransaction(tx)]);
+    addNewDelegate({
+      address : newDelegateWalletNoVotes.address,
+      keypair : {
+        privateKey: newDelegateWalletNoVotes.privKey,
+        publicKey : newDelegateWalletNoVotes.publicKey,
+      },
+      secret  : secret2,
+      username: 'outsider.no.votes',
+    });
+    const tx  = await createRegDelegateTransaction(0, newDelegateWallet, 'outsider');
+    const tx2 = await createRegDelegateTransaction(0, newDelegateWalletNoVotes, 'outsider.no.votes');
+    await initializer.rawMineBlockWithTxs([tx, tx2].map(toBufferedTransaction));
     await createVoteTransaction(1, newDelegateWallet, newDelegateWallet.publicKey, true);
   });
   afterEach(async () => {
     removeDelegatePass(newDelegateWallet.address);
-    await initializer.rawDeleteBlocks(3);
+    removeDelegatePass(newDelegateWalletNoVotes.address);
+    await initializer.rawDeleteBlocks(4);
   });
 
-  it('should at some point include an outsider in round, when dposv2 is active', async function () {
+  it('should at some point include outsider in round when dposv2 is active', async function () {
     this.timeout(1000000);
     let minedBlocks = 0;
     let found       = false;
@@ -110,7 +133,7 @@ describe('Fair vote system', async () => {
 
     expect(accAfter.votesWeight).to.be.eq(Math.floor(accAfter.vote * 0.5));
   });
-  it('should work even with 66.666% productivity', async function() {
+  it('should work even with 66.666% productivity', async function () {
     this.timeout(1000000);
     let blocksToDelete        = 0;
     const blocksToFinishRound = constants.activeDelegates - blocksModule.lastBlock.height;
@@ -133,5 +156,93 @@ describe('Fair vote system', async () => {
     expect(accAfter.missedblocks).to.be.eq(100000 - 66666);
     expect(accAfter.votesWeight).to.be.eq(Math.round(accAfter.vote * 0.66666));
   });
+
+  it('should NOT include outsider.no.votes in round when dposv2 is active', async function () {
+    this.timeout(1000000);
+    let minedBlocks = 0;
+    let found       = false;
+    const acc       = await accountsModel.findById(newDelegateWalletNoVotes.address);
+    // Make sure the bew delegate hasn't forget yet
+    expect(blocksModule.lastBlock.height).to.be.lt(constants.activeDelegates);
+    expect(acc).not.to.be.undefined;
+    expect(acc.producedblocks).to.be.equal(0);
+    expect(acc.votesWeight).to.be.equal(0);
+
+    // We assume it takes less than 20 rounds to include the outsider in forging.
+    while (minedBlocks < 20 * constants.activeDelegates) {
+      console.log('mined', minedBlocks);
+      const howMany = minedBlocks === 0 ?
+        constants.activeDelegates - blocksModule.lastBlock.height : constants.activeDelegates;
+      await initializer.rawMineBlocks(howMany);
+      minedBlocks += howMany;
+      const accData = await accountsModel.findById(newDelegateWalletNoVotes.address);
+      if (accData.producedblocks > 0) {
+        found = true;
+        break;
+      }
+    }
+    await initializer.rawDeleteBlocks(minedBlocks);
+    expect(found).to.be.false;
+  });
+
+  it('should not include delegate if he forged last block in round AND should set to last slot the delegate who forged the last block in a round less recently than others', async function () {
+    this.timeout(10000000);
+    await initializer.rawMineBlocks(101);
+    const prevHeight = blocksModule.lastBlock.height;
+    for (let rounds = 0; rounds < 100; rounds++) {
+      console.log(rounds);
+      const curHeight = blocksModule.lastBlock.height;
+      const toMine    = roundsLogic.lastInRound(roundsLogic.calcRound(curHeight))
+        - curHeight;
+      await initializer.rawMineBlocks(toMine);
+      const lastForger = blocksModule.lastBlock.generatorPublicKey;
+      const delegates  = await delegatesModule
+        .generateDelegateList(blocksModule.lastBlock.height + 1);
+      // should not include delegate if he forged last block in round
+      expect(delegates.find((a) => a.equals(lastForger)))
+        .undefined;
+      await initializer.rawMineBlocks(1);
+    }
+
+    // Since we forged only 100 rounds every delegate shoulod be eq 1
+    const res = await blocksModel.sequelize.query(`
+      SELECT COUNT(height) as ch, MAX(height) as mh, "generatorPublicKey" FROM blocks
+         WHERE height % 101 = 0 AND height > ${prevHeight}
+         group by "generatorPublicKey"
+         order by "ch" asc
+    `);
+
+    for (let i = 0; i < res.length; i++) {
+      expect(res[i].ch).eq(1);
+    }
+
+    // TODO: test that next round ender is the delegate who has the lowest res.mh
+    // Also test producedBlocks is what we would expect?
+
+  });
+  it('should not include delegate if he missed too many blocks in a row', async function () {
+    // TODO: o
+    let gene1 = await accountsModel.findOne({
+      where: {
+        username: 'genesisDelegate1'
+      }
+    });
+
+    gene1.cmb = 28 * 3;
+    await gene1.save();
+
+    // check incluso
+
+    gene1     = await accountsModel.findOne({
+      where: {
+        username: 'genesisDelegate1'
+      }
+    });
+    gene1.cmb = 28 * 3 + 1;
+
+    // no incluso
+
+  });
+
 
 });

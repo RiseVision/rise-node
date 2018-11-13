@@ -79,6 +79,12 @@ export class AccountsModel extends Model<AccountsModel> {
   @Column
   public missedblocks: number;
 
+  /**
+   * Stands for consecutive missed blocks
+   */
+  @Column
+  public cmb: number;
+
   @Column
   public fees: number;
   @Column
@@ -101,7 +107,6 @@ export class AccountsModel extends Model<AccountsModel> {
   @Column
   public u_multimin: number;
 
-
   @Column(DataType.TEXT)
   public multisignatures?: publicKey[];
   @Column(DataType.TEXT)
@@ -110,7 +115,6 @@ export class AccountsModel extends Model<AccountsModel> {
   public delegates?: publicKey[];
   @Column(DataType.TEXT)
   public u_delegates?: publicKey[];
-
 
   public isMultisignature(): boolean {
     return this.multilifetime > 0;

@@ -87,7 +87,9 @@ export class RoundLogic implements IRoundLogic {
       },
       type   : 'update',
       values : {
-        missedblocks: sequelize.literal(`missedblocks ${this.scope.backwards ? '-' : '+'} 1`),
+        // tslint:disable-next-line max-line-length
+        cmb          : this.scope.dposV2 ? sequelize.literal(`cmb ${this.scope.backwards ? '-' : '+'} 1`) : 0,
+        missedblocks : sequelize.literal(`missedblocks ${this.scope.backwards ? '-' : '+'} 1`),
       },
     };
   }
@@ -175,6 +177,7 @@ export class RoundLogic implements IRoundLogic {
       queries.push(... this.scope.modules.accounts.mergeAccountAndGetOPs({
         balance  : (this.scope.backwards ? -changes.balance : changes.balance),
         blockId  : this.scope.block.id,
+        cmb      : 0,
         fees     : (this.scope.backwards ? -changes.fees : changes.fees),
         publicKey: delegate,
         rewards  : (this.scope.backwards ? -changes.rewards : changes.rewards),

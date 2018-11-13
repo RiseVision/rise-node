@@ -147,21 +147,89 @@ describe('logic/round', () => {
       expect(ar).to.be.null;
     });
 
-    it('should return result from updateMissedBlocks', async () => {
-      const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
-      const retVal             = await instance.updateMissedBlocks();
-      expect(retVal.model).to.be.deep.eq(accountsModel);
-      delete retVal.model; // causes memory issue
-      expect(retVal).to.be.deep.eq({
-        options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
-        type   : 'update',
-        values : { missedblocks: { val: 'missedblocks + 1' } },
-      });
+    describe('forward', () => {
+      it('should return result from updateMissedBlocks', async () => {
+        const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
+        const retVal             = await instance.updateMissedBlocks();
+        expect(retVal.model).to.be.deep.eq(accountsModel);
+        delete retVal.model; // causes memory issue
+        expect(retVal).to.be.deep.eq({
+          options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
+          type   : 'update',
+          values: {
+            cmb         : 0,
+            missedblocks: { val: 'missedblocks + 1' }
+          },
+        });
 
-      // chai does not support deep eq on obj with symbols
-      expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
-      updateMissedBlocks.restore();
+        // chai does not support deep eq on obj with symbols
+        expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
+        updateMissedBlocks.restore();
+      });
+      it('should update continuousMissedBlocks in dposV2', async () => {
+        scope.dposV2 = true;
+        const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
+        const retVal             = await instance.updateMissedBlocks();
+        expect(retVal.model).to.be.deep.eq(accountsModel);
+        delete retVal.model; // causes memory issue
+        expect(retVal).to.be.deep.eq({
+          options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
+          type   : 'update',
+          values: {
+            cmb         : { val: 'cmb + 1' },
+            missedblocks: { val: 'missedblocks + 1' },
+          },
+        });
+
+        // chai does not support deep eq on obj with symbols
+        expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
+        updateMissedBlocks.restore();
+      });
     });
+
+    describe('backward', () => {
+      it('should return result from updateMissedBlocks', async () => {
+        scope.backwards = true;
+        const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
+        const retVal             = await instance.updateMissedBlocks();
+        expect(retVal.model).to.be.deep.eq(accountsModel);
+        delete retVal.model; // causes memory issue
+        expect(retVal).to.be.deep.eq({
+          options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
+          type   : 'update',
+          values: {
+            cmb         : 0,
+            missedblocks: { val: 'missedblocks - 1' }
+          },
+        });
+
+        // chai does not support deep eq on obj with symbols
+        expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
+        updateMissedBlocks.restore();
+      });
+      it('should update continuousMissedBlocks in dposV2', async () => {
+        scope.backwards = true;
+        scope.dposV2 = true;
+        const updateMissedBlocks = sandbox.stub(roundSQL, 'updateMissedBlocks').returns(true);
+        const retVal             = await instance.updateMissedBlocks();
+        expect(retVal.model).to.be.deep.eq(accountsModel);
+        delete retVal.model; // causes memory issue
+        expect(retVal).to.be.deep.eq({
+          options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
+          type   : 'update',
+          values: {
+            cmb         : { val: 'cmb - 1' },
+            missedblocks: { val: 'missedblocks - 1' },
+          },
+        });
+
+        // chai does not support deep eq on obj with symbols
+        expect(retVal.options.where.address[Op.in]).to.be.deep.eq(scope.roundOutsiders);
+        updateMissedBlocks.restore();
+      });
+    })
+
+
   });
 
   describe('reCalcVotes', () => {
@@ -266,6 +334,7 @@ describe('logic/round', () => {
       expect((scope.modules.accounts.mergeAccountAndGetOPs as SinonStub).firstCall.args[0]).is.deep.eq({
         balance: 10,
         blockId: scope.block.id,
+        cmb: 0,
         fees: 5,
         publicKey: Buffer.from('aa', 'hex'),
         rewards: 4,
@@ -275,6 +344,7 @@ describe('logic/round', () => {
       expect((scope.modules.accounts.mergeAccountAndGetOPs as SinonStub).secondCall.args[0]).is.deep.eq({
         balance: 10,
         blockId: scope.block.id,
+        cmb: 0,
         fees: 5,
         publicKey: Buffer.from('bb', 'hex'),
         rewards: 4,
