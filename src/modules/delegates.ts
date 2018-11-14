@@ -80,6 +80,8 @@ export class DelegatesModule implements IDelegatesModule {
     if (!this.delegatesCacheByRound[round]) {
       const isV2 = height >= this.constants.dposv2.firstBlock;
       const excludedList: Buffer[] = [];
+
+      // In DPOS v2, the last delegate to forge a round, totally skips the next one.
       if (isV2) {
         const block = await this.getLastBlockInPrevRound(height);
         excludedList.push(block.generatorPublicKey);
@@ -136,58 +138,7 @@ export class DelegatesModule implements IDelegatesModule {
         .map((d) => d.publicKey);
 
       if (isV2) {
-        /**
-         * SELECT MAX(height) as "lastRoundEndHeight", "generatorPublicKey" FROM blocks
-         WHERE height % 101 = 0
-         group by "generatorPublicKey"
-         order by "lastRoundEndHeight" asc
-         */
-        const res: any = await this.BlocksModel.findAll({
-          attributes: [
-            [ sequelize.fn('MAX', sequelize.col('height')), 'lastRoundEndHeight' ],
-            'generatorPublicKey',
-          ],
-          group: 'generatorPublicKey',
-          order: sequelize.literal('"lastRoundEndHeight" ASC'),
-          raw: true,
-          where: {
-            [Op.and]: [
-              sequelize.literal(`height % ${this.slots.delegates} = 0`),
-              {
-                generatorPublicKey: {
-                  [Op.in]: this.delegatesCacheByRound[round]
-                },
-              },
-            ],
-          },
-        });
-
-        // Polyfill delegates that never mined last block in a round.
-        this.delegatesCacheByRound[round]
-          .forEach((d) => {
-            if (!res.find((a) => a.generatorPublicKey.equals(d))) {
-              res.push({
-                generatorPublicKey: d,
-                lastRoundEndHeight: 0
-              });
-            }
-        });
-
-        let minimumDelegate: Buffer = null;
-        let minimumDelegateValue: number = Number.MAX_SAFE_INTEGER;
-        res.forEach(({lastRoundEndHeight, generatorPublicKey}) => {
-          if (lastRoundEndHeight < minimumDelegateValue) {
-            minimumDelegateValue = lastRoundEndHeight;
-            minimumDelegate = generatorPublicKey;
-          }
-        });
-
-        if (minimumDelegate !== null) {
-          const index = this.delegatesCacheByRound[round]
-            .findIndex((pk) => pk.equals(minimumDelegate));
-          this.delegatesCacheByRound[round].splice(index, 1);
-          this.delegatesCacheByRound[round].push(minimumDelegate);
-        }
+        await this.chooseEndRoundForger(height, round);
       }
     }
 
@@ -413,5 +364,70 @@ export class DelegatesModule implements IDelegatesModule {
       throw new Error(`Error in Round Seed calculation, block ${previousRoundLastBlockHeight} not found`);
     }
     return block;
+  }
+
+  /**
+   * Modifies the cached delegates list by choosing the delegate who will forge the last block of the round.
+   * It will be the one in the list who was in this position less recently.
+   * @param {number} height
+   * @param {number} round
+   * @returns {Promise<void>}
+   */
+  private async chooseEndRoundForger(height: number, round: number) {
+    // Gets all "recent" blocks forged exactly at the end of round to find the producer who should be the next one
+    // to forge in last position (and so to skip next round), sorted by Max height and grouped by generatorPublicKey
+    const res: any = await this.BlocksModel.findAll({
+      attributes: [
+        [ sequelize.fn('MAX', sequelize.col('height')), 'lastRoundEndHeight' ],
+        'generatorPublicKey',
+      ],
+      group: 'generatorPublicKey',
+      order: sequelize.literal('"lastRoundEndHeight" ASC'),
+      raw: true,
+      where: {
+        [Op.and]: [
+          {
+            height: {
+              [Op.gte]: height - this.slots.delegates * this.constants.dposv2.delegatesPoolSize,
+            },
+          },
+          sequelize.literal(`height % ${this.slots.delegates} = 0`),
+          {
+            generatorPublicKey: {
+              [Op.in]: this.delegatesCacheByRound[round],
+            },
+          },
+        ],
+      },
+    });
+
+    // Polyfill delegates that never forged the last block in a round.
+    this.delegatesCacheByRound[round]
+      .forEach((d) => {
+        if (!res.find((a) => a.generatorPublicKey.equals(d))) {
+          res.push({
+            generatorPublicKey: d,
+            lastRoundEndHeight: 0,
+          });
+        }
+      });
+
+    // Choose the delegate that forged the last block in a round less recently
+    let chosenDelegate: Buffer = null;
+    let minLastRoundEndHeight: number = Number.MAX_SAFE_INTEGER;
+    res.forEach(({lastRoundEndHeight, generatorPublicKey}) => {
+      if (lastRoundEndHeight < minLastRoundEndHeight) {
+        minLastRoundEndHeight = lastRoundEndHeight;
+        chosenDelegate = generatorPublicKey;
+      }
+    });
+
+    // Move the chosen delegate to the last position in the array.
+    if (chosenDelegate !== null) {
+      const index = this.delegatesCacheByRound[round]
+        .findIndex((pk) => pk.equals(chosenDelegate));
+      this.delegatesCacheByRound[round].splice(index, 1);
+      this.delegatesCacheByRound[round].push(chosenDelegate);
+    }
   }
 }

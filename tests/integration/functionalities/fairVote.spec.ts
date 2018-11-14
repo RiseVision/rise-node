@@ -189,8 +189,9 @@ describe('Fair vote system', async () => {
     this.timeout(10000000);
     await initializer.rawMineBlocks(101);
     const prevHeight = blocksModule.lastBlock.height;
+    let preRoundNum=0;
     for (let rounds = 0; rounds < 100; rounds++) {
-      console.log(rounds);
+      console.log(`Round ${rounds}`);
       const curHeight = blocksModule.lastBlock.height;
       const toMine    = roundsLogic.lastInRound(roundsLogic.calcRound(curHeight))
         - curHeight;
@@ -201,24 +202,42 @@ describe('Fair vote system', async () => {
       // should not include delegate if he forged last block in round
       expect(delegates.find((a) => a.equals(lastForger)))
         .undefined;
+
+      preRoundNum = roundsLogic.calcRound(blocksModule.lastBlock.height);
+
       await initializer.rawMineBlocks(1);
     }
 
-    // Since we forged only 100 rounds every delegate shoulod be eq 1
+    expect(roundsLogic.calcRound(blocksModule.lastBlock.height) - preRoundNum).to.be.eq(1);
+
+    await initializer.rawMineBlocks(100);
+    expect(roundsLogic.calcRound(blocksModule.lastBlock.height) - preRoundNum).to.be.eq(1);
+    expect(blocksModule.lastBlock.height % 101).to.be.equal(0);
+
+    // Since we forged only 100 rounds every delegate should be eq 1
     const res = await blocksModel.sequelize.query(`
       SELECT COUNT(height) as ch, MAX(height) as mh, "generatorPublicKey" FROM blocks
          WHERE height % 101 = 0 AND height > ${prevHeight}
          group by "generatorPublicKey"
          order by "ch" asc
     `);
-
-    for (let i = 0; i < res.length; i++) {
-      expect(res[i].ch).eq(1);
+    expect(res[0].length).to.be.equal(101);
+    for (let i = 0; i < res[0].length; i++) {
+      expect(res[0][i].ch).eq(1);
     }
+    let lowestMhItem = {... res[0][0]};
+    res[0].forEach((item) => {
+      if (item.mh < lowestMhItem.mh) {
+        lowestMhItem = {... item};
+      }
+    });
 
-    // TODO: test that next round ender is the delegate who has the lowest res.mh
-    // Also test producedBlocks is what we would expect?
-
+    // TODO: Is this correct?
+    await initializer.rawMineBlocks(202);
+    expect(roundsLogic.calcRound(blocksModule.lastBlock.height) - preRoundNum).to.be.eq(3);
+    expect(blocksModule.lastBlock.height % 101).to.be.equal(0);
+    expect(blocksModule.lastBlock.generatorPublicKey).to.be.deep.equal(lowestMhItem.generatorPublicKey);
+    // TODO Also test producedBlocks is what we would expect?
   });
   it('should not include delegate if he missed too many blocks in a row', async function () {
     // TODO: o
@@ -231,7 +250,7 @@ describe('Fair vote system', async () => {
     gene1.cmb = 28 * 3;
     await gene1.save();
 
-    // check incluso
+    // check included
 
     gene1     = await accountsModel.findOne({
       where: {
@@ -240,7 +259,7 @@ describe('Fair vote system', async () => {
     });
     gene1.cmb = 28 * 3 + 1;
 
-    // no incluso
+    // check not included
 
   });
 

@@ -29,10 +29,6 @@ import { dposOffline, LiskWallet } from 'dpos-offline';
 import { BlocksModel } from '../../../src/models';
 import { Op } from 'sequelize';
 import constants from '../../../src/helpers/constants';
-import { BasePeerType, BlockLogic, IBytesBlock } from '../../../src/logic';
-import { RequestFactoryType } from '../../../src/apis/requests/requestFactoryType';
-import { PostBlocksRequest, PostBlocksRequestDataType } from '../../../src/apis/requests/PostBlocksRequest';
-import { requestSymbols } from '../../../src/apis/requests/requestSymbols';
 
 chai.use(chaiAsPromised);
 describe('dposv2', () => {
