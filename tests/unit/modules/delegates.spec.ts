@@ -45,7 +45,7 @@ describe('modules/delegates', () => {
   let accountsModel: typeof AccountsModel;
 
   let sha256Spy: SinonSpy;
-  let chooseEndRoundForgerStub: SinonStub;
+  let replaceEndForgerStub: SinonStub;
 
   let pubKey: string;
   let votes: string[];
@@ -80,7 +80,7 @@ describe('modules/delegates', () => {
     container.rebind(Symbols.modules.delegates).to(DelegatesModule).inSingletonScope();
     instance = container.get(Symbols.modules.delegates);
 
-    chooseEndRoundForgerStub = sandbox.stub(instance as any, 'chooseEndRoundForger');
+    replaceEndForgerStub = sandbox.stub(instance as any, 'replaceEndForger');
     // Init frequently used test values
     pubKey = 'e22c25bcd696b94a3f4b017fdc681d714e275427a5112c2873e57c9637af3eed';
     votes  = [
