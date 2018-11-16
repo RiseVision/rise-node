@@ -138,7 +138,7 @@ export class DelegatesModule implements IDelegatesModule {
         .map((d) => d.publicKey);
 
       if (isV2) {
-        await this.chooseEndRoundForger(height, round);
+        await this.replaceEndForger(height, round);
       }
     }
 
@@ -373,7 +373,7 @@ export class DelegatesModule implements IDelegatesModule {
    * @param {number} round
    * @returns {Promise<void>}
    */
-  private async chooseEndRoundForger(height: number, round: number) {
+  private async replaceEndForger(height: number, round: number) {
     // Gets all "recent" blocks forged exactly at the end of round to find the producer who should be the next one
     // to forge in last position (and so to skip next round), sorted by Max height and grouped by generatorPublicKey
     const res: any = await this.BlocksModel.findAll({

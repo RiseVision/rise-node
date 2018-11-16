@@ -5,13 +5,14 @@ import { Sequelize } from 'sequelize-typescript';
 import * as filterObject from 'filter-object';
 import initializer from '../common/init';
 import {
+  addNewDelegate,
   confirmTransactions,
   createRandomAccountsWithFunds,
-  createRandomAccountWithFunds,
+  createRandomAccountWithFunds, createRegDelegateTransaction,
   createSendTransaction,
-  createVoteTransaction,
+  createVoteTransaction, createWallet,
   findDelegateByPkey,
-  findDelegateByUsername, getRandomDelegateWallet
+  findDelegateByUsername, getRandomDelegateWallet, removeDelegatePass
 } from '../common/utils';
 import { Symbols } from '../../../src/ioc/symbols';
 import { IPeerLogic, IRoundsLogic, ITransactionLogic, ITransactionPoolLogic } from '../../../src/ioc/interfaces/logic';
@@ -29,6 +30,8 @@ import { dposOffline, LiskWallet } from 'dpos-offline';
 import { BlocksModel } from '../../../src/models';
 import { Op } from 'sequelize';
 import constants from '../../../src/helpers/constants';
+import * as uuid from 'uuid';
+import { toBufferedTransaction } from '../../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 describe('dposv2', () => {
@@ -41,8 +44,7 @@ describe('dposv2', () => {
     constants.dposv2.firstBlock = dposv2FirstBlock;
   });
   initializer.setup();
-  initializer.createBlocks(100, 'each');
-  initializer.autoRestoreEach();
+
   const funds = Math.pow(10, 11);
 
   let cnsts: typeof constants;
@@ -58,7 +60,9 @@ describe('dposv2', () => {
   let systemModule: ISystemModule;
   let sequelize: Sequelize;
   let rounds: IRoundsModule;
+  let newDelegateWallet: LiskWallet;
   let ed: Ed;
+
   beforeEach(async () => {
     cnsts           = initializer.appManager.container.get(Symbols.helpers.constants);
     ed              = initializer.appManager.container.get(Symbols.helpers.ed);
@@ -75,7 +79,36 @@ describe('dposv2', () => {
     roundsLogic     = initializer.appManager.container.get(Symbols.logic.rounds);
     blocksModel     = initializer.appManager.container.get(Symbols.models.blocks);
     cnsts.dposv2.firstBlock = 102;
+
+    const secret             = 'secret';
+    newDelegateWallet        = createWallet(secret);
+    await createRandomAccountWithFunds(26*1e8, newDelegateWallet);
+    addNewDelegate({
+      address : newDelegateWallet.address,
+      keypair : {
+        privateKey: newDelegateWallet.privKey,
+        publicKey : newDelegateWallet.publicKey,
+      },
+      secret,
+      username: 'outsider',
+    });
+
+    const tx  = await createRegDelegateTransaction(0, newDelegateWallet, 'outsider');
+    await initializer.rawMineBlockWithTxs([tx].map(toBufferedTransaction));
+    // await createVoteTransaction(1, newDelegateWallet, newDelegateWallet.publicKey, true);
+
   });
+
+  afterEach(async () => {
+    removeDelegatePass(newDelegateWallet.address);
+  });
+
+  initializer.createBlocks(100, 'each');
+  afterEach(async function () {
+    this.timeout(200000);
+    await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
+  });
+
   describe('rounds', () => {
     function mapDelegate(i: any) {
       return {
@@ -127,7 +160,7 @@ describe('dposv2', () => {
     });
 
     async function getmappedDelObj() {
-      const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc' });
+      const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc', limit: 102 });
       const preResMapped = preRes.delegates.map(mapDelegate);
       return mappedDelegatesToHASH(preResMapped);
     }
@@ -190,26 +223,6 @@ describe('dposv2', () => {
         }
       });
 
-      it('should properly mine 2 rounds', async function () {
-        this.timeout(20000);
-
-        const { postOBJ } = await getPREPostOBJ();
-        await initializer.rawMineBlocks(101);
-        const data = await getmappedDelObj();
-        for (let i = 1; i <= 101; i++) {
-          const delegateName = `genesisDelegate${i}`;
-          expect(data[delegateName].bala).to.be.eq(postOBJ[delegateName].bala + 15 * 1e8);
-          expect(data[delegateName].ubala).to.be.eq(postOBJ[delegateName].ubala + 15 * 1e8);
-          expect(data[delegateName].pb).to.be.eq(postOBJ[delegateName].pb + 1);
-          delete data[delegateName].bala;
-          delete data[delegateName].ubala;
-          delete data[delegateName].pb;
-          delete postOBJ[delegateName].bala;
-          delete postOBJ[delegateName].ubala;
-          delete postOBJ[delegateName].pb;
-          expect(data[delegateName]).deep.eq(postOBJ[delegateName]);
-        }
-      });
     });
 
     describe('remainderFees', function () {
@@ -237,15 +250,24 @@ describe('dposv2', () => {
         const afterApply          = await getmappedDelObj();
         const feeDecimal          = Math.floor(1e7 / 101);
         const feeReminder         = 1e7 - Math.floor(1e7 / 101) * 101;
+        let delegateReplaced = null;
         for (let i = 1; i <= 101; i++) {
           const delegate  = `genesisDelegate${i}`;
           let totalAmount = delegatesObj[delegate].bala + 15 * 1e8 + feeDecimal;
           if (afterApply[delegate].pk === lastGeneratorPublic) {
             totalAmount += feeReminder;
           }
-          expect(afterApply[delegate].bala).eq(totalAmount);
+          if (afterApply[delegate].bala !== totalAmount ) {
+            if (delegateReplaced) {
+              throw new Error('A delegate was replaced already by outsider');
+            }
+            delegateReplaced = delegate;
+          }
         }
 
+        if (delegateReplaced) {
+          expect(afterApply['outsider'].bala).eq(delegatesObj.outsider.bala + 15 * 1e8 + feeDecimal);
+        }
         // It should re-store object as it was before mining last block in round
         await initializer.rawDeleteBlocks(1);
         expect(filterObject(await getmappedDelObj(), ['!*.pb'])).deep.eq(filterObject(delegatesObj, ['!*.pb']));

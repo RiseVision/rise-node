@@ -73,10 +73,11 @@ describe('Fair vote system', async () => {
     await initializer.rawMineBlockWithTxs([tx, tx2].map(toBufferedTransaction));
     await createVoteTransaction(1, newDelegateWallet, newDelegateWallet.publicKey, true);
   });
-  afterEach(async () => {
+  afterEach(async function ()  {
+    this.timeout(1000000);
     removeDelegatePass(newDelegateWallet.address);
     removeDelegatePass(newDelegateWalletNoVotes.address);
-    await initializer.rawDeleteBlocks(4);
+    await initializer.rawDeleteBlocks(blocksModule.lastBlock.height - 1);
   });
 
   it('should at some point include outsider in round when dposv2 is active', async function () {
@@ -217,11 +218,11 @@ describe('Fair vote system', async () => {
     // Since we forged only 100 rounds every delegate should be eq 1
     const res = await blocksModel.sequelize.query(`
       SELECT COUNT(height) as ch, MAX(height) as mh, "generatorPublicKey" FROM blocks
-         WHERE height % 101 = 0 AND height > ${prevHeight}
+         WHERE height % 101 = 0 
          group by "generatorPublicKey"
          order by "ch" asc
     `);
-    expect(res[0].length).to.be.equal(101);
+    expect(res[0].length).to.be.equal(102);
     for (let i = 0; i < res[0].length; i++) {
       expect(res[0][i].ch).eq(1);
     }
@@ -232,25 +233,32 @@ describe('Fair vote system', async () => {
       }
     });
 
-    // TODO: Is this correct?
-    await initializer.rawMineBlocks(202);
-    expect(roundsLogic.calcRound(blocksModule.lastBlock.height) - preRoundNum).to.be.eq(3);
+    await initializer.rawMineBlocks(101);
+    expect(roundsLogic.calcRound(blocksModule.lastBlock.height) - preRoundNum).to.be.eq(2);
     expect(blocksModule.lastBlock.height % 101).to.be.equal(0);
     expect(blocksModule.lastBlock.generatorPublicKey).to.be.deep.equal(lowestMhItem.generatorPublicKey);
     // TODO Also test producedBlocks is what we would expect?
+
   });
   it('should not include delegate if he missed too many blocks in a row', async function () {
-    // TODO: o
+    this.timeout(15000);
     let gene1 = await accountsModel.findOne({
       where: {
-        username: 'genesisDelegate1'
+        username: 'genesisDelegate1',
       }
     });
+    // Go to end of this round
+    await initializer
+      .rawMineBlocks(roundsLogic.lastInRound(roundsLogic.calcRound(blocksModule.lastBlock.height)) - blocksModule.lastBlock.height);
 
     gene1.cmb = 28 * 3;
     await gene1.save();
+    await initializer.rawMineBlocks(101);
 
-    // check included
+    let dels = await delegatesModule.generateDelegateList(blocksModule.lastBlock.height);
+    // Delegate should be included in next round!
+    expect(dels.map((d) => d.toString('hex')).findIndex((a) => a === gene1.hexPublicKey))
+      .not.eq(-1);
 
     gene1     = await accountsModel.findOne({
       where: {
@@ -258,7 +266,12 @@ describe('Fair vote system', async () => {
       }
     });
     gene1.cmb = 28 * 3 + 1;
-
+    await gene1.save();
+    await initializer.rawMineBlocks(101);
+    dels = await delegatesModule.generateDelegateList(blocksModule.lastBlock.height);
+    // Delegate should NOT be included in next round!
+    expect(dels.map((d) => d.toString('hex')).findIndex((a) => a === gene1.hexPublicKey))
+      .eq(-1);
     // check not included
 
   });
