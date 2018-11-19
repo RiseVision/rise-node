@@ -16,7 +16,7 @@ declare const gc; // garbage collection if exposed.
 
 // tslint:disable-next-line
 const packageJson          = require('../package.json');
-const versionBuild: string = '';
+const versionBuild: string = fs.readFileSync(`${__dirname}/../build`, 'utf8');
 
 // if gc is exposed call it every minute
 if (typeof(gc) !== 'undefined') {
