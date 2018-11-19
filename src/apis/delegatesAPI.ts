@@ -159,7 +159,7 @@ export class DelegatesAPI {
       return {
         delegate: filterObject(
           { ...delegate.delegate.toPOJO(), ...delegate.info, ...{ rate: delegate.info.rank } },
-          ['username', 'address', 'publicKey', 'vote', 'producedblocks',
+          ['username', 'address', 'publicKey', 'vote', 'producedblocks', 'votesWeight',
             'missedblocks', 'rank', 'approval', 'productivity', 'rate']
         ),
       };
