@@ -179,6 +179,7 @@ describe('api/delegates', () => {
             approval: 0.99,
             productivity: 50,
             rate: 64,
+            votesWeight: 108912391000000
           });
         });
     });
@@ -200,6 +201,8 @@ describe('api/delegates', () => {
             approval: 0.99,
             productivity: 50,
             rate: 82,
+            votesWeight: 108912391000000,
+
           });
         });
     });
