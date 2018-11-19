@@ -1,5 +1,5 @@
-import * as crypto from 'crypto';
 import { inject, injectable, tagged } from 'inversify';
+import * as supersha from 'supersha';
 import {
   catchToLoggerAndRemapError,
   constants as constantsType,
@@ -196,7 +196,7 @@ export class ForgeModule implements IForgeModule {
     this.logger.info(`Loading ${secrets.length} delegates from config`);
 
     for (const secret of secrets) {
-      const keypair = this.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
+      const keypair = this.ed.makeKeypair(supersha.sha256(Buffer.from(secret, 'utf8')));
       const account = await this.accountsModule.getAccount({ publicKey: keypair.publicKey });
       if (!account) {
         throw new Error(`Account with publicKey: ${keypair.publicKey.toString('hex')} not found`);

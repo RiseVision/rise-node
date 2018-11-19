@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable } from 'inversify';
 import z_schema from 'z-schema';
+import * as supersha from 'supersha';
 import { BigNum, constants, Ed, IKeypair } from '../helpers/';
 import {IAccountLogic, IBlockLogic, ITransactionLogic} from '../ioc/interfaces/logic/';
 import { Symbols } from '../ioc/symbols';
@@ -182,10 +183,6 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    */
   public verifySignature(block: SignedBlockType): boolean {
-    // console.log(block);
-    // const res = new OldImplementation(this.ed, this.zschema, this.transaction, null)
-    //  .verifySignature(block);
-    // console.log(res);
     return this.ed.verify(
       this.getHash(block, false),
       block.blockSignature,
@@ -283,9 +280,7 @@ export class BlockLogic implements IBlockLogic {
   }
 
   public getHash(block: BlockType, includeSignature: boolean = true) {
-    return crypto.createHash('sha256')
-      .update(this.getBytes(block, includeSignature))
-      .digest();
+    return supersha.sha256(this.getBytes(block, includeSignature));
   }
 
   public getBytes(block: BlockType | SignedBlockType, includeSignature: boolean = true): Buffer {
@@ -418,7 +413,7 @@ export class BlockLogic implements IBlockLogic {
   }
 
   private getIdFromBytes(bytes: Buffer): string {
-    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const hash = supersha.sha256(bytes);
     const temp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];

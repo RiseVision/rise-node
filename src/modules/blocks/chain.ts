@@ -82,7 +82,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
    * Deletes last block and returns the "new" lastBlock (previous basically)
    * @returns {Promise<SignedBlockType>}
    */
-  public async deleteLastBlock(): Promise<BlocksModel> {
+  public async deleteLastBlock(): Promise<SignedAndChainedBlockType> {
     const lastBlock = this.blocksModule.lastBlock;
     this.logger.warn('Deleting last block', { id: lastBlock.id, height: lastBlock.height });
 
@@ -91,8 +91,8 @@ export class BlocksModuleChain implements IBlocksModuleChain {
     }
     const newLastBlock          = await this.popLastBlock(lastBlock);
     // Set new "new" last block.
-    this.blocksModule.lastBlock = newLastBlock;
-    return newLastBlock;
+    this.blocksModule.lastBlock = deepFreeze(newLastBlock.toJSON());
+    return this.blocksModule.lastBlock;
   }
 
   public async deleteAfterBlock(height: number): Promise<void> {
@@ -172,7 +172,7 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       this.logger.error(err);
       process.exit(0);
     }
-    this.blocksModule.lastBlock = this.BlocksModel.classFromPOJO(block);
+    this.blocksModule.lastBlock = deepFreeze(block instanceof this.BlocksModel ? block.toJSON() : block);
     await this.BlocksModel.sequelize.transaction((t) => this.roundsModule.tick(this.blocksModule.lastBlock, t));
   }
 
@@ -255,7 +255,9 @@ export class BlocksModuleChain implements IBlocksModuleChain {
       }
 
       await this.roundsModule.tick(block, dbTX);
-      this.blocksModule.lastBlock = deepFreeze(block);
+      this.blocksModule.lastBlock = deepFreeze(
+        block instanceof this.BlocksModel ? block.toJSON() : block
+      );
 
       await this.bus.message('newBlock', block, broadcast);
     }).catch((err) => {

@@ -1,7 +1,7 @@
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import * as crypto from 'crypto';
+import * as supersha from 'supersha';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
@@ -220,17 +220,17 @@ describe('logic/transaction', () => {
   });
 
   describe('getHash', () => {
-    it('should call crypto.createHash', () => {
-      const createHashSpy = sandbox.spy(crypto, 'createHash');
-      instance.getHash(tx);
-      expect(createHashSpy.calledOnce).to.be.true;
-      expect(createHashSpy.firstCall.args.length).to.be.equal(1);
-      expect(createHashSpy.firstCall.args[0]).to.be.equal('sha256');
+    it('should call supersha.createHash', () => {
+      const res = instance.getHash(tx);
+      expect(res.toString('hex'))
+        .eq('4af0aeaca885950b772ab72dbef751519a8adcf5091e833742f6372356c7e7a2');
     });
 
     it('should call this.getBytes', () => {
       const getBytesSpy = sandbox.spy(instance, 'getBytes');
-      instance.getHash(tx, true, false);
+      const res = instance.getHash(tx, true, false);
+      expect(res.toString('hex'))
+        .eq('0889b07dad6d7afdc5e66ffd6d108514011d32381ca0fc0397915875748da5f1');
       expect(getBytesSpy.calledOnce).to.be.true;
       expect(getBytesSpy.firstCall.args[0]).to.be.deep.equal(tx);
       expect(getBytesSpy.firstCall.args[1]).to.be.deep.equal(true);
@@ -250,6 +250,7 @@ describe('logic/transaction', () => {
     before(() => {
       toRestore.writeByte = ByteBuffer.prototype.writeByte;
       toRestore.writeInt  = ByteBuffer.prototype.writeInt;
+      toRestore.writeUint32  = ByteBuffer.prototype.writeUint32;
       toRestore.writeLong = (ByteBuffer.prototype as any).writeLong;
       toRestore.flip      = ByteBuffer.prototype.flip;
     });
@@ -260,6 +261,7 @@ describe('logic/transaction', () => {
         lastBB = this;
       };
       (ByteBuffer.prototype as any).writeInt  = (b) => sequence.push(b);
+      (ByteBuffer.prototype as any).writeUint32  = (b) => sequence.push(b);
       (ByteBuffer.prototype as any).writeLong = (b) => sequence.push(b);
       ByteBuffer.prototype.flip               = sandbox.stub();
     });
@@ -267,6 +269,7 @@ describe('logic/transaction', () => {
     after(() => {
       (ByteBuffer.prototype as any).writeByte = toRestore.writeByte;
       (ByteBuffer.prototype as any).writeInt  = toRestore.writeInt;
+      (ByteBuffer.prototype as any).writeUint32  = toRestore.writeUint32;
       (ByteBuffer.prototype as any).writeLong = toRestore.writeLong;
       ByteBuffer.prototype.flip               = toRestore.flip;
     });
@@ -467,6 +470,7 @@ describe('logic/transaction', () => {
       txTypeVerifyStub       = sandbox.stub(sendTransaction, 'verify').resolves();
       sender.isMultisignature = () => false;
       instGetIdStub     = sandbox.stub(instance, 'getId').returns(tx.id);
+      accountLogicStub.stubs.assertValidAddress.returns(null);
     });
 
     it('should throw if the tx.id is wrong', async () => {
@@ -771,6 +775,17 @@ describe('logic/transaction', () => {
 
       await expect(instance.verify(tx, sender, null /*requester*/, 1))
         .to.rejectedWith('Account or requester account is not multisignature');
+    });
+
+    describe('wrong recipient', () => {
+      it('should throw if accountLogic.assertValidAddress fails', async () => {
+        accountLogicStub.stubs.assertValidAddress.throws(new Error('AL Error'));
+        await expect(instance.verify(tx, sender, requester, 1)).rejectedWith('AL Error');
+      });
+      it('should not throw if accountLogic.assertValidAddresses does not fail', async () => {
+        accountLogicStub.stubs.assertValidAddress.returns(null);
+        await expect(instance.verify(tx, sender, requester, 1)).fulfilled;
+      });
     });
   });
 

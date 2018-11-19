@@ -29,6 +29,25 @@ txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.send));
 txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.vote));
 txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.secondSignature));
 txLogic.attachAssetType(fakeContainer.get(Symbols.logic.transactions.delegate));
+
+export const getFakePrevBlock = () => {
+  return {
+    id                    : '1',
+    height                : 100,
+    totalAmount           : 0,
+    totalFee              : 0,
+    version               : 0,
+    reward                : 0,
+    payloadHash           : Buffer.alloc(0),
+    payloadLength         : 0,
+    blockSignature        : Buffer.alloc(0),
+    previousBlock         : '1',
+    numberOfTransactions  : 0,
+    timestamp             : 0,
+    transactions          : [],
+    generatorPublicKey    : Buffer.alloc(0),
+  }
+}
 /**
  * Creates a fake "but valid" block
  */
@@ -37,7 +56,7 @@ export const createFakeBlock = (cfg: {
   keypair?: IKeypair,
   transactions?: Array<IBaseTransaction<any>>,
   previousBlock?: SignedAndChainedBlockType
-} = {}): SignedBlockType => {
+} = {}): SignedAndChainedBlockType => {
   const blockLogic: IBlockLogic = fakeContainer.get(Symbols.logic.block);
   const ed: Ed                  = fakeContainer.get(Symbols.helpers.ed);
   const keypair                 = cfg.keypair || ed.makeKeypair(crypto
@@ -45,7 +64,11 @@ export const createFakeBlock = (cfg: {
     .digest());
   const timestamp               = cfg.timestamp || 0;
   const transactions            = cfg.transactions || [];
-  const previousBlock: any      = cfg.previousBlock || { id: '1', height: 1 };
+  const previousBlock: any = {
+    ... getFakePrevBlock(),
+    ...(cfg.previousBlock || {})
+  };
+
   return blockLogic.create({
     keypair,
     previousBlock,

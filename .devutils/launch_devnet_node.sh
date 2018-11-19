@@ -15,7 +15,7 @@ then
     sleep 5;
 fi
 
-PARAMS="-o $.consoleLogLevel=info -o $.db.port=$DBPORT $@"
+PARAMS="-C $.blockTime=1 -C $.dposv2.firstBlock=102 -o $.consoleLogLevel=info -o $.db.port=$DBPORT $@"
 if [ "$PEERPORT" -eq "10001" ]; then
     PARAMS="$PARAMS -o $.forging.force=true"
 else

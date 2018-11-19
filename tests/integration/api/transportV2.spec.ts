@@ -257,7 +257,7 @@ describe('v2/peer/transport', function() {
   let peer: IPeerLogic;
 
   let getPeersListFactory: RequestFactoryType<void, PeersListRequest>;
-  let ptFactory: RequestFactoryType<{transactions: Array<IBaseTransaction<any>>}, PostTransactionsRequest>;
+  let ptFactory: RequestFactoryType<{transactions: Array<IBaseTransaction<any>>} |{ transaction: IBaseTransaction<any>}, PostTransactionsRequest>;
   let psFactory: RequestFactoryType<PostSignaturesRequestDataType, PostSignaturesRequest>;
   let gsFactory: RequestFactoryType<void, GetSignaturesRequest>;
   let gtFactory: RequestFactoryType<void, GetTransactionsRequest>;
@@ -555,7 +555,7 @@ describe('v2/peer/transport', function() {
       const tx1  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       const tx2  = await createSendTransaction(0, 2, account, createRandomWallet().address);
       const r = await peer.makeRequest(ptFactory({
-        data: { transactions: [tx1, tx2] } as any,
+        data: { transactions: [tx1, tx2].map(toBufferedTransaction) },
       }));
       expect(r.success).to.be.true;
       await txPool.processBundled();
@@ -597,8 +597,8 @@ describe('v2/peer/transport', function() {
       const tx  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       const res = await peer.makeRequest(ptFactory({
         data: {
-          transaction: tx,
-        } as any,
+          transaction: toBufferedTransaction(tx),
+        } ,
       }));
       expect(res.success).to.be.true;
       expect(txPool.transactionInPool(tx.id)).is.true;
@@ -609,8 +609,8 @@ describe('v2/peer/transport', function() {
       // const tx2  = await createSendTransaction(0, 1, account, createRandomWallet().address);
       await peer.makeRequest(ptFactory({
         data: {
-          transactions: [tx, tx],
-        } as any,
+          transactions: [tx, tx].map(toBufferedTransaction),
+        } ,
       }));
       expect(txPool.bundled.has(tx.id)).to.be.true;
     });
@@ -767,7 +767,7 @@ describe('v2/peer/transport', function() {
       });
 
       it('should reject block if payloadHash is not ok', async () => {
-        blockBuf.transactions[0] = await createSendTransaction(0, 1, senderAccount, senderAccount.address, { timestamp: 10 }) as any;
+        blockBuf.transactions[0] = toBufferedTransaction(await createSendTransaction(0, 1, senderAccount, senderAccount.address, { timestamp: 10 })) as any;
         await expect(peer.makeRequest(pbFactory({
           data: { block: blockBuf },
         }))).rejectedWith('Invalid payload hash');

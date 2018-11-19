@@ -70,6 +70,7 @@ export class DelegatesAPI {
         vote          : item.delegate.vote ? `${item.delegate.vote}` : '0',
         producedblocks: item.delegate.producedblocks,
         missedblocks  : item.delegate.missedblocks,
+        votesWeight   : item.delegate.votesWeight,
         rate          : item.info.rank,
         rank          : item.info.rank,
         approval      : item.info.approval,
@@ -199,7 +200,7 @@ export class DelegatesAPI {
     }
     const delQuery  = this.AccountsModel.searchDelegate(
       params.q,
-      params.limit || constants.activeDelegates,
+      params.limit || this.slots.delegates,
       orderBy[0],
       orderBy[1] as any
     );

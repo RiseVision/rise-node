@@ -1,24 +1,17 @@
-import {expect} from 'chai';
-import * as proxyquire from 'proxyquire';
-import * as sinon from 'sinon';
-import { SinonStub } from 'sinon';
-import * as sodium from 'sodium';
+import { expect } from 'chai';
 import { Ed, IKeypair } from '../../../src/helpers';
 
-const realEd = new Ed();
-const sodiumStub: any = {};
+const realEd          = new Ed();
+const inputSeedHex  = 'cd25f48e0bf2c9ac3c9fe67f22fea54bb108f694bb69eb10520c48b228635df0';
+const publicKeyHex  = '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
+const privateKeyHex = 'cd25f48e0bf2c9ac3c9fe67f22fea54bb108f694bb69eb10520c48b228635df0' +
+  '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
+const messageHash   = '84c824f93d07657b8cd49fe2d4f96d06ab5eda4d29c3d3a4ea87e65fa8fc0732';
+const signatureHex  = 'b2c9aab1ee31cecfe2a0547fe9e70f4d89d505e3f05c0f777f32cdc3dbb79fcd' +
+  '87afb70f2a3a04cae3d65b1a89b226d2974844f909686b125f0d07254961b104';
 
 // tslint:disable no-unused-expression
 describe('helpers/ed', () => {
-  let proxiedInst: Ed;
-  const ProxiedEd = proxyquire('../../../src/helpers/ed', {
-    sodium: sodiumStub,
-  });
-
-  beforeEach(() => {
-    sodiumStub.api = sodium.api;
-    proxiedInst = new ProxiedEd.Ed();
-  });
 
   describe('constructor', () => {
     it('should create an instance of Ed', () => {
@@ -27,135 +20,80 @@ describe('helpers/ed', () => {
   });
 
   describe('makeKeypair', () => {
-    const oldImplementation = sodium.api.crypto_sign_seed_keypair;
-    let stub: SinonStub;
-
-    beforeEach(() => {
-      stub = sinon.stub(sodium.api, 'crypto_sign_seed_keypair')
-        .returns({secretKey: 'a', publicKey: 'b'});
-    });
-
-    afterEach(() => {
-      sodium.api.crypto_sign_seed_keypair = oldImplementation;
-    });
-
     it('should return object', () => {
-      const retval = proxiedInst.makeKeypair(new Buffer('aaaa'));
+      const retval = realEd.makeKeypair(new Buffer(new Array(32).fill('a')));
       expect(retval).to.be.an('object');
     });
+    it('should return calculated data', () => {
+      const inputSeed                    = Buffer.from(inputSeedHex, 'hex');
+      const expectedOutputKeys: IKeypair = {
+        privateKey: Buffer.from(privateKeyHex, 'hex'),
+        publicKey : Buffer.from(publicKeyHex, 'hex'),
+      };
 
-    it('should call sodium.crypto_sign_seed_keypair', () => {
-      proxiedInst.makeKeypair(new Buffer('aaaa'));
-      expect(stub.called).is.true;
+      const ret = realEd.makeKeypair(inputSeed);
+      expect(ret).deep.eq(expectedOutputKeys);
     });
-
-    it('should pass hash to sodium.crypto_sign_seed_keypair', () => {
-      const hash = new Buffer('aaaa');
-      proxiedInst.makeKeypair(hash);
-      expect(stub.firstCall.args[0]).to.be.deep.eq(hash);
+    it('should throw if string is provided', () => {
+      expect(() => realEd.makeKeypair(inputSeedHex as any)).to.throw();
     });
-
-    it('should use sodium output to build return value', () => {
-      stub.returns({secretKey: 'privASD', publicKey: 'pubASD'});
-      const expectedReturn = {privateKey: 'privASD', publicKey: 'pubASD'};
-      const retval = proxiedInst.makeKeypair(new Buffer('aaaa'));
-      expect(retval).to.be.deep.eq(expectedReturn);
+    it('should throw if buffer is not 32 byte long', () => {
+      expect(() => realEd.makeKeypair(Buffer.from(inputSeedHex.substr(2), 'hex'))).to.throw();
     });
   });
 
   describe('sign', () => {
-    let stub: SinonStub;
-    const hashBuf = new Buffer('hash');
-    const outBuf = new Buffer('output');
-    const keyPair = realEd.makeKeypair(new Buffer('12345678901234567890123456789012'));
-    const oldImplementation = sodium.api.crypto_sign_detached;
-
-    beforeEach(() => {
-      stub = sinon.stub(sodium.api, 'crypto_sign_detached').returns(outBuf);
+    it('sign should return the expected output', () => {
+      const outputSignature = realEd.sign(
+        Buffer.from(messageHash),
+        realEd.makeKeypair(Buffer.from(inputSeedHex, 'hex'))
+      );
+      expect(outputSignature).to.be.deep.equal(Buffer.from(signatureHex, 'hex'));
     });
-
-    afterEach(() => {
-      sodium.api.crypto_sign_detached = oldImplementation;
-    });
-
-    it('should call sodium.crypto_sign_detached', () => {
-      proxiedInst.sign(hashBuf, keyPair );
-      expect(stub.called).to.be.true;
-    });
-
-    it('should pass hash and keypair to sodium.crypto_sign_detached', () => {
-      proxiedInst.sign(hashBuf, keyPair );
-      expect(stub.firstCall.args[0]).to.be.deep.equal(hashBuf);
-      expect(stub.firstCall.args[1]).to.be.deep.equal(keyPair.privateKey);
-    });
-
-    it('should return the result of sodium.crypto_sign_detached', () => {
-      const retVal = proxiedInst.sign(hashBuf, keyPair );
-      expect(retVal).to.be.deep.equal(outBuf);
+    it('should throw if message is not buffer', () => {
+      expect(() => realEd.sign(
+        messageHash as any,
+        realEd.makeKeypair(Buffer.from(inputSeedHex, 'hex'))
+      )).to.throw();
     });
   });
 
   describe('verify', () => {
-    let stub: SinonStub;
-    const args = [new Buffer('hash'), new Buffer('signature'), new Buffer('publicKey')];
-    const oldImplementation = sodium.api.crypto_sign_verify_detached;
-
-    beforeEach(() => {
-      stub = sinon.stub(sodium.api, 'crypto_sign_verify_detached').returns(true);
+    const keyPair = realEd.makeKeypair(Buffer.from(inputSeedHex, 'hex'));
+    it('should verify signed message', () => {
+      for (let i = 0; i < 1000; i++) {
+        const msg = new Buffer(`rise${i}`);
+        expect(realEd.verify(
+          msg,
+          realEd.sign(msg, keyPair),
+          keyPair.publicKey
+        )).to.be.true;
+      }
     });
-
-    afterEach(() => {
-      sodium.api.crypto_sign_verify_detached = oldImplementation;
+    it('should return false if message is not correct but valid signature', () => {
+      for (let i = 0; i < 1000; i++) {
+        const msg = new Buffer(`rise${i}`);
+        expect(realEd.verify(
+          new Buffer('hey'),
+          realEd.sign(msg, keyPair),
+          keyPair.publicKey
+        )).to.be.false;
+      }
     });
-
-    it('should call sodium.crypto_sign_verify_detached', () => {
-      proxiedInst.verify(args[0], args[1], args[2]);
-      expect(stub.called).to.be.true;
+    it('should throw if msg is string', () => {
+      expect(() => realEd.verify(
+        'hey' as any,
+        realEd.sign(new Buffer('hey'), keyPair),
+        keyPair.publicKey))
+        .to.throw();
     });
-
-    it('should pass params in correct order to sodium.crypto_sign_verify_detached', () => {
-      proxiedInst.verify(args[0], args[1], args[2]);
-      expect(stub.firstCall.args).to.deep.eq([args[1], args[0], args[2]]);
-    });
-
-    it('should return the result of sodium.crypto_sign_verify_detached', () => {
-      const retVal = proxiedInst.verify(args[0], args[1], args[2]);
-      expect(retVal).to.be.true;
-    });
-
-  });
-
-  describe('sodium input/output tests', () => {
-    // LibSodium test input/outputs
-    const inputSeedHex  = 'cd25f48e0bf2c9ac3c9fe67f22fea54bb108f694bb69eb10520c48b228635df0';
-    const publicKeyHex  = '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
-    const privateKeyHex = 'cd25f48e0bf2c9ac3c9fe67f22fea54bb108f694bb69eb10520c48b228635df0' +
-                          '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3';
-    const messageHash   = '84c824f93d07657b8cd49fe2d4f96d06ab5eda4d29c3d3a4ea87e65fa8fc0732';
-    const signatureHex  = 'b2c9aab1ee31cecfe2a0547fe9e70f4d89d505e3f05c0f777f32cdc3dbb79fcd' +
-                          '87afb70f2a3a04cae3d65b1a89b226d2974844f909686b125f0d07254961b104';
-
-    const inputSeed = Buffer.from(inputSeedHex, 'hex');
-    const expectedOutputKeys: IKeypair = {
-      privateKey: Buffer.from(privateKeyHex, 'hex'),
-      publicKey: Buffer.from(publicKeyHex, 'hex'),
-    };
-    const inputMessage = Buffer.from(messageHash);
-    const expectedOutputSignature = Buffer.from(signatureHex, 'hex');
-
-    it('makeKeyPair should return the expected output', () => {
-      const outputKeys = realEd.makeKeypair(inputSeed);
-      expect(outputKeys).to.be.deep.equal(expectedOutputKeys);
-    });
-
-    it('sign should return the expected output', () => {
-      const outputSignature = realEd.sign(inputMessage, expectedOutputKeys);
-      expect(outputSignature).to.be.deep.equal(expectedOutputSignature);
-    });
-
-    it('verify should return the expected output', () => {
-      const isVerified = realEd.verify(inputMessage, expectedOutputSignature, expectedOutputKeys.publicKey);
-      expect(isVerified).to.be.true;
+    it('should throw if signature is string', () => {
+      expect(() => realEd.verify(
+        new Buffer('hey'),
+        realEd.sign(new Buffer('hey'), keyPair).toString('hex') as any,
+        keyPair.publicKey))
+        .to.throw();
     });
   });
+
 });

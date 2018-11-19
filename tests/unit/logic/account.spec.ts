@@ -78,6 +78,7 @@ describe('logic/account', () => {
         { expression: '("balance")::bigint', alias: 'balance' },
         { expression: '("u_balance")::bigint', alias: 'u_balance' },
         { expression: '("vote")::bigint', alias: 'vote' },
+        { expression: '("votesWeight")::bigint', alias: 'votesWeight' },
         { expression: '("rate")::bigint', alias: 'rate' },
         {
           alias     : 'delegates',
@@ -168,6 +169,7 @@ describe('logic/account', () => {
         },
         virgin           : { type: 'boolean' },
         vote             : { type: 'integer' },
+        votesWeight      : { type: 'integer' },
       };
       expect((account as any).filter).to.deep.equal(filter);
     });
@@ -201,6 +203,7 @@ describe('logic/account', () => {
         username         : String,
         virgin           : Boolean,
         vote             : Number,
+        votesWeight      : Number,
       };
       expect((account as any).conv).to.deep.equal(conv);
     });
@@ -214,6 +217,7 @@ describe('logic/account', () => {
         'balance',
         'u_balance',
         'vote',
+        'votesWeight',
         'rate',
         'delegates',
         'u_delegates',
@@ -600,9 +604,9 @@ describe('logic/account', () => {
         round            : 10,
         vote             : 10, username: 'meow', u_username: 'meow', address: '2R', secondPublicKey: new Buffer('aa'),
       } as any);
-      expect(ops.length).to.be.eq(2);
+      expect(ops.length).to.be.eq(1);
 
-      const updateOp = ops[1] as DBUpdateOp<any>;
+      const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({
         vote          : { val: 'vote + 10' },
@@ -618,9 +622,8 @@ describe('logic/account', () => {
     });
     it('should handle balance', () => {
       const ops: any = account.merge('1R', { balance: 10, blockId: '1', round: 1 });
-      expect(ops[0].type).to.be.eq('custom');
-      expect((ops[0] as DBCustomOp<any>).query).to.be.eq('INSERT INTO mem_round ("address", "amount", "delegate", "blockId", "round") SELECT \'1R\', (10)::bigint, "dependentId", \'1\', 1 FROM mem_accounts2delegates WHERE "accountId" = \'1R\'');
-      expect((ops[1] as DBUpdateOp<any>).values).to.be.deep.eq({ balance: { val: 'balance + 10' }, blockId: '1' })
+      expect(ops[0].type).to.be.eq('update');
+      expect((ops[0] as DBUpdateOp<any>).values).to.be.deep.eq({ balance: { val: 'balance + 10' }, blockId: '1' })
     });
 
     it('should remove account virginity on u_balance', () => {
@@ -658,6 +661,39 @@ describe('logic/account', () => {
       // tslint:disable max-line-length
       const address = account.generateAddressByPublicKey('29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da');
       expect(address).to.equal('2841811297332056155R');
+    });
+  });
+
+  describe('assertValidAddress', () => {
+    it('should not throw for valid addresses', () => {
+      account.assertValidAddress('0R');
+      account.assertValidAddress('1R');
+      account.assertValidAddress('11R');
+      account.assertValidAddress('111R');
+      account.assertValidAddress('1111R');
+      account.assertValidAddress('11111R');
+      account.assertValidAddress('111111R');
+      account.assertValidAddress('1111111R');
+      account.assertValidAddress('11111111R');
+      account.assertValidAddress('111111111R');
+      account.assertValidAddress('1111111111R');
+      account.assertValidAddress('11111111111R');
+      account.assertValidAddress('111111111111R');
+      account.assertValidAddress('1111111111111R');
+      account.assertValidAddress('11111111111111R');
+      account.assertValidAddress('111111111111111R');
+      account.assertValidAddress('1111111111111111R');
+      account.assertValidAddress('11111111111111111R');
+      account.assertValidAddress('111111111111111111R');
+      account.assertValidAddress('1111111111111111111R');
+      account.assertValidAddress('11111111111111111111R');
+      account.assertValidAddress('18446744073709551615R');
+    });
+    it('should throw for invalid addresses', () => {
+      const invalid = ['01R', '18446744073709551616R'];
+      for (const addr of invalid) {
+        expect(() => account.assertValidAddress(addr)).to.throw();
+      }
     });
   });
 

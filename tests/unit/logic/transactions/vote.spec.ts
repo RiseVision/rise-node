@@ -42,6 +42,13 @@ describe('logic/transactions/vote', () => {
   let accountsModel: typeof AccountsModel;
   let votesModel: typeof VotesModel;
 
+  const genRandHexStr = (bytes: number) => {
+    const buf = new Buffer(bytes);
+    for (let i = 0; i < bytes; i++) {
+      buf.writeUInt8((Math.floor(Math.random() * 256)), i);
+    }
+    return buf.toString('hex');
+  };
 
   beforeEach(() => {
     sandbox             = sinon.createSandbox();
@@ -195,6 +202,56 @@ describe('logic/transactions/vote', () => {
     });
   });
 
+  describe('getBytes(), unstubbed', () => {
+    it('should return an expected value', () => {
+      const expected = '2d376535386665333635383837313666396339343135333063373465616264663062323762316132626163306131' +
+        '353235653936303561333765366330623338312b3035613337653663363538383731366639633961326261633462616330613135323' +
+        '5653936303561626163343135333031366639356133376536633635383861';
+      const buf = instance.getBytes(tx, false, false);
+      expect(buf.toString('hex')).to.be.equal(expected);
+    });
+  });
+
+  describe('fromBytes(), unstubbed', () => {
+    it('should return the original tx asset', () => {
+      const bytes = '2d376535386665333635383837313666396339343135333063373465616264663062323762316132626163306131' +
+        '353235653936303561333765366330623338312b3035613337653663363538383731366639633961326261633462616330613135323' +
+        '5653936303561626163343135333031366639356133376536633635383861';;
+      const asset = instance.fromBytes(Buffer.from(bytes, 'hex'), tx);
+      expect(asset).to.be.deep.equal(tx.asset);
+    });
+    it('getBytes() -> fromBytes() -> getBytes() -> fromBytes() should be fine', () => {
+      const votes = ['+' + genRandHexStr(32), '-' + genRandHexStr(32)];
+      const randTX = {
+        amount         : 0,
+        asset          : {
+          votes,
+        },
+        fee            : 10,
+        id             : '8139741256612355994',
+        recipientId    : '1233456789012345R',
+        senderId       : '1233456789012345R',
+        senderPublicKey: Buffer.from('6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3', 'hex'),
+        signature      : Buffer.from('sig0', 'utf8'),
+        signatures     : ['sig1', 'sig2'],
+        timestamp      : 0,
+        type           : TransactionType.MULTI,
+      };
+      const bytes1 = instance.getBytes(randTX, false, false);
+      const asset1 = instance.fromBytes(bytes1, randTX);
+      const randTX2 = {
+        ...randTX,
+        asset: asset1,
+      };
+      const bytes2 = instance.getBytes(randTX2, false, false);
+      const asset2 = instance.fromBytes(bytes2, randTX2);
+      expect(bytes1).to.be.deep.equal(bytes2);
+      expect(asset1).to.be.deep.equal(asset2);
+      expect(randTX).to.be.deep.equal(randTX2);
+    });
+  });
+
+
   describe('apply', () => {
     let checkConfirmedDelegatesStub: SinonStub;
     let applyDiffArrayStub: SinonStub;
@@ -221,7 +278,7 @@ describe('logic/transactions/vote', () => {
     it('should return proper ops', async () => {
       checkConfirmedDelegatesStub.resolves();
       const ops = await instance.apply(tx, block, sender);
-      expect(ops.length).eq(3 + 2);
+      expect(ops.length).eq(3 );
       const first: DBRemoveOp<any> = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
       const third: DBUpdateOp<any> = ops[2] as any;
@@ -255,17 +312,6 @@ describe('logic/transactions/vote', () => {
         model: AccountsModel.getTableName(),
         options: { where: { address: tx.senderId }},
         values: { blockId: block.id },
-      });
-
-      expect({ ... fourth, model: fourth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
-      });
-      expect({ ... fifth, model: fifth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
       });
 
     });
@@ -306,13 +352,10 @@ describe('logic/transactions/vote', () => {
     it('should return proper ops', async () => {
       objectNormalizeStub.resolves();
       const ops = await instance.undo(tx, block, sender);
-      expect(ops.length).eq(3 + 2);
+      expect(ops.length).eq(3);
       const first: DBRemoveOp<any> = ops[0] as any;
       const second: DBBulkCreateOp<any> = ops[1] as any;
       const third: DBUpdateOp<any> = ops[2] as any;
-      const fourth: DBCustomOp<any> = ops[3] as any;
-      const fifth: DBCustomOp<any> = ops[4] as any;
-
       expect({ ... first, model: first.model.getTableName()}).deep.eq({
         type: 'remove',
         model: Accounts2DelegatesModel.getTableName(),
@@ -345,19 +388,7 @@ describe('logic/transactions/vote', () => {
         values: { blockId: block.id },
       });
 
-      expect({ ... fourth, model: fourth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (balance)::bigint, '7e58fe36588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b381', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
-      });
-      expect({ ... fifth, model: fifth.model.getTableName()}).deep.eq({
-        type: 'custom',
-        model: RoundsModel.getTableName(),
-        query: "INSERT INTO mem_round (\"address\", \"amount\", \"delegate\", \"blockId\", \"round\") SELECT '1233456789012345R', (-balance)::bigint, '05a37e6c6588716f9c9a2bac4bac0a1525e9605abac4153016f95a37e6c6588a', '13191140260435645922', 111 FROM mem_accounts WHERE address = '1233456789012345R'",
-      });
-
     });
-
 
   });
 

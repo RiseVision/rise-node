@@ -120,4 +120,11 @@ export default {
       maxItems: 15,
     },
   },
+  // tslint:disable max-line-length
+  dposv2: {
+    delegatesPoolSize: 202,          // Total number of delegates to choose forgers from, when dposv2 is on. -1 for no limit.
+    firstBlock: 123456789,           // Block height from which the fair delegates system will be enabled.
+    maxContinuousMissedBlocks: 28 * 3, // Maximum number of missed blocks in a row before banning delegate. A good value might be 3 days,
+    minForged: 200,                  // Enable productivity-based vote weight after a delegate has forged  at least # blocks
+  },
 };

@@ -100,6 +100,13 @@ describe('logic/transactions/baseTransactionType', () => {
     });
   });
 
+  describe('getBytes', () => {
+    it('should return null', () => {
+      expect(instance.fromBytes(null, null)).to.be.null;
+      expect(instance.fromBytes(Buffer.from('aabbcc', 'hex'), tx)).to.be.null;
+    });
+  });
+
   describe('apply', () => {
     it('should resolve', () => {
       expect(instance.apply(tx, {} as any, sender)).to.be.fulfilled;

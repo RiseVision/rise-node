@@ -1,10 +1,10 @@
-import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import * as fs from 'fs';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
+import * as supersha from 'supersha';
 import * as z_schema from 'z-schema';
 import { BigNum, catchToLoggerAndRemapError, constants, ILogger } from '../helpers/';
 import { IAccountLogic } from '../ioc/interfaces/';
@@ -38,6 +38,7 @@ export type OptionalsMemAccounts = {
   balance?: number;
   u_balance?: number;
   vote?: number;
+  votesWeight?: number;
   rate?: number;
   delegates?: string;
   u_delegates?: string;
@@ -68,6 +69,7 @@ export type MemAccountsData = OptionalsMemAccounts & {
   balance: number;
   u_balance: number;
   vote: string;
+  votesWeight: number;
   rate: number;
   delegates: string[];
   u_delegates: string[];
@@ -90,11 +92,14 @@ export type AccountFilterData = {
   isDelegate?: 1 | 0;
   username?: string;
   address?: string | { $in: string[] };
-  publicKey?: Buffer;
+  publicKey?: Buffer | sequelize.WhereLogic;
   limit?: number;
   offset?: number;
+  cmb?: sequelize.WhereLogic;
   sort?: string | { [k: string]: -1 | 1 }
 };
+
+const maxAddress = new BigNum('18446744073709551615');
 
 @injectable()
 export class AccountLogic implements IAccountLogic {
@@ -283,11 +288,18 @@ export class AccountLogic implements IAccountLogic {
 
     const sort: any = filter.sort ? filter.sort : {};
 
-    const condition: any = filterObject(filter, ['isDelegate', 'username', 'address', 'publicKey']);
+    const condition: any = filterObject(filter, ['isDelegate', 'username', 'address']);
     if (typeof(filter.address) === 'string') {
       condition.address = filter.address.toUpperCase();
     } else if (typeof (filter.address) !== 'undefined') {
       condition.address = { [Op.in]: filter.address.$in.map((add) => add.toUpperCase()) };
+    }
+    // FilterObject cannot be used as it removes symbols.
+    if (filter.cmb) {
+      condition.cmb = filter.cmb;
+    }
+    if (filter.publicKey) {
+      condition.publicKey = filter.publicKey;
     }
     // Remove fields = undefined (such as limit, offset and sort)
     Object.keys(condition).forEach((k) => {
@@ -356,36 +368,12 @@ export class AccountLogic implements IAccountLogic {
           }
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
             update[fieldName] = sequelize.literal(`${fieldName} + ${Math.floor(trueValue)}`);
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
-            }
           } else if (trueValue < 0) {
             update[fieldName] = sequelize.literal(`${fieldName} - ${Math.floor(Math.abs(trueValue))}`);
             // If decrementing u_balance on account
             if (update.u_balance) {
               // Remove virginity and ensure marked columns become immutable
               update.virgin = 0;
-            }
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
             }
           }
           break;
@@ -418,17 +406,25 @@ export class AccountLogic implements IAccountLogic {
   public generateAddressByPublicKey(publicKey: string|Buffer): string {
     this.assertPublicKey(publicKey, false);
 
-    const hash = crypto.createHash('sha256')
-      .update(Buffer.isBuffer(publicKey)
+    const hash = supersha.sha256(
+      Buffer.isBuffer(publicKey)
         ? publicKey
         : new Buffer(publicKey, 'hex')
-      )
-      .digest();
+    );
 
     const tmp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
     return `${BigNum.fromBuffer(tmp).toString()}${this.constants.addressSuffix}`;
+  }
+
+  public assertValidAddress(address: string): void {
+    if (address.startsWith('0') && address !== '0R') {
+      throw new Error('Invalid Address starting with 0');
+    }
+    if (new BigNum(address.slice(0, -1)).isGreaterThan(maxAddress)) {
+      throw new Error('Invalid Address exceeding maximum address');
+    }
   }
 }

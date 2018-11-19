@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { IDelegatesModule } from '../../../src/ioc/interfaces/modules';
-import { SignedBlockType } from '../../../src/logic';
+import { SignedAndChainedBlockType, SignedBlockType } from '../../../src/logic';
 import { AccountsModel } from '../../../src/models';
 import { BaseStubClass } from '../BaseStubClass';
 import { stubMethod } from '../stubDecorator';
@@ -52,5 +52,16 @@ export class DelegatesModuleStub extends BaseStubClass  implements IDelegatesMod
     sortMethod: 'ASC' | 'DESC'
   }> {
     return null;
+  }
+
+  @stubMethod(true)
+  public calculateSafeRoundSeed(height: number): Promise<number[]> {
+    return Promise.resolve([height * 3, height * 5, height * 7, height * 11,
+      height * 13, height * 17, height * 19, height * 23]);
+  }
+
+  @stubMethod()
+  public onRoundBackwardTick(block: SignedAndChainedBlockType) {
+    return;
   }
 }

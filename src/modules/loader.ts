@@ -275,13 +275,13 @@ export class LoaderModule implements ILoaderModule {
   private async verifySnapshot(round: number, blocksCount: number, limit: number) {
     this.logger.info('Snapshot mode enabled');
     if (typeof(this.config.loading.snapshot) === 'boolean') {
-      // threat "true" as "highest round possible"
+      // treat "true" as "highest round possible"
       this.config.loading.snapshot = round;
     }
     if (this.config.loading.snapshot >= round) {
       this.config.loading.snapshot = round;
-      if (blocksCount % this.constants.activeDelegates > 0) {
-        // Normalize to previous round if we
+      // Only load a full round
+      if (blocksCount < this.roundsLogic.lastInRound(round)) {
         this.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
       }
     }

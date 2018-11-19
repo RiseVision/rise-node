@@ -2,6 +2,7 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import 'chai-arrays';
 import * as crypto from 'crypto';
+import * as supersha from 'supersha';
 import {Container} from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
@@ -15,9 +16,8 @@ import { BlocksModel } from '../../../src/models';
 import { IBlockLogic } from '../../../src/ioc/interfaces/index';
 import { DBCreateOp } from '../../../src/types/genericTypes';
 import { z_schema } from '../../../src/helpers/z_schema';
-import { createFakeBlock } from '../../utils/blockCrafter';
+import { createFakeBlock, getFakePrevBlock } from '../../utils/blockCrafter';
 import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
-import {IAccountLogic} from '../../../src/ioc/interfaces/logic';
 import AccountLogicStub from '../../stubs/logic/AccountLogicStub';
 
 // tslint:disable-next-line no-var-requires
@@ -57,7 +57,7 @@ describe('logic/block', () => {
   beforeEach(() => {
     sandbox = sinon.createSandbox();
     container = createContainer();
-    createHashSpy = sandbox.spy(crypto, 'createHash');
+    createHashSpy = sandbox.spy(supersha, 'sha256');
     dummyTransactions = [
       {
         amount: 108910891000000,
@@ -129,7 +129,7 @@ describe('logic/block', () => {
 
     data = {
       keypair: dummyKeypair,
-      previousBlock: { id: '1', height: 10 },
+      previousBlock: getFakePrevBlock(),
       timestamp: Date.now(),
       transactions: dummyTransactions,
     };
@@ -164,7 +164,7 @@ describe('logic/block', () => {
       expect(transactionLogicStub.stubs.getBytes.callCount).to.equal(3);
     });
 
-    it('should call crypto.createHash', () => {
+    it('should call supersha.sha256', () => {
       instance.create(data);
       expect(createHashSpy.called).to.be.true;
     });
@@ -216,7 +216,7 @@ describe('logic/block', () => {
       expect(hash).to.be.equalTo(dummyHash as any);
     });
 
-    it('should call crypto.createHash', () => {
+    it('should call supersha.sha256', () => {
       instance.getHash(dummyBlock);
       expect(createHashSpy.calledOnce).to.be.true;
     });
@@ -524,7 +524,7 @@ describe('logic/block', () => {
       expect(instance.getId(dummyBlock)).to.equal('1931531116681750305');
     });
 
-    it('should call crypto.createHash', () => {
+    it('should call supersha.sha256', () => {
       instance.getId(dummyBlock);
       expect(createHashSpy.called).to.be.true;
     });
