@@ -192,8 +192,7 @@ export class DelegatesModule implements IDelegatesModule {
         100 - (delegates[i].missedblocks / ((delegates[i].producedblocks + delegates[i].missedblocks) / 100))
       ) || 0;
 
-      const outsider     = i + 1 > this.slots.delegates;
-      const productivity = (!outsider) ? Math.round(percent * 1e2) / 1e2 : 0;
+      const productivity = Math.round(percent * 1e2) / 1e2;
 
       crunchedDelegates.push({
         delegate: delegates[i],
