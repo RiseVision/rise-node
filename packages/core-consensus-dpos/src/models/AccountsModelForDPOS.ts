@@ -35,6 +35,10 @@ export class AccountsModelForDPOS extends IAccountsModel {
   @Column
   public vote: number;
   @Column
+  public cmb: number;
+  @Column
+  public votesWeight: number;
+  @Column
   // tslint:disable-next-line
   public u_username: string;
   @Column

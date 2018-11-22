@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import { RoundChanges, Slots } from '../helpers/';
+import { AccountsModelForDPOS } from '../models';
 
 const performVotesSnapshotSQL = fs.readFileSync(
   `${__dirname}/../../sql/performVotesSnapshot.sql`,
@@ -38,6 +39,7 @@ export interface RoundLogicScope {
   roundFees: any;
   roundRewards: number[];
   finishRound: boolean;
+  dposV2: boolean;
   library: {
     logger: ILogger;
     RoundChanges: typeof RoundChanges;
@@ -47,7 +49,7 @@ export interface RoundLogicScope {
     BlocksModel: typeof IBlocksModel;
   };
   modules: {
-    accounts: IAccountsModule;
+    accounts: IAccountsModule<AccountsModelForDPOS>;
   };
   block: SignedBlockType;
   // must be populated with the votes in round when is needed
@@ -96,6 +98,10 @@ export class RoundLogic {
       },
       type: 'update',
       values: {
+        // tslint:disable-next-line max-line-length
+        cmb: this.scope.dposV2
+          ? sequelize.literal(`cmb ${this.scope.backwards ? '-' : '+'} 1`)
+          : 0,
         missedblocks: sequelize.literal(
           `missedblocks ${this.scope.backwards ? '-' : '+'} 1`
         ),
@@ -106,7 +112,7 @@ export class RoundLogic {
   /**
    * Update votes for the round
    */
-  public updateVotes(): DBCustomOp<any> {
+  public reCalcVotes(): DBCustomOp<any> {
     return {
       model: this.scope.models.AccountsModel,
       query: recalcVotesSQL,
@@ -146,6 +152,7 @@ export class RoundLogic {
       type: 'custom',
     };
   }
+
   /**
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
@@ -183,6 +190,7 @@ export class RoundLogic {
         ...this.scope.modules.accounts.mergeAccountAndGetOPs({
           balance: this.scope.backwards ? -changes.balance : changes.balance,
           blockId: this.scope.block.id,
+          cmb: 0,
           fees: this.scope.backwards ? -changes.fees : changes.fees,
           producedblocks: this.scope.backwards ? -1 : 1,
           publicKey: delegate,
@@ -194,10 +202,9 @@ export class RoundLogic {
     }
 
     // last delegate will always get the remainder fees.
-    const remainderIndex = this.scope.backwards ? 0 : delegates.length - 1;
-    const remainderDelegate = delegates[remainderIndex];
+    const remainderDelegate = delegates[delegates.length - 1];
 
-    const remainderChanges = roundChanges.at(remainderIndex);
+    const remainderChanges = roundChanges.at(delegates.length - 1);
 
     if (remainderChanges.feesRemaining > 0) {
       const feesRemaining = this.scope.backwards
@@ -207,7 +214,6 @@ export class RoundLogic {
       this.scope.library.logger.trace('Fees remaining', {
         delegate: remainderDelegate.toString('hex'),
         fees: feesRemaining,
-        index: remainderIndex,
       });
 
       queries.push(
@@ -229,23 +235,29 @@ export class RoundLogic {
   /**
    * Performs operations to go to the next round.
    */
-  public land(): Array<DBOp<any>> {
-    return [
-      this.updateMissedBlocks(),
-      ...this.applyRound(),
-      this.performVotesSnapshot(),
-      this.updateVotes(),
-    ];
+  public apply(): Array<DBOp<any>> {
+    if (this.scope.finishRound) {
+      return [
+        this.updateMissedBlocks(),
+        ...this.applyRound(),
+        this.performVotesSnapshot(),
+        this.reCalcVotes(),
+      ];
+    }
+    return [];
   }
 
   /**
    * Land back from a future round
    */
-  public backwardLand(): Array<DBOp<any>> {
-    return [
-      this.updateMissedBlocks(),
-      ...this.applyRound(),
-      this.restoreVotesSnapshot(),
-    ];
+  public undo(): Array<DBOp<any>> {
+    if (this.scope.finishRound) {
+      return [
+        this.updateMissedBlocks(),
+        ...this.applyRound(),
+        this.restoreVotesSnapshot(),
+      ];
+    }
+    return [];
   }
 }

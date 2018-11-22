@@ -22,7 +22,7 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
     accMap: { [address: string]: T }
   ): Promise<void>;
 
-  getAccount(filter: AccountFilterData): Promise<T>;
+  getAccount(filter: AccountFilterData & { publicKey?: Buffer }): Promise<T>;
 
   getAccounts(filter: AccountFilterData): Promise<T[]>;
 
@@ -34,7 +34,7 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
     publicKey: Buffer;
   }): Promise<T>;
 
-  mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>>;
+  mergeAccountAndGetOPs(diff: AccountDiffType<T>): Array<DBOp<any>>;
 
   generateAddressByPublicKey(pk: Buffer): string;
 }

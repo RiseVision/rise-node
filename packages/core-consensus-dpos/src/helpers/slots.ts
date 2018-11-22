@@ -1,7 +1,9 @@
+import { BlocksModule } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { DposConstantsType } from './constants';
+import { DposV2Helper } from './dposV2Helper';
 import { dPoSSymbols } from './symbols';
 
 @injectable()
@@ -10,6 +12,22 @@ export class Slots {
   private dposConstants: DposConstantsType;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
+
+  @inject(Symbols.modules.blocks)
+  private blocksModule: BlocksModule;
+  @inject(dPoSSymbols.helpers.dposV2)
+  private dposV2Helper: DposV2Helper;
+
+  /**
+   * Maximum number of delegates between which forgers are chosen
+   */
+  public getDelegatesPoolSize(
+    height: number = this.blocksModule.lastBlock.height
+  ): number {
+    return this.dposV2Helper.isV2(height)
+      ? this.dposConstants.dposv2.delegatesPoolSize
+      : this.dposConstants.activeDelegates;
+  }
 
   /**
    * Active delegates

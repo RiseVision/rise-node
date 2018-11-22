@@ -131,7 +131,10 @@ export class DelegatesAPI {
 
   @postConstruct()
   public postConstruct() {
-    schema.getDelegates.properties.limit.maximum = this.dposConstants.activeDelegates;
+    schema.getDelegates.properties.limit.maximum =
+      this.dposConstants.dposv2.firstBlock > 0
+        ? this.dposConstants.dposv2.delegatesPoolSize
+        : this.dposConstants.activeDelegates;
   }
 
   @Get('/')
@@ -153,6 +156,7 @@ export class DelegatesAPI {
         username: item.delegate.username,
         publicKey: item.delegate.hexPublicKey,
         vote: item.delegate.vote ? `${item.delegate.vote}` : '0',
+        votesWeight: item.delegate.votesWeight,
         producedblocks: item.delegate.producedblocks,
         missedblocks: item.delegate.missedblocks,
         rate: item.info.rank,
@@ -280,6 +284,7 @@ export class DelegatesAPI {
             'address',
             'publicKey',
             'vote',
+            'votesWeight',
             'producedblocks',
             'missedblocks',
             'rank',

@@ -15,6 +15,11 @@ const expect = chai.expect;
 
 const pgpStub = { as: undefined } as any;
 
+const performVoteSnapshotSQL = fs.readFileSync(
+  `${__dirname}/../../../sql/performVotesSnapshot.sql`,
+  'utf8'
+);
+
 // tslint:disable no-unused-expression no-big-function object-literal-sort-keys no-identical-functions
 describe('logic/round', () => {
   let sandbox: SinonSandbox;
@@ -159,7 +164,7 @@ describe('logic/round', () => {
       expect(retVal).to.be.deep.eq({
         options: { where: { address: { [Op.in]: scope.roundOutsiders } } },
         type: 'update',
-        values: { missedblocks: { val: 'missedblocks + 1' } },
+        values: { cmb: 0, missedblocks: { val: 'missedblocks + 1' } },
       });
 
       // chai does not support deep eq on obj with symbols
@@ -169,10 +174,10 @@ describe('logic/round', () => {
     });
   });
 
-  describe('updateVotes', () => {
+  describe('reCalcVotes', () => {
     it('should return custom DBOp with RoundsModel SQL', () => {
       scope.round = 10;
-      const ret = instance.updateVotes();
+      const ret = instance.reCalcVotes();
       expect(ret.type).is.eq('custom');
       expect(ret.model).is.deep.eq(accountsModel);
       expect(ret.query).is.deep.eq(
@@ -247,7 +252,6 @@ describe('logic/round', () => {
       expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
         delegate: 'aabbcc',
         fees: 10,
-        index: 0,
       });
       expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
@@ -282,6 +286,7 @@ describe('logic/round', () => {
       ).is.deep.eq({
         balance: 10,
         blockId: '1',
+        cmb: 0,
         fees: 5,
         producedblocks: 1,
         publicKey: Buffer.from('aa', 'hex'),
@@ -294,6 +299,7 @@ describe('logic/round', () => {
       ).is.deep.eq({
         balance: 10,
         blockId: '1',
+        cmb: 0,
         fees: 5,
         producedblocks: 1,
         publicKey: Buffer.from('bb', 'hex'),
@@ -318,28 +324,29 @@ describe('logic/round', () => {
   });
 
   describe('land', () => {
-    it('should call correct methods', async () => {
-      const updateVotes = sandbox
-        .stub(instance, 'updateVotes')
-        .returns({ updateVote: true });
-      const updateMissedBlocks = sandbox
+    let updateMissedBlocks: SinonStub;
+    let applyRound: SinonStub;
+    let reCalcVotes: SinonStub;
+    beforeEach(() => {
+      updateMissedBlocks = sandbox
         .stub(instance, 'updateMissedBlocks')
         .returns({ updateMissed: true });
-      const performVotesSnapshot = sandbox
-        .stub(instance, 'performVotesSnapshot')
-        .returns({ performVotesSnapshot: true });
-      const applyRound = sandbox
+      applyRound = sandbox
         .stub(instance, 'applyRound')
         .returns([{ apply: 1 }, { apply: 2 }]);
+      reCalcVotes = sandbox.stub(instance, 'reCalcVotes');
+      reCalcVotes.onCall(0).returns({ reCalcVotes: 1 });
+      reCalcVotes.onCall(1).returns({ reCalcVotes: 2 });
+    });
+    it('should call correct methods for finishRound v1', async () => {
+      scope.finishRound = true;
+      scope.dposV2 = false;
+      const res = instance.apply();
 
-      const res = instance.land();
-
-      expect(performVotesSnapshot.calledOnce).to.be.true;
-      expect(updateVotes.calledOnce).to.be.true;
       expect(updateMissedBlocks.calledOnce).to.be.true;
       expect(applyRound.calledOnce).to.be.true;
+      expect(reCalcVotes.calledOnce).to.be.true;
 
-      updateVotes.restore();
       updateMissedBlocks.restore();
       applyRound.restore();
 
@@ -347,25 +354,39 @@ describe('logic/round', () => {
         { updateMissed: true },
         { apply: 1 },
         { apply: 2 },
-        { performVotesSnapshot: true },
-        { updateVote: true },
+        {
+          type: 'custom',
+          query: performVoteSnapshotSQL,
+          model: scope.models.AccountsModel,
+        },
+        { reCalcVotes: 1 },
       ]);
     });
   });
 
   describe('backwardLand', () => {
-    it('should call correct methods', async () => {
-      const updateMissedBlocks = sandbox
+    let updateMissedBlocks: SinonStub;
+    let applyRound: SinonStub;
+    let restoreVotesSnapshot: SinonStub;
+    let reCalcVotes: SinonStub;
+    beforeEach(() => {
+      updateMissedBlocks = sandbox
         .stub(instance, 'updateMissedBlocks')
         .returns({ updateMissed: true });
-      const applyRound = sandbox
+      applyRound = sandbox
         .stub(instance, 'applyRound')
         .returns([{ apply: 1 }, { apply: 2 }]);
-      const restoreVotesSnapshot = sandbox
+      restoreVotesSnapshot = sandbox
         .stub(instance, 'restoreVotesSnapshot')
         .returns({ restorevotes: true });
-
-      const res = instance.backwardLand();
+      reCalcVotes = sandbox.stub(instance, 'reCalcVotes');
+      reCalcVotes.onCall(0).returns({ reCalcVotes: 1 });
+      reCalcVotes.onCall(1).returns({ reCalcVotes: 2 });
+    });
+    it('should call correct methods and return proper data for v1 finishRound', async () => {
+      scope.dposV2 = false;
+      scope.finishRound = true;
+      const res = instance.undo();
 
       expect(updateMissedBlocks.calledOnce).to.be.true;
       expect(applyRound.calledOnce).to.be.true;
@@ -373,7 +394,6 @@ describe('logic/round', () => {
 
       updateMissedBlocks.restore();
       applyRound.restore();
-      restoreVotesSnapshot.restore();
 
       expect(res).to.be.deep.eq([
         { updateMissed: true },

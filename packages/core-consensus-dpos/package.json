@@ -31,6 +31,8 @@
     "mangiafuoco": "1.2.2",
     "sequelize": "=4.38.0",
     "inversify": "=4.13.0",
+    "supersha": "0.0.1",
+    "mersenne-twister": "^1.1.0",
     "sequelize-typescript": "=0.6.6-beta.1",
     "z-schema": "=3.22.0"
   },

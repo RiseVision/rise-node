@@ -80,10 +80,7 @@ export class RoundsModule {
 
       const roundLogic = new this.RoundLogic(roundLogicScope, this.slots);
       const ops: Array<DBOp<any>> = [];
-      if (roundLogicScope.finishRound) {
-        // call backwardLand only if this was the last block in round.
-        ops.push(...roundLogic.backwardLand());
-      }
+      ops.push(...roundLogic.undo());
       ops.push(roundLogic.markBlockId());
       return ops;
     });
@@ -97,9 +94,7 @@ export class RoundsModule {
         this.logger.debug('Performing forward tick');
         const roundLogic = new this.RoundLogic(roundLogicScope, this.slots);
         const ops: Array<DBOp<any>> = [];
-        if (roundLogicScope.finishRound) {
-          ops.push(...roundLogic.land());
-        }
+        ops.push(...roundLogic.apply());
         return ops;
       }
     );
@@ -136,6 +131,9 @@ export class RoundsModule {
       const roundLogicScope: RoundLogicScope = {
         backwards,
         block,
+        dposV2:
+          block.height >= this.constants.dposv2.firstBlock &&
+          this.constants.dposv2.firstBlock > 0,
         finishRound,
         library: {
           RoundChanges: this.RoundChanges,

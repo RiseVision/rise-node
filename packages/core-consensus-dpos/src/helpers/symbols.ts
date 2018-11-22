@@ -3,6 +3,7 @@ export const dPoSSymbols = {
   constants: Symbol.for('rise.dpos.constants'),
   delegatesAPI: Symbol.for('rise.dpos.delegatesAPI'),
   helpers: {
+    dposV2: Symbol.for('rise.dpos.dposV2'),
     roundChanges: Symbol.for('rise.dpos.roundChanges'),
     slots: Symbol.for('rise.dpos.slots'),
   },

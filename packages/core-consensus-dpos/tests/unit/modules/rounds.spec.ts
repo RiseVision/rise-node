@@ -75,6 +75,7 @@ describe('modules/rounds', () => {
 
     roundLogicScope = {
       backwards: false,
+      dposV2: false,
       block: {
         generatorPublicKey: block.generatorPublicKey,
         height: block.height,

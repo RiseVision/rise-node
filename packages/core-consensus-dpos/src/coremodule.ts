@@ -13,6 +13,7 @@ import {
   constants,
   DposAppConfig,
   dPoSSymbols,
+  DposV2Helper,
   RoundChanges,
   Slots,
 } from './helpers';
@@ -50,6 +51,10 @@ export class CoreModule extends BaseCoreModule<DposAppConfig>
     this.container
       .bind(dPoSSymbols.helpers.slots)
       .to(Slots)
+      .inSingletonScope();
+    this.container
+      .bind(dPoSSymbols.helpers.dposV2)
+      .to(DposV2Helper)
       .inSingletonScope();
     this.container
       .bind(dPoSSymbols.helpers.roundChanges)

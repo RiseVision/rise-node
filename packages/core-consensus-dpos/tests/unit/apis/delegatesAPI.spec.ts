@@ -171,6 +171,7 @@ describe('apis/delegatesAPI', () => {
             rank: 1,
             rate: 1,
             publicKey: 'aa',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -178,6 +179,7 @@ describe('apis/delegatesAPI', () => {
             rank: 3,
             rate: 3,
             publicKey: 'cc',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -185,6 +187,7 @@ describe('apis/delegatesAPI', () => {
             rank: 2,
             rate: 2,
             publicKey: 'bb',
+            votesWeight: undefined,
           },
         ]);
       });
@@ -200,6 +203,7 @@ describe('apis/delegatesAPI', () => {
             rank: 2,
             rate: 2,
             publicKey: 'bb',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -207,6 +211,7 @@ describe('apis/delegatesAPI', () => {
             rank: 3,
             rate: 3,
             publicKey: 'cc',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -214,6 +219,7 @@ describe('apis/delegatesAPI', () => {
             rank: 1,
             rate: 1,
             publicKey: 'aa',
+            votesWeight: undefined,
           },
         ]);
       });
@@ -229,6 +235,7 @@ describe('apis/delegatesAPI', () => {
             rank: 1,
             rate: 1,
             publicKey: 'aa',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -236,6 +243,7 @@ describe('apis/delegatesAPI', () => {
             rank: 2,
             rate: 2,
             publicKey: 'bb',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -243,6 +251,7 @@ describe('apis/delegatesAPI', () => {
             rank: 3,
             rate: 3,
             publicKey: 'cc',
+            votesWeight: undefined,
           },
         ]);
       });
@@ -258,6 +267,7 @@ describe('apis/delegatesAPI', () => {
             rank: 3,
             rate: 3,
             publicKey: 'cc',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -265,6 +275,7 @@ describe('apis/delegatesAPI', () => {
             rank: 2,
             rate: 2,
             publicKey: 'bb',
+            votesWeight: undefined,
           },
           {
             ...extraAccountData,
@@ -272,6 +283,7 @@ describe('apis/delegatesAPI', () => {
             rank: 1,
             rate: 1,
             publicKey: 'aa',
+            votesWeight: undefined,
           },
         ]);
       });
@@ -281,9 +293,27 @@ describe('apis/delegatesAPI', () => {
         const ret = await instance.getDelegates(data);
 
         expect(ret.delegates).to.be.deep.equal([
-          { ...extraAccountData, rank: 1, rate: 1, publicKey: 'aa' },
-          { ...extraAccountData, rank: 2, rate: 2, publicKey: 'bb' },
-          { ...extraAccountData, rank: 3, rate: 3, publicKey: 'cc' },
+          {
+            ...extraAccountData,
+            rank: 1,
+            rate: 1,
+            publicKey: 'aa',
+            votesWeight: undefined,
+          },
+          {
+            ...extraAccountData,
+            rank: 2,
+            rate: 2,
+            publicKey: 'bb',
+            votesWeight: undefined,
+          },
+          {
+            ...extraAccountData,
+            rank: 3,
+            rate: 3,
+            publicKey: 'cc',
+            votesWeight: undefined,
+          },
         ]);
       });
 
@@ -292,9 +322,27 @@ describe('apis/delegatesAPI', () => {
         const ret = await instance.getDelegates(data);
 
         expect(ret.delegates).to.be.deep.equal([
-          { ...extraAccountData, rank: 1, rate: 1, publicKey: 'aa' },
-          { ...extraAccountData, rank: 2, rate: 2, publicKey: 'bb' },
-          { ...extraAccountData, rank: 3, rate: 3, publicKey: 'cc' },
+          {
+            ...extraAccountData,
+            rank: 1,
+            rate: 1,
+            publicKey: 'aa',
+            votesWeight: undefined,
+          },
+          {
+            ...extraAccountData,
+            rank: 2,
+            rate: 2,
+            publicKey: 'bb',
+            votesWeight: undefined,
+          },
+          {
+            ...extraAccountData,
+            rank: 3,
+            rate: 3,
+            publicKey: 'cc',
+            votesWeight: undefined,
+          },
         ]);
       });
     });

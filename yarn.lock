@@ -4666,6 +4666,11 @@ merge2@^1.2.1:
   resolved "https://registry.yarnpkg.com/merge2/-/merge2-1.2.2.tgz#03212e3da8d86c4d8523cebd6318193414f94e34"
   integrity sha512-bgM8twH86rWni21thii6WCMQMRMmwqqdW3sGWi9IipnVAszdLXRjwDwAnyrVXo6DuP3AjRMMttZKUB48QWIFGg==
 
+mersenne-twister@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/mersenne-twister/-/mersenne-twister-1.1.0.tgz#f916618ee43d7179efcf641bec4531eb9670978a"
+  integrity sha1-+RZhjuQ9cXnvz2Qb7EUx65Zwl4o=
+
 methods@^1.1.1, methods@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/methods/-/methods-1.1.2.tgz#5529a4d67654134edcc5266656835b0f851afcee"
@@ -4900,6 +4905,11 @@ mute@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/mute/-/mute-2.0.6.tgz#8bf10f1f285ea38c9db2630bff675c114c973ed5"
   integrity sha1-i/EPHyheo4ydsmML/2dcEUyXPtU=
+
+nan@2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.4.0.tgz#fb3c59d45fe4effe215f0b890f8adf6eb32d2232"
+  integrity sha1-+zxZ1F/k7/4hXwuJD4rfbrMtIjI=
 
 nan@^2.0.5, nan@^2.10.0, nan@^2.3.2, nan@^2.4.0, nan@^2.8.0:
   version "2.11.1"
@@ -6921,6 +6931,14 @@ superagent@3.8.2:
     mime "^1.4.1"
     qs "^6.5.1"
     readable-stream "^2.0.5"
+
+supersha@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/supersha/-/supersha-0.0.1.tgz#6a803cf0f636f37f1e65650985468c73e0fedbb7"
+  integrity sha1-aoA88PY2838eZWUJhUaMc+D+27c=
+  dependencies:
+    bindings "1.2.1"
+    nan "2.4.0"
 
 supertest@=3.1.0:
   version "3.1.0"
