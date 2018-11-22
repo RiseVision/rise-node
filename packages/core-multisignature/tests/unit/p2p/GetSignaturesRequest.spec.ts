@@ -48,7 +48,11 @@ describe('apis/requests/GetSignaturesRequest', () => {
 
   async function createRequest(query: any, body: null) {
     const r = await instance.createRequestOptions({ query, body });
-    const resp = await instance.handleRequest(r.data, r.query);
+    const resp = await instance.handleRequest({
+      body: r.data as any,
+      query: r.query,
+      requester: null,
+    });
     return instance.handleResponse(null, resp);
   }
 

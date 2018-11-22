@@ -43,9 +43,11 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
   }
 
   protected async decodeRequest(
-    buf: Buffer
+    req: SingleTransportPayload<PostBlockRequestDataType, null> & {
+      body: Buffer;
+    }
   ): Promise<PostBlockRequestDataType> {
-    const data: any = await super.decodeRequest(buf);
+    const data: any = await super.decodeRequest(req);
     return {
       block: this.blockLogic.objectNormalize(
         this.blockLogic.fromProtoBuffer(data.block)

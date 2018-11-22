@@ -51,7 +51,11 @@ describe('apis/requests/GetBlocksRequest', () => {
     });
 
     async function createRequest(query: any, body: any = null) {
-      const resp = await instance.handleRequest(body, query);
+      const resp = await instance.handleRequest({
+        body,
+        query,
+        requester: null,
+      });
       return instance.handleResponse(null, resp);
     }
 

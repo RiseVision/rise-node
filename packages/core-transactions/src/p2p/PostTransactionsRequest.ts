@@ -90,9 +90,11 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   }
 
   protected async decodeRequest(
-    buf: Buffer
+    req: SingleTransportPayload<PostTransactionsRequestDataType, null> & {
+      body: Buffer;
+    }
   ): Promise<PostTransactionsRequestDataType> {
-    const d = await super.decodeRequest(buf);
+    const d = await super.decodeRequest(req);
     return {
       transactions: d.transactions.map((txBuf) =>
         this.txLogic.fromProtoBuffer(txBuf as any)

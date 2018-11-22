@@ -28,11 +28,10 @@ export interface ITransportMethod<Data, Query, Out> {
 
   /**
    * The handler of the request. It's being called upon a request.
-   * @param buf the input buffer containing the request payload.
-   * @param query query object.
+   * @param req the request object
    * NOTE: all errors should be handled here.
    */
-  handleRequest(buf: Buffer, query: Query | null): Promise<Buffer>;
+  handleRequest(req: SingleTransportPayload<Buffer, Query>): Promise<Buffer>;
 
   /**
    * handles response

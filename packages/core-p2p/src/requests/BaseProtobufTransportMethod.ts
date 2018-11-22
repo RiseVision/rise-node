@@ -1,6 +1,9 @@
 import { injectable } from 'inversify';
+import { Overwrite } from 'utility-types';
 import { MyConvOptions } from '../helpers';
+import { Peer } from '../peer';
 import { BaseTransportMethod } from './BaseTransportMethod';
+import { SingleTransportPayload } from './ITransportMethod';
 
 // tslint:disable-next-line
 export type ProtoIdentifier<T> = {
@@ -18,7 +21,10 @@ export class BaseProtobufTransportMethod<
   protected readonly protoRequest: ProtoIdentifier<Data>;
   protected readonly protoResponse: ProtoIdentifier<Out>;
 
-  protected async encodeRequest(data: Data | null = null): Promise<Buffer> {
+  protected async encodeRequest(
+    data: Data | null = null,
+    peer: Peer
+  ): Promise<Buffer> {
     if (data === null) {
       return null;
     }
@@ -29,19 +35,21 @@ export class BaseProtobufTransportMethod<
     );
   }
 
-  protected async decodeRequest(buf: Buffer): Promise<Data> {
-    if (buf === null || !this.protoRequest) {
+  protected async decodeRequest(
+    req: Overwrite<SingleTransportPayload<Data, Query>, { body?: Buffer }>
+  ): Promise<Data> {
+    if (req.body === null || !this.protoRequest) {
       return null;
     }
     return this.protoBufHelper.decodeToObj(
-      buf,
+      req.body,
       this.protoRequest.namespace,
       this.protoRequest.messageType,
       this.protoRequest.convOptions
     );
   }
 
-  protected async decodeResponse(res: Buffer): Promise<Out> {
+  protected async decodeResponse(res: Buffer, peer: Peer): Promise<Out> {
     if (res === null || !this.protoResponse) {
       return null;
     }
@@ -53,7 +61,10 @@ export class BaseProtobufTransportMethod<
     );
   }
 
-  protected async encodeResponse(data: Out): Promise<Buffer> {
+  protected async encodeResponse(
+    data: Out,
+    req: SingleTransportPayload<Data, Query>
+  ): Promise<Buffer> {
     if (data === null) {
       return null;
     }

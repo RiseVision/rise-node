@@ -29,7 +29,7 @@ export class BaseTransportMethod<Data, Query, Out>
     const queryString =
       req.query !== null ? `?${querystring.stringify(req.query)}` : '';
     return {
-      data: await this.encodeRequest(req.body),
+      data: await this.encodeRequest(req.body, req.requester),
       headers: req.headers || {},
       method: this.method,
       url: `${this.baseUrl}${queryString}`,
@@ -42,25 +42,28 @@ export class BaseTransportMethod<Data, Query, Out>
    * @param body the buffer containing the response
    */
   public async handleResponse(peer: Peer, body: Buffer): Promise<Out> {
-    const decodedResponse = await this.decodeResponse(body);
+    const decodedResponse = await this.decodeResponse(body, peer);
     await this.assertValidResponse(decodedResponse);
     return decodedResponse;
   }
 
   /**
    * The handler of the request. It's being called upon a request.
-   * @param buf the input buffer containing the request payload.
-   * @param query query object.
+   * @param req the request object
    * NOTE: all errors should be handled here.
    */
   public async handleRequest(
-    buf: Buffer,
-    query: Query | null
+    req: SingleTransportPayload<Buffer, Query>
   ): Promise<Buffer> {
-    const body = await this.decodeRequest(buf);
-    await this.assertValidRequest({ body, query });
-    const response = await this.produceResponse({ body, query });
-    return this.encodeResponse(response);
+    // Rewrite body so that furthyes
+    // er calls can process pojo data.
+    const newReq = {
+      ...req,
+      body: await this.decodeRequest(req),
+    };
+    await this.assertValidRequest(newReq);
+    const response = await this.produceResponse(newReq);
+    return this.encodeResponse(response, newReq);
   }
 
   /**
@@ -94,28 +97,33 @@ export class BaseTransportMethod<Data, Query, Out>
   /**
    * Encodes request from pojo to buffer
    */
-  protected encodeRequest(data: Data | null): Promise<Buffer> {
+  protected encodeRequest(data: Data | null, peer: Peer): Promise<Buffer> {
     return null;
   }
 
   /**
    * Decodes requests from buffer to pojo
    */
-  protected decodeRequest(buf: Buffer): Promise<Data> {
+  protected decodeRequest(
+    req: SingleTransportPayload<Buffer, Query>
+  ): Promise<Data> {
     return null;
   }
 
   /**
    * Decodes Response from buffer to Out Pojo
    */
-  protected decodeResponse(res: Buffer): Promise<Out> {
+  protected decodeResponse(res: Buffer, peer: Peer): Promise<Out> {
     throw new Error('Implement decoder!');
   }
 
   /**
    * Encodes response from Out to Buffer
    */
-  protected encodeResponse(data: Out): Promise<Buffer> {
+  protected encodeResponse(
+    data: Out,
+    req: SingleTransportPayload<Data, Query>
+  ): Promise<Buffer> {
     throw new Error('Implement encoder');
   }
 

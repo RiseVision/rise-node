@@ -5,7 +5,10 @@
   "workspaces": [
     "packages/*"
   ],
-  "pre-commit": ["prettier", "tslint"],
+  "pre-commit": [
+    "prettier",
+    "tslint"
+  ],
   "scripts": {
     "prettier": "prettier \"packages/*/!(dist)/**/*.ts\" \"packages/*/!(dist)/**/*.json\" --write",
     "tslint": "tslint -c ./tslint.json 'packages/*/!(dist)/**/*.ts' --fix",
@@ -129,6 +132,7 @@
     "ts-node": "=7.0.0",
     "tslint": "=5.11.0",
     "tslint-sonarts": "=1.7.0",
-    "typescript": "=2.9.2"
+    "typescript": "=2.9.2",
+    "utility-types": "^2.1.0"
   }
 }

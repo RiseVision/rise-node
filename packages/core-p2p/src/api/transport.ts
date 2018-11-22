@@ -8,8 +8,9 @@ import {
   Response,
 } from 'express';
 import { inject, injectable, postConstruct } from 'inversify';
-import { ExpressMiddlewareInterface } from 'routing-controllers';
 import { p2pSymbols } from '../helpers';
+import { ITransportMiddleware } from '../interfaces/ITransportMiddleware';
+import { Peer } from '../peer';
 import { ITransportMethod } from '../requests';
 import { TransportWrapper } from '../utils/TransportWrapper';
 
@@ -22,7 +23,7 @@ export class TransportAPI {
   private express: Application;
 
   @inject(p2pSymbols.__internals.resolvedTransportMiddlewares)
-  private transportMiddlewares: ExpressMiddlewareInterface[];
+  private transportMiddlewares: ITransportMiddleware[];
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -37,17 +38,30 @@ export class TransportAPI {
     // install transport routes..
     this.transportMethods.forEach((tm) => {
       const handles: RequestHandler[] = [
-        // Install middlewares
-        ...this.transportMiddlewares.map((m) => m.use.bind(m)),
+        // Install before middlewares
+        ...this.transportMiddlewares
+          .filter((m) => m.when === 'before')
+          .map((m) => m.use.bind(m)),
 
         // Real work.
-        async (req: Request, res: Response, next: NextFunction) => {
+        async (
+          req: Request & { peer: Peer },
+          res: Response,
+          next: NextFunction
+        ) => {
           try {
-            const resp = await tm.handleRequest(req.body, req.query);
-            const wrappedResp = await this.transportWrapper.wrapResponse({
-              success: true,
-              wrappedResponse: resp,
+            const resp = await tm.handleRequest({
+              body: req.body,
+              query: req.query,
+              requester: req.peer,
             });
+            const wrappedResp = await this.transportWrapper.wrapResponse(
+              {
+                success: true,
+                wrappedResponse: resp,
+              },
+              req.peer
+            );
             res
               .set('content-type', 'application/octet-stream')
               .send(wrappedResp);
@@ -55,6 +69,11 @@ export class TransportAPI {
             next(e);
           }
         },
+
+        // Install after middlewares
+        ...this.transportMiddlewares
+          .filter((m) => m.when === 'after')
+          .map((m) => m.use.bind(m)),
 
         // Error handler
         this.handleError.bind(this),
@@ -69,7 +88,7 @@ export class TransportAPI {
 
   private handleError(
     err: any,
-    req: Request,
+    req: Request & { peer: Peer },
     res: Response,
     next: NextFunction
   ) {
@@ -79,7 +98,7 @@ export class TransportAPI {
     }
     res.set('content-type', 'application/octet-stream');
     this.transportWrapper
-      .wrapResponse({ success: false, error: message as string })
+      .wrapResponse({ success: false, error: message as string }, req.peer)
       .then((r) => res.send(r));
   }
 }

@@ -10,13 +10,16 @@ import { ExpressMiddlewareInterface } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { PeersLogic, PeersModule } from '../../';
 import { p2pSymbols } from '../../helpers';
+import { ITransportMiddleware } from '../../interfaces/ITransportMiddleware';
 
 // tslint:disable-next-line no-var-requires
 const transportSchema = require('../../../schema/transport.json');
 
 @injectable()
 @IoCSymbol(p2pSymbols.transportMiddlewares.validatePeer)
-export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
+export class ValidatePeerHeaders implements ITransportMiddleware {
+  public when: 'before';
+
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
   @inject(Symbols.modules.peers)
@@ -65,14 +68,15 @@ export class ValidatePeerHeaders implements ExpressMiddlewareInterface {
     }
 
     // Add peer only if not firewalled
+    const p = this.peersLogic.create(this.computeBasePeerType(request));
+    p.applyHeaders(request.headers as any);
     if (
       typeof request.headers.firewalled === 'undefined' ||
       request.headers.firewalled === 'false'
     ) {
-      const p = this.peersLogic.create(this.computeBasePeerType(request));
-      p.applyHeaders(request.headers as any);
       this.peersModule.update(p);
     }
+    (request as any).peer = p;
     next();
   }
 
