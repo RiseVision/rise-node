@@ -462,7 +462,7 @@ describe('modules/delegates', () => {
         sort      : { vote: -1, publicKey: 1 },
       });
       expect(accountsModuleStub.stubs.getAccounts.firstCall.args[1]).to.be.deep.equal([
-        'username', 'address', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks',
+        'username', 'address', 'cmb', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks',
       ]);
     });
 
