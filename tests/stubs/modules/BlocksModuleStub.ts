@@ -9,7 +9,7 @@ import { BlocksModel } from '../../../src/models';
 @injectable()
 export default class BlocksModuleStub implements IBlocksModule {
   public lastReceipt: { get: () => number; isStale: () => boolean; update: (time?: number) => void };
-  public lastBlock: BlocksModel;
+  public lastBlock: SignedAndChainedBlockType;
   public isActive: boolean;
   public isCleaning: boolean;
 

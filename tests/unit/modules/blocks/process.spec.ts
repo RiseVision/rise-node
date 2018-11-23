@@ -39,6 +39,7 @@ import { IPeerLogic } from '../../../../src/ioc/interfaces/logic';
 import PeerLogicStub from '../../../stubs/logic/PeerLogicStub';
 import { CommonBlockRequest } from '../../../../src/apis/requests/CommonBlockRequest';
 import { GetBlocksRequest } from '../../../../src/apis/requests/GetBlocksRequest';
+import { createFakeBlock } from '../../../utils/blockCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -111,6 +112,8 @@ describe('modules/blocks/process', () => {
     loggerStub      = container.get(Symbols.helpers.logger);
 
     blocksModel     = container.get(Symbols.models.blocks);
+
+    blocksModule.lastBlock = createFakeBlock();
   });
 
   describe('getCommonBlock', () => {
@@ -118,6 +121,7 @@ describe('modules/blocks/process', () => {
     let peerStub: PeerLogicStub;
     beforeEach(() => {
       peerStub = new PeerLogicStub();
+      peerStub.height = 1;
       blocksUtils.enqueueResponse('getIdSequence', {ids: ['1', '2', '3', '4', '5']});
       blocksModelCountStub = sandbox.stub(blocksModel, 'count').resolves(1);
     });

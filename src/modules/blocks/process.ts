@@ -156,6 +156,11 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         throw new Error(`Chain comparison failed with peer: ${
           peer.string} using block ${JSON.stringify(commonResp.common)}`);
       }
+    } else if (
+      peer.height > this.blocksModule.lastBlock.height &&
+      commonResp.common.height < this.blocksModule.lastBlock.height &&
+      this.appStateLogic.getComputed('node.poorConsensus')) {
+      return this.blocksChainModule.recoverChain();
     }
 
     return commonResp.common;
