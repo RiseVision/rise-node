@@ -1,6 +1,6 @@
 {
   "name": "Rise-node",
-  "version": "1.3.0-t",
+  "version": "1.3.1t",
   "private": true,
   "scripts": {
     "start": "node app.js",
