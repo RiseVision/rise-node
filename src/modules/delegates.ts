@@ -169,7 +169,7 @@ export class DelegatesModule implements IDelegatesModule {
         isDelegate: 1,
         sort,
       },
-      ['username', 'address', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks']
+      ['username', 'address', 'cmb', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks']
     );
 
     const limit  = Math.min(this.slots.getDelegatesPoolSize(), query.limit || this.slots.getDelegatesPoolSize());
