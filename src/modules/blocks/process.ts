@@ -126,6 +126,7 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
     const commonResp = await peer.makeRequest<{ common: { id: string, previousBlock: string, height: number } }>(
       this.cbFactory(({data: null, query: { ids: ids.join(',')}}))
     );
+
     // FIXME: Need better checking here, is base on 'common' property enough?
     if (!commonResp.common) {
       if (this.appStateLogic.getComputed('node.poorConsensus')) {
@@ -157,8 +158,8 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
           peer.string} using block ${JSON.stringify(commonResp.common)}`);
       }
     } else if (
-      peer.height > this.blocksModule.lastBlock.height &&
-      commonResp.common.height < this.blocksModule.lastBlock.height &&
+      peer.height > height &&
+      commonResp.common.height < height &&
       this.appStateLogic.getComputed('node.poorConsensus')) {
       return this.blocksChainModule.recoverChain();
     }

@@ -230,6 +230,22 @@ describe('modules/blocks/process', () => {
           .be.rejectedWith('Chain comparison failed');
       });
     });
+    it('past common + peer heigher and poor consensus should trigger recoverChain', async () => {
+      peerStub.stubConfig.makeRequest.return = Promise.resolve({
+        common: {
+          height       : 8,
+          id           : 'id',
+          previousBlock: 'pb',
+        },
+      });
+      appState.stubs.getComputed.returns(true);
+      peerStub.height = 10;
+
+      blocksChain.enqueueResponse('recoverChain', Promise.resolve());
+      await inst.getCommonBlock(peerStub as any, 9);
+
+      expect(blocksChain.stubs.recoverChain.calledOnce).is.true;
+    });
   });
 
   describe('loadBlocksOffset', () => {
