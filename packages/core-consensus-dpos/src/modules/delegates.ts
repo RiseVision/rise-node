@@ -195,7 +195,9 @@ export class DelegatesModule {
 
     const delegates = await this.accountsModule.getAccounts({
       isDelegate: 1,
-      sort: { vote: -1, publicKey: 1 },
+      sort: this.dposV2Helper.isV1()
+        ? { vote: -1, publicKey: 1 }
+        : { votesWeight: -1, publicKey: 1 },
     });
 
     const limit = Math.min(
@@ -227,8 +229,7 @@ export class DelegatesModule {
               ((delegates[i].producedblocks + delegates[i].missedblocks) / 100)
         ) || 0;
 
-      const outsider = i + 1 > this.slots.delegates;
-      const productivity = !outsider ? Math.round(percent * 1e2) / 1e2 : 0;
+      const productivity = Math.round(percent * 1e2) / 1e2;
 
       crunchedDelegates.push({
         delegate: delegates[i],

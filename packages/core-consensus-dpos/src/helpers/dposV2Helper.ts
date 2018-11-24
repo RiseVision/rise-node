@@ -22,6 +22,6 @@ export class DposV2Helper {
   }
 
   public isV1(height: number = this.blocksModule.lastBlock.height) {
-    return !this.isV1(height);
+    return !this.isV2(height);
   }
 }

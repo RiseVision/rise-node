@@ -168,6 +168,12 @@ export class BlocksModuleProcess {
           } using block ${JSON.stringify(commonResp.common)}`
         );
       }
+    } else if (
+      peer.height > height &&
+      commonResp.common.height < height &&
+      this.appStateLogic.getComputed('node.poorConsensus')
+    ) {
+      return this.blocksChainModule.recoverChain();
     }
 
     return commonResp.common;

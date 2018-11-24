@@ -153,6 +153,7 @@ export class DelegatesAPI {
       // tslint:disable object-literal-sort-keys
       return {
         address: item.delegate.address,
+        cmb: item.delegate.cmb,
         username: item.delegate.username,
         publicKey: item.delegate.hexPublicKey,
         vote: item.delegate.vote ? `${item.delegate.vote}` : '0',
@@ -168,7 +169,9 @@ export class DelegatesAPI {
     });
     if (d.sortField) {
       if (
-        ['approval', 'productivity', 'rank', 'vote'].indexOf(d.sortField) > -1
+        ['approval', 'productivity', 'rank', 'vote', 'votesWeight'].indexOf(
+          d.sortField
+        ) > -1
       ) {
         delegates.sort((a, b) => {
           if (d.sortMethod === 'ASC') {
@@ -282,6 +285,7 @@ export class DelegatesAPI {
           [
             'username',
             'address',
+            'cmb',
             'publicKey',
             'vote',
             'votesWeight',

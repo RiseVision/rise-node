@@ -630,7 +630,7 @@ describe('modules/delegates', () => {
                   100)
           ) || 0;
         expect(delegate.info.productivity).to.be.equal(
-          key + 1 > 101 ? 0 : Math.round(percent * 1e2) / 1e2
+          Math.round(percent * 1e2) / 1e2
         );
       });
       expect(retVal.limit).to.be.equal(90);

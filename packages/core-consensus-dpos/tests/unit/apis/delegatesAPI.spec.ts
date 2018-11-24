@@ -108,6 +108,7 @@ describe('apis/delegatesAPI', () => {
         {
           delegate: new accountsModel({
             publicKey: Buffer.from('aa', 'hex'),
+            cmb: 0,
             [field]: areNumberValues ? 1 : 'a',
           }),
           info: { rank: 1, [field]: areNumberValues ? 1 : 'a' },
@@ -115,6 +116,7 @@ describe('apis/delegatesAPI', () => {
         {
           delegate: new accountsModel({
             publicKey: Buffer.from('bb', 'hex'),
+            cmb: 0,
             [field]: areNumberValues ? 3 : 'bb',
           }),
           info: { rank: 2, [field]: areNumberValues ? 3 : 'bb' },
@@ -122,6 +124,7 @@ describe('apis/delegatesAPI', () => {
         {
           delegate: new accountsModel({
             publicKey: Buffer.from('cc', 'hex'),
+            cmb: 0,
             [field]: areNumberValues ? 2 : 'ccc',
           }),
           info: { rank: 3, [field]: areNumberValues ? 2 : 'ccc' },
@@ -168,6 +171,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             approval: 1,
+            cmb: 0,
             rank: 1,
             rate: 1,
             publicKey: 'aa',
@@ -176,6 +180,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             approval: 2,
+            cmb: 0,
             rank: 3,
             rate: 3,
             publicKey: 'cc',
@@ -184,6 +189,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             approval: 3,
+            cmb: 0,
             rank: 2,
             rate: 2,
             publicKey: 'bb',
@@ -200,6 +206,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             approval: 3,
+            cmb: 0,
             rank: 2,
             rate: 2,
             publicKey: 'bb',
@@ -208,6 +215,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             approval: 2,
+            cmb: 0,
             rank: 3,
             rate: 3,
             publicKey: 'cc',
@@ -216,6 +224,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             approval: 1,
+            cmb: 0,
             rank: 1,
             rate: 1,
             publicKey: 'aa',
@@ -232,6 +241,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             username: 'a',
+            cmb: 0,
             rank: 1,
             rate: 1,
             publicKey: 'aa',
@@ -240,6 +250,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             username: 'bb',
+            cmb: 0,
             rank: 2,
             rate: 2,
             publicKey: 'bb',
@@ -248,6 +259,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             username: 'ccc',
+            cmb: 0,
             rank: 3,
             rate: 3,
             publicKey: 'cc',
@@ -264,6 +276,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             username: 'ccc',
+            cmb: 0,
             rank: 3,
             rate: 3,
             publicKey: 'cc',
@@ -272,6 +285,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             username: 'bb',
+            cmb: 0,
             rank: 2,
             rate: 2,
             publicKey: 'bb',
@@ -280,6 +294,7 @@ describe('apis/delegatesAPI', () => {
           {
             ...extraAccountData,
             username: 'a',
+            cmb: 0,
             rank: 1,
             rate: 1,
             publicKey: 'aa',
@@ -295,6 +310,7 @@ describe('apis/delegatesAPI', () => {
         expect(ret.delegates).to.be.deep.equal([
           {
             ...extraAccountData,
+            cmb: 0,
             rank: 1,
             rate: 1,
             publicKey: 'aa',
@@ -302,6 +318,7 @@ describe('apis/delegatesAPI', () => {
           },
           {
             ...extraAccountData,
+            cmb: 0,
             rank: 2,
             rate: 2,
             publicKey: 'bb',
@@ -309,6 +326,7 @@ describe('apis/delegatesAPI', () => {
           },
           {
             ...extraAccountData,
+            cmb: 0,
             rank: 3,
             rate: 3,
             publicKey: 'cc',
@@ -324,6 +342,7 @@ describe('apis/delegatesAPI', () => {
         expect(ret.delegates).to.be.deep.equal([
           {
             ...extraAccountData,
+            cmb: 0,
             rank: 1,
             rate: 1,
             publicKey: 'aa',
@@ -331,6 +350,7 @@ describe('apis/delegatesAPI', () => {
           },
           {
             ...extraAccountData,
+            cmb: 0,
             rank: 2,
             rate: 2,
             publicKey: 'bb',
@@ -338,6 +358,7 @@ describe('apis/delegatesAPI', () => {
           },
           {
             ...extraAccountData,
+            cmb: 0,
             rank: 3,
             rate: 3,
             publicKey: 'cc',
