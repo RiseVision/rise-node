@@ -6,8 +6,8 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { IBlocksModel } from '../models';
 import { Overwrite } from 'utility-types';
+import { IBlocksModel } from '../models';
 
 export interface IBlockLogic {
   table: string;

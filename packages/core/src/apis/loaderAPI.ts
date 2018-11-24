@@ -1,3 +1,4 @@
+import { BlocksConstantsType } from '@risevision/core-blocks';
 import {
   IAppState,
   IBlocksModule,
@@ -10,7 +11,6 @@ import { IoCSymbol } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController } from 'routing-controllers';
 import { CoreSymbols } from '../symbols';
-import { BlocksConstantsType } from '@risevision/core-blocks';
 
 @JsonController('/api/loader/status')
 @IoCSymbol(CoreSymbols.api.loader)

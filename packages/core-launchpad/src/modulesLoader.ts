@@ -61,10 +61,8 @@ export function resolveModule(modulePath: string, modules: any): ModuleInfo {
     subDeps: subModules,
   };
 
-  if (!modules[name]) {
-    if (checkIsModule(`${sourceModuleRootDirectory}/package.json`)) {
-      modules[name] = toRet;
-    }
+  if (!modules[name] && checkIsModule(`${sourceModuleRootDirectory}/package.json`)) {
+    modules[name] = toRet;
   }
 
   return toRet;

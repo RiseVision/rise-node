@@ -1,7 +1,7 @@
 import { IBlockReward, Symbols } from '@risevision/core-interfaces';
+import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import { BlocksConstantsType } from '../blocksConstants';
-import { ConstantsType } from '@risevision/core-types';
 
 @injectable()
 export class BlockRewardLogic implements IBlockReward {

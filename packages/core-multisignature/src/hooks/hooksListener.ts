@@ -66,6 +66,7 @@ export class MultisigHooksListener extends ExtendableClass {
         }
       }
     } else if (tx.requesterPublicKey) {
+      // tslint:disable-next-line
       if (
         sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) <
         0

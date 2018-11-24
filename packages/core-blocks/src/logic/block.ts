@@ -22,11 +22,11 @@ import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named } from 'inversify';
+import { Overwrite } from 'utility-types';
 import z_schema from 'z-schema';
+import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlockRewardLogic } from './blockReward';
-import { BlocksConstantsType } from '../blocksConstants';
-import { Overwrite } from 'utility-types';
 
 // tslint:disable-next-line no-var-requires
 const blockSchema = require('../../schema/block.json');
@@ -189,7 +189,7 @@ export class BlockLogic implements IBlockLogic {
    * @returns {BlockType}
    */
   // TODO: Change this to a pure function!!!
-  public objectNormalize<T extends BlockType<string|Buffer,string|bigint>>(block: T): Overwrite<
+  public objectNormalize<T extends BlockType<string|Buffer, string|bigint>>(block: T): Overwrite<
     T,
     {
       totalAmount: bigint,
@@ -277,9 +277,9 @@ export class BlockLogic implements IBlockLogic {
     bb.writeInt(block.numberOfTransactions);
 
     // tslint:disable no-string-literal
-    bb['writeLong'](parseInt(`${block.totalAmount}`));
-    bb['writeLong'](parseInt(`${block.totalFee}`));
-    bb['writeLong'](parseInt(`${block.reward}`));
+    bb['writeLong'](parseInt(`${block.totalAmount}`, 10));
+    bb['writeLong'](parseInt(`${block.totalFee}`, 10));
+    bb['writeLong'](parseInt(`${block.reward}`, 10));
     // tslint:enable no-string-literal
 
     bb.writeInt(block.payloadLength);

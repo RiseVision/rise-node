@@ -34,11 +34,11 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
+import { BlockLogic } from '../logic';
 import { CommonBlockRequest, GetBlocksRequest } from '../p2p';
 import { BlocksModuleChain } from './chain';
 import { BlocksModuleUtils } from './utils';
 import { BlocksModuleVerify } from './verify';
-import { BlockLogic } from '../logic';
 
 // tslint:disable-next-line no-var-requires
 const schema = require('../../schema/blocks.json');

@@ -5,6 +5,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
+import { BlocksConstantsType } from './blocksConstants';
 import { BlocksSymbols } from './blocksSymbols';
 import { BlockLoader } from './hooks/';
 import { BlockLogic, BlockRewardLogic } from './logic/';
@@ -23,7 +24,6 @@ import {
   PostBlockRequest,
 } from './p2p';
 import { BlocksP2P } from './p2p/';
-import { BlocksConstantsType } from './blocksConstants';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};

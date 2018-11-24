@@ -121,13 +121,14 @@ export class BlocksModuleUtils {
     }
 
     // Add genesis block at the end if the set doesn't contain it already
-    if (this.genesisBlock) {
-      if (!blocks.find((v) => v.id === this.genesisBlock.id)) {
-        blocks.push({
-          height: this.genesisBlock.height,
-          id: this.genesisBlock.id,
-        });
-      }
+    if (
+      this.genesisBlock &&
+      !blocks.find((v) => v.id === this.genesisBlock.id)
+    ) {
+      blocks.push({
+        height: this.genesisBlock.height,
+        id: this.genesisBlock.id,
+      });
     }
 
     // Add last block at the beginning if the set doesn't contain it already
