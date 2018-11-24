@@ -1,6 +1,7 @@
 import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
+  Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
@@ -66,20 +67,26 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
 
   // Necessary to keep types easy to use by consumers.
   protected encodeResponse(
-    data: GetTransactionsRequestDataType
+    data: GetTransactionsRequestDataType,
+    req: SingleTransportPayload<null, null>
   ): Promise<Buffer> {
-    return super.encodeResponse({
-      transactions: data.transactions.map((tx) =>
-        this.transactionLogic.toProtoBuffer(tx)
-      ),
-    } as any);
+    return super.encodeResponse(
+      {
+        transactions: data.transactions.map((tx) =>
+          this.transactionLogic.toProtoBuffer(tx)
+        ),
+      } as any,
+      null
+    );
   }
 
   protected async decodeResponse(
-    res: Buffer
+    res: Buffer,
+    peer: Peer
   ): Promise<GetTransactionsRequestDataType> {
     const superRes: { transactions: Buffer[] } = (await super.decodeResponse(
-      res
+      res,
+      peer
     )) as any;
     return {
       transactions: (superRes.transactions || []).map((bufTx) =>

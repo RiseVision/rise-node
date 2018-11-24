@@ -10,6 +10,7 @@ import {
   BaseProtobufTransportMethod,
   P2PConstantsType,
   p2pSymbols,
+  Peer,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { TXSymbols } from '@risevision/core-transactions';
@@ -86,16 +87,23 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     }
   }
 
-  protected encodeResponse(data: GetBlocksRequestDataType): Promise<Buffer> {
-    return super.encodeResponse({
-      blocks: data.blocks.map((b) => this.blockLogic.toProtoBuffer(b)) as any,
-    });
+  protected encodeResponse(
+    data: GetBlocksRequestDataType,
+    req: SingleTransportPayload<null, { lastBlockId: string }>
+  ): Promise<Buffer> {
+    return super.encodeResponse(
+      {
+        blocks: data.blocks.map((b) => this.blockLogic.toProtoBuffer(b)) as any,
+      },
+      req
+    );
   }
 
   protected async decodeResponse(
-    res: Buffer
+    res: Buffer,
+    peer: Peer
   ): Promise<GetBlocksRequestDataType> {
-    const d = await super.decodeResponse(res);
+    const d = await super.decodeResponse(res, peer);
     return {
       blocks: (d.blocks || []).map((b) =>
         this.blockLogic.fromProtoBuffer(b as any)

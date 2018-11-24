@@ -465,10 +465,13 @@ describe('logic/peer', () => {
       const tw = container.get<TransportWrapper>(
         p2pSymbols.utils.transportWrapper
       );
-      response.body = await tw.wrapResponse({
-        success: true,
-        wrappedResponse: Buffer.from('aa', 'hex'),
-      });
+      response.body = await tw.wrapResponse(
+        {
+          success: true,
+          wrappedResponse: Buffer.from('aa', 'hex'),
+        },
+        instance
+      );
     });
     it('should return a promise', () => {
       const retVal = instance.makeRequest(requestHandlerStub);

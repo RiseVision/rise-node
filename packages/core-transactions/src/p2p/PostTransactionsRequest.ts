@@ -1,6 +1,7 @@
 import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
+  Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
@@ -80,13 +81,17 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   }
 
   protected encodeRequest(
-    data: PostTransactionsRequestDataType
+    data: PostTransactionsRequestDataType,
+    peer: Peer
   ): Promise<Buffer> {
-    return super.encodeRequest({
-      transactions: data.transactions.map((tx) =>
-        this.txLogic.toProtoBuffer(tx)
-      ) as any,
-    });
+    return super.encodeRequest(
+      {
+        transactions: data.transactions.map((tx) =>
+          this.txLogic.toProtoBuffer(tx)
+        ) as any,
+      },
+      peer
+    );
   }
 
   protected async decodeRequest(

@@ -151,7 +151,7 @@ export class Peer implements PeerType {
       this,
       await method.createRequestOptions(payload)
     );
-    const resp = await this.transportWrapper.unwrapResponse(body);
+    const resp = await this.transportWrapper.unwrapResponse(body, this);
     if (resp === null) {
       throw new Error('Received null wrapped response');
     }

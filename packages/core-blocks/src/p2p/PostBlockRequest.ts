@@ -1,6 +1,7 @@
 import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
+  Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
@@ -35,11 +36,15 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
   private process: BlocksModuleProcess;
 
   protected async encodeRequest(
-    data: PostBlockRequestDataType
+    data: PostBlockRequestDataType,
+    peer: Peer
   ): Promise<Buffer> {
-    return super.encodeRequest({
-      block: this.blockLogic.toProtoBuffer(data.block) as any,
-    });
+    return super.encodeRequest(
+      {
+        block: this.blockLogic.toProtoBuffer(data.block) as any,
+      },
+      peer
+    );
   }
 
   protected async decodeRequest(

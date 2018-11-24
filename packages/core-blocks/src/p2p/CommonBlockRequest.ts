@@ -6,6 +6,7 @@ import {
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseProtobufTransportMethod,
+  Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
@@ -65,20 +66,27 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
     return { common };
   }
 
-  protected encodeResponse(data: {
-    common: SignedAndChainedBlockType;
-  }): Promise<Buffer> {
-    return super.encodeResponse({
-      common: data.common
-        ? this.blockLogic.toProtoBuffer(data.common)
-        : (null as any),
-    });
+  protected encodeResponse(
+    data: {
+      common: SignedAndChainedBlockType;
+    },
+    req: SingleTransportPayload<null, { ids: string }>
+  ): Promise<Buffer> {
+    return super.encodeResponse(
+      {
+        common: data.common
+          ? this.blockLogic.toProtoBuffer(data.common)
+          : (null as any),
+      },
+      req
+    );
   }
 
   protected async decodeResponse(
-    res: Buffer
+    res: Buffer,
+    peer: Peer
   ): Promise<{ common: SignedAndChainedBlockType }> {
-    const data: any = await super.decodeResponse(res);
+    const data: any = await super.decodeResponse(res, peer);
     return {
       common: data.common ? this.blockLogic.fromProtoBuffer(data.common) : null,
     };
