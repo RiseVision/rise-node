@@ -119,8 +119,8 @@ export class RoundsModule {
         // so we fix this glitch by monkeypatching the value and set roundDelegates to the correct genesis generator.
         roundSums = {
           roundDelegates: [block.generatorPublicKey],
-          roundFees: 0,
-          roundRewards: [0],
+          roundFees: 0n,
+          roundRewards: [0n],
         };
       }
 
@@ -188,8 +188,8 @@ export class RoundsModule {
     round: number,
     block: SignedBlockType
   ): Promise<{
-    roundFees: number;
-    roundRewards: number[];
+    roundFees: bigint;
+    roundRewards: Array<bigint>;
     roundDelegates: Buffer[];
   }> {
     this.logger.debug('Summing round', round);
@@ -212,15 +212,15 @@ export class RoundsModule {
     );
 
     const roundRewards = res.rewards.map((reward) =>
-      Math.floor(parseFloat(reward))
+      BigInt(Math.floor(parseFloat(reward)))
     );
-    let roundFees = Math.floor(res.fees);
+    let roundFees = BigInt(Math.floor(res.fees));
     const roundDelegates = res.delegates;
 
     if (roundDelegates.length === this.constants.activeDelegates - 1) {
       // cur block is not in the database yet. So lets patch the results manually
-      roundRewards.push(block.reward);
-      roundFees += block.totalFee;
+      roundRewards.push(BigInt(block.reward));
+      roundFees += BigInt(block.totalFee);
       roundDelegates.push(block.generatorPublicKey);
     }
 

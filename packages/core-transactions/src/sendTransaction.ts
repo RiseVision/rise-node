@@ -65,10 +65,10 @@ export class SendTransaction extends BaseTx<void, null> {
       SendTxApplyFilter.name,
       [
         ...this.accountLogic.merge(tx.recipientId, {
-          balance: tx.amount,
+          balance: BigInt(tx.amount),
           blockId: block.id,
           // round    : this.roundsLogic.calcRound(block.height),
-          u_balance: tx.amount,
+          u_balance: BigInt(tx.amount),
         }),
       ],
       tx,
@@ -87,10 +87,10 @@ export class SendTransaction extends BaseTx<void, null> {
       SendTxUndoFilter.name,
       [
         ...this.accountLogic.merge(tx.recipientId, {
-          balance: -tx.amount,
+          balance: -BigInt(tx.amount),
           blockId: block.id,
           // round    : this.roundsLogic.calcRound(block.height),
-          u_balance: -tx.amount,
+          u_balance: -BigInt(tx.amount),
         }),
       ],
       tx,

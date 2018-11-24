@@ -162,7 +162,7 @@ export class RegisterDelegateTransaction extends BaseTx<
     const data = {
       isDelegate: 1 as any,
       u_isDelegate: 1 as any,
-      vote: 0,
+      vote: 0n,
       // tslint:disable-next-line
       u_username: tx.asset.delegate.username,
       username: tx.asset.delegate.username,
@@ -189,7 +189,7 @@ export class RegisterDelegateTransaction extends BaseTx<
     const data = {
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
-      vote: 0,
+      vote: 0n,
       // tslint:disable-next-line
       username: null,
       u_username: tx.asset.delegate.username,

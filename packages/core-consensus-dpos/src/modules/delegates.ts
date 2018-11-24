@@ -115,7 +115,7 @@ export class DelegatesModule {
       // If dposv2 is on, do a Weighted Random Selection of the round forgers.
 
       if (isV2) {
-        let pool: Array<{ publicKey: Buffer; vote: number; weight?: number }>;
+        let pool: Array<{ publicKey: Buffer; vote: bigint; weight?: number }>;
 
         // Initialize source random numbers that will generate a predictable sequence, given the seed.
         const roundSeed = await this.calculateSafeRoundSeed(height);
@@ -126,7 +126,10 @@ export class DelegatesModule {
           const rand = generator.random(); // 0 >= rand < 1
           return {
             ...delegate,
-            weight: rand ** (1 / delegate.vote), // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
+            // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
+            // TODO: With BigInt this might lose precision. Find a different way
+            //  to have same result with bigint without int casting.
+            weight: rand ** (1 / parseInt(delegate.vote.toString(), 10)),
           };
         });
 
@@ -219,8 +222,7 @@ export class DelegatesModule {
     }> = [];
     for (let i = 0; i < delegates.length; i++) {
       const rank = i + 1;
-      const approval =
-        Math.round((delegates[i].vote / totalSupply) * 1e4) / 1e2;
+      const approval = parseInt(((delegates[i].vote * 10n ** 4n ) / totalSupply).toString(), 10) / 100;
 
       const percent =
         Math.abs(
@@ -279,7 +281,7 @@ export class DelegatesModule {
   private async getFilteredDelegatesSortedByVote(
     height: number,
     exclusionList: Buffer[]
-  ): Promise<Array<{ publicKey: Buffer; vote: number }>> {
+  ): Promise<Array<{ publicKey: Buffer; vote: bigint }>> {
     const filter: AccountFilterData = {
       isDelegate: 1,
     };
@@ -300,7 +302,7 @@ export class DelegatesModule {
     const rows = await this.accountsModule.getAccounts(filter);
     return rows.map((r) => ({
       publicKey: r.publicKey,
-      vote: typeof r.votesWeight !== 'undefined' ? r.votesWeight : r.vote,
+      vote: this.dposV2Helper.isV2(height) ? r.votesWeight : r.vote,
     }));
   }
 

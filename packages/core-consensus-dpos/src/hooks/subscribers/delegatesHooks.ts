@@ -1,6 +1,10 @@
 import { OnCheckIntegrity } from '@risevision/core';
 import { AccountsSymbols } from '@risevision/core-accounts';
-import { VerifyBlock, VerifyReceipt } from '@risevision/core-blocks';
+import {
+  BlocksConstantsType,
+  VerifyBlock,
+  VerifyReceipt,
+} from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, SignedBlockType } from '@risevision/core-types';
@@ -35,7 +39,7 @@ export class DelegatesHooks extends Extendable {
   private slots: Slots;
 
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private constants: ConstantsType & BlocksConstantsType;
 
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
@@ -120,7 +124,7 @@ export class DelegatesHooks extends Extendable {
     const curSlot = this.slots.getSlotNumber();
     const blockSlot = this.slots.getSlotNumber(block.timestamp);
     const errors = [];
-    if (curSlot - blockSlot > this.constants.blockSlotWindow) {
+    if (curSlot - blockSlot > this.constants.blocks.slotWindow) {
       errors.push('Block slot is too old');
     }
     if (curSlot < blockSlot) {

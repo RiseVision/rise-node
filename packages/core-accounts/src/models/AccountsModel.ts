@@ -39,7 +39,7 @@ export class AccountsModel extends BaseModel<AccountsModel>
   public publicKey: Buffer;
 
   @Column
-  public balance: number;
+  public balance: bigint;
 
   @Column
   public blockId: string;
@@ -51,14 +51,14 @@ export class AccountsModel extends BaseModel<AccountsModel>
   public missedblocks: number;
 
   @Column
-  public fees: number;
+  public fees: bigint;
   @Column
-  public rewards: number;
+  public rewards: bigint;
   @Column
   public virgin: 0 | 1;
 
   @Column
-  public u_balance: number;
+  public u_balance: bigint;
 
   private _hexPublicKey: publicKey;
   public get hexPublicKey(): publicKey {

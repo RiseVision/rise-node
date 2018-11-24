@@ -35,11 +35,6 @@ export class AccountLogic implements IAccountLogic {
   }> = [];
 
   /**
-   * Filters by field
-   */
-  private filter: { [fieldName: string]: IModelFilter } = {};
-
-  /**
    * Conversions by fieldName
    */
   private conv: { [fieldName: string]: any } = {};
@@ -83,9 +78,6 @@ export class AccountLogic implements IAccountLogic {
       }
       return tmp;
     });
-
-    // filters
-    this.model.forEach((field) => (this.filter[field.name] = field.filter));
 
     // conversions
     this.model.forEach((field) => (this.conv[field.name] = field.conv));
@@ -269,6 +261,8 @@ export class AccountLogic implements IAccountLogic {
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return `${MyBigNumb.fromBuffer(tmp).toString()}R`;
+    return `${MyBigNumb.fromBuffer(tmp).toString()}${
+      this.constants.addressSuffix
+    }`;
   }
 }

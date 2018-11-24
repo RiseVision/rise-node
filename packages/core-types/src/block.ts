@@ -6,12 +6,12 @@ import {
 } from './transactions';
 
 // tslint:disable-next-line
-export type BlockType<T = Buffer> = {
+export type BlockType<T = Buffer, N = bigint> = {
   height?: number;
   version: number;
-  totalAmount: number;
-  totalFee: number;
-  reward: number;
+  totalAmount: N;
+  totalFee: N;
+  reward: N;
   payloadHash: T;
   timestamp: number;
   numberOfTransactions: number;
@@ -21,7 +21,7 @@ export type BlockType<T = Buffer> = {
   transactions?: Array<IBaseTransaction<any>>;
 };
 
-export type SignedBlockType<T = Buffer> = BlockType<T> & {
+export type SignedBlockType<T = Buffer, N = bigint> = BlockType<T, N> & {
   id: string;
   blockSignature: T;
   transactions?: Array<IConfirmedTransaction<any>>;
@@ -31,7 +31,10 @@ export type SignedAndChainedBlockType = SignedBlockType<Buffer> & {
   height: number;
 };
 
-export type SignedAndChainedTransportBlockType = SignedBlockType<string> & {
+export type SignedAndChainedTransportBlockType = SignedBlockType<
+  string,
+  string
+> & {
   height: number;
   transactions?: Array<ITransportTransaction<any>>;
 };

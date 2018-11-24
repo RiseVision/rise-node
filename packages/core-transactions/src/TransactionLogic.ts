@@ -1,3 +1,4 @@
+import { BlocksConstantsType } from '@risevision/core-blocks';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -23,7 +24,6 @@ import {
   SignedBlockType,
 } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
-import { BigNumber } from 'bignumber.js';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
@@ -47,7 +47,7 @@ const txSchema = require('../schema/transaction.json');
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private constants: ConstantsType & BlocksConstantsType;
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
@@ -328,26 +328,24 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error(`Unknown transaction type ${type}`);
     }
   }
+
   /**
    * Checks if balanceKey is less than amount for sender
    */
   public checkBalance(
-    amount: number | BigNumber,
+    amount: bigint,
     balanceKey: 'balance' | 'u_balance',
     tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
     sender: IAccountsModel
   ) {
-    const accountBalance = sender[balanceKey].toString();
-    const exceededBalance = new MyBigNumb(accountBalance).isLessThan(amount);
+    const exceededBalance = sender[balanceKey] < amount;
     // tslint:disable-next-line
     const exceeded = tx['blockId'] !== this.genesisBlock.id && exceededBalance;
     return {
       error: exceeded
-        ? `Account does not have enough currency: ${
-            sender.address
-          } balance: ${new MyBigNumb(accountBalance || 0).div(
-            Math.pow(10, 8)
-          )} - ${new MyBigNumb(amount).div(Math.pow(10, 8))}`
+        ? `Account does not have enough currency: ${sender.address} balance: ${
+            sender[balanceKey]
+          } - ${amount}`
         : null,
       exceeded,
     };
@@ -428,15 +426,14 @@ export class TransactionLogic implements ITransactionLogic {
     // Check amount
     if (
       tx.amount < 0 || // no negative amount
-      tx.amount > this.constants.totalAmount || // cant go beyond totalAmount
-      Math.floor(tx.amount) !== tx.amount || // Cant be decimal
+      BigInt(tx.amount) > BigInt(this.constants.totalAmount) || // cant go beyond totalAmount
       tx.amount.toString().indexOf('e') >= 0 // Cant be written in exponential notation
     ) {
       throw new Error('Invalid transaction amount');
     }
 
     // Check confirmed sender balance
-    const amount = new MyBigNumb(tx.amount.toString()).plus(tx.fee.toString());
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
     const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
@@ -502,23 +499,21 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Transaction is not ready');
     }
 
-    const amount = new MyBigNumb(tx.amount.toString()).plus(tx.fee.toString());
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
     const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
     }
 
-    const amountNumber = amount.toNumber();
-
-    sender.balance -= amountNumber;
+    sender.balance -= amount;
     this.logger.trace('Logic/Transaction->apply', {
-      balance: -amountNumber,
+      balance: -amount,
       blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
       sender: sender.address,
     });
     const ops = this.accountLogic.merge(sender.address, {
-      balance: -amountNumber,
+      balance: -amount,
       blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
     });
@@ -541,9 +536,7 @@ export class TransactionLogic implements ITransactionLogic {
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
-    const amount: number = new MyBigNumb(tx.amount.toString())
-      .plus(tx.fee.toString())
-      .toNumber();
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
 
     sender.balance += amount;
     this.logger.trace('Logic/Transaction->undo', {
@@ -573,17 +566,16 @@ export class TransactionLogic implements ITransactionLogic {
     sender: IAccountsModel,
     requester?: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
-    const amount = new MyBigNumb(tx.amount.toString()).plus(tx.fee.toString());
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
     const senderBalance = this.checkBalance(amount, 'u_balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
     }
 
-    const amountNumber = amount.toNumber();
-    sender.u_balance -= amountNumber;
+    sender.u_balance -= amount;
 
     const ops = this.accountLogic.merge(sender.address, {
-      u_balance: -amountNumber,
+      u_balance: -amount,
     });
     ops.push(...(await this.types[tx.type].applyUnconfirmed(tx, sender)));
     return await this.hookSystem.apply_filters(
@@ -602,9 +594,7 @@ export class TransactionLogic implements ITransactionLogic {
     tx: IBaseTransaction<any>,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
-    const amount: number = new MyBigNumb(tx.amount.toString())
-      .plus(tx.fee.toString())
-      .toNumber();
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
 
     sender.u_balance += amount;
 
@@ -648,8 +638,8 @@ export class TransactionLogic implements ITransactionLogic {
           requesterPublicKey,
           senderId: tx.senderId,
           recipientId: tx.recipientId || null,
-          amount: tx.amount,
-          fee: tx.fee,
+          amount: BigInt(tx.amount),
+          fee: BigInt(tx.fee),
           signature,
           signSignature,
           signatures: tx.signatures

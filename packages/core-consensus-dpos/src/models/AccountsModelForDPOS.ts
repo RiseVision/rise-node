@@ -33,11 +33,11 @@ export class AccountsModelForDPOS extends IAccountsModel {
   @Column(DataType.TEXT)
   public delegates?: publicKey[];
   @Column
-  public vote: number;
+  public vote: bigint;
   @Column
   public cmb: number;
   @Column
-  public votesWeight: number;
+  public votesWeight: bigint;
   @Column
   // tslint:disable-next-line
   public u_username: string;

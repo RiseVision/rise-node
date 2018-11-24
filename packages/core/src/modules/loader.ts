@@ -1,4 +1,5 @@
 import {
+  BlocksConstantsType,
   BlocksModuleChain,
   BlocksModuleProcess,
   BlocksSymbols,
@@ -63,7 +64,7 @@ export class LoaderModule implements ILoaderModule {
   private hookSystem: WordPressHookSystem;
 
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private constants: ConstantsType & BlocksConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -289,7 +290,7 @@ export class LoaderModule implements ILoaderModule {
         await this.doSync().catch(logOnly(this.logger));
         this.appState.set('loader.isSyncing', false);
       },
-      Math.max(1000, this.constants.blockTime * (1000 / 50))
+      Math.max(1000, this.constants.blocks.targetTime * (1000 / 50))
     );
   }
 }

@@ -23,7 +23,7 @@ export type IModelFilter = (
 export interface IModelField {
   name: string;
   type: 'String' | 'SmallInt' | 'BigInt' | 'Binary' | 'Number' | 'Text';
-  filter: IModelFilter;
+  // filter: IModelFilter;
 
   conv?: any;
   immutable?: boolean;

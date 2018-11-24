@@ -14,12 +14,10 @@ import {
   SingleTransportPayload,
 } from '@risevision/core-p2p';
 import { TXSymbols } from '@risevision/core-transactions';
-import {
-  ConstantsType,
-  SignedAndChainedBlockType,
-} from '@risevision/core-types';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
+import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlocksModuleUtils } from '../modules';
 
@@ -61,7 +59,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   private TransactionsModel: typeof ITransactionsModel;
 
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private blocksConstants: BlocksConstantsType;
 
   @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
@@ -124,9 +122,9 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
     // In RISE the value is about 8000 TXs
     const txLimit = Math.ceil(
-      (maxBytes * this.constants.maxTxsPerBlock) /
+      (maxBytes * this.blocksConstants.blocks.maxTxsPerBlock) /
         (this.transactionLogic.getMinBytesSize() *
-          this.constants.maxTxsPerBlock +
+          this.blocksConstants.blocks.maxTxsPerBlock +
           this.blockLogic.getMinBytesSize())
     );
 

@@ -2,14 +2,12 @@ import {
   BlockType,
   DBOp,
   IBaseTransaction,
-  IBytesBlock,
   IKeypair,
-  RawFullBlockListType,
   SignedAndChainedBlockType,
-  SignedAndChainedTransportBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
 import { IBlocksModel } from '../models';
+import { Overwrite } from 'utility-types';
 
 export interface IBlockLogic {
   table: string;
@@ -57,17 +55,21 @@ export interface IBlockLogic {
    * @param {BlockType} block
    * @returns {BlockType}
    */
-  objectNormalize(
-    block: SignedAndChainedTransportBlockType
-  ): SignedAndChainedBlockType;
-
-  objectNormalize<T extends BlockType<Buffer | string>>(block: T): T;
-
-  dbRead(
-    rawBlock: RawFullBlockListType
-  ): SignedBlockType & { totalForged: string; readonly generatorId: string };
+  objectNormalize<T extends BlockType<string | Buffer, string | bigint>>(
+    block: T
+  ): Overwrite<
+    T,
+    {
+      totalAmount: bigint;
+      reward: bigint;
+      payloadHash: Buffer;
+      blockSignature: Buffer;
+      generatorPublicKey: Buffer;
+    }
+  >;
 
   fromProtoBuffer(protoBuffer: Buffer): SignedAndChainedBlockType;
+
   toProtoBuffer(block: SignedAndChainedBlockType): Buffer;
 
   /**

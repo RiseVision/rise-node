@@ -66,6 +66,12 @@ export class TransactionsModel<Asset = any>
     if (obj.height) {
       obj.confirmations = 1 + blocksModule.lastBlock.height - obj.height;
     }
+    if (typeof obj.amount === 'bigint') {
+      obj.amount = `${obj.amount}`;
+    }
+    if (typeof obj.fee === 'bigint') {
+      obj.fee = `${obj.fee}`;
+    }
     return obj as any;
   }
   @PrimaryKey
@@ -103,10 +109,10 @@ export class TransactionsModel<Asset = any>
   public recipientId: string;
 
   @Column
-  public amount: number;
+  public amount: bigint;
 
   @Column
-  public fee: number;
+  public fee: bigint;
 
   @Column(DataType.BLOB)
   public signature: Buffer;

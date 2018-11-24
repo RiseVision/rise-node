@@ -2,26 +2,22 @@ import BigNumber from 'bignumber.js';
 import { Slots } from './slots';
 
 export class RoundChanges {
-  private roundFees: number;
-  private roundRewards: number[];
+  private roundFees: bigint;
+  private roundRewards: Array<bigint>;
 
   // The fee per delegate.
-  private fees: BigNumber;
+  private fees: bigint;
   // The fees that are excluded by math precision
-  private feesRemaining: BigNumber;
+  private feesRemaining: bigint;
 
   constructor(
-    scope: { roundFees?: number; roundRewards: number[] },
+    scope: { roundFees?: bigint; roundRewards: Array<bigint> },
     private slots: Slots
   ) {
-    this.roundFees = Math.floor(scope.roundFees) || 0;
+    this.roundFees = scope.roundFees || 0n;
     this.roundRewards = scope.roundRewards || [];
-    this.fees = new BigNumber(this.roundFees.toPrecision(15))
-      .dividedBy(this.slots.delegates)
-      .integerValue(BigNumber.ROUND_FLOOR);
-    this.feesRemaining = new BigNumber(this.roundFees.toPrecision(15)).minus(
-      this.fees.times(this.slots.delegates)
-    );
+    this.fees = this.roundFees / BigInt(this.slots.delegates);
+    this.feesRemaining = this.roundFees - this.fees;
   }
 
   /**
@@ -30,18 +26,14 @@ export class RoundChanges {
    */
   public at(
     index: number
-  ): { balance: number; fees: number; feesRemaining: number; rewards: number } {
-    const rewards = this.roundRewards[index]
-      ? new BigNumber(this.roundRewards[index].toPrecision(15)).integerValue(
-          BigNumber.ROUND_FLOOR
-        )
-      : 0;
+  ): { balance: bigint; fees: bigint; feesRemaining: bigint; rewards: bigint } {
+    const rewards = this.roundRewards[index];
 
     return {
-      balance: Number(this.fees.plus(rewards).toFixed()),
-      fees: Number(this.fees.toFixed()),
-      feesRemaining: Number(this.feesRemaining.toFixed()),
-      rewards: Number(rewards.toFixed()),
+      balance: this.fees + rewards,
+      fees: this.fees,
+      feesRemaining: this.feesRemaining,
+      rewards,
     };
   }
 }

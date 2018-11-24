@@ -66,7 +66,7 @@ export interface ITransactionLogic {
    * Checks if balanceKey is less than amount for sender
    */
   checkBalance(
-    amount: number | BigNumber,
+    amount: bigint,
     balanceKey: 'balance' | 'u_balance',
     tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
     sender: any

@@ -23,10 +23,21 @@ import {
   PostBlockRequest,
 } from './p2p';
 import { BlocksP2P } from './p2p/';
+import { BlocksConstantsType } from './blocksConstants';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
-  public constants = {};
+  public constants: BlocksConstantsType = {
+    blocks: {
+      maxAmount: 100000000,
+      maxPayloadLength: 1024 * 1024,
+      maxTxsPerBlock: 25,
+      receiptTimeOut: 60,
+      rewards: [],
+      slotWindow: 5,
+      targetTime: 30,
+    },
+  };
 
   public addElementsToContainer(): void {
     this.container

@@ -32,11 +32,13 @@ import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
+import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
 import { CommonBlockRequest, GetBlocksRequest } from '../p2p';
 import { BlocksModuleChain } from './chain';
 import { BlocksModuleUtils } from './utils';
 import { BlocksModuleVerify } from './verify';
+import { BlockLogic } from '../logic';
 
 // tslint:disable-next-line no-var-requires
 const schema = require('../../schema/blocks.json');
@@ -49,7 +51,7 @@ export class BlocksModuleProcess {
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private blocksConstants: BlocksConstantsType;
 
   // Helpers
   // tslint:disable-next-line member-ordering
@@ -67,7 +69,7 @@ export class BlocksModuleProcess {
   @inject(Symbols.logic.appState)
   private appStateLogic: IAppState;
   @inject(Symbols.logic.block)
-  private blockLogic: IBlockLogic;
+  private blockLogic: BlockLogic;
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
   @inject(Symbols.logic.transaction)
@@ -316,7 +318,7 @@ export class BlocksModuleProcess {
   ): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
     const txs = this.txPool.unconfirmed.txList({
-      limit: this.constants.maxTxsPerBlock,
+      limit: this.blocksConstants.blocks.maxTxsPerBlock,
     });
 
     const ready: Array<IBaseTransaction<any>> = [];
@@ -514,6 +516,7 @@ export class BlocksModuleProcess {
       this.logger.info('Last block and parent loses');
       try {
         const tmpBlockN = this.blockLogic.objectNormalize(tmpBlock);
+        // TODO: can I remove this --> ?
         // await this.delegatesModule.assertValidBlockSlot(block);
         const check = await this.blocksVerifyModule.verifyReceipt(tmpBlockN);
         if (!check.verified) {

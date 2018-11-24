@@ -16,7 +16,7 @@ import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 export class BlocksModel extends BaseModel<BlocksModel> {
   public static toStringBlockType(
     btmp: SignedBlockType
-  ): SignedBlockType<string> {
+  ): SignedBlockType<string, string> {
     const TxModel = this.container.getNamed<typeof ITransactionsModel>(
       ModelSymbols.model,
       Symbols.models.transactions
@@ -37,6 +37,9 @@ export class BlocksModel extends BaseModel<BlocksModel> {
       blockSignature: b.blockSignature.toString('hex'),
       generatorPublicKey: b.generatorPublicKey.toString('hex'),
       payloadHash: b.payloadHash.toString('hex'),
+      reward: b.reward.toString(),
+      totalAmount: b.totalAmount.toString(),
+      totalFee: b.totalFee.toString(),
       transactions: txs as any,
     };
     delete toRet.TransactionsModel;
@@ -66,13 +69,13 @@ export class BlocksModel extends BaseModel<BlocksModel> {
   public numberOfTransactions: number;
 
   @Column
-  public totalAmount: number;
+  public totalAmount: bigint;
 
   @Column
-  public totalFee: number;
+  public totalFee: bigint;
 
   @Column
-  public reward: number;
+  public reward: bigint;
 
   @Column
   public payloadLength: number;

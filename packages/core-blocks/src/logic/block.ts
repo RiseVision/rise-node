@@ -10,14 +10,11 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
   BlockType,
-  ConstantsType,
   DBOp,
   IBaseTransaction,
   IBytesBlock,
   IKeypair,
-  RawFullBlockListType,
   SignedAndChainedBlockType,
-  SignedAndChainedTransportBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
@@ -28,13 +25,15 @@ import { inject, injectable, named } from 'inversify';
 import z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlockRewardLogic } from './blockReward';
+import { BlocksConstantsType } from '../blocksConstants';
+import { Overwrite } from 'utility-types';
 
 // tslint:disable-next-line no-var-requires
 const blockSchema = require('../../schema/block.json');
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
-  public table = 'blocks';
+  public table    = 'blocks';
   public dbFields = [
     'id',
     'version',
@@ -54,7 +53,7 @@ export class BlockLogic implements IBlockLogic {
   public zschema: z_schema;
 
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private blocksConstants: BlocksConstantsType;
 
   @inject(p2pSymbols.helpers.protoBuf)
   private protobufHelper: ProtoBufHelper;
@@ -97,49 +96,49 @@ export class BlockLogic implements IBlockLogic {
 
     const nextHeight = data.previousBlock ? data.previousBlock.height + 1 : 1;
 
-    const reward = this.blockReward.calcReward(nextHeight);
-    let totalFee = 0;
-    let totalAmount = 0;
-    let size = 0;
+    const reward    = this.blockReward.calcReward(nextHeight);
+    let totalFee    = 0n;
+    let totalAmount = 0n;
+    let size        = 0;
 
     const blockTransactions = [];
-    const payloadHash = crypto.createHash('sha256');
+    const payloadHash       = crypto.createHash('sha256');
 
     for (const transaction of transactions) {
       const bytes: Buffer = this.transaction.getBytes(transaction);
 
-      if (size + bytes.length > this.constants.maxPayloadLength) {
+      if (size + bytes.length > this.blocksConstants.blocks.maxPayloadLength) {
         break;
       }
 
       size += bytes.length;
 
-      totalFee += transaction.fee;
-      totalAmount += transaction.amount;
+      totalFee += BigInt(transaction.fee);
+      totalAmount += BigInt(transaction.amount);
 
       blockTransactions.push(transaction);
       payloadHash.update(bytes);
     }
 
     const block: SignedAndChainedBlockType = {
-      blockSignature: undefined,
-      generatorPublicKey: data.keypair.publicKey,
-      height: data.previousBlock.height + 1,
-      id: undefined,
+      blockSignature      : undefined,
+      generatorPublicKey  : data.keypair.publicKey,
+      height              : data.previousBlock.height + 1,
+      id                  : undefined,
       numberOfTransactions: blockTransactions.length,
-      payloadHash: payloadHash.digest(),
-      payloadLength: size,
-      previousBlock: data.previousBlock.id,
+      payloadHash         : payloadHash.digest(),
+      payloadLength       : size,
+      previousBlock       : data.previousBlock.id,
       reward,
-      timestamp: data.timestamp,
+      timestamp           : data.timestamp,
       totalAmount,
       totalFee,
-      transactions: blockTransactions,
-      version: 0,
+      transactions        : blockTransactions,
+      version             : 0,
     };
 
     block.blockSignature = this.sign(block, data.keypair);
-    block.id = this.getId(block);
+    block.id             = this.getId(block);
     return this.objectNormalize(block);
   }
 
@@ -177,7 +176,7 @@ export class BlockLogic implements IBlockLogic {
     const values = { ...filterObject(block, this.dbFields) };
     return {
       model: this.BlocksModel,
-      type: 'create',
+      type : 'create',
       values,
     };
   }
@@ -185,12 +184,20 @@ export class BlockLogic implements IBlockLogic {
   /**
    * Normalize block object and eventually throw if something is not valid
    * Does NOT perform signature validation but just content validation.
+   * Typescript here is a bit obscure but it will basically change numbers to bigint and signature to string
    * @param {BlockType} block
    * @returns {BlockType}
    */
-  public objectNormalize<T extends BlockType<Buffer | string>>(
-    block: T | SignedAndChainedTransportBlockType
-  ): T | SignedAndChainedBlockType {
+  // TODO: Change this to a pure function!!!
+  public objectNormalize<T extends BlockType<string|Buffer,string|bigint>>(block: T): Overwrite<
+    T,
+    {
+      totalAmount: bigint,
+      reward: bigint,
+      payloadHash: Buffer,
+      blockSignature: Buffer,
+      generatorPublicKey: Buffer
+    }> {
     // Delete null or undefined elements in block obj
     for (const key in block) {
       if (block[key] === null || typeof block[key] === 'undefined') {
@@ -221,50 +228,13 @@ export class BlockLogic implements IBlockLogic {
         block.transactions[i]
       );
     }
+
+    (block as any).reward      = BigInt(block.reward);
+    (block as any).totalFee    = BigInt(block.totalFee);
+    (block as any).totalAmount = BigInt(block.totalAmount);
+
     // cast to any is correct as we transform non-buffer items to
     return block as any;
-  }
-
-  public dbRead(
-    rawBlock: RawFullBlockListType
-  ): SignedBlockType & { totalForged: string; readonly generatorId: string } {
-    if (!rawBlock.b_id) {
-      return null;
-    } else {
-      const self = this;
-      const generatorPublicKey = Buffer.from(
-        rawBlock.b_generatorPublicKey,
-        'hex'
-      );
-      const block = {
-        blockSignature: Buffer.from(rawBlock.b_blockSignature, 'hex'),
-        get generatorId() {
-          return self.accountLogic.generateAddressByPublicKey(
-            generatorPublicKey
-          );
-        },
-        generatorPublicKey,
-        height: parseInt(`${rawBlock.b_height}`, 10),
-        id: rawBlock.b_id,
-        numberOfTransactions: parseInt(
-          `${rawBlock.b_numberOfTransactions}`,
-          10
-        ),
-        payloadHash: Buffer.from(rawBlock.b_payloadHash, 'hex'),
-        payloadLength: parseInt(`${rawBlock.b_payloadLength}`, 10),
-        previousBlock: rawBlock.b_previousBlock,
-        reward: parseInt(`${rawBlock.b_reward}`, 10),
-        timestamp: parseInt(`${rawBlock.b_timestamp}`, 10),
-        totalAmount: parseInt(`${rawBlock.b_totalAmount}`, 10),
-        totalFee: parseInt(`${rawBlock.b_totalFee}`, 10),
-        totalForged: '',
-        version: parseInt(`${rawBlock.b_version}`, 10),
-      };
-      block.totalForged = new MyBigNumb(block.totalFee)
-        .plus(new MyBigNumb(block.reward))
-        .toString();
-      return block;
-    }
   }
 
   /**
@@ -284,11 +254,11 @@ export class BlockLogic implements IBlockLogic {
   }
 
   public getBytes(
-    block: BlockType | SignedBlockType,
+    block: BlockType,
     includeSignature: boolean = true
   ): Buffer {
     const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
-    const bb = new ByteBuffer(size, true /* little endian */);
+    const bb   = new ByteBuffer(size, true /* little endian */);
     bb.writeInt(block.version);
     bb.writeInt(block.timestamp);
 
@@ -307,9 +277,9 @@ export class BlockLogic implements IBlockLogic {
     bb.writeInt(block.numberOfTransactions);
 
     // tslint:disable no-string-literal
-    bb['writeLong'](block.totalAmount);
-    bb['writeLong'](block.totalFee);
-    bb['writeLong'](block.reward);
+    bb['writeLong'](parseInt(`${block.totalAmount}`));
+    bb['writeLong'](parseInt(`${block.totalFee}`));
+    bb['writeLong'](parseInt(`${block.reward}`));
     // tslint:enable no-string-literal
 
     bb.writeInt(block.payloadLength);
@@ -346,9 +316,9 @@ export class BlockLogic implements IBlockLogic {
     block: SignedAndChainedBlockType & { relays?: number }
   ): Buffer {
     const blk = {
-      bytes: this.getBytes(block),
-      height: block.height,
-      relays: Number.isInteger(block.relays) ? block.relays : 1,
+      bytes       : this.getBytes(block),
+      height      : block.height,
+      relays      : Number.isInteger(block.relays) ? block.relays : 1,
       transactions: (block.transactions || []).map((tx) =>
         this.transaction.toProtoBuffer(tx)
       ),
@@ -370,13 +340,13 @@ export class BlockLogic implements IBlockLogic {
       'blocks.bytes',
       'bytesBlock'
     );
-    const bb = ByteBuffer.wrap(blk.bytes, 'binary', true);
-    const version = bb.readInt(0);
-    const timestamp = bb.readInt(4);
+    const bb               = ByteBuffer.wrap(blk.bytes, 'binary', true);
+    const version          = bb.readInt(0);
+    const timestamp        = bb.readInt(4);
 
     // PreviousBlock is valid only if it's not 8 bytes with 0 value
     const previousIdBytes = blk.bytes.slice(8, 16);
-    let previousValid = false;
+    let previousValid     = false;
     for (let i = 0; i < 8; i++) {
       if (previousIdBytes.readUInt8(i) !== 0) {
         previousValid = true;
@@ -388,21 +358,21 @@ export class BlockLogic implements IBlockLogic {
       : null;
 
     const numberOfTransactions = bb.readInt(16);
-    const totalAmount = bb.readLong(20).toNumber();
-    const totalFee = bb.readLong(28).toNumber();
-    const reward = bb.readLong(36).toNumber();
-    const payloadLength = bb.readInt(44);
-    const payloadHash = blk.bytes.slice(48, 80);
-    const generatorPublicKey = blk.bytes.slice(80, 112);
-    const blockSignature =
-      blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
-    const id = this.getIdFromBytes(blk.bytes);
-    const transactions = blk.transactions.map((tx) => {
+    const totalAmount          = BigInt(bb.readLong(20).toString());
+    const totalFee             = BigInt(bb.readLong(28).toString());
+    const reward               = BigInt(bb.readLong(36).toString());
+    const payloadLength        = bb.readInt(44);
+    const payloadHash          = blk.bytes.slice(48, 80);
+    const generatorPublicKey   = blk.bytes.slice(80, 112);
+    const blockSignature       =
+            blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
+    const id                   = this.getIdFromBytes(blk.bytes);
+    const transactions         = blk.transactions.map((tx) => {
       const baseTx = this.transaction.fromProtoBuffer(tx);
       return {
         ...baseTx,
-        blockId: id,
-        height: blk.height,
+        blockId : id,
+        height  : blk.height,
         senderId: this.accountLogic.generateAddressByPublicKey(
           baseTx.senderPublicKey
         ),
@@ -436,9 +406,9 @@ export class BlockLogic implements IBlockLogic {
   }
 
   public getMaxBytesSize(): number {
-    let size = this.getMinBytesSize();
+    let size        = this.getMinBytesSize();
     const maxTxSize = this.transaction.getMaxBytesSize();
-    size += this.constants.maxTxsPerBlock * maxTxSize; // transactions
+    size += this.blocksConstants.blocks.maxTxsPerBlock * maxTxSize; // transactions
     return size;
   }
 

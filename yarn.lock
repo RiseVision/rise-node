@@ -7189,10 +7189,10 @@ tslib@^1.8.0, tslib@^1.8.1, tslib@^1.9.0:
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.9.3.tgz#d7e4dd79245d85428c4d7e4822a79917954ca286"
   integrity sha512-4krF8scpejhaOgqzBEcGM7yDIEfi0/8+8zDRZhNZZ2kjmHJ4hv3zCbQWxoJGz1iw5U0Jl0nma13xzHXcncMavQ==
 
-tslint-sonarts@=1.7.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/tslint-sonarts/-/tslint-sonarts-1.7.0.tgz#1bcaf9f524c86b8d4cf9a2afae736edffd2e0dea"
-  integrity sha512-KmgizLNvvcegZR0+EoDQTIEwQ4Q/9jeZg/Ktjh5m8VVPaIx3mwl0LhofHXggsk3kAhHZ2yasU4l6O+/OHBI4WA==
+tslint-sonarts@=1.8.0:
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/tslint-sonarts/-/tslint-sonarts-1.8.0.tgz#80f2e8addd418c3b8807fc0155dec33b5a81e8d1"
+  integrity sha512-tpijO5VR18e+Ny99uMNNov3Hw7diiYQ8KoJkezpHGw9hSFFrO5g2PhwdQQo7O9puhJKMIutLl9g+ICMgg+bh0w==
   dependencies:
     immutable "^3.8.2"
 
@@ -7268,10 +7268,10 @@ typedarray@^0.0.6:
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-typescript@=2.9.2:
-  version "2.9.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.9.2.tgz#1cbf61d05d6b96269244eb6a3bce4bd914e0f00c"
-  integrity sha512-Gr4p6nFNaoufRIY4NMdpQRNmgxVIGMs4Fcu/ujdYk3nAZqk7supzBE9idmvfZIlH/Cuj//dvi+019qEue9lV0w==
+typescript@=3.2.0-rc:
+  version "3.2.0-rc"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.2.0-rc.tgz#7c3816f1c761b096f4f1712382e872f4da8f263e"
+  integrity sha512-RgKDOpEdbU9dAkB4TzxWy46wiyNUKQo0NM0bB7WfvEFw50yu046ldQXpOUYMUTLIAHnToOCtHsu39MYE8o6NCw==
 
 uglify-js@^3.1.4:
   version "3.4.9"

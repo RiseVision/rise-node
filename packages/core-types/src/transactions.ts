@@ -11,7 +11,7 @@ export enum TransactionType {
 
 export interface ITransportTransaction<T> {
   type: TransactionType;
-  amount: number;
+  amount: string | number;
   senderId?: string;
   senderPublicKey: string;
   requesterPublicKey?: string;
@@ -20,14 +20,14 @@ export interface ITransportTransaction<T> {
   recipientId: string;
   signature: string;
   id: string;
-  fee: number;
+  fee: string | number;
   signatures?: string[];
   signSignature?: string;
 }
 
 export interface IBaseTransaction<T> {
   type: TransactionType;
-  amount: number;
+  amount: number | string | bigint;
   senderId?: string;
   senderPublicKey: Buffer;
   requesterPublicKey?: Buffer;
@@ -36,7 +36,7 @@ export interface IBaseTransaction<T> {
   recipientId: string;
   signature: Buffer;
   id: string;
-  fee: number;
+  fee: number | string | bigint;
   blockId?: string;
   signatures?: Buffer[];
   signSignature?: Buffer;

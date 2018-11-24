@@ -22,6 +22,7 @@ import {
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
+import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
 import { VerifyBlock, VerifyReceipt } from '../hooks';
 import { BlocksModuleChain } from './chain';
@@ -30,7 +31,7 @@ import { BlocksModuleChain } from './chain';
 export class BlocksModuleVerify {
   // Helpers
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private blocksConstants: BlocksConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.generic.hookSystem)
@@ -139,7 +140,7 @@ export class BlocksModuleVerify {
   public async onBlockchainReady() {
     const blocks = await this.BlocksModel.findAll({
       attributes: ['id'],
-      limit: this.constants.blockSlotWindow,
+      limit: this.blocksConstants.blocks.slotWindow,
       order: [['height', 'desc']],
       raw: true,
     });
@@ -148,7 +149,7 @@ export class BlocksModuleVerify {
 
   public async onNewBlock(block: SignedBlockType) {
     this.lastNBlockIds.push(block.id);
-    if (this.lastNBlockIds.length > this.constants.blockSlotWindow) {
+    if (this.lastNBlockIds.length > this.blocksConstants.blocks.slotWindow) {
       this.lastNBlockIds.shift();
     }
   }
@@ -255,7 +256,7 @@ export class BlocksModuleVerify {
   private verifyReward(block: SignedBlockType): string[] {
     const expected = this.blockRewardLogic.calcReward(block.height);
 
-    if (block.height !== 1 && expected !== block.reward) {
+    if (block.height !== 1 && expected !== BigInt(block.reward)) {
       return [`Invalid block reward: ${block.reward} expected: ${expected}`];
     }
     return [];
@@ -275,7 +276,7 @@ export class BlocksModuleVerify {
    */
   private verifyPayload(block: SignedBlockType): string[] {
     const errors: string[] = [];
-    if (block.payloadLength > this.constants.maxPayloadLength) {
+    if (block.payloadLength > this.blocksConstants.blocks.maxPayloadLength) {
       errors.push('Payload length is too long');
     }
 
@@ -285,12 +286,12 @@ export class BlocksModuleVerify {
       );
     }
 
-    if (block.transactions.length > this.constants.maxTxsPerBlock) {
+    if (block.transactions.length > this.blocksConstants.blocks.maxPayloadLength) {
       errors.push('Number of transactions exceeds maximum per block');
     }
 
-    let totalAmount = 0;
-    let totalFee = 0;
+    let totalAmount = 0n;
+    let totalFee = 0n;
     const payloadHash = crypto.createHash('sha256');
 
     const appliedTransactions = {};
@@ -310,8 +311,8 @@ export class BlocksModuleVerify {
       }
 
       appliedTransactions[tx.id] = tx;
-      totalAmount += tx.amount;
-      totalFee += tx.fee;
+      totalAmount += BigInt(tx.amount);
+      totalFee += BigInt(tx.fee);
     }
 
     if (!payloadHash.digest().equals(block.payloadHash)) {

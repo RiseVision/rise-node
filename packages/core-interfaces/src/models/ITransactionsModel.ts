@@ -33,9 +33,9 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<
 
   public recipientId: string;
 
-  public amount: number;
+  public amount: bigint;
 
-  public fee: number;
+  public fee: bigint;
   public signature: Buffer;
   public signSignature: Buffer;
 

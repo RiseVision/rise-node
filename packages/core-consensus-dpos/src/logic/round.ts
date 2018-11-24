@@ -37,7 +37,7 @@ export interface RoundLogicScope {
   roundOutsiders: address[];
   roundDelegates: Buffer[];
   roundFees: any;
-  roundRewards: number[];
+  roundRewards: Array<bigint>;
   finishRound: boolean;
   dposV2: boolean;
   library: {
@@ -52,8 +52,6 @@ export interface RoundLogicScope {
     accounts: IAccountsModule<AccountsModelForDPOS>;
   };
   block: SignedBlockType;
-  // must be populated with the votes in round when is needed
-  votes?: Array<{ delegate: string; amount: number }>;
 }
 
 export interface IRoundLogicNewable {

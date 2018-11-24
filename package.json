@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "pre-commit": [
-    "prettier",
+//    "prettier",
     "tslint"
   ],
   "scripts": {
@@ -131,8 +131,8 @@
     "supertest": "=3.1.0",
     "ts-node": "=7.0.0",
     "tslint": "=5.11.0",
-    "tslint-sonarts": "=1.7.0",
-    "typescript": "=2.9.2",
+    "tslint-sonarts": "=1.8.0",
+    "typescript": "=3.2.0-rc",
     "utility-types": "^2.1.0"
   }
 }

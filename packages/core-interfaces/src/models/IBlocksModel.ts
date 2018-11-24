@@ -4,7 +4,9 @@ import { IBaseModel } from './IBaseModel';
 import { ITransactionsModel } from './ITransactionsModel';
 
 export class IBlocksModel extends IBaseModel<IBlocksModel> {
-  public static toStringBlockType(b: SignedBlockType): SignedBlockType<string> {
+  public static toStringBlockType(
+    b: SignedBlockType
+  ): SignedBlockType<string, string> {
     throw new Error('Not implemented. Please implement in subclass');
   }
 
@@ -15,9 +17,9 @@ export class IBlocksModel extends IBaseModel<IBlocksModel> {
   public height: number;
   public previousBlock: string;
   public numberOfTransactions: number;
-  public totalAmount: number;
-  public totalFee: number;
-  public reward: number;
+  public totalAmount: bigint;
+  public totalFee: bigint;
+  public reward: bigint;
   public payloadLength: number;
   public payloadHash: Buffer;
   public generatorPublicKey: Buffer;

@@ -1,3 +1,4 @@
+import { BlocksConstantsType } from '@risevision/core-blocks';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -30,7 +31,7 @@ export class PoolManager {
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private constants: ConstantsType & BlocksConstantsType;
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -136,11 +137,12 @@ export class PoolManager {
   protected async applyUnconfirmed() {
     // Unconfirm some txs.
     const missingUnconfirmed =
-      this.constants.maxTxsPerBlock - this.pool.unconfirmed.count;
+      this.constants.blocks.maxTxsPerBlock - this.pool.unconfirmed.count;
     const readyTxs = this.pool.ready
       .list({
         limit: missingUnconfirmed,
-        sortFn: (a, b) => a.tx.fee - b.tx.fee,
+        sortFn: (a, b) =>
+          parseInt(a.tx.fee as any, 10) - parseInt(b.tx.fee as any, 10),
       })
       .map((t) => t.tx);
 

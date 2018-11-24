@@ -250,7 +250,7 @@ export class DelegatesAPI {
 
       return {
         fees: account.fees,
-        forged: new BigNumber(account.fees).plus(account.rewards).toString(),
+        forged: account.fees + account.rewards,
         rewards: account.rewards,
       };
     }

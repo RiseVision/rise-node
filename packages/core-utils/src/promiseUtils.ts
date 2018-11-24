@@ -69,7 +69,7 @@ export function cbToPromise<T>(
       if (multi) {
         return resolve(args as any);
       } else {
-        return resolve(args[0]);
+        return resolve(args[0] as any);
       }
     });
   });

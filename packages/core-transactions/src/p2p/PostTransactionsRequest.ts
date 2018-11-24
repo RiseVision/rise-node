@@ -1,3 +1,4 @@
+import { BlocksConstantsType } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
@@ -5,11 +6,12 @@ import {
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { TransactionLogic } from '../TransactionLogic';
 import { TransactionsModule } from '../TransactionModule';
+
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
   transactions: Array<IBaseTransaction<any> & { relays: number }>;
@@ -38,7 +40,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   private txLogic: TransactionLogic;
 
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private constants: BlocksConstantsType;
 
   public mergeRequests(
     reqs: Array<SingleTransportPayload<PostTransactionsRequestDataType, null>>
@@ -49,7 +51,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
     );
 
     const chunks = Math.ceil(
-      allTransactions.length / this.constants.maxTxsPerBlock
+      allTransactions.length / this.constants.blocks.maxTxsPerBlock
     );
 
     // split requests into chunks of size maxTxsPerBlock
@@ -57,8 +59,8 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
       return {
         body: {
           transactions: allTransactions.slice(
-            idx * this.constants.maxTxsPerBlock,
-            (idx + 1) * this.constants.maxTxsPerBlock
+            idx * this.constants.blocks.maxTxsPerBlock,
+            (idx + 1) * this.constants.blocks.maxTxsPerBlock
           ),
         },
       };

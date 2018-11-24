@@ -10,6 +10,7 @@ import { IoCSymbol } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController } from 'routing-controllers';
 import { CoreSymbols } from '../symbols';
+import { BlocksConstantsType } from '@risevision/core-blocks';
 
 @JsonController('/api/loader/status')
 @IoCSymbol(CoreSymbols.api.loader)
@@ -18,7 +19,7 @@ export class LoaderAPI {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private constants: ConstantsType & BlocksConstantsType;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(CoreSymbols.modules.loader)
@@ -52,7 +53,7 @@ export class LoaderAPI {
         Math.floor(Date.now() / 1000) -
         (Math.floor(this.constants.epochTime.getTime() / 1000) +
           this.blocksModule.lastBlock.timestamp);
-      status = secondsAgo < this.constants.blockReceiptTimeOut;
+      status = secondsAgo < this.constants.blocks.receiptTimeOut;
     }
 
     return { success: status };
