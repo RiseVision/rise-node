@@ -101,9 +101,9 @@ describe('modules/rounds', () => {
       },
       round: 12,
       roundDelegates: [],
-      roundFees: 10.1,
+      roundFees: 10n,
       roundOutsiders: [],
-      roundRewards: [100],
+      roundRewards: [100n],
     };
     innerTickStub = sandbox.stub(instance as any, 'innerTick');
     // Expose the passed txGenerator so we can test it

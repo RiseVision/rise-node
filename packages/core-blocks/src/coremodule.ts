@@ -33,7 +33,12 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       maxPayloadLength: 1024 * 1024,
       maxTxsPerBlock: 25,
       receiptTimeOut: 60,
-      rewards: [],
+      rewards: [
+        {
+          fromHeight: 1,
+          reward: '0',
+        },
+      ],
       slotWindow: 5,
       targetTime: 30,
     },

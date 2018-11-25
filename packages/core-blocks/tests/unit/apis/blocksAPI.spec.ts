@@ -47,6 +47,18 @@ describe('apis/blocksAPI', () => {
     blocksModule = container.get(BlocksSymbols.modules.blocks);
     blocksModel = container.getNamed(ModelSymbols.model, BlocksSymbols.model);
     fakeBlock = createFakeBlock(container);
+    // (instance as any).constants.blocks.rewards = [
+    //   { fromHeight: 1, reward: '0' },
+    //   { fromHeight: 10, reward: '1500000000' },
+    //   { fromHeight: 11, reward: '30000000' },
+    //   { fromHeight: 12, reward: '20000000' },
+    //   { fromHeight: 13, reward: '1500000000' },
+    //   { fromHeight: 1054080, reward: '1200000000' },
+    //   { fromHeight: 1054080 * 2, reward: '900000000' },
+    //   { fromHeight: 1054080 * 3, reward: '600000000' },
+    //   { fromHeight: 1054080 * 4, reward: '300000000' },
+    //   { fromHeight: 1054080 * 5, reward: '100000000' }
+    //   ];
   });
 
   afterEach(() => {
@@ -321,7 +333,7 @@ describe('apis/blocksAPI', () => {
       }) as any;
       const ret = instance.getMilestone();
 
-      expect(ret).to.be.deep.equal({ milestone: 5 });
+      expect(ret).to.be.deep.equal({ milestone: 0 });
     });
   });
   //
@@ -335,7 +347,7 @@ describe('apis/blocksAPI', () => {
 
       const ret = instance.getReward();
 
-      expect(ret).to.be.deep.equal({ reward: 1500000000 });
+      expect(ret).to.be.deep.equal({ reward: 0n });
     });
   });
   //
@@ -343,7 +355,7 @@ describe('apis/blocksAPI', () => {
     it('should return proper supply', () => {
       blocksModule.lastBlock = { height: 1 } as any;
       const ret = instance.getSupply();
-      expect(ret).to.be.deep.equal({ supply: 10999999991000000 });
+      expect(ret).to.be.deep.equal({ supply: 10999999991000000n });
     });
   });
   //
@@ -362,13 +374,13 @@ describe('apis/blocksAPI', () => {
       expect(res).deep.eq({
         broadhash: 'thaBroadHash',
         epoch: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
-        fee: 10000000,
+        fee: '10000000',
         height: 500,
-        milestone: 4,
+        milestone: 0,
         nethash:
           'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
-        reward: 1500000000,
-        supply: 11000733541000000,
+        reward: '0',
+        supply: '10999999991000000',
       });
     });
   });

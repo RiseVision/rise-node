@@ -167,7 +167,8 @@ export class AccountsAPI {
     return {
       accounts: accs
         .map((acc) => acc.toPOJO())
-        .map((acc) => filterObject(acc, returnFields)),
+        .map((acc) => filterObject(acc, returnFields))
+        .map((acc) => ({ ...acc, balance: `${acc.balance}` })),
     };
   }
 

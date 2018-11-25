@@ -92,21 +92,21 @@ describe('modules/blocks/verify', () => {
   describe('onNewBlock', () => {
     it('should add blockid to last known block ids [private] (till constants.blockSlotWindow)', async () => {
       const constants = container.get<any>(Symbols.generic.constants);
-      for (let i = 0; i < constants.blockSlotWindow * 2; i++) {
+      for (let i = 0; i < constants.blocks.slotWindow * 2; i++) {
         await inst.onNewBlock({ id: `${i}` } as any);
       }
-      // all first contants.blockSlotWindow indexes will be removed
+      // all first contants.blocks.slotWindow indexes will be removed
       // tslint:disable-next-line: no-string-literal
       expect(inst['lastNBlockIds']).to.be.deep.eq(
-        new Array(constants.blockSlotWindow)
+        new Array(constants.blocks.slotWindow)
           .fill(null)
-          .map((a, idx) => `${constants.blockSlotWindow + idx}`)
+          .map((a, idx) => `${constants.blocks.slotWindow + idx}`)
       );
     });
   });
 
   describe('onBlockchainReady', () => {
-    it('should initialize [private].lastNBlockIds with the last blockSlotWindow block ids from db', async () => {
+    it('should initialize [private].lastNBlockIds with the last blocks.slotWindow block ids from db', async () => {
       sandbox
         .stub(blocksModel, 'findAll')
         .resolves([{ id: '1' }, { id: '2' }, { id: '3' }]);
@@ -195,7 +195,7 @@ describe('modules/blocks/verify', () => {
             );
           });
           it('error if transactions.length exceeds maxTxsPerBlock', async () => {
-            block.transactions = new Array(100).fill(null);
+            block.transactions = new Array(1000).fill(null);
 
             const res = await inst[what](block);
             expect(res.errors).to.contain(
@@ -252,7 +252,7 @@ describe('modules/blocks/verify', () => {
               timestamp: block.timestamp,
               transactions: txs.map((t) => toBufferedTransaction(t)),
             });
-            block.totalAmount = block.totalAmount + 1;
+            block.totalAmount = block.totalAmount + 1n;
             const res = await inst[what](block);
             expect(res.errors).to.contain('Invalid total amount');
           });
@@ -266,7 +266,7 @@ describe('modules/blocks/verify', () => {
               timestamp: block.timestamp,
               transactions: txs.map((t) => toBufferedTransaction(t)),
             });
-            block.totalFee = block.totalFee + 1;
+            block.totalFee = block.totalFee + 1n;
             const res = await inst[what](block);
             expect(res.errors).to.contain('Invalid total fee');
           });

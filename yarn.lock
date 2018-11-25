@@ -4610,14 +4610,6 @@ mem@^4.0.0:
     mimic-fn "^1.0.0"
     p-is-promise "^1.1.0"
 
-memwatch-next@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/memwatch-next/-/memwatch-next-0.3.0.tgz#2111050f9a906e0aa2d72a4ec0f0089c78726f8f"
-  integrity sha1-IREFD5qQbgqi1ypOwPAInHhyb48=
-  dependencies:
-    bindings "^1.2.1"
-    nan "^2.3.2"
-
 meow@^3.3.0:
   version "3.7.0"
   resolved "https://registry.yarnpkg.com/meow/-/meow-3.7.0.tgz#72cb668b425228290abbfa856892587308a801fb"
@@ -4906,12 +4898,12 @@ mute@^2.0.6:
   resolved "https://registry.yarnpkg.com/mute/-/mute-2.0.6.tgz#8bf10f1f285ea38c9db2630bff675c114c973ed5"
   integrity sha1-i/EPHyheo4ydsmML/2dcEUyXPtU=
 
-nan@2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.4.0.tgz#fb3c59d45fe4effe215f0b890f8adf6eb32d2232"
-  integrity sha1-+zxZ1F/k7/4hXwuJD4rfbrMtIjI=
+nan@2.10.0:
+  version "2.10.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.10.0.tgz#96d0cd610ebd58d4b4de9cc0c6828cda99c7548f"
+  integrity sha512-bAdJv7fBLhWC+/Bls0Oza+mvTaNQtP+1RyhhhvD95pgUJz6XM5IzgmxOkItJ9tkoCiplvAnXI1tNmmUD/eScyA==
 
-nan@^2.0.5, nan@^2.10.0, nan@^2.3.2, nan@^2.4.0, nan@^2.8.0:
+nan@^2.0.5, nan@^2.10.0, nan@^2.4.0:
   version "2.11.1"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.11.1.tgz#90e22bccb8ca57ea4cd37cc83d3819b52eea6766"
   integrity sha512-iji6k87OSXa0CcrLl9z+ZiYSuR2o+c0bGuNmXdrhTQTakxytAFsC56SArGYoiHlJlFoHSnvmhpceZJaXkVuOtA==
@@ -4960,6 +4952,11 @@ no-case@^2.2.0, no-case@^2.3.2:
   integrity sha512-rmTZ9kz+f3rCvK2TD1Ue/oZlns7OGoIWP4fc3llxxRXlOkHKoWPPWJOfFYpITabSow43QJbRIoHQXtt10VldyQ==
   dependencies:
     lower-case "^1.1.1"
+
+node-addon-api@*:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-1.6.1.tgz#a9881c8dbc6400bac6ddedcb96eccf8051678536"
+  integrity sha512-GcLOYrG5/enbqH4SMsqXt6GQUQGGnDnE3FLDZzXYkCgQHuZV5UDFR+EboeY8kpG0avroyOjpFQ2qLEBosFcRIA==
 
 node-fetch-npm@^2.0.2:
   version "2.0.2"
@@ -6608,12 +6605,12 @@ sodium-native@^2.2.2:
     nan "^2.4.0"
     node-gyp-build "^3.0.0"
 
-sodium@=2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/sodium/-/sodium-2.0.3.tgz#4f489e9a3be75395d168a0341dde8b401432ddf6"
-  integrity sha512-/z1tdOf+tn+MZr6uiKno709w2V5LwqukNWxOWi6NiSBia5E7Fp33f3CUHtCIR2184DEylytXdTZNryQUQwNKkQ==
+sodium@=3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/sodium/-/sodium-3.0.1.tgz#827011e40972d4cb3943ce5fcb15a2c0b948a0f0"
+  integrity sha512-P3lySoF+MYSuL6HjlsekX5++v8KHTpGX+/kU3BW0y8+MAUVUXCsRHHQs9FIyqWh7FoLxia9UhpqEMFnjZkMopg==
   dependencies:
-    nan "^2.8.0"
+    node-addon-api "*"
 
 sort-keys@^2.0.0:
   version "2.0.0"

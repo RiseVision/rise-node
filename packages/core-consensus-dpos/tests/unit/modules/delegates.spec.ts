@@ -1,5 +1,6 @@
 // tslint:disable: max-line-length
 import { generateWallets } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
+import { BlocksConstantsType } from '@risevision/core-blocks';
 import { BlockRewardLogic } from '@risevision/core-blocks';
 import {
   IAccountsModule,
@@ -15,8 +16,8 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
 import { Container } from 'inversify';
-import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as supersha from 'supersha';
 import { DposConstantsType, dPoSSymbols, Slots } from '../../../src/helpers';
 import { RoundsLogic } from '../../../src/logic/rounds';
@@ -40,14 +41,14 @@ describe('modules/delegates', () => {
 
   let blocksModel: typeof IBlocksModel;
   let accountsModel: typeof AccountsModelForDPOS;
-  let constants: ConstantsType;
+  let constants: ConstantsType & BlocksConstantsType;
   let dposConstants: DposConstantsType;
   let pubKey: string;
   let votes: string[];
   let testAccounts = generateWallets(101 + Math.ceil(Math.random() * 200));
   // Add delegate-specific fields
   testAccounts = testAccounts.map((el, k) => {
-    (el as any).vote = (1000 - k) * 100000;
+    (el as any).vote = BigInt((1000 - k) * 100000);
     (el as any).producedblocks = 100000 - 10 * k;
     (el as any).missedblocks = k * 7;
     (el as any).delegates = [];
@@ -55,7 +56,7 @@ describe('modules/delegates', () => {
     return el;
   });
 
-  const totalSupply = 123456000;
+  const totalSupply = 123456000n;
   let signedBlock: SignedBlockType;
 
   beforeEach(async () => {
@@ -90,10 +91,10 @@ describe('modules/delegates', () => {
       payloadHash: Buffer.from('payloadHash'),
       payloadLength: 0,
       previousBlock: 'previous',
-      reward: 15,
+      reward: 15n,
       timestamp: 1000,
-      totalAmount: 0,
-      totalFee: 0,
+      totalAmount: 0n,
+      totalFee: 0n,
       version: 1,
     };
     blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
@@ -619,7 +620,7 @@ describe('modules/delegates', () => {
       retVal.delegates.forEach((delegate, key) => {
         expect(delegate.info.rank).to.be.equal(key + 1);
         expect(delegate.info.approval).to.be.equal(
-          Math.round((delegate.delegate.vote / totalSupply) * 1e4) / 1e2
+          Math.floor((parseInt(`${delegate.delegate.vote}`, 10) / parseInt(`${totalSupply}`, 10)) * 1e4) / 1e2
         );
         const percent =
           Math.abs(
@@ -703,7 +704,7 @@ describe('modules/delegates', () => {
       await expect(
         instance.assertValidBlockSlot({
           ...signedBlock,
-          timestamp: signedBlock.timestamp + constants.blockTime,
+          timestamp: signedBlock.timestamp + constants.blocks.targetTime,
         })
       ).rejectedWith('Failed to verify slot 34');
     });

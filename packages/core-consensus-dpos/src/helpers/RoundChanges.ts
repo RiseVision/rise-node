@@ -17,7 +17,7 @@ export class RoundChanges {
     this.roundFees = scope.roundFees || 0n;
     this.roundRewards = scope.roundRewards || [];
     this.fees = this.roundFees / BigInt(this.slots.delegates);
-    this.feesRemaining = this.roundFees - this.fees;
+    this.feesRemaining = this.roundFees - this.fees * BigInt(this.slots.delegates);
   }
 
   /**
@@ -27,7 +27,7 @@ export class RoundChanges {
   public at(
     index: number
   ): { balance: bigint; fees: bigint; feesRemaining: bigint; rewards: bigint } {
-    const rewards = this.roundRewards[index];
+    const rewards = this.roundRewards[index] || 0n;
 
     return {
       balance: this.fees + rewards,

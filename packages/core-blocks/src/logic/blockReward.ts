@@ -47,11 +47,6 @@ export class BlockRewardLogic implements IBlockReward {
     // add current milestone
     supply += (BigInt(height) - amountAccounted) * this.rewards[milestone].reward;
 
-    // const tha = new (require('./_blockReward.js'))().calcSupply(height);
-    // if (supply !== tha) {
-    //  console.log(supply, tha);
-    //  // process.exit(1);
-    // }
     return supply;
   }
 

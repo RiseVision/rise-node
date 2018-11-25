@@ -20,7 +20,7 @@ export class CoreModule extends BaseCoreModule<void>
       .bind(Symbols.helpers.timeToEpoch)
       .to(TimeToEpoch)
       .inSingletonScope();
-    this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
+
     this.container
       .bind(CoreSymbols.modules.fork)
       .to(ForkModule)
@@ -37,6 +37,12 @@ export class CoreModule extends BaseCoreModule<void>
       .bind(APISymbols.api)
       .toConstructor(LoaderAPI)
       .whenTargetNamed(CoreSymbols.api.loader);
+
+    let c = this.constants;
+    for (const sortedModule of this.sortedModules) {
+      c = _.merge(c, sortedModule.constants || {});
+    }
+    this.container.bind(CoreSymbols.constants).toConstantValue(c);
   }
 
   public async onPostInitModels() {
@@ -56,13 +62,6 @@ export class CoreModule extends BaseCoreModule<void>
       value: this.container.get<any>(Symbols.generic.genesisBlock)
         .transactions[0].senderId,
     });
-  }
-
-  public async initAppElements() {
-    let c = this.container.get<any>(CoreSymbols.constants);
-    for (const sortedModule of this.sortedModules) {
-      c = _.merge(c, sortedModule.constants || {});
-    }
   }
 
   public async boot() {

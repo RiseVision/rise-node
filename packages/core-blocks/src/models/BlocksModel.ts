@@ -68,13 +68,13 @@ export class BlocksModel extends BaseModel<BlocksModel> {
   @Column
   public numberOfTransactions: number;
 
-  @Column
+  @Column(DataType.BIGINT)
   public totalAmount: bigint;
 
-  @Column
+  @Column(DataType.BIGINT)
   public totalFee: bigint;
 
-  @Column
+  @Column(DataType.BIGINT)
   public reward: bigint;
 
   @Column

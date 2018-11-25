@@ -38,7 +38,7 @@ export class AccountsModel extends BaseModel<AccountsModel>
   @Column(DataType.BLOB)
   public publicKey: Buffer;
 
-  @Column
+  @Column(DataType.BIGINT)
   public balance: bigint;
 
   @Column
@@ -50,14 +50,14 @@ export class AccountsModel extends BaseModel<AccountsModel>
   @Column
   public missedblocks: number;
 
-  @Column
+  @Column(DataType.BIGINT)
   public fees: bigint;
-  @Column
+  @Column(DataType.BIGINT)
   public rewards: bigint;
   @Column
   public virgin: 0 | 1;
 
-  @Column
+  @Column(DataType.BIGINT)
   public u_balance: bigint;
 
   private _hexPublicKey: publicKey;

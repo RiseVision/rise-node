@@ -108,10 +108,10 @@ export class TransactionsModel<Asset = any>
   @Column
   public recipientId: string;
 
-  @Column
+  @Column(DataType.BIGINT)
   public amount: bigint;
 
-  @Column
+  @Column(DataType.BIGINT)
   public fee: bigint;
 
   @Column(DataType.BLOB)

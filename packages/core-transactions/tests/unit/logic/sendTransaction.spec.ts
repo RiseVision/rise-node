@@ -114,9 +114,9 @@ describe('logic/transactions/send', () => {
       expect(accountMergeStub.calledOnce).to.be.true;
       expect(accountMergeStub.args[0][0]).to.equal(tx.recipientId);
       expect(accountMergeStub.args[0][1]).to.deep.equal({
-        balance: tx.amount,
+        balance: BigInt(tx.amount),
         blockId: block.id,
-        u_balance: tx.amount,
+        u_balance: BigInt(tx.amount),
       });
       // expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
     });
@@ -175,9 +175,9 @@ describe('logic/transactions/send', () => {
       expect(accountMergeStub.calledOnce).to.be.true;
       expect(accountMergeStub.args[0][0]).to.equal(tx.recipientId);
       expect(accountMergeStub.args[0][1]).to.deep.equal({
-        balance: -tx.amount,
+        balance: BigInt(-tx.amount),
         blockId: block.id,
-        u_balance: -tx.amount,
+        u_balance: BigInt(-tx.amount),
       });
       // expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
     });

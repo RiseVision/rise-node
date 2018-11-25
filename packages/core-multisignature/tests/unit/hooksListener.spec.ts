@@ -68,8 +68,8 @@ describe('HooksListener', () => {
     sender = new AccountsModel({
       address: wallet.address,
       publicKey: Buffer.from(wallet.publicKey, 'hex'),
-      balance: 1e10,
-      u_balance: 1e10,
+      balance: 10n ** 10n,
+      u_balance: 10n ** 10n,
       multilifetime: 10,
       multisignatures: multisigners.map((m) => m.publicKey),
       multimin: 4,

@@ -223,15 +223,19 @@ export class BlockLogic implements IBlockLogic {
       );
     }
 
+    (block as any).reward      = BigInt(block.reward);
+    (block as any).totalFee    = BigInt(block.totalFee);
+    (block as any).totalAmount = BigInt(block.totalAmount);
+
+    if (block.reward as bigint < 0n || block.totalFee as bigint < 0n || block.totalAmount as bigint < 0n ) {
+      throw new Error('Block validation failed. One of reward,totalFee,totalAmount is lt 0');
+    }
+
     for (let i = 0; i < block.transactions.length; i++) {
       block.transactions[i] = this.transaction.objectNormalize(
         block.transactions[i]
       );
     }
-
-    (block as any).reward      = BigInt(block.reward);
-    (block as any).totalFee    = BigInt(block.totalFee);
-    (block as any).totalAmount = BigInt(block.totalAmount);
 
     // cast to any is correct as we transform non-buffer items to
     return block as any;

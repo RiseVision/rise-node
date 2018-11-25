@@ -91,10 +91,10 @@ describe('modules/forge', () => {
       payloadHash: Buffer.from('payload'),
       payloadLength: 0,
       previousBlock: 'previous',
-      reward: 15,
+      reward: 15n,
       timestamp: Date.now(),
-      totalAmount: 0,
-      totalFee: 0,
+      totalAmount: 0n,
+      totalFee: 0n,
       version: 1,
     });
     loadKeypairs = () => {

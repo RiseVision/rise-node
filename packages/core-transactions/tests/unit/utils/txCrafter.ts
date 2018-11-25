@@ -1,3 +1,4 @@
+import { ITransportTransaction } from '@risevision/core-types';
 import { IBaseTransaction } from '@risevision/core-types';
 import { dposOffline } from 'dpos-offline';
 import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
@@ -33,6 +34,8 @@ export const fromBufferedTransaction = <T>(
 ): ITransaction<any> & { blockId?: string } => {
   return {
     ...t,
+    amount: parseInt(`${t.amount}`, 10),
+    fee: parseInt(`${t.fee}`, 10),
     requesterPublicKey:
       t.requesterPublicKey === null ||
       typeof t.requesterPublicKey === 'undefined'

@@ -217,12 +217,12 @@ export class BlocksAPI {
     return {
       broadhash: await this.systemModule.getBroadhash(),
       epoch: this.constants.epochTime,
-      fee: this.systemModule.getFees(lastBlock.height).fees.send,
+      fee: this.systemModule.getFees(lastBlock.height).fees.send.toString(),
       height: lastBlock.height,
       milestone: this.blockRewardLogic.calcMilestone(lastBlock.height),
       nethash: this.systemModule.getNethash(),
-      reward: this.blockRewardLogic.calcReward(lastBlock.height),
-      supply: this.blockRewardLogic.calcSupply(lastBlock.height),
+      reward: this.blockRewardLogic.calcReward(lastBlock.height).toString(),
+      supply: this.blockRewardLogic.calcSupply(lastBlock.height).toString(),
     };
   }
 

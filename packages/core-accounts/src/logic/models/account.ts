@@ -91,19 +91,19 @@ export const accountsModelCreator = (
   {
     name: 'balance',
     type: 'BigInt',
-    conv: Number,
+    conv: BigInt,
     expression: '("balance")::bigint',
   },
   {
     name: 'u_balance',
     type: 'BigInt',
-    conv: Number,
+    conv: BigInt,
     expression: '("u_balance")::bigint',
   },
   {
     name: 'vote',
     type: 'BigInt',
-    conv: Number,
+    conv: BigInt,
     expression: '("vote")::bigint',
   },
   {
@@ -186,13 +186,13 @@ export const accountsModelCreator = (
   {
     name: 'fees',
     type: 'BigInt',
-    conv: Number,
+    conv: BigInt,
     expression: '("fees")::bigint',
   },
   {
     name: 'rewards',
     type: 'BigInt',
-    conv: Number,
+    conv: BigInt,
     expression: '("rewards")::bigint',
   },
   {

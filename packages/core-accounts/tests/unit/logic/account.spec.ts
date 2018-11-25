@@ -7,6 +7,7 @@ import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
+import 'reflect-metadata';
 import { Op } from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
@@ -280,10 +281,10 @@ describe('logic/account', () => {
     });
 
     it('should call AccountsModel upsert with upperccasedAddress', async () => {
-      await instance.set('address', { balance: 10 });
+      await instance.set('address', { balance: 10n });
       expect(upsertStub.firstCall.args[0]).to.be.deep.eq({
         address: 'ADDRESS',
-        balance: 10,
+        balance: 10n,
       });
     });
     it('should throw if publicKey is defined but invalid', async () => {
@@ -345,7 +346,7 @@ describe('logic/account', () => {
     });
     it('should handle balance', () => {
       const ops: any = instance.merge('1R', {
-        balance: 10,
+        balance: 10n,
         blockId: '1',
         round: 1,
       });
@@ -356,7 +357,7 @@ describe('logic/account', () => {
     });
 
     it('should remove account virginity on u_balance', () => {
-      const ops: any = instance.merge('1R', { u_balance: -1 });
+      const ops: any = instance.merge('1R', { u_balance: -1n });
       expect(ops[0].values).to.be.deep.eq({
         u_balance: { val: 'u_balance - 1' },
         virgin: 0,

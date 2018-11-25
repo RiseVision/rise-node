@@ -255,13 +255,13 @@ describe('modules/accounts', () => {
       const res = accountModule.mergeAccountAndGetOPs({
         address: 'meow',
         publicKey: validPubKey,
-        balance: 10,
+        balance: 10n,
       });
       expect(mergeStub.called).true;
       expect(
         mergeStub.calledWith(validAddress, {
           publicKey: validPubKey,
-          balance: 10,
+          balance: 10n,
         })
       ).true;
       expect(res).deep.eq(['one', 'two']);

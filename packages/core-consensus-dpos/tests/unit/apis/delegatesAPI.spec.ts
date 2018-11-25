@@ -768,6 +768,9 @@ describe('apis/delegatesAPI', () => {
       (blocks as any).lastBlock = new blocksModel({
         height: 5,
         timestamp: 2,
+        reward: 0n,
+        totalAmount: 0n,
+        totalFee: 0n,
         generatorPublicKey: new Buffer('aa'),
         payloadHash: new Buffer('aa'),
         blockSignature: new Buffer('aa'),

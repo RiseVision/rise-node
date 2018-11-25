@@ -31,7 +31,7 @@ import { BlocksModuleChain } from './chain';
 export class BlocksModuleVerify {
   // Helpers
   @inject(Symbols.generic.constants)
-  private blocksConstants: BlocksConstantsType;
+  private constants: ConstantsType & BlocksConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.generic.hookSystem)
@@ -140,7 +140,7 @@ export class BlocksModuleVerify {
   public async onBlockchainReady() {
     const blocks = await this.BlocksModel.findAll({
       attributes: ['id'],
-      limit: this.blocksConstants.blocks.slotWindow,
+      limit: this.constants.blocks.slotWindow,
       order: [['height', 'desc']],
       raw: true,
     });
@@ -149,7 +149,7 @@ export class BlocksModuleVerify {
 
   public async onNewBlock(block: SignedBlockType) {
     this.lastNBlockIds.push(block.id);
-    if (this.lastNBlockIds.length > this.blocksConstants.blocks.slotWindow) {
+    if (this.lastNBlockIds.length > this.constants.blocks.slotWindow) {
       this.lastNBlockIds.shift();
     }
   }
@@ -276,7 +276,7 @@ export class BlocksModuleVerify {
    */
   private verifyPayload(block: SignedBlockType): string[] {
     const errors: string[] = [];
-    if (block.payloadLength > this.blocksConstants.blocks.maxPayloadLength) {
+    if (block.payloadLength > this.constants.blocks.maxPayloadLength) {
       errors.push('Payload length is too long');
     }
 
@@ -286,7 +286,7 @@ export class BlocksModuleVerify {
       );
     }
 
-    if (block.transactions.length > this.blocksConstants.blocks.maxPayloadLength) {
+    if (block.transactions.length > this.constants.blocks.maxTxsPerBlock) {
       errors.push('Number of transactions exceeds maximum per block');
     }
 

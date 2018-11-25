@@ -72,9 +72,9 @@ describe('logic/round', () => {
       },
       round: 10,
       roundDelegates: [Buffer.from('aabbcc', 'hex')],
-      roundFees: {},
+      roundFees: 0n,
       roundOutsiders: ['1', '2', '3'],
-      roundRewards: {},
+      roundRewards: [],
     };
     instance = new roundLogic(scope, container.get(dPoSSymbols.helpers.slots));
   });
@@ -225,7 +225,7 @@ describe('logic/round', () => {
 
     it('should apply round changes to each delegate, with backwards false and fees > 0', async () => {
       at.returns({
-        feesRemaining: 10,
+        feesRemaining: 10n,
       });
 
       const retVal = await instance.applyRound();
@@ -241,7 +241,7 @@ describe('logic/round', () => {
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
         changes: {
-          feesRemaining: 10,
+          feesRemaining: 10n,
         },
         delegate: 'aabbcc',
       });
@@ -251,7 +251,7 @@ describe('logic/round', () => {
       );
       expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
         delegate: 'aabbcc',
-        fees: 10,
+        fees: 10n,
       });
       expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
       expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
@@ -263,10 +263,10 @@ describe('logic/round', () => {
 
     it('should behave correctly when backwards false, fees > 0 && feesRemaining > 0', async () => {
       at.returns({
-        feesRemaining: 1,
-        balance: 10,
-        fees: 5,
-        rewards: 4,
+        feesRemaining: 1n,
+        balance: 10n,
+        fees: 5n,
+        rewards: 4n,
       });
       scope.roundDelegates = [
         Buffer.from('aa', 'hex'),
@@ -284,38 +284,38 @@ describe('logic/round', () => {
       expect(
         scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]
       ).is.deep.eq({
-        balance: 10,
+        balance: 10n,
         blockId: '1',
         cmb: 0,
-        fees: 5,
+        fees: 5n,
         producedblocks: 1,
         publicKey: Buffer.from('aa', 'hex'),
-        rewards: 4,
-        u_balance: 10,
+        rewards: 4n,
+        u_balance: 10n,
         round: 10,
       });
       expect(
         scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]
       ).is.deep.eq({
-        balance: 10,
+        balance: 10n,
         blockId: '1',
         cmb: 0,
-        fees: 5,
+        fees: 5n,
         producedblocks: 1,
         publicKey: Buffer.from('bb', 'hex'),
-        rewards: 4,
-        u_balance: 10,
+        rewards: 4n,
+        u_balance: 10n,
         round: 10,
       });
       // Remainder of 1 feesRemaining
       expect(
         scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]
       ).is.deep.eq({
-        balance: 1,
+        balance: 1n,
         blockId: '1',
-        fees: 1,
+        fees: 1n,
         publicKey: Buffer.from('bb', 'hex'),
-        u_balance: 1,
+        u_balance: 1n,
         round: 10,
       });
 

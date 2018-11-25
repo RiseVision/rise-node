@@ -258,17 +258,17 @@ describe('apis/accountsAPI', () => {
         new AccountsModel({ address: '1', balance: 10, u_balance: 11 } as any),
         new AccountsModel({
           address: '2',
-          balance: 12,
+          balance: 12n,
           publicKey: Buffer.alloc(32).fill(0xab),
         }),
       ]);
       const res = await instance.topAccounts({});
       expect(res).to.be.deep.eq({
         accounts: [
-          { address: '1', balance: 10 },
+          { address: '1', balance: '10' },
           {
             address: '2',
-            balance: 12,
+            balance: '12',
             publicKey:
               'abababababababababababababababababababababababababababababababab',
           },

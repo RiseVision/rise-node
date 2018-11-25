@@ -159,17 +159,18 @@ describe('logic/block', () => {
     sandbox.restore();
   });
 
-  describe('create', () => {
+  describe('creat1e', () => {
     it('should return a valid signed block', () => {
       const newBlock = instance.create(data);
       expect(newBlock).to.be.an.instanceof(Object);
-      expect(newBlock.totalFee).to.equal(11);
+      expect(newBlock.totalFee).to.equal(11n);
       expect(newBlock.numberOfTransactions).to.equal(3);
       expect(newBlock.transactions).to.have.lengthOf(3);
       expect(newBlock.payloadLength).eq(351);
       expect(newBlock.previousBlock).eq('1');
-      expect(newBlock.reward).eq(30000000);
-      expect(newBlock.totalAmount).eq(326732673000000);
+      expect(newBlock.reward).eq(0n);
+      expect(newBlock.totalAmount).eq(326732673000000n);
+
       expect(newBlock.payloadHash).deep.eq(
         Buffer.from(
           '6bb2fdf548c3a6c51f9e24e5069c94d09176bedffd91ecc875f477344be8b652',
@@ -483,9 +484,9 @@ describe('logic/block', () => {
         'Missing required property: totalAmount'
       );
 
-      b.totalAmount = -1;
+      b.totalAmount = -1n;
       expect(() => instance.objectNormalize(b)).to.throw(
-        'Value -1 is less than minimum 0'
+        'Block validation failed. One of reward,totalFee,totalAmount is lt 0'
       );
     });
     it('should validate totalFee', () => {
@@ -495,9 +496,9 @@ describe('logic/block', () => {
         'Missing required property: totalFee'
       );
 
-      b.totalFee = -1;
+      b.totalFee = -1n;
       expect(() => instance.objectNormalize(b)).to.throw(
-        'Value -1 is less than minimum 0'
+        'Block validation failed. One of reward,totalFee,totalAmount is lt 0'
       );
     });
     it('should validate reward', () => {
@@ -507,9 +508,9 @@ describe('logic/block', () => {
         'Missing required property: reward'
       );
 
-      b.reward = -1;
+      b.reward = -1n;
       expect(() => instance.objectNormalize(b)).to.throw(
-        'Value -1 is less than minimum 0'
+        'Block validation failed. One of reward,totalFee,totalAmount is lt 0'
       );
     });
     it('should validate height', () => {
@@ -584,76 +585,6 @@ describe('logic/block', () => {
       expect(getBytesSpy.called).to.be.true;
       expect(getBytesSpy.firstCall.args[0]).to.be.deep.equal(dummyBlock);
       getBytesSpy.restore();
-    });
-  });
-
-  describe('dbRead', () => {
-    const raw = {
-      b_blockSignature: Buffer.alloc(64).fill('a'),
-      b_payloadHash: Buffer.alloc(32).fill('a'),
-      b_confirmations: 1,
-      b_generatorPublicKey:
-        'c950f1e6c91485d2e6932fbd689bba636f73970557fe644cd901a438f74883c5',
-      b_height: 12,
-      b_id: 10,
-      b_numberOfTransactions: 1,
-      b_payloadLength: 13,
-      b_previousBlock: 9,
-      b_reward: 50,
-      b_timestamp: Date.now(),
-      b_totalAmount: 0,
-      b_totalFee: 100,
-      b_version: 11,
-    } as any;
-
-    it('should return a specific format', () => {
-      const block = instance.dbRead(raw);
-      expect(block).to.be.instanceof(Object);
-      expect(block).to.have.all.keys([
-        'id',
-        'version',
-        'timestamp',
-        'height',
-        'previousBlock',
-        'numberOfTransactions',
-        'totalAmount',
-        'totalFee',
-        'reward',
-        'payloadLength',
-        'payloadHash',
-        'generatorPublicKey',
-        'generatorId',
-        'blockSignature',
-        'totalForged',
-      ]);
-      expect(block.totalForged).to.equal('150');
-    });
-
-    it('should not call this.getAddressByPublicKey with b_generatorPublicKey until generatorId is read', () => {
-      const accountLogic: IAccountLogic = container.get(Symbols.logic.account);
-      const getAddressByPublicKeySpy = sinon.spy(
-        accountLogic as any,
-        'generateAddressByPublicKey'
-      );
-      const result = instance.dbRead(raw);
-      expect(getAddressByPublicKeySpy.called).to.be.false;
-      result.generatorId;
-      expect(getAddressByPublicKeySpy.called).to.be.true;
-      expect(getAddressByPublicKeySpy.firstCall.args[0]).to.be.deep.eq(
-        Buffer.from(raw.b_generatorPublicKey, 'hex')
-      );
-      getAddressByPublicKeySpy.restore();
-    });
-
-    it('should call parseInt on 8 fields', () => {
-      const parseIntSpy = sinon.spy(global, 'parseInt');
-      instance.dbRead(raw);
-      expect(parseIntSpy.callCount).to.be.eq(8);
-      parseIntSpy.restore();
-    });
-    it('should return null is raw.d_id is undefined', () => {
-      delete raw.b_id;
-      expect(instance.dbRead(raw)).to.be.null;
     });
   });
 });

@@ -1,3 +1,4 @@
+import { BlocksConstantsType } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ConstantsType } from '@risevision/core-types';
@@ -8,7 +9,7 @@ const { expect } = chai;
 
 describe('helpers/slots', () => {
   let instance: Slots;
-  let constants: ConstantsType;
+  let constants: BlocksConstantsType & ConstantsType;
   let dposConstants: DposConstantsType;
   // Dependency inj
   // (slots as any).constants = {};
@@ -44,7 +45,7 @@ describe('helpers/slots', () => {
   it('getSlotTime() should return the timestamp for a specific SlotNumber', () => {
     // Just one slot later
     const retVal = instance.getSlotTime(48804000001);
-    expect(retVal).to.be.eq(testTimestamp + constants.blockTime);
+    expect(retVal).to.be.eq(testTimestamp + constants.blocks.targetTime);
   });
 
   it('getLastSlot() should return the SlotNumber for the last slot in round', () => {

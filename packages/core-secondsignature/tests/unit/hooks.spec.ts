@@ -38,7 +38,7 @@ describe('secondSignHooks', () => {
     secondSignWallet = new LiskWallet(uuid.v4(), 'R');
     sender = new AccountsModel({
       address: senderWallet.address,
-      balance: 1e10,
+      balance: 10n ** 10n,
       publicKey: Buffer.from(senderWallet.publicKey, 'hex'),
       secondPublicKey: Buffer.from(secondSignWallet.publicKey, 'hex'),
       secondSignature: 1,

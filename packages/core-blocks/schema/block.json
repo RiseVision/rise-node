@@ -42,18 +42,6 @@
       "type": "integer",
       "minimum": 0
     },
-    "totalAmount": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "totalFee": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "reward": {
-      "type": "integer",
-      "minimum": 0
-    },
     "transactions": {
       "type": "array"
     },

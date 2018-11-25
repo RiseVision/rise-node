@@ -25,7 +25,7 @@ export class AppManager {
     this.appConfig.nethash = genesisBlock.payloadHash.toString('hex');
     // this.container.applyMiddleware(theLogger);
     // Sets the int8 (64bit integer) to be parsed as int instead of being returned as text
-    pg.types.setTypeParser(20, 'text', parseInt);
+    pg.types.setTypeParser(20, 'text', (a: string) => BigInt(a));
   }
 
   /**

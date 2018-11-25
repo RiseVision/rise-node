@@ -72,12 +72,15 @@ describe('modules/loader', () => {
       activeDelegates: 1,
       epochTime: { getTime: sinon.stub().returns(1000) },
       maxPeers: 100,
-      blockTime: 30,
+      blocks: {
+        targetTime: 30,
+      },
     } as any;
     container = await createContainer([
       'core',
       'core-helpers',
       'core-crypto',
+      'core-blocks',
       'core-accounts',
     ]);
 

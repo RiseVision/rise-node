@@ -267,7 +267,7 @@ describe('logic/transactions/delegate', () => {
         isDelegate: 1,
         username: 'topdelegate',
         u_username: 'topdelegate',
-        vote: 0,
+        vote: 0n,
       });
     });
 
@@ -280,7 +280,7 @@ describe('logic/transactions/delegate', () => {
       expect(op.values).is.deep.eq({
         isDelegate: 1,
         u_isDelegate: 1,
-        vote: 0,
+        vote: 0n,
         username: tx.asset.delegate.username,
         u_username: tx.asset.delegate.username,
       });
@@ -312,7 +312,7 @@ describe('logic/transactions/delegate', () => {
         isDelegate: 0,
         username: null,
         u_username: 'topdelegate',
-        vote: 0,
+        vote: 0n,
       });
     });
     it('should return a DBUpdateOp', async () => {
@@ -324,7 +324,7 @@ describe('logic/transactions/delegate', () => {
       expect(op.values).is.deep.eq({
         isDelegate: 0,
         u_isDelegate: 1,
-        vote: 0,
+        vote: 0n,
         username: null,
         u_username: tx.asset.delegate.username,
       });

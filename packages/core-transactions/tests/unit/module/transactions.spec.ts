@@ -113,8 +113,8 @@ describe('modules/transactions', () => {
       tx = createRandomTransaction(acc);
       sender = new AccountsModel({
         address: acc.address,
-        balance: tx.amount * 2 + tx.fee,
-        u_balance: tx.amount * 2 + tx.fee,
+        balance: BigInt(tx.amount * 2 + tx.fee),
+        u_balance: BigInt(tx.amount * 2 + tx.fee),
         publicKey: Buffer.from(acc.publicKey, 'hex'),
       });
 
@@ -192,8 +192,8 @@ describe('modules/transactions', () => {
       tx = createRandomTransaction(acc);
       sender = new AccountsModel({
         address: acc.address,
-        balance: tx.amount * 2 + tx.fee,
-        u_balance: tx.amount * 2 + tx.fee,
+        balance: BigInt(tx.amount * 2 + tx.fee),
+        u_balance: BigInt(tx.amount * 2 + tx.fee),
         publicKey: Buffer.from(acc.publicKey, 'hex'),
       });
       getAccountStub = sandbox

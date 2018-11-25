@@ -34,7 +34,7 @@ describe('logic/blockReward', () => {
 
   describe('constructor', () => {
     it('should initialize rewards to the constant', () => {
-      expect((instance as any).rewards).to.be.deep.equal(constants.rewards);
+      expect((instance as any).rewards).to.be.deep.equal([ { fromHeight: 1, reward: 0n }]);
     });
   });
 
@@ -86,6 +86,20 @@ describe('logic/blockReward', () => {
   });
 
   describe('calcSupply', () => {
+    beforeEach(() => {
+      (instance as any).rewards = [
+        { fromHeight: 1, reward: 0n },
+        { fromHeight: 10, reward: 1500000000n },
+        { fromHeight: 11, reward: 30000000n },
+        { fromHeight: 12, reward: 20000000n },
+        { fromHeight: 13, reward: 1500000000n },
+        { fromHeight: 1054080, reward: 1200000000n },
+        { fromHeight: 1054080 * 2, reward: 900000000n },
+        { fromHeight: 1054080 * 3, reward: 600000000n },
+        { fromHeight: 1054080 * 4, reward: 300000000n },
+        { fromHeight: 1054080 * 5, reward: 100000000n },
+      ];
+    });
     it('should call parseHeight', () => {
       const parseHeightStub = sandbox
         .stub(instance as any, 'parseHeight')
@@ -107,17 +121,17 @@ describe('logic/blockReward', () => {
     });
 
     const tests = [
-      { height: 10, supply: 11000001491000000 },
-      { height: 11, supply: 11000001491000000 + 30000000 },
-      { height: 12, supply: 11000001491000000 + 30000000 + 20000000 },
+      { height: 10, supply: 11000001491000000n },
+      { height: 11, supply: 11000001491000000n + 30000000n },
+      { height: 12, supply: 11000001491000000n + 30000000n + 20000000n },
       {
         height: 13,
-        supply: 11000001491000000 + 30000000 + 20000000 + 1500000000,
+        supply: 11000001491000000n + 30000000n + 20000000n + 1500000000n,
       },
       {
         height: 100,
-        supply:
-          11000001491000000 + 30000000 + 20000000 + 1500000000 * (100 - 12),
+        supply: // tslint:disable-next-line
+          11000001491000000n + 30000000n + 20000000n + 1500000000n * (100n - 12n),
       },
     ];
     tests.forEach((supplyTest) => {

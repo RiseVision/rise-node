@@ -36,7 +36,7 @@ export interface RoundLogicScope {
   // List of address which missed a block in this round
   roundOutsiders: address[];
   roundDelegates: Buffer[];
-  roundFees: any;
+  roundFees: bigint;
   roundRewards: Array<bigint>;
   finishRound: boolean;
   dposV2: boolean;

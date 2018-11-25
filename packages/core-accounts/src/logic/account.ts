@@ -188,6 +188,7 @@ export class AccountLogic implements IAccountLogic {
    * @param diff
    * @returns {any}
    */
+  // tslint:disable-next-line cognitive-complexity
   public merge(address: string, diff: AccountDiffType): Array<DBOp<any>> {
     const update: any = {};
     address = address.toUpperCase();
@@ -203,6 +204,22 @@ export class AccountLogic implements IAccountLogic {
         case String:
           update[fieldName] = trueValue;
           break;
+        case BigInt:
+          let fixedValue: bigint = trueValue;
+          let operand = '+';
+          if (trueValue < 0n) {
+            fixedValue = - fixedValue;
+            operand = '-';
+          }
+          update[fieldName] = sequelize.literal(
+            `${fieldName} ${operand} ${fixedValue}`
+          );
+          // If decrementing u_balance on account
+          if (fieldName === 'u_balance' && operand === '-') {
+            // Remove virginity and ensure marked columns become immutable
+            update.virgin = 0;
+          }
+          break;
         case Number:
           if (isNaN(trueValue) || trueValue === Infinity) {
             throw new Error(`Encountered insane number: ${trueValue}`);
@@ -215,11 +232,6 @@ export class AccountLogic implements IAccountLogic {
             update[fieldName] = sequelize.literal(
               `${fieldName} - ${Math.floor(Math.abs(trueValue))}`
             );
-            // If decrementing u_balance on account
-            if (update.u_balance) {
-              // Remove virginity and ensure marked columns become immutable
-              update.virgin = 0;
-            }
           }
           break;
       }

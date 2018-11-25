@@ -6,12 +6,12 @@ const { expect } = chai;
 describe('helpers/RoundChanges', () => {
   const slots = new Slots();
   // Dependency inj
-  (slots as any).dposConstants = { activeDelegates: 101 };
-  const fullFees = 25 * 101 * 0.1; // 252.5 for a full round with 25 tx per block;
-  const fullRewards = [];
+  (slots as any).constants = { activeDelegates: 101 };
+  const fullFees = BigInt(25 * 101 + 10);
+  const fullRewards: Array<bigint> = [];
 
   for (let i = 0; i < 101; i++) {
-    fullRewards.push(15.0);
+    fullRewards.push(15n);
   }
 
   it('constructor should floor the roundFees', () => {
@@ -20,20 +20,20 @@ describe('helpers/RoundChanges', () => {
       roundRewards: fullRewards,
     };
     const rc = new RoundChanges(scope, slots);
-    expect((rc as any).roundFees).to.be.eq(252);
+    expect((rc as any).roundFees).to.be.eq(2535n);
   });
 
   it('at() should return the expected calculation values at specific index', () => {
     const scope = {
-      roundFees: 102.9,
+      roundFees: 103n,
       roundRewards: fullRewards,
     };
     const rc = new RoundChanges(scope, slots);
     const situation = rc.at(50);
-    expect(situation.balance).to.be.eq(16);
-    expect(situation.fees).to.be.eq(1);
-    expect(situation.feesRemaining).to.be.eq(1);
-    expect(situation.rewards).to.be.eq(15);
+    expect(situation.balance).to.be.eq(16n);
+    expect(situation.fees).to.be.eq(1n);
+    expect(situation.feesRemaining).to.be.eq(2n);
+    expect(situation.rewards).to.be.eq(15n);
   });
 
   it('at() should hanndle empty round returning all zeroes', () => {
@@ -42,9 +42,9 @@ describe('helpers/RoundChanges', () => {
     };
     const rc = new RoundChanges(scope, slots);
     const situation = rc.at(50);
-    expect(situation.balance).to.be.eq(0);
-    expect(situation.fees).to.be.eq(0);
-    expect(situation.feesRemaining).to.be.eq(0);
-    expect(situation.rewards).to.be.eq(0);
+    expect(situation.balance).to.be.eq(0n);
+    expect(situation.fees).to.be.eq(0n);
+    expect(situation.feesRemaining).to.be.eq(0n);
+    expect(situation.rewards).to.be.eq(0n);
   });
 });
