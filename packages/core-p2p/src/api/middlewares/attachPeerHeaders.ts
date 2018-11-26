@@ -8,7 +8,7 @@ import { ITransportMiddleware } from '../../interfaces/ITransportMiddleware';
 @injectable()
 @IoCSymbol(p2pSymbols.transportMiddlewares.attachPeerHeaders)
 export class AttachPeerHeaders implements ITransportMiddleware {
-  public when: 'before';
+  public when: 'before' = 'before';
 
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;

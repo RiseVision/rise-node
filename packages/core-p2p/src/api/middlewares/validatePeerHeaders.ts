@@ -18,7 +18,7 @@ const transportSchema = require('../../../schema/transport.json');
 @injectable()
 @IoCSymbol(p2pSymbols.transportMiddlewares.validatePeer)
 export class ValidatePeerHeaders implements ITransportMiddleware {
-  public when: 'before';
+  public when: 'before' = 'before';
 
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;

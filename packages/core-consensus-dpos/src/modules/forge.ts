@@ -1,3 +1,4 @@
+import { OnBlockchainReady } from '@risevision/core';
 import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
 import {
   IAccountsModule,
@@ -17,22 +18,29 @@ import {
   WrapInDefaultSequence,
 } from '@risevision/core-utils';
 import * as crypto from 'crypto';
-import { inject, injectable, named } from 'inversify';
-import { DposAppConfig, dPoSSymbols, Slots } from '../helpers/';
+import { decorate, inject, injectable, named } from 'inversify';
+import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import { DposAppConfig, DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from './delegates';
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
+
 @injectable()
-export class ForgeModule implements IModule {
+export class ForgeModule extends Extendable implements IModule  {
   public enabledKeys: { [k: string]: true } = {};
   private keypairs: { [k: string]: IKeypair } = {};
 
+  // tslint:disable-next-line
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
   // Generic
   @inject(Symbols.generic.appConfig)
   private config: DposAppConfig;
 
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  private constants: ConstantsType & DposConstantsType;
   // helpers
   @inject(Symbols.generic.crypto)
   private crypto: ICrypto;
@@ -65,7 +73,7 @@ export class ForgeModule implements IModule {
 
   public cleanup(): Promise<void> {
     this.jobsQueue.unregister('delegatesNextForge');
-    return Promise.resolve();
+    return this.unHook();
   }
 
   public getEnabledKeys(): publicKey[] {
@@ -109,6 +117,7 @@ export class ForgeModule implements IModule {
       .forEach((p) => delete this.enabledKeys[p]);
   }
 
+  @OnBlockchainReady()
   public async onBlockchainReady() {
     setTimeout(() => {
       this.jobsQueue.register(
@@ -181,7 +190,7 @@ export class ForgeModule implements IModule {
 
     await this.peersModule.updateConsensus();
 
-    if (this.appState.getComputed('node.poorConsensus')) {
+    if (this.appState.getComputed('node.poorConsensus') && ! this.config.forging.force ) {
       throw new Error(
         `Inadequate broadhash consensus ${this.appState.get(
           'node.consensus'

@@ -14,11 +14,13 @@ export interface ICoreModule<ConfigType> {
 
   extendCommander(program: CommanderStatic): void;
 
-  setup(hookSystem: WordPressHookSystem): Promise<void>;
+  preBoot(): Promise<void>;
 
   boot(): Promise<void>;
 
   teardown(): Promise<void>;
+
+  postTeardown(): Promise<void>;
 
   afterConfigValidation?<T extends ConfigType>(config: T): T;
 
@@ -54,7 +56,7 @@ export abstract class BaseCoreModule<ConfigType = any>
     return config;
   }
 
-  public setup(hookSystem: WordPressHookSystem): Promise<void> {
+  public preBoot(): Promise<void> {
     return Promise.resolve();
   }
 
@@ -63,6 +65,10 @@ export abstract class BaseCoreModule<ConfigType = any>
   }
 
   public teardown(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  public postTeardown(): Promise<void> {
     return Promise.resolve();
   }
 

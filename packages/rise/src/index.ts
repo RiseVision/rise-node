@@ -3,8 +3,8 @@ import {
   ExceptionSymbols,
 } from '@risevision/core-exceptions';
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { registerExceptions } from './exceptions/mainnet';
 import * as SqlString from 'sequelize/lib/sql-string';
+import { registerExceptions } from './exceptions/mainnet';
 
 const oldEscape = SqlString.escape;
 SqlString.escape = (val, timeZone, dialect, format) => {

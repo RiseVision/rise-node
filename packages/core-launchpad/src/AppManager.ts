@@ -49,6 +49,7 @@ export class AppManager {
 
     try {
       await Promise.all(this.modules.map((m) => m.teardown()));
+      await Promise.all(this.modules.map((m) => m.postTeardown()));
       this.logger.info('Cleaned up successfully');
     } catch (err) {
       this.logger.error(err);
@@ -95,6 +96,10 @@ export class AppManager {
   }
 
   public async finishBoot() {
+    for (const module of this.modules) {
+      this.logger.info(`PreBooting ${module.name}`);
+      await module.preBoot();
+    }
     for (const module of this.modules) {
       this.logger.info(`Booting ${module.name}`);
       await module.boot();

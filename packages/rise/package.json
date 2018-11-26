@@ -8,7 +8,7 @@
   "main": "dist/index.js",
   "scripts": {
     "transpile": "shx rm -rf dist; tsc",
-    "bit": "rise-launchpad"
+    "start:devnet": "rise-launchpad --net devnet"
   },
   "types": "dist/index.d.ts",
   "author": "",
