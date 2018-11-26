@@ -4,43 +4,43 @@
     "targetTime": 30,
     "rewards": [
       {
-        "height": 1,
+        "fromHeight": 1,
         "reward": 0
       },
       {
-        "height": 10,
+        "fromHeight": 10,
         "reward": 1500000000
       },
       {
-        "height": 11,
+        "fromHeight": 11,
         "reward": 30000000
       },
       {
-        "height": 12,
+        "fromHeight": 12,
         "reward": 20000000
       },
       {
-        "height": 13,
+        "fromHeight": 13,
         "reward": 1500000000
       },
       {
-        "height": 1054080,
+        "fromHeight": 1054080,
         "reward": 1200000000
       },
       {
-        "height": 2108160,
+        "fromHeight": 2108160,
         "reward": 900000000
       },
       {
-        "height": 3162240,
+        "fromHeight": 3162240,
         "reward": 600000000
       },
       {
-        "height": 4216320,
+        "fromHeight": 4216320,
         "reward": 300000000
       },
       {
-        "height": 5270400,
+        "fromHeight": 5270400,
         "reward": 100000000
       }
     ]

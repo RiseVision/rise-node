@@ -8,7 +8,8 @@
   "main": "dist/index.js",
   "scripts": {
     "transpile": "shx rm -rf dist; tsc",
-    "start:devnet": "rise-launchpad --net devnet"
+    "start:devnet": "rise-launchpad --net devnet",
+    "start:mainnet": "rise-launchpad --net mainnet"
   },
   "types": "dist/index.d.ts",
   "author": "",
@@ -27,7 +28,8 @@
     "@risevision/core-transactions": "^1.0.0",
     "@risevision/core-multisignature": "^1.0.0",
     "@risevision/core-secondsignature": "^1.0.0",
-    "@risevision/core-launchpad": "^1.0.0"
+    "@risevision/core-launchpad": "^1.0.0",
+    "require-json5": "=1.0.2"
   },
   "devDependencies": {
     "shx": "=0.3.2",

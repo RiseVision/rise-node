@@ -171,7 +171,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     // tslint:disable-next-line
-    bb['writeLong'](tx.amount);
+    bb['writeLong'](parseInt(`${tx.amount}`, 10));
 
     if (assetBytes.length > 0) {
       // tslint:disable-next-line

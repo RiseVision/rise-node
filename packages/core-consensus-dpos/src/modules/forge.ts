@@ -20,7 +20,12 @@ import {
 import * as crypto from 'crypto';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import { DposAppConfig, DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
+import {
+  DposAppConfig,
+  DposConstantsType,
+  dPoSSymbols,
+  Slots,
+} from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from './delegates';
 
@@ -28,7 +33,7 @@ const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
 
 @injectable()
-export class ForgeModule extends Extendable implements IModule  {
+export class ForgeModule extends Extendable implements IModule {
   public enabledKeys: { [k: string]: true } = {};
   private keypairs: { [k: string]: IKeypair } = {};
 
@@ -190,7 +195,10 @@ export class ForgeModule extends Extendable implements IModule  {
 
     await this.peersModule.updateConsensus();
 
-    if (this.appState.getComputed('node.poorConsensus') && ! this.config.forging.force ) {
+    if (
+      this.appState.getComputed('node.poorConsensus') &&
+      !this.config.forging.force
+    ) {
       throw new Error(
         `Inadequate broadhash consensus ${this.appState.get(
           'node.consensus'

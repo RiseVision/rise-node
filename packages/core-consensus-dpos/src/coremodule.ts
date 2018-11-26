@@ -155,7 +155,9 @@ export class CoreModule extends BaseCoreModule<DposAppConfig>
   }
 
   public async preBoot(): Promise<void> {
-    await this.container.get<ForgeModule>(dPoSSymbols.modules.forge).hookMethods();
+    await this.container
+      .get<ForgeModule>(dPoSSymbols.modules.forge)
+      .hookMethods();
   }
 
   public async teardown() {

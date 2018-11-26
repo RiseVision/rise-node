@@ -72,6 +72,8 @@ modules.forEach((m) => m.extendCommander(program));
 
 program.parse(process.argv);
 
+process.env.NETWORK = process.env.NETWORK || program.net;
+
 const genesis = `${process.env.PWD}/etc/${program.net}/genesisBlock.json`;
 if (!fs.existsSync(genesis)) {
   console.error(`Error: Cannot find genesisBlock.json in ${genesis}`);

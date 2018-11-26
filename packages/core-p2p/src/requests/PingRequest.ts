@@ -13,7 +13,10 @@ export class PingRequest extends BaseTransportMethod<null, null, null> {
   //   return Promise.resolve(Buffer.alloc(0));
   // }
 
-  protected encodeResponse(data: null, req: SingleTransportPayload<null, null>): Promise<Buffer> {
+  protected encodeResponse(
+    data: null,
+    req: SingleTransportPayload<null, null>
+  ): Promise<Buffer> {
     return Promise.resolve(Buffer.alloc(0));
   }
 
