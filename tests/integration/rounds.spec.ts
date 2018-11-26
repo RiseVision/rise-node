@@ -111,7 +111,7 @@ describe('rounds', () => {
   });
 
   async function getmappedDelObj() {
-    const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc' });
+    const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc', includeBanned: true });
     const preResMapped = preRes.delegates.map(mapDelegate);
     return mappedDelegatesToHASH(preResMapped);
   }

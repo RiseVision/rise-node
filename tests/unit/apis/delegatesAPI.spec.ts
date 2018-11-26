@@ -130,6 +130,7 @@ describe('apis/delegatesAPI', () => {
 
     beforeEach(() => {
       data = {
+        includeBanned: false,
         limit  : 'limit',
         offset : 'offset',
         orderBy: 'orderBy',
@@ -426,7 +427,7 @@ describe('apis/delegatesAPI', () => {
       await instance.getDelegate(params);
       expect(delegatesModule.stubs.getDelegates.calledOnce).to.be.true;
       expect(delegatesModule.stubs.getDelegates.firstCall.args.length).to.be.equal(1);
-      expect(delegatesModule.stubs.getDelegates.firstCall.args[0]).to.be.deep.equal({ orderBy: 'username:asc' });
+      expect(delegatesModule.stubs.getDelegates.firstCall.args[0]).to.be.deep.equal({ orderBy: 'username:asc', includeBanned: true });
     });
 
     it('should return an object with the property: delegate', async () => {
@@ -527,6 +528,7 @@ describe('apis/delegatesAPI', () => {
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
         m.username,
         m.address,
+        m.cmb,
         ENCODE(m."publicKey", 'hex') AS "publicKey",
         m.vote,
         m."votesWeight",
@@ -555,6 +557,7 @@ describe('apis/delegatesAPI', () => {
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
         m.username,
         m.address,
+        m.cmb,
         ENCODE(m."publicKey", 'hex') AS "publicKey",
         m.vote,
         m."votesWeight",

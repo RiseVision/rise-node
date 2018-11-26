@@ -325,7 +325,7 @@ describe('apis/accountsAPI', () => {
 
         expect(delegatesModule.stubs.getDelegates.calledOnce).to.be.true;
         expect(delegatesModule.stubs.getDelegates.firstCall.args.length).to.be.equal(1);
-        expect(delegatesModule.stubs.getDelegates.firstCall.args[0]).to.be.deep.equal({ orderBy: 'rank:desc' });
+        expect(delegatesModule.stubs.getDelegates.firstCall.args[0]).to.be.deep.equal({ orderBy: 'rank:desc', includeBanned: true });
       });
 
       it('should return object with same delegates from account"s delegates', async () => {

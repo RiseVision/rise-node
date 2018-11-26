@@ -448,11 +448,11 @@ describe('modules/forge', () => {
         expect(getBlockSlotDataStub.firstCall.args[1]).to.be.equal(blocksModuleStub.lastBlock.height + 1);
       });
 
-      it('should call logger.warn and return if getBlockSlotData returns null', async () => {
+      it('should call logger.debug and return if getBlockSlotData returns null', async () => {
         getBlockSlotDataStub.resolves(null);
         await instance.forge();
-        expect(loggerStub.stubs.warn.calledOnce).to.be.true;
-        expect(loggerStub.stubs.warn.firstCall.args[0]).to.be.equal('Skipping delegate slot');
+        expect(loggerStub.stubs.debug.calledOnce).to.be.true;
+        expect(loggerStub.stubs.debug.firstCall.args[0]).to.be.equal('Skipping delegate slot');
         // Called twice means that function returns
         expect(slotsStub.stubs.getSlotNumber.calledTwice).to.be.true;
       });
