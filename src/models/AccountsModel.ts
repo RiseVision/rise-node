@@ -165,6 +165,7 @@ export class AccountsModel extends Model<AccountsModel> {
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
         m.username,
         m.address,
+        m.cmb,
         ENCODE(m."publicKey", 'hex') AS "publicKey",
         m.vote,
         m."votesWeight",

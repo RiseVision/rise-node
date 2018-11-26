@@ -160,7 +160,7 @@ describe('dposv2', () => {
     });
 
     async function getmappedDelObj() {
-      const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc', limit: 102 });
+      const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc', limit: 102, includeBanned: true });
       const preResMapped = preRes.delegates.map(mapDelegate);
       return mappedDelegatesToHASH(preResMapped);
     }

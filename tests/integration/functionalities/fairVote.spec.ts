@@ -15,6 +15,7 @@ import { toBufferedTransaction } from '../../utils/txCrafter';
 import constants from '../../../src/helpers/constants';
 import { AccountsModel, BlocksModel } from '../../../src/models';
 import * as uuid from 'uuid';
+import { Op } from 'sequelize';
 import { RoundsLogic } from '../../../src/logic';
 import { IDelegatesModule } from '../../../src/ioc/interfaces/modules';
 
@@ -276,5 +277,39 @@ describe('Fair vote system', async () => {
 
   });
 
+  it('should reset delegates cmb if they forged blocks', async function () {
+    this.timeout(15000);
+    await accountsModel.update({
+      cmb: 1,
+    }, {
+      where: {
+        isDelegate: 1,
+      },
+    });
 
+    let gene1 = await accountsModel.findOne({
+      where: {
+        username: 'genesisDelegate1',
+      },
+    });
+    expect(gene1.cmb).eq(1);
+    await initializer.rawMineBlocks(101);
+    gene1 = await accountsModel.findOne({
+      where: {
+        username: 'genesisDelegate1',
+      },
+    });
+
+    const missedBlockDelegates = await accountsModel.findAll({
+      attributes: ['username'],
+      raw: true,
+      where: {
+        cmb: { [Op.gt]: 0 },
+        username: { [Op.notIn] : ['outsider', 'outsider.no.votes'] }
+      },
+    });
+
+    expect(missedBlockDelegates).to.be.empty;
+    expect(gene1.cmb).eq(0);
+  });
 });

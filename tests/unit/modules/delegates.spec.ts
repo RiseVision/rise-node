@@ -455,7 +455,7 @@ describe('modules/delegates', () => {
     });
 
     it('should call accountsModule.getAccounts', async () => {
-      await instance.getDelegates({ orderBy: 'votes' });
+      await instance.getDelegates({ orderBy: 'votes', includeBanned: true });
       expect(accountsModuleStub.stubs.getAccounts.calledOnce).to.be.true;
       expect(accountsModuleStub.stubs.getAccounts.firstCall.args[0]).to.be.deep.equal({
         isDelegate: 1,
@@ -467,14 +467,14 @@ describe('modules/delegates', () => {
     });
 
     it('should call blockReward.calcSupply', async () => {
-      await instance.getDelegates({ orderBy: 'votes' });
+      await instance.getDelegates({ orderBy: 'votes', includeBanned: true });
       expect(blockRewardLogicStub.stubs.calcSupply.calledOnce).to.be.true;
       expect(blockRewardLogicStub.stubs.calcSupply.firstCall.args[0]).to.be.equal(blocksModuleStub.lastBlock.height);
     });
 
     it('should call OrderBy using the passed value', async () => {
       const orderBySpy = sandbox.spy(helpers, 'OrderBy');
-      await instance.getDelegates({ orderBy: 'votes' });
+      await instance.getDelegates({ orderBy: 'votes', includeBanned: true });
       expect(orderBySpy.calledOnce).to.be.true;
       expect(orderBySpy.firstCall.args[0]).to.be.equal('votes');
       expect(orderBySpy.firstCall.args[1]).to.be.deep.equal({
@@ -487,11 +487,11 @@ describe('modules/delegates', () => {
 
     it('should throw on OrderBy error', async () => {
       sandbox.stub(helpers, 'OrderBy').returns({ error: 'OrderBy Err', });
-      await expect(instance.getDelegates({ orderBy: 'votes' })).to.be.rejectedWith('OrderBy Err');
+      await expect(instance.getDelegates({ orderBy: 'votes', includeBanned: true })).to.be.rejectedWith('OrderBy Err');
     });
 
     it('should return the expected object', async () => {
-      const retVal = await instance.getDelegates({ orderBy: 'votes', limit: 50, offset: 40 });
+      const retVal = await instance.getDelegates({ orderBy: 'votes', includeBanned: true, limit: 50, offset: 40 });
       expect(retVal.count).to.be.equal(testAccounts.length);
       expect(Array.isArray(retVal.delegates)).to.be.true;
       retVal.delegates.forEach((delegate, key) => {
@@ -511,12 +511,12 @@ describe('modules/delegates', () => {
     });
 
     it('should limit correctly when limit passed', async () => {
-      const retVal = await instance.getDelegates({ orderBy: 'votes', limit: 50 });
+      const retVal = await instance.getDelegates({ orderBy: 'votes', includeBanned: true, limit: 50 });
       expect(retVal.limit).to.be.equal(50);
     });
 
     it('should limit correctly when offset passed', async () => {
-      const retVal = await instance.getDelegates({ orderBy: 'votes', limit: 50, offset: 50 });
+      const retVal = await instance.getDelegates({ orderBy: 'votes', includeBanned: true, limit: 50, offset: 50 });
       expect(retVal.limit).to.be.equal(100);
     });
   });

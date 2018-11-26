@@ -381,6 +381,10 @@ export class AccountLogic implements IAccountLogic {
 
     }
 
+    if (diff.cmb === 0) {
+      update['cmb'] = 0;
+    }
+
     dbOps.push({
       model  : this.AccountsModel,
       options: {
