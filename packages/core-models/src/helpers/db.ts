@@ -22,6 +22,13 @@ squelPostgres.registerValueHandler(Buffer, (buffer) => {
     value: "E'\\\\x" + buffer.toString('hex') + "'",
   } as any;
 });
+squelPostgres.registerValueHandler('bigint', (bi: bigint) => {
+  return {
+    formatted: true,
+    rawNesting: true,
+    value: bi.toString(),
+  } as any;
+});
 
 @injectable()
 export class DBHelper {

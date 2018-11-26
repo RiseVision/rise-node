@@ -195,7 +195,7 @@ export class RoundsModule {
     this.logger.debug('Summing round', round);
     // tslint:disable-next-line
     type sumRoundRes = {
-      fees: null | number;
+      fees: null | bigint;
       rewards: null | string[];
       delegates: null | Buffer[];
     };
@@ -214,7 +214,7 @@ export class RoundsModule {
     const roundRewards = res.rewards.map((reward) =>
       BigInt(Math.floor(parseFloat(reward)))
     );
-    let roundFees = BigInt(Math.floor(res.fees));
+    let roundFees = res.fees;
     const roundDelegates = res.delegates;
 
     if (roundDelegates.length === this.constants.activeDelegates - 1) {

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "esnext",
     "module": "commonjs",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -13,7 +13,7 @@
     "inlineSourceMap": true,
     "skipLibCheck": true,
     "inlineSources": true,
-    "lib": ["dom", "es7"]
+    "lib": ["dom", "es7", "esnext.bigint"]
   },
   "include": ["./**/*"],
   "exclude": [

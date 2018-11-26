@@ -4,6 +4,16 @@ import {
 } from '@risevision/core-exceptions';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { registerExceptions } from './exceptions/mainnet';
+import * as SqlString from 'sequelize/lib/sql-string';
+
+const oldEscape = SqlString.escape;
+SqlString.escape = (val, timeZone, dialect, format) => {
+  if (typeof(val) === 'bigint') {
+    return oldEscape.call(SqlString, val.toString(), timeZone, dialect, format);
+  } else {
+    return oldEscape.call(SqlString, val, timeZone, dialect, format);
+  }
+};
 
 export class CoreModule extends BaseCoreModule<any> {
   public configSchema = {};
