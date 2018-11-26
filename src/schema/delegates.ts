@@ -105,6 +105,10 @@ export default {
           'publicKey:desc', 'publicKey:asc',
         ],
       },
+      includeBanned: {
+        type: 'string',
+        enum: [ 'true', 'false' ],
+      },
       limit  : {
         type   : 'integer',
         minimum: 1,

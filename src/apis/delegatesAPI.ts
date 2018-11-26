@@ -59,8 +59,9 @@ export class DelegatesAPI {
   @Get('/')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })
-                            @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
-    const d         = await this.delegatesModule.getDelegates(data);
+                            @QueryParams() data: { orderBy: string, limit: number, offset: number, includeBanned: 'true'|'false' }) {
+    const d         = await this.delegatesModule
+      .getDelegates({... data, includeBanned: data.includeBanned === 'true'} );
     const delegates = d.delegates.map((item) => {
       // tslint:disable object-literal-sort-keys
       return {
@@ -153,7 +154,7 @@ export class DelegatesAPI {
                            @QueryParams() params: { publicKey: publicKey, username: string }) {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
-    const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
+    const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc', includeBanned: true });
     const delegate      = delegates
       .find((d) => d.delegate.hexPublicKey === params.publicKey || d.delegate.username === params.username);
     if (delegate) {

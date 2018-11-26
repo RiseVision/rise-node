@@ -24,7 +24,7 @@ export interface IDelegatesModule extends IModule {
   /**
    * Gets delegates and for each calculate rank approval and productivity.
    */
-  getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
+  getDelegates(query: { limit?: number, offset?: number, orderBy: string, includeBanned: boolean }): Promise<{
     delegates: Array<{
       delegate: AccountsModel,
       info: { rank: number, approval: number, productivity: number }

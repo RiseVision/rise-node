@@ -148,7 +148,7 @@ export class DelegatesModule implements IDelegatesModule {
   /**
    * Gets delegates and for each calculate rank approval and productivity.
    */
-  public async getDelegates(query: { limit?: number, offset?: number, orderBy: string }): Promise<{
+  public async getDelegates(query: { limit?: number, offset?: number, orderBy: string, includeBanned: boolean }): Promise<{
     delegates: Array<{
       delegate: AccountsModel,
       info: { rank: number, approval: number, productivity: number }
@@ -162,13 +162,20 @@ export class DelegatesModule implements IDelegatesModule {
     if (!query) {
       throw new Error('Missing query argument');
     }
+
     const sort: {vote?: 1|-1, votesWeight?: 1|-1, publicKey: 1|-1} =
             this.blocksModule.lastBlock.height < this.constants.dposv2.firstBlock ?
               {vote: -1, publicKey: 1} : {votesWeight: -1, publicKey: 1};
-    const delegates = await this.accountsModule.getAccounts({
-        isDelegate: 1,
-        sort,
-      },
+
+    const filter: AccountFilterData = {
+      isDelegate: 1,
+      sort,
+    };
+    if (!query.includeBanned) {
+      filter.cmb = {[Op.lte]: this.constants.dposv2.maxContinuousMissedBlocks};
+    }
+    const delegates = await this.accountsModule.getAccounts(
+      filter,
       ['username', 'address', 'cmb', 'publicKey', 'vote', 'votesWeight', 'missedblocks', 'producedblocks']
     );
 

@@ -101,7 +101,7 @@ export class AccountsAPI {
       throw new APIError('Account not found', 200);
     }
     if (account.delegates) {
-      const {delegates} = await this.delegatesModule.getDelegates({orderBy: 'rank:desc'});
+      const {delegates} = await this.delegatesModule.getDelegates({orderBy: 'rank:desc', includeBanned: true});
       return {
         delegates: delegates
           .filter((d) => account.delegates.indexOf(d.delegate.hexPublicKey) !== -1)
