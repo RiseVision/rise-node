@@ -100,7 +100,7 @@ export class MultiSignatureTransaction extends BaseTx<
     tx: IBaseTransaction<MultisigAsset>,
     sender: any,
     height: number
-  ): number {
+  ) {
     return this.systemModule.getFees(height).fees.multisignature;
   }
 

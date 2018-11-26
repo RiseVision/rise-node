@@ -15,7 +15,7 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
     tx: IBaseTransaction<T>,
     sender: IAccountsModel,
     height: number
-  ): number;
+  ): bigint;
 
   verify(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<void>;
 

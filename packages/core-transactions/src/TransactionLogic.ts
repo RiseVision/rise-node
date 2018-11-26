@@ -1,4 +1,3 @@
-import { BlocksConstantsType } from '@risevision/core-blocks';
 import {
   IAccountLogic,
   IAccountsModel,
@@ -47,7 +46,7 @@ const txSchema = require('../schema/transaction.json');
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  private constants: ConstantsType & { blocks: { maxTxsPerBlock: number } };
 
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;

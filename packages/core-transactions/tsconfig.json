@@ -16,6 +16,7 @@
     "paths": {
       "@risevision/core-apis": ["../core-apis/*"],
       "@risevision/core-accounts": ["../core-accounts/*"],
+      "@risevision/core-blocks": ["../core-blocks/*"],
       "@risevision/core-exceptions": ["../core-exceptions/*"],
       "@risevision/core": ["../core/*"],
       "@risevision/core-models": ["../core-models/*"],

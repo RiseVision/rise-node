@@ -1,4 +1,3 @@
-import { BlocksConstantsType } from '@risevision/core-blocks';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -31,7 +30,7 @@ export class PoolManager {
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  private constants: ConstantsType & { blocks: { maxTxsPerBlock: number } };
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;

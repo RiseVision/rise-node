@@ -189,15 +189,18 @@ export class BlockLogic implements IBlockLogic {
    * @returns {BlockType}
    */
   // TODO: Change this to a pure function!!!
-  public objectNormalize<T extends BlockType<string|Buffer, string|bigint>>(block: T): Overwrite<
+  public objectNormalize<T extends BlockType<string | Buffer, string | bigint>>(
+    block: T
+  ): Overwrite<
     T,
     {
-      totalAmount: bigint,
-      reward: bigint,
-      payloadHash: Buffer,
-      blockSignature: Buffer,
-      generatorPublicKey: Buffer
-    }> {
+      totalAmount: bigint;
+      reward: bigint;
+      payloadHash: Buffer;
+      blockSignature: Buffer;
+      generatorPublicKey: Buffer;
+    }
+    > {
     // Delete null or undefined elements in block obj
     for (const key in block) {
       if (block[key] === null || typeof block[key] === 'undefined') {

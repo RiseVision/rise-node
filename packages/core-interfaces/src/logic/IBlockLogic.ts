@@ -61,8 +61,6 @@ export interface IBlockLogic {
     T,
     {
       totalAmount: bigint;
-      yarn;
-
       reward: bigint;
       payloadHash: Buffer;
       blockSignature: Buffer;

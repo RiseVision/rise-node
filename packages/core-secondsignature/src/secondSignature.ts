@@ -59,7 +59,7 @@ export class SecondSignatureTransaction extends BaseTx<
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: IAccountsModel,
     height: number
-  ): number {
+  ) {
     return this.systemModule.getFees(height).fees.secondsignature;
   }
 

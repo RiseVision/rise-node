@@ -60,7 +60,7 @@ export class RegisterDelegateTransaction extends BaseTx<
     tx: IBaseTransaction<DelegateAsset>,
     sender: AccountsModelForDPOS,
     height: number
-  ): number {
+  ) {
     return this.systemModule.getFees(height).fees.delegate;
   }
 

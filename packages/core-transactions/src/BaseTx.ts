@@ -36,7 +36,7 @@ export abstract class BaseTx<T, M extends Model<any>>
     tx: IBaseTransaction<T>,
     sender: IAccountsModel,
     height: number
-  ): number;
+  ): bigint;
 
   public verify(
     tx: IBaseTransaction<T>,

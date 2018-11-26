@@ -39,7 +39,7 @@ export class SendTransaction extends BaseTx<void, null> {
     tx: IBaseTransaction<void>,
     sender: IAccountsModel,
     height: number
-  ): number {
+  ): bigint {
     return this.systemModule.getFees(height).fees.send;
   }
 

@@ -1,4 +1,3 @@
-import { BlocksConstantsType } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
@@ -40,7 +39,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   private txLogic: TransactionLogic;
 
   @inject(Symbols.generic.constants)
-  private constants: BlocksConstantsType;
+  private constants: { blocks: { maxTxsPerBlock: number } };
 
   public mergeRequests(
     reqs: Array<SingleTransportPayload<PostTransactionsRequestDataType, null>>

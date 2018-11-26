@@ -328,7 +328,10 @@ export class TransactionsAPI {
         .set('amount', body.amount)
         .set('timestamp', this.timeToEpoch.getTime())
         .set('recipientId', body.recipientId)
-        .set('fee', this.systemModule.getFees().fees.send),
+        .set(
+          'fee',
+          parseInt(this.systemModule.getFees().fees.send.toString(), 10)
+        ),
       second
     );
 

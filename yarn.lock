@@ -6935,7 +6935,7 @@ supersha@0.0.1:
   integrity sha1-aoA88PY2838eZWUJhUaMc+D+27c=
   dependencies:
     bindings "1.2.1"
-    nan "2.4.0"
+    nan "2.10.0"
 
 supertest@=3.1.0:
   version "3.1.0"

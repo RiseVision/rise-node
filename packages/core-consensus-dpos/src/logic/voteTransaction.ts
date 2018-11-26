@@ -79,7 +79,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     tx: IBaseTransaction<VoteAsset>,
     sender: IAccountsModel,
     height: number
-  ): number {
+  ) {
     return this.systemModule.getFees(height).fees.vote;
   }
 
