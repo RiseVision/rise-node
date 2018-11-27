@@ -34,7 +34,18 @@ describe('logic/blockReward', () => {
 
   describe('constructor', () => {
     it('should initialize rewards to the constant', () => {
-      expect((instance as any).rewards).to.be.deep.equal([ { fromHeight: 1, reward: 0n }]);
+      expect((instance as any).rewards).to.be.deep.equal([
+        { fromHeight: 1, reward: 0n },
+        { fromHeight: 10, reward: 1500000000n },
+        { fromHeight: 11, reward: 30000000n },
+        { fromHeight: 12, reward: 20000000n },
+        { fromHeight: 13, reward: 1500000000n },
+        { fromHeight: 1054080, reward: 1200000000n },
+        { fromHeight: 2108160, reward: 900000000n },
+        { fromHeight: 3162240, reward: 600000000n },
+        { fromHeight: 4216320, reward: 300000000n },
+        { fromHeight: 5270400, reward: 100000000n },
+        ]);
     });
   });
 

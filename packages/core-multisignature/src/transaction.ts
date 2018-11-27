@@ -155,7 +155,7 @@ export class MultiSignatureTransaction extends BaseTx<
 
   // tslint:disable-next-line cognitive-complexity
   public async verify(
-    tx: IBaseTransaction<MultisigAsset>,
+    tx: IBaseTransaction<MultisigAsset, bigint>,
     sender: AccountsModelWithMultisig
   ): Promise<void> {
     this.assertValidFormat(tx);
@@ -196,7 +196,7 @@ export class MultiSignatureTransaction extends BaseTx<
   }
 
   public async apply(
-    tx: IConfirmedTransaction<MultisigAsset>,
+    tx: IConfirmedTransaction<MultisigAsset, bigint>,
     block: SignedBlockType,
     sender: AccountsModelWithMultisig
   ): Promise<Array<DBOp<any>>> {
@@ -291,8 +291,8 @@ export class MultiSignatureTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<MultisigAsset>
-  ): IBaseTransaction<MultisigAsset> {
+    tx: IBaseTransaction<MultisigAsset, bigint>
+  ): IBaseTransaction<MultisigAsset, bigint> {
     const report = this.schema.validate(
       tx.asset.multisignature,
       this.multisigSchema
@@ -534,7 +534,7 @@ export class MultiSignatureTransaction extends BaseTx<
       throw new Error('Invalid recipient');
     }
 
-    if (tx.amount !== 0) {
+    if (tx.amount !== 0n) {
       throw new Error('Invalid transaction amount');
     }
 

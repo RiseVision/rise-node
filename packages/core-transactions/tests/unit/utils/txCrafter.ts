@@ -8,7 +8,7 @@ import * as uuid from 'uuid';
 // tslint:disable object-literal-sort-keys
 export const toBufferedTransaction = <T>(
   t: ITransaction<any>
-): IBaseTransaction<T> & { senderId: string } => {
+): IBaseTransaction<T, bigint> & { senderId: string } => {
   return {
     ...t,
 
@@ -26,6 +26,8 @@ export const toBufferedTransaction = <T>(
     signatures: t.signatures
       ? t.signatures.map((s) => Buffer.from(s, 'hex'))
       : undefined,
+    amount: BigInt(t.amount),
+    fee: BigInt(t.fee),
   };
 };
 

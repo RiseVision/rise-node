@@ -63,8 +63,8 @@ describe('logic/block', () => {
     createHashSpy = sandbox.spy(crypto, 'createHash');
     dummyTransactions = [
       {
-        amount: 108910891000000,
-        fee: 5,
+        amount: 108910891000000n,
+        fee: 5n,
         id: '8139741256612355994',
         recipientId: '15256762582730568272R',
         senderId: '14709573872795067383R',
@@ -81,8 +81,8 @@ describe('logic/block', () => {
         type: 0,
       },
       {
-        amount: 108910891000000,
-        fee: 3,
+        amount: 108910891000000n,
+        fee: 3n,
         id: '16622990339377112127',
         recipientId: '6781920633453960895R',
         senderId: '14709573872795067383R',
@@ -99,8 +99,8 @@ describe('logic/block', () => {
         type: 0,
       },
       {
-        amount: 108910891000000,
-        fee: 3,
+        amount: 108910891000000n,
+        fee: 3n,
         id: '16622990339377114578',
         recipientId: '6781920633453960895R',
         senderId: '14709573872795067383R',
@@ -135,10 +135,10 @@ describe('logic/block', () => {
       ),
       payloadLength: 8,
       previousBlock: '1',
-      reward: 30000000,
+      reward: 30000000n,
       timestamp: 1506889306558,
-      totalAmount: 217821782000000,
-      totalFee: 8,
+      totalAmount: 217821782000000n,
+      totalFee: 8n,
       transactions: dummyTransactions,
       version: 0,
     };
@@ -168,7 +168,7 @@ describe('logic/block', () => {
       expect(newBlock.transactions).to.have.lengthOf(3);
       expect(newBlock.payloadLength).eq(351);
       expect(newBlock.previousBlock).eq('1');
-      expect(newBlock.reward).eq(0n);
+      expect(newBlock.reward).eq(30000000n);
       expect(newBlock.totalAmount).eq(326732673000000n);
 
       expect(newBlock.payloadHash).deep.eq(

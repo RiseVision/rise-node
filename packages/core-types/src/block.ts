@@ -18,13 +18,13 @@ export type BlockType<T = Buffer, N = bigint> = {
   payloadLength: number;
   previousBlock: string;
   generatorPublicKey: T;
-  transactions?: Array<IBaseTransaction<any>>;
+  transactions?: Array<IBaseTransaction<any, N>>;
 };
 
 export type SignedBlockType<T = Buffer, N = bigint> = BlockType<T, N> & {
   id: string;
   blockSignature: T;
-  transactions?: Array<IConfirmedTransaction<any>>;
+  transactions?: Array<IConfirmedTransaction<any, N>>;
 };
 
 export type SignedAndChainedBlockType = SignedBlockType<Buffer> & {

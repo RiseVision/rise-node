@@ -32,7 +32,7 @@ describe('logic/transactions/send', () => {
   let systemModule: ISystemModule;
   let accountLogic: IAccountLogic;
   let instance: SendTransaction;
-  let tx: IBaseTransaction<any>;
+  let tx: IBaseTransaction<any, bigint>;
   let sender: IAccountsModel;
   let block: any;
 
@@ -92,7 +92,7 @@ describe('logic/transactions/send', () => {
     });
 
     it('throws Invalid transaction amount when tx.amount <= 0', async () => {
-      tx.amount = 0;
+      tx.amount = 0n;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid transaction amount'
       );

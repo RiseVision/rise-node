@@ -2,55 +2,55 @@
   "blocks": {
     "maxTxsPerBlock": 25,
     "targetTime": 30,
+    "slotWindow": 5,
+    "maxPayloadLength": 1048576,
     "rewards": [
       {
-        "height": 1,
+        "fromHeight": 1,
         "reward": 0
       },
       {
-        "height": 10,
+        "fromHeight": 10,
         "reward": 1500000000
       },
       {
-        "height": 11,
+        "fromHeight": 11,
         "reward": 30000000
       },
       {
-        "height": 12,
+        "fromHeight": 12,
         "reward": 20000000
       },
       {
-        "height": 13,
+        "fromHeight": 13,
         "reward": 1500000000
       },
       {
-        "height": 1054080,
+        "fromHeight": 1054080,
         "reward": 1200000000
       },
       {
-        "height": 2108160,
+        "fromHeight": 2108160,
         "reward": 900000000
       },
       {
-        "height": 3162240,
+        "fromHeight": 3162240,
         "reward": 600000000
       },
       {
-        "height": 4216320,
+        "fromHeight": 4216320,
         "reward": 300000000
       },
       {
-        "height": 5270400,
+        "fromHeight": 5270400,
         "reward": 100000000
       }
     ]
   },
   "activeDelegates": 101,
   "maximumVotes": 1,
+  "amountBytes": 8,
   "maxVotesPerTransaction": 2,
-  //  "blockSlotWindow": 5,
-  //  "blockTime": 30,
-  //  "blockReceiptTimeOut": 60,
   "addressSuffix": "R",
   "epochTime": "2016-05-24T17:00:00.000Z",
   "minVersion": [
@@ -79,13 +79,11 @@
       }
     }
   ],
-  //  "maxPayloadLength": 1048576,
   "maxPeers": 100,
   "maxProtoBufPayloadLength": 102400,
   "maxSharedTxs": 100,
-  //  "maxTxsPerBlock": 25,
   "minBroadhashConsensus": 51,
-  "totalAmount": 10999999991000000,
+  "totalAmount": "10999999991000000",
   "unconfirmedTransactionTimeOut": 10800,
   "multisigConstraints": {
     "min": {

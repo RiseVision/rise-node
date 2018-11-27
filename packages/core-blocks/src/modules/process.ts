@@ -321,7 +321,7 @@ export class BlocksModuleProcess {
       limit: this.blocksConstants.blocks.maxTxsPerBlock,
     });
 
-    const ready: Array<IBaseTransaction<any>> = [];
+    const ready: Array<IBaseTransaction<any, bigint>> = [];
     const confirmedTxs = await this.transactionsModule.filterConfirmedIds(
       txs.map((tx) => tx.id)
     );
@@ -371,7 +371,7 @@ export class BlocksModuleProcess {
   public async generateBlockWithTransactions(
     keypair: IKeypair,
     timestamp: number,
-    txs: Array<IBaseTransaction<any>>
+    txs: Array<IBaseTransaction<any, bigint>>
   ): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
     return this.blockLogic.create({

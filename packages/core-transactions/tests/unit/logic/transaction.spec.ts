@@ -10,6 +10,7 @@ import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/cre
 import { ModelSymbols } from '@risevision/core-models';
 import { DBBulkCreateOp } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
+import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -17,6 +18,7 @@ import * as crypto from 'crypto';
 import { LiskWallet } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import 'reflect-metadata';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { createFakeBlock } from '../../../../core-blocks/tests/unit/utils/createFakeBlocks';
@@ -61,7 +63,7 @@ describe('logic/transaction', () => {
   let genesisBlock: SignedAndChainedBlockType;
   let txModel: typeof TransactionsModel;
 
-  let tx: IBaseTransaction<any>;
+  let tx: IBaseTransaction<any, bigint>;
   let account: LiskWallet;
 
   let sender: IAccountsModel;
@@ -187,6 +189,7 @@ describe('logic/transaction', () => {
       };
       (ByteBuffer.prototype as any).writeInt = (b) => sequence.push(b);
       (ByteBuffer.prototype as any).writeLong = (b) => sequence.push(b);
+      (ByteBuffer.prototype as any).append = (b) => sequence.push(b);
       ByteBuffer.prototype.flip = sandbox.stub();
     });
 
@@ -268,9 +271,9 @@ describe('logic/transaction', () => {
       }
     });
 
-    it('should add the amount to the ByteBuffer via writeLong', () => {
+    it('should add the amount to the ByteBuffer via bigint-buffer', () => {
       instance.getBytes(tx);
-      expect(sequence[42]).to.be.equal(tx.amount);
+      expect(sequence[42]).to.be.deep.equal(toBufferLE(tx.amount, 8));
     });
 
     it('should add the asset bytes to the ByteBuffer if not empty', () => {
@@ -519,24 +522,17 @@ describe('logic/transaction', () => {
     });
 
     it('should throw if amount is < 0', async () => {
-      tx.amount = -100;
+      tx.amount = -100n;
       await expect(
         instance.verify(tx, sender, requester, 1)
-      ).to.be.rejectedWith('Invalid transaction amount');
+      ).to.be.rejectedWith('tx.amount is either negative or greater than totalAmount');
     });
 
     it('should throw if amount is > totalAmout', async () => {
-      (tx as any).amount = '10999999991000001';
+      (tx as any).amount = BigInt('10999999991000001');
       await expect(
         instance.verify(tx, sender, requester, 1)
-      ).to.be.rejectedWith('Invalid transaction amount');
-    });
-
-    it('should throw if amount is decimal', async () => {
-      tx.amount = 10.1;
-      await expect(
-        instance.verify(tx, sender, requester, 1)
-      ).to.be.rejected;
+      ).to.be.rejectedWith('tx.amount is either negative or greater than totalAmount');
     });
 
     // tslint:disable-next-line
@@ -910,7 +906,8 @@ describe('logic/transaction', () => {
 
     it('should check unconfirmed balance', async () => {
       sender.u_balance = 1000000n;
-      tx.amount = 1000000 - 1;
+      // tslint:disable-next-line
+      tx.amount = 1000000n - 1n;
       await expect(
         instance.applyUnconfirmed(tx as any, sender, requester)
       ).rejectedWith(
@@ -1280,13 +1277,13 @@ describe('logic/transaction', () => {
           expect(() => instance.objectNormalize(tx)).to.throw();
           tx[field] = null;
           expect(() => instance.objectNormalize(tx)).to.throw();
-          tx[field] = -1;
+          tx[field] = -1n;
           expect(() => instance.objectNormalize(tx)).to.throw(
-            'Value -1 is less than minimum'
+            `tx.${field} is either negative or greater than totalAmount`
           );
-          tx[field] = 10999999991000000 + 10000;
+          tx[field] = 10999999991000000n + 10000n;
           expect(() => instance.objectNormalize(tx)).to.throw(
-            'is greater than maximum'
+            `tx.${field} is either negative or greater than totalAmount`
           );
         });
       });

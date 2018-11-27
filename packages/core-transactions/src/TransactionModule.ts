@@ -72,11 +72,11 @@ export class TransactionsModule implements ITransactionsModule {
 
   @WrapInBalanceSequence
   public async processIncomingTransactions(
-    transactions: Array<IBaseTransaction<any>>,
+    transactions: Array<IBaseTransaction<any, bigint>>,
     peer: PeerType | null
   ) {
     // normalize transactions
-    const txs: Array<IBaseTransaction<any>> = [];
+    const txs: Array<IBaseTransaction<any, bigint>> = [];
     for (const tx of transactions) {
       try {
         txs.push(this.transactionLogic.objectNormalize(tx));
@@ -107,7 +107,8 @@ export class TransactionsModule implements ITransactionsModule {
           peer ? `from peer ${peer.string}` : ' '
         }`
       );
-      await this.transactionPool.queued.add(tx, { receivedAt: new Date() });
+      await this.transactionPool.queued
+        .add(tx, { receivedAt: new Date() });
     }
   }
 
@@ -116,7 +117,7 @@ export class TransactionsModule implements ITransactionsModule {
    */
   // tslint:disable-next-line max-line-length
   public async applyUnconfirmed(
-    transaction: IBaseTransaction<any> & { blockId?: string },
+    transaction: IBaseTransaction<any, bigint> & { blockId?: string },
     sender: IAccountsModel
   ): Promise<void> {
     if (!sender) {
@@ -200,7 +201,7 @@ export class TransactionsModule implements ITransactionsModule {
    * NOTE: this must be called with an unconfirmed transaction
    */
   public async checkTransaction(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     accountsMap: { [address: string]: IAccountsModel },
     height: number
   ): Promise<void> {

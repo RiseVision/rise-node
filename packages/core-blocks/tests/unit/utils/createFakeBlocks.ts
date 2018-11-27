@@ -18,7 +18,7 @@ export const createFakeBlock = (
   cfg: {
     timestamp?: number;
     keypair?: IKeypair;
-    transactions?: Array<IBaseTransaction<any>>;
+    transactions?: Array<IBaseTransaction<any, bigint>>;
     previousBlock?: SignedAndChainedBlockType;
   } = {}
 ): SignedAndChainedBlockType => {

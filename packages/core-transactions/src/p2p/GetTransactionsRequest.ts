@@ -12,7 +12,7 @@ import { TXSymbols } from '../txSymbols';
 
 // tslint:disable-next-line
 export type GetTransactionsRequestDataType = {
-  transactions: Array<IBaseTransaction<any>>;
+  transactions: Array<IBaseTransaction<any, bigint>>;
 };
 
 @injectable()

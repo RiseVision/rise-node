@@ -283,7 +283,7 @@ describe('modules/transactions', () => {
   });
 
   describe('checkTransaction', () => {
-    let tx: IBaseTransaction<any>;
+    let tx: IBaseTransaction<any, bigint>;
     let readyStub: SinonStub;
     let genAddressStub: SinonStub;
     let verifyStub: SinonStub;

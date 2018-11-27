@@ -203,7 +203,7 @@ export class PoolManager {
   }
 
   protected async processQueued(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     accMap: { [add: string]: IAccountsModel }
   ) {
     try {

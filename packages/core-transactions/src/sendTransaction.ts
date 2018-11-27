@@ -36,7 +36,7 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   public calculateFee(
-    tx: IBaseTransaction<void>,
+    tx: IBaseTransaction<void, bigint>,
     sender: IAccountsModel,
     height: number
   ): bigint {
@@ -44,7 +44,7 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   public async verify(
-    tx: IBaseTransaction<void>,
+    tx: IBaseTransaction<void, bigint>,
     sender: IAccountsModel
   ): Promise<void> {
     if (!tx.recipientId) {
@@ -57,7 +57,7 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   public async apply(
-    tx: IConfirmedTransaction<void>,
+    tx: IConfirmedTransaction<void, bigint>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -79,7 +79,7 @@ export class SendTransaction extends BaseTx<void, null> {
 
   // tslint:disable-next-line max-line-length
   public async undo(
-    tx: IConfirmedTransaction<void>,
+    tx: IConfirmedTransaction<void, bigint>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -99,7 +99,7 @@ export class SendTransaction extends BaseTx<void, null> {
     );
   }
 
-  public objectNormalize(tx: IBaseTransaction<void>): IBaseTransaction<void> {
+  public objectNormalize(tx: IBaseTransaction<void, bigint>): IBaseTransaction<void, bigint> {
     return tx;
   }
 

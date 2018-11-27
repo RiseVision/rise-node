@@ -172,7 +172,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   // tslint:disable-next-line max-line-length
   public async undo(
-    tx: IConfirmedTransaction<VoteAsset>,
+    tx: IConfirmedTransaction<VoteAsset, bigint>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
@@ -188,7 +188,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   }
 
   public async applyUnconfirmed(
-    tx: IBaseTransaction<VoteAsset>,
+    tx: IBaseTransaction<VoteAsset, bigint>,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     await this.checkUnconfirmedDelegates(tx, sender);
@@ -202,7 +202,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   }
 
   public async undoUnconfirmed(
-    tx: IBaseTransaction<VoteAsset>,
+    tx: IBaseTransaction<VoteAsset, bigint>,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
@@ -240,8 +240,8 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<VoteAsset>
-  ): IBaseTransaction<VoteAsset> {
+    tx: IBaseTransaction<VoteAsset, bigint>
+  ): IBaseTransaction<VoteAsset, bigint> {
     const report = this.schema.validate(tx.asset, voteSchema);
     if (!report) {
       throw new Error(

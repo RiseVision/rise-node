@@ -9,7 +9,7 @@ import {
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
-  BlockType,
+  BlockType, ConstantsType,
   DBOp,
   IBaseTransaction,
   IBytesBlock,
@@ -18,6 +18,7 @@ import {
   SignedBlockType,
 } from '@risevision/core-types';
 import { MyBigNumb } from '@risevision/core-utils';
+import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
@@ -53,7 +54,7 @@ export class BlockLogic implements IBlockLogic {
   public zschema: z_schema;
 
   @inject(Symbols.generic.constants)
-  private blocksConstants: BlocksConstantsType;
+  private constants: ConstantsType & BlocksConstantsType;
 
   @inject(p2pSymbols.helpers.protoBuf)
   private protobufHelper: ProtoBufHelper;
@@ -74,7 +75,7 @@ export class BlockLogic implements IBlockLogic {
   public create(data: {
     keypair: IKeypair;
     timestamp: number;
-    transactions: Array<IBaseTransaction<any>>;
+    transactions: Array<IBaseTransaction<any, bigint>>;
     previousBlock?: SignedAndChainedBlockType;
   }): SignedAndChainedBlockType {
     const transactions = data.transactions;
@@ -107,7 +108,7 @@ export class BlockLogic implements IBlockLogic {
     for (const transaction of transactions) {
       const bytes: Buffer = this.transaction.getBytes(transaction);
 
-      if (size + bytes.length > this.blocksConstants.blocks.maxPayloadLength) {
+      if (size + bytes.length > this.constants.blocks.maxPayloadLength) {
         break;
       }
 
@@ -191,16 +192,14 @@ export class BlockLogic implements IBlockLogic {
   // TODO: Change this to a pure function!!!
   public objectNormalize<T extends BlockType<string | Buffer, string | bigint>>(
     block: T
-  ): Overwrite<
-    T,
+  ): Overwrite<T,
     {
       totalAmount: bigint;
       reward: bigint;
       payloadHash: Buffer;
       blockSignature: Buffer;
       generatorPublicKey: Buffer;
-    }
-    > {
+    }> {
     // Delete null or undefined elements in block obj
     for (const key in block) {
       if (block[key] === null || typeof block[key] === 'undefined') {
@@ -230,7 +229,7 @@ export class BlockLogic implements IBlockLogic {
     (block as any).totalFee    = BigInt(block.totalFee);
     (block as any).totalAmount = BigInt(block.totalAmount);
 
-    if (block.reward as bigint < 0n || block.totalFee as bigint < 0n || block.totalAmount as bigint < 0n ) {
+    if (block.reward as bigint < 0n || block.totalFee as bigint < 0n || block.totalAmount as bigint < 0n) {
       throw new Error('Block validation failed. One of reward,totalFee,totalAmount is lt 0');
     }
 
@@ -283,11 +282,9 @@ export class BlockLogic implements IBlockLogic {
 
     bb.writeInt(block.numberOfTransactions);
 
-    // tslint:disable no-string-literal
-    bb['writeLong'](parseInt(`${block.totalAmount}`, 10));
-    bb['writeLong'](parseInt(`${block.totalFee}`, 10));
-    bb['writeLong'](parseInt(`${block.reward}`, 10));
-    // tslint:enable no-string-literal
+    bb.append(toBufferLE(block.totalAmount, this.constants.amountBytes));
+    bb.append(toBufferLE(block.totalFee, this.constants.amountBytes));
+    bb.append(toBufferLE(block.reward, this.constants.amountBytes));
 
     bb.writeInt(block.payloadLength);
 
@@ -365,14 +362,22 @@ export class BlockLogic implements IBlockLogic {
       : null;
 
     const numberOfTransactions = bb.readInt(16);
-    const totalAmount          = BigInt(bb.readLong(20).toString());
-    const totalFee             = BigInt(bb.readLong(28).toString());
-    const reward               = BigInt(bb.readLong(36).toString());
-    const payloadLength        = bb.readInt(44);
-    const payloadHash          = blk.bytes.slice(48, 80);
-    const generatorPublicKey   = blk.bytes.slice(80, 112);
+    let offset                 = 20;
+    const step                   = this.constants.amountBytes;
+    const totalAmount          = toBigIntLE(blk.bytes.slice(offset, offset + step));
+    offset += step;
+    const totalFee             = toBigIntLE(blk.bytes.slice(offset, offset + step));
+    offset += step;
+    const reward               = toBigIntLE(blk.bytes.slice(offset, offset + step));
+    offset += step;
+    const payloadLength        = bb.readInt(offset);
+    offset += 4;
+    const payloadHash          = blk.bytes.slice(offset, offset + 32);
+    offset += 32;
+    const generatorPublicKey   = blk.bytes.slice(offset, offset + 32);
+    offset += 32;
     const blockSignature       =
-            blk.bytes.length === 176 ? blk.bytes.slice(112, 176) : null;
+            blk.bytes.length === offset + 64 ? blk.bytes.slice(offset, offset + 64) : null;
     const id                   = this.getIdFromBytes(blk.bytes);
     const transactions         = blk.transactions.map((tx) => {
       const baseTx = this.transaction.fromProtoBuffer(tx);
@@ -415,7 +420,7 @@ export class BlockLogic implements IBlockLogic {
   public getMaxBytesSize(): number {
     let size        = this.getMinBytesSize();
     const maxTxSize = this.transaction.getMaxBytesSize();
-    size += this.blocksConstants.blocks.maxTxsPerBlock * maxTxSize; // transactions
+    size += this.constants.blocks.maxTxsPerBlock * maxTxSize; // transactions
     return size;
   }
 

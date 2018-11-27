@@ -46,6 +46,7 @@
     ]
   },
   "activeDelegates": 101,
+  "amountBytes": 8,
   "maximumVotes": 1,
   "maxVotesPerTransaction": 2,
   //  "blockSlotWindow": 5,

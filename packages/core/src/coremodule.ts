@@ -45,6 +45,16 @@ export class CoreModule extends BaseCoreModule<void>
     this.container.bind(CoreSymbols.constants).toConstantValue(c);
   }
 
+  public initAppElements(): Promise<void> | void {
+    const c = this.container.get<any>(CoreSymbols.constants);
+    c.epochTime = new Date(c.epochTime);
+    c.fees.forEach((f) => {
+      Object.keys(f.fees).forEach((fK) => {
+        f.fees[fK] = BigInt(f.fees[fK]);
+      });
+    });
+  }
+
   public async onPostInitModels() {
     const infoModel = this.container.getNamed<typeof IInfoModel>(
       ModelSymbols.model,

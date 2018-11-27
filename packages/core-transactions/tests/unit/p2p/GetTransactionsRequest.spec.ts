@@ -60,7 +60,7 @@ describe('apis/requests/GetTransactionsRequest', () => {
       transactions: [{ ...tx, relays: 1, asset: null }],
     });
   });
-  it('with some txs from dif pool - order is respsected', async () => {
+  it('with some txs from dif pool - order is respected', async () => {
     const unconfirmed = toBufferedTransaction(createRandomTransaction());
     const pending = toBufferedTransaction(createRandomTransaction());
     const ready = toBufferedTransaction(createRandomTransaction());

@@ -42,7 +42,7 @@ export interface ITransactionLogic {
    * Hash for the transaction
    */
   getHash(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     skipSign: boolean,
     skipSecondSign: boolean
   ): Buffer;
@@ -53,7 +53,7 @@ export interface ITransactionLogic {
    */
 
   getBytes(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     skipSignature?: boolean,
     skipSecondSignature?: boolean
   ): Buffer;
@@ -88,14 +88,14 @@ export interface ITransactionLogic {
    * @returns {boolean} true
    */
   verifySignature(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     publicKey: Buffer,
     signature: Buffer,
     verificationType: VerificationType
   ): boolean;
 
   apply(
-    tx: IConfirmedTransaction<any>,
+    tx: IConfirmedTransaction<any, bigint>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
@@ -105,13 +105,13 @@ export interface ITransactionLogic {
    * @returns {Promise<void>}
    */
   undo(
-    tx: IConfirmedTransaction<any>,
+    tx: IConfirmedTransaction<any, bigint>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
 
   applyUnconfirmed(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     sender: IAccountsModel,
     requester?: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
@@ -121,7 +121,7 @@ export interface ITransactionLogic {
    * Then calls undoUnconfirmed to the txType.
    */
   undoUnconfirmed(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
 
@@ -137,12 +137,12 @@ export interface ITransactionLogic {
    * Epurates the tx object by removing null and undefined fields
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
-  objectNormalize(tx: IConfirmedTransaction<any>): IConfirmedTransaction<any>;
+  objectNormalize(tx: IConfirmedTransaction<any, string | number | bigint>): IConfirmedTransaction<any, bigint>;
   objectNormalize(
     tx: ITransportTransaction<any> | IBaseTransaction<any>
-  ): IBaseTransaction<any>;
+  ): IBaseTransaction<any, bigint>;
 
-  fromProtoBuffer(buff: Buffer): IBaseTransaction<any>;
+  fromProtoBuffer(buff: Buffer): IBaseTransaction<any, bigint>;
 
   toProtoBuffer(tx: IBaseTransaction<any>): Buffer;
   /**

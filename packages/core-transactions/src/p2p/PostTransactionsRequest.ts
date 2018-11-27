@@ -13,7 +13,7 @@ import { TransactionsModule } from '../TransactionModule';
 
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
-  transactions: Array<IBaseTransaction<any> & { relays: number }>;
+  transactions: Array<IBaseTransaction<any, bigint> & { relays: number }>;
 };
 
 @injectable()

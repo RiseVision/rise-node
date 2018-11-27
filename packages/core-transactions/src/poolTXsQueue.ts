@@ -7,7 +7,7 @@ import { IBaseTransaction } from '@risevision/core-types';
 
 export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
   implements IInnerTXQueue<T> {
-  private transactions: Array<IBaseTransaction<any>> = [];
+  private transactions: Array<IBaseTransaction<any, bigint>> = [];
   private index: { [k: string]: number } = {};
   private payload: { [k: string]: T } = {};
 
@@ -39,7 +39,7 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
     return this.payload[tx.id];
   }
 
-  public add(tx: IBaseTransaction<any>, payload: T) {
+  public add(tx: IBaseTransaction<any, bigint>, payload: T) {
     if (!this.has(tx.id)) {
       this.transactions.push(tx);
       this.index[tx.id] = this.transactions.indexOf(tx);
@@ -93,7 +93,7 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
     return res;
   }
 
-  public txList(opts: ListingOptions<T> = {}): Array<IBaseTransaction<any>> {
+  public txList(opts: ListingOptions<T> = {}): Array<IBaseTransaction<any, bigint>> {
     return this.list(opts).map((t) => t.tx);
   }
 }

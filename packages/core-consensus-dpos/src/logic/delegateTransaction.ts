@@ -262,8 +262,8 @@ export class RegisterDelegateTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<DelegateAsset>
-  ): IBaseTransaction<DelegateAsset> {
+    tx: IBaseTransaction<DelegateAsset, bigint>
+  ): IBaseTransaction<DelegateAsset, bigint> {
     removeEmptyObjKeys(tx.asset.delegate);
 
     const report = this.schema.validate(tx.asset.delegate, delegateAssetSchema);

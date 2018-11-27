@@ -213,8 +213,8 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<SecondSignatureAsset>
-  ): IBaseTransaction<SecondSignatureAsset> {
+    tx: IBaseTransaction<SecondSignatureAsset, bigint>
+  ): IBaseTransaction<SecondSignatureAsset, bigint> {
     const report = this.schema.validate(
       tx.asset.signature,
       secondSignatureSchema

@@ -3,6 +3,7 @@ import { ConstantsType } from '@risevision/core-types';
 // TODO: How to split this in submodules?
 export const constants: ConstantsType = {
   addressSuffix: '',
+  amountBytes: 8,
   epochTime: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
   minVersion: [
     { height: 1, ver: '>=0.1.0' },
@@ -21,7 +22,6 @@ export const constants: ConstantsType = {
       },
     },
   ],
-  maxAmount: 100000000,
   maxPeers: 100,
   maxSharedTxs: 100,
   totalAmount: '10999999991000000',

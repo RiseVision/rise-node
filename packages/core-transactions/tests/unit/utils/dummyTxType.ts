@@ -7,8 +7,8 @@ export class DummyTxType extends BaseTx<void, any> {
     tx: IBaseTransaction<void>,
     sender: IAccountsModel,
     height: number
-  ): number {
-    return 0;
+  ): bigint {
+    return 0n;
   }
 
   public dbSave(
@@ -19,7 +19,7 @@ export class DummyTxType extends BaseTx<void, any> {
     return undefined;
   }
 
-  public objectNormalize(tx: IBaseTransaction<void>): IBaseTransaction<void> {
+  public objectNormalize(tx: IBaseTransaction<void, bigint>): IBaseTransaction<void, bigint> {
     return undefined;
   }
 }

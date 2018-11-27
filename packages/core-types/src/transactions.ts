@@ -25,9 +25,9 @@ export interface ITransportTransaction<T> {
   signSignature?: string;
 }
 
-export interface IBaseTransaction<T> {
+export interface IBaseTransaction<T, amountType= number | string | bigint> {
   type: TransactionType;
-  amount: number | string | bigint;
+  amount: amountType;
   senderId?: string;
   senderPublicKey: Buffer;
   requesterPublicKey?: Buffer;
@@ -36,13 +36,14 @@ export interface IBaseTransaction<T> {
   recipientId: string;
   signature: Buffer;
   id: string;
-  fee: number | string | bigint;
+  fee: amountType;
   blockId?: string;
   signatures?: Buffer[];
   signSignature?: Buffer;
 }
 
-export interface IConfirmedTransaction<T> extends IBaseTransaction<T> {
+export interface IConfirmedTransaction<T, amountType= number | string | bigint>
+  extends IBaseTransaction<T, amountType> {
   blockId: string;
   height?: number;
   senderId: string;
@@ -54,7 +55,7 @@ export interface IBytesTransaction {
   bytes: Buffer;
   hasRequesterPublicKey: boolean;
   hasSignSignature: boolean;
-  fee: number;
+  fee: Buffer;
   relays?: number;
   signatures?: Buffer[];
 }

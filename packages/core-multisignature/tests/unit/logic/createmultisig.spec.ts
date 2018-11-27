@@ -19,6 +19,7 @@ import {
   DBUpsertOp,
   TransactionType,
 } from '@risevision/core-types';
+import { IBaseTransaction } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -54,7 +55,7 @@ describe('logic/transactions/createmultisig', () => {
   let accounts2MultisigModel: typeof Accounts2MultisignaturesModel;
   let accounts2UMultisigModel: typeof Accounts2U_MultisignaturesModel;
   let txModel: typeof ITransactionsModel;
-  let tx: any;
+  let tx: IBaseTransaction<any, bigint>;
   let sender: any;
   let block: any;
   let container: Container;
@@ -114,7 +115,7 @@ describe('logic/transactions/createmultisig', () => {
     sig1Wallet = new LiskWallet('meow.sig1', 'R');
     sig2Wallet = new LiskWallet('meow.sig2', 'R');
 
-    tx = senderWallet.signTransaction({
+    const tx2 = senderWallet.signTransaction({
       amount: 0,
       asset: {
         multisignature: {
@@ -131,11 +132,11 @@ describe('logic/transactions/createmultisig', () => {
       type: TransactionType.MULTI,
     } as any);
     tx.signatures = [
-      sig1Wallet.getSignatureOfTransaction(tx),
-      sig2Wallet.getSignatureOfTransaction(tx),
+      sig1Wallet.getSignatureOfTransaction(tx2),
+      sig2Wallet.getSignatureOfTransaction(tx2),
     ];
 
-    tx = toBufferedTransaction(tx);
+    tx = toBufferedTransaction(tx2);
 
     sender = new AccountsModel({
       address: senderWallet.address,
@@ -160,7 +161,7 @@ describe('logic/transactions/createmultisig', () => {
   describe('calculateFee', () => {
     it('should return proper fees.', () => {
       const res = instance.calculateFee(tx, sender, block.height);
-      expect(res).deep.eq(500000000);
+      expect(res).deep.eq(500000000n);
     });
   });
 

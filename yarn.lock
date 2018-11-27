@@ -1423,6 +1423,13 @@ better-assert@~1.0.0:
   dependencies:
     callsite "1.0.0"
 
+bigint-buffer@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/bigint-buffer/-/bigint-buffer-1.1.2.tgz#b7edfaf3a88d0767aed7edc671d6bae4b1021575"
+  integrity sha512-gof9NgbodUgCXD2aUHfUKk5KUDk6/zPlwE+YYpRM2t7zS0K/6WipJFWfziIY+EavxFDuGUnuuQQzzvNcckPKNA==
+  dependencies:
+    bindings "^1.3.0"
+
 bignumber.js@=7.2.1, bignumber.js@^7.2.1:
   version "7.2.1"
   resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-7.2.1.tgz#80c048759d826800807c4bfd521e50edbba57a5f"
@@ -1442,6 +1449,11 @@ bindings@^1.2.1:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/bindings/-/bindings-1.3.0.tgz#b346f6ecf6a95f5a815c5839fc7cdb22502f1ed7"
   integrity sha512-DpLh5EzMR2kzvX1KIlVC0VkC3iZtHKTgdtZ0a3pglBZdaQFjt5S9g9xd1lE+YvXyfd6mtCeRnrUfOLYiTMlNSw==
+
+bindings@^1.3.0:
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/bindings/-/bindings-1.3.1.tgz#21fc7c6d67c18516ec5aaa2815b145ff77b26ea5"
+  integrity sha512-i47mqjF9UbjxJhxGf+pZ6kSxrnI3wBLlnGI2ArWJ4r0VrvDS7ZYXkprq/pLaBWYq4GM0r4zdHY+NNRqEMU7uew==
 
 blob@0.0.4:
   version "0.0.4"
@@ -4905,10 +4917,10 @@ mute@^2.0.6:
   resolved "https://registry.yarnpkg.com/mute/-/mute-2.0.6.tgz#8bf10f1f285ea38c9db2630bff675c114c973ed5"
   integrity sha1-i/EPHyheo4ydsmML/2dcEUyXPtU=
 
-nan@2.10.0:
-  version "2.10.0"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.10.0.tgz#96d0cd610ebd58d4b4de9cc0c6828cda99c7548f"
-  integrity sha512-bAdJv7fBLhWC+/Bls0Oza+mvTaNQtP+1RyhhhvD95pgUJz6XM5IzgmxOkItJ9tkoCiplvAnXI1tNmmUD/eScyA==
+nan@2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.4.0.tgz#fb3c59d45fe4effe215f0b890f8adf6eb32d2232"
+  integrity sha1-+zxZ1F/k7/4hXwuJD4rfbrMtIjI=
 
 nan@^2.0.5, nan@^2.10.0, nan@^2.4.0:
   version "2.11.1"

@@ -2,7 +2,7 @@ import { IBaseTransaction } from '@risevision/core-types';
 export type QueueType = 'queued' | 'pending' | 'ready' | 'unconfirmed';
 // tslint:disable interface-name
 export interface QueueEntry<T extends { receivedAt: Date }> {
-  tx: IBaseTransaction<any>;
+  tx: IBaseTransaction<any, bigint>;
   payload: T;
 }
 export interface ListingOptions<T extends { receivedAt: Date }> {
@@ -32,7 +32,7 @@ export interface IInnerTXQueue<
 
   list(opts?: ListingOptions<T>): Array<QueueEntry<T>>;
 
-  txList(opts?: ListingOptions<T>): Array<IBaseTransaction<any>>;
+  txList(opts?: ListingOptions<T>): Array<QueueEntry<T>['tx']>;
 }
 
 export interface ITransactionPool {

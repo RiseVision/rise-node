@@ -44,16 +44,6 @@
       "minLength": 1,
       "maxLength": 22
     },
-    "amount": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 10999999991000000
-    },
-    "fee": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 10999999991000000
-    },
     "signature": {
       "type": "object",
       "format": "signatureBuf"
