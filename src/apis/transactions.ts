@@ -186,7 +186,7 @@ export class TransactionsAPI {
   @ResponseSchema('responses.transactions.getMultiSig')
   @ValidateSchema()
   public async getMultiSig(@SchemaValid(schema.getPooledTransaction.properties.id)
-                           @QueryParam('id') id: string) {
+                           @QueryParam('id', { required: true }) id: string) {
     const transaction = this.transactionsModule.getMultisignatureTransaction(id);
     if (!transaction) {
       throw new APIError('Transaction not found', 200);
@@ -224,7 +224,7 @@ export class TransactionsAPI {
   @ResponseSchema('responses.transactions.getQueuedTransaction')
   @ValidateSchema()
   public async getQueuedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
-                           @QueryParam('id') id: string) {
+                           @QueryParam('id', { required: true }) id: string) {
     const transaction = this.transactionsModule.getQueuedTransaction(id);
     if (!transaction) {
       throw new APIError('Transaction not found', 200);
@@ -272,7 +272,7 @@ export class TransactionsAPI {
   @ResponseSchema('responses.transactions.getUnconfirmedTransaction')
   @ValidateSchema()
   public async getUnconfirmedTx(@SchemaValid(schema.getPooledTransaction.properties.id)
-                                @QueryParam('id') id: string) {
+                                @QueryParam('id', { required: true }) id: string) {
     const transaction = this.transactionsModule.getUnconfirmedTransaction(id);
     if (!transaction) {
       throw new APIError('Transaction not found', 200);
