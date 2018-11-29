@@ -9,7 +9,6 @@ import { BaseTx } from '@risevision/core-transactions';
 import {
   DBOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   SignedBlockType,
   TransactionType,
 } from '@risevision/core-types';
@@ -100,7 +99,7 @@ export class SecondSignatureTransaction extends BaseTx<
       throw new Error('Invalid recipient');
     }
 
-    if (tx.amount !== 0) {
+    if (tx.amount !== 0n) {
       throw new Error('Invalid transaction amount');
     }
 
@@ -115,7 +114,7 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public async apply(
-    tx: IConfirmedTransaction<SecondSignatureAsset>,
+    tx: IBaseTransaction<SecondSignatureAsset>,
     block: SignedBlockType,
     sender: AccountsModelWith2ndSign
   ): Promise<Array<DBOp<any>>> {
@@ -142,7 +141,7 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public async undo(
-    tx: IConfirmedTransaction<SecondSignatureAsset>,
+    tx: IBaseTransaction<SecondSignatureAsset>,
     block: SignedBlockType,
     sender: AccountsModelWith2ndSign
   ): Promise<Array<DBOp<any>>> {
@@ -233,7 +232,7 @@ export class SecondSignatureTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IConfirmedTransaction<SecondSignatureAsset> & { senderId: string }
+    tx: IBaseTransaction<SecondSignatureAsset> & { senderId: string }
   ): DBOp<any> {
     return {
       model: this.SignaturesModel,
@@ -246,7 +245,7 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public async attachAssets(
-    txs: Array<IConfirmedTransaction<SecondSignatureAsset>>
+    txs: Array<IBaseTransaction<SecondSignatureAsset>>
   ) {
     const res = await this.SignaturesModel.findAll({
       where: { transactionId: txs.map((tx) => tx.id) },

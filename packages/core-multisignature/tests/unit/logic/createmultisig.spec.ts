@@ -11,7 +11,10 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import {
+  fromBufferedTransaction,
+  toBufferedTransaction
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
   DBCreateOp,
   DBRemoveOp,
@@ -131,7 +134,7 @@ describe('logic/transactions/createmultisig', () => {
       timestamp: 0,
       type: TransactionType.MULTI,
     } as any);
-    tx.signatures = [
+    tx2.signatures = [
       sig1Wallet.getSignatureOfTransaction(tx2),
       sig2Wallet.getSignatureOfTransaction(tx2),
     ];
@@ -292,7 +295,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should throw when amount is invalid', async () => {
-      tx.amount = 100;
+      tx.amount = 100n;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid transaction amount'
       );
@@ -321,8 +324,8 @@ describe('logic/transactions/createmultisig', () => {
       tx.asset.multisignature.keysgroup[0] =
         '+' + sender.publicKey.toString('hex');
       tx.signatures = [
-        Buffer.from(sig2Wallet.getSignatureOfTransaction(tx), 'hex'),
-        Buffer.from(senderWallet.getSignatureOfTransaction(tx), 'hex'),
+        Buffer.from(sig2Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)), 'hex'),
+        Buffer.from(senderWallet.getSignatureOfTransaction(fromBufferedTransaction(tx)), 'hex'),
       ];
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid multisignature keysgroup. Cannot contain sender'
@@ -365,8 +368,8 @@ describe('logic/transactions/createmultisig', () => {
       tx.asset.multisignature.keysgroup[1] =
         tx.asset.multisignature.keysgroup[0];
       tx.signatures = [
-        sig1Wallet.getSignatureOfTransaction(tx),
-        sig1Wallet.getSignatureOfTransaction(tx),
+        sig1Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
+        sig1Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
       ].map((s) => Buffer.from(s, 'hex'));
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Encountered duplicate public key in multisignature keysgroup'
@@ -393,7 +396,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should return correct ops', async () => {
-      const ops = await instance.apply(tx, block, sender);
+      const ops = await instance.apply(tx as any, block, sender);
 
       // first op is about account
       expect(ops[0].type).eq('update');

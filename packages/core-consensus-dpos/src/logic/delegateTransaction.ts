@@ -10,7 +10,6 @@ import {
   DBCreateOp,
   DBOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   SignedBlockType,
   TransactionType,
 } from '@risevision/core-types';
@@ -97,7 +96,7 @@ export class RegisterDelegateTransaction extends BaseTx<
       throw new Error('Invalid recipient');
     }
 
-    if (tx.amount !== 0) {
+    if (tx.amount !== 0n) {
       throw new Error('Invalid transaction amount');
     }
 
@@ -155,7 +154,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public async apply(
-    tx: IConfirmedTransaction<DelegateAsset>,
+    tx: IBaseTransaction<DelegateAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
@@ -182,7 +181,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public async undo(
-    tx: IConfirmedTransaction<DelegateAsset>,
+    tx: IBaseTransaction<DelegateAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
@@ -295,7 +294,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IConfirmedTransaction<DelegateAsset> & { senderId: string }
+    tx: IBaseTransaction<DelegateAsset> & { senderId: string }
   ): DBCreateOp<DelegatesModel> {
     return {
       model: this.DelegatesModel,
@@ -307,7 +306,7 @@ export class RegisterDelegateTransaction extends BaseTx<
     };
   }
 
-  public async attachAssets(txs: Array<IConfirmedTransaction<DelegateAsset>>) {
+  public async attachAssets(txs: Array<IBaseTransaction<DelegateAsset>>) {
     const res = await this.DelegatesModel.findAll({
       where: { transactionId: txs.map((tx) => tx.id) },
     });

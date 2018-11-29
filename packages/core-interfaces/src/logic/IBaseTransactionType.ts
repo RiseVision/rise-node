@@ -1,7 +1,6 @@
 import {
   DBOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   SignedBlockType,
   TransactionType,
 } from '@risevision/core-types';
@@ -26,7 +25,7 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
   ): Buffer;
 
   apply(
-    tx: IConfirmedTransaction<T>,
+    tx: IBaseTransaction<T>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
@@ -37,7 +36,7 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
   ): Promise<Array<DBOp<any>>>;
 
   undo(
-    tx: IConfirmedTransaction<T>,
+    tx: IBaseTransaction<T>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
@@ -60,5 +59,5 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
 
   ready(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<boolean>;
 
-  attachAssets(txs: Array<IConfirmedTransaction<T>>): Promise<void>;
+  attachAssets(txs: Array<IBaseTransaction<T>>): Promise<void>;
 }

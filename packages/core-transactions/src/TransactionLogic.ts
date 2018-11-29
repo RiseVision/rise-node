@@ -17,7 +17,6 @@ import {
   DBOp,
   IBaseTransaction,
   IBytesTransaction,
-  IConfirmedTransaction,
   ITransportTransaction,
   SignedAndChainedBlockType,
   SignedBlockType,
@@ -349,7 +348,7 @@ export class TransactionLogic implements ITransactionLogic {
   public checkBalance(
     amount: bigint,
     balanceKey: 'balance' | 'u_balance',
-    tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
+    tx: IBaseTransaction<any>,
     sender: IAccountsModel
   ) {
     const exceededBalance = sender[balanceKey] < amount;
@@ -408,7 +407,7 @@ export class TransactionLogic implements ITransactionLogic {
     // Check sender is not genesis account unless block id equals genesis
     if (
       this.genesisBlock.generatorPublicKey.equals(sender.publicKey) &&
-      (tx as IConfirmedTransaction<any>).blockId !== this.genesisBlock.id
+      (tx as IBaseTransaction<any>).blockId !== this.genesisBlock.id
     ) {
       throw new Error('Invalid sender. Can not send from genesis account');
     }
@@ -498,7 +497,7 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   public async apply(
-    tx: IConfirmedTransaction<any>,
+    tx: IBaseTransaction<any>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -539,7 +538,7 @@ export class TransactionLogic implements ITransactionLogic {
    * @returns {Promise<void>}
    */
   public async undo(
-    tx: IConfirmedTransaction<any>,
+    tx: IBaseTransaction<any>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -675,18 +674,10 @@ export class TransactionLogic implements ITransactionLogic {
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
   public objectNormalize(
-    tx: IConfirmedTransaction<any>
-  ): IConfirmedTransaction<any, bigint>;
-  public objectNormalize(
-    tx: ITransportTransaction<any> | IBaseTransaction<any>
-  ): IBaseTransaction<any, bigint>;
-  // tslint:disable-next-line max-line-length
-  public objectNormalize(
     tx2:
-      | IBaseTransaction<any>
+      | IBaseTransaction<any, string | number | bigint>
       | ITransportTransaction<any>
-      | IConfirmedTransaction<any>
-  ): IBaseTransaction<any, bigint> | IConfirmedTransaction<any, bigint> {
+  ): IBaseTransaction<any, bigint> {
     const tx = _.merge({}, tx2);
     this.assertKnownTransactionType(tx.type);
     for (const key in tx) {
@@ -727,9 +718,7 @@ export class TransactionLogic implements ITransactionLogic {
     >);
   }
 
-  public async attachAssets(
-    txs: Array<IConfirmedTransaction<any>>
-  ): Promise<void> {
+  public async attachAssets(txs: Array<IBaseTransaction<any>>): Promise<void> {
     if (txs === null) {
       return;
     }

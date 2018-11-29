@@ -6,7 +6,6 @@ import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
   DBOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   SignedBlockType,
   TransactionType,
 } from '@risevision/core-types';
@@ -61,7 +60,7 @@ export abstract class BaseTx<T, M extends Model<any>>
   }
 
   public apply(
-    tx: IConfirmedTransaction<T>,
+    tx: IBaseTransaction<T>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -76,7 +75,7 @@ export abstract class BaseTx<T, M extends Model<any>>
   }
 
   public undo(
-    tx: IConfirmedTransaction<T>,
+    tx: IBaseTransaction<T>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -125,7 +124,7 @@ export abstract class BaseTx<T, M extends Model<any>>
    * @param {Array<IBaseTransaction<T>>} txs
    * @return {Promise<Array<IBaseTransaction<T>>>}
    */
-  public attachAssets(txs: Array<IConfirmedTransaction<T>>): Promise<void> {
+  public attachAssets(txs: Array<IBaseTransaction<T>>): Promise<void> {
     return Promise.resolve();
   }
 

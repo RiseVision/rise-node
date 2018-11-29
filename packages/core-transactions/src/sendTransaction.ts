@@ -9,7 +9,6 @@ import { ModelSymbols } from '@risevision/core-models';
 import {
   DBOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   SignedBlockType,
   TransactionType,
 } from '@risevision/core-types';
@@ -57,7 +56,7 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   public async apply(
-    tx: IConfirmedTransaction<void, bigint>,
+    tx: IBaseTransaction<void>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -79,7 +78,7 @@ export class SendTransaction extends BaseTx<void, null> {
 
   // tslint:disable-next-line max-line-length
   public async undo(
-    tx: IConfirmedTransaction<void, bigint>,
+    tx: IBaseTransaction<void>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
@@ -106,7 +105,7 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IConfirmedTransaction<void> & { senderId: string }) {
+  public dbSave(tx: IBaseTransaction<void> & { senderId: string }) {
     return null;
   }
 }

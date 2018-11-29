@@ -1,8 +1,4 @@
-import {
-  BasePeerType,
-  IBaseTransaction,
-  IConfirmedTransaction,
-} from '@risevision/core-types';
+import { BasePeerType, IBaseTransaction } from '@risevision/core-types';
 import { IAccountsModel } from '../models';
 
 export interface ITransactionsModule {
@@ -22,9 +18,7 @@ export interface ITransactionsModule {
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
   applyUnconfirmed(
-    transaction:
-      | IBaseTransaction<any, bigint>
-      | IConfirmedTransaction<any, bigint>,
+    transaction: IBaseTransaction<any, bigint>,
     sender: IAccountsModel
   ): Promise<void>;
 

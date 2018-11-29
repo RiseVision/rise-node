@@ -1,7 +1,6 @@
 import {
   IBaseTransaction,
   IBytesTransaction,
-  IConfirmedTransaction,
   ITransportTransaction,
 } from './transactions';
 
@@ -24,7 +23,7 @@ export type BlockType<T = Buffer, N = bigint> = {
 export type SignedBlockType<T = Buffer, N = bigint> = BlockType<T, N> & {
   id: string;
   blockSignature: T;
-  transactions?: Array<IConfirmedTransaction<any, N>>;
+  transactions?: Array<IBaseTransaction<any, N>>;
 };
 
 export type SignedAndChainedBlockType = SignedBlockType<Buffer> & {

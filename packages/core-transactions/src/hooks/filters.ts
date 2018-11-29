@@ -2,7 +2,6 @@ import { IAccountsModel } from '@risevision/core-interfaces';
 import {
   DBOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   ITransportTransaction,
   SignedBlockType,
 } from '@risevision/core-types';
@@ -14,7 +13,7 @@ import { createFilterDecorator } from '@risevision/core-utils';
 export const TxApplyFilter = createFilterDecorator<
   (
     ops: Array<DBOp<any>>,
-    tx?: IConfirmedTransaction<any>,
+    tx?: IBaseTransaction<any>,
     block?: SignedBlockType,
     sender?: IAccountsModel
   ) => Promise<Array<DBOp<any>>>
@@ -23,7 +22,7 @@ export const TxApplyFilter = createFilterDecorator<
 export const TxApplyUnconfirmedFilter = createFilterDecorator<
   (
     ops: Array<DBOp<any>>,
-    tx?: IConfirmedTransaction<any>,
+    tx?: IBaseTransaction<any>,
     block?: SignedBlockType,
     sender?: IAccountsModel
   ) => Promise<Array<DBOp<any>>>
@@ -32,7 +31,7 @@ export const TxApplyUnconfirmedFilter = createFilterDecorator<
 export const TxUndoFilter = createFilterDecorator<
   (
     ops: Array<DBOp<any>>,
-    tx?: IConfirmedTransaction<any>,
+    tx?: IBaseTransaction<any>,
     block?: SignedBlockType,
     sender?: IAccountsModel
   ) => Promise<Array<DBOp<any>>>
@@ -41,7 +40,7 @@ export const TxUndoFilter = createFilterDecorator<
 export const TxUndoUnconfirmedFilter = createFilterDecorator<
   (
     ops: Array<DBOp<any>>,
-    tx?: IConfirmedTransaction<any>,
+    tx?: IBaseTransaction<any>,
     block?: SignedBlockType,
     sender?: IAccountsModel
   ) => Promise<Array<DBOp<any>>>
@@ -50,7 +49,7 @@ export const TxUndoUnconfirmedFilter = createFilterDecorator<
 export const SendTxApplyFilter = createFilterDecorator<
   (
     ops: Array<DBOp<any>>,
-    tx?: IConfirmedTransaction<any>,
+    tx?: IBaseTransaction<any>,
     block?: SignedBlockType,
     sender?: IAccountsModel
   ) => Promise<Array<DBOp<any>>>
@@ -59,7 +58,7 @@ export const SendTxApplyFilter = createFilterDecorator<
 export const SendTxUndoFilter = createFilterDecorator<
   (
     ops: Array<DBOp<any>>,
-    tx?: IConfirmedTransaction<any>,
+    tx?: IBaseTransaction<any>,
     block?: SignedBlockType,
     sender?: IAccountsModel
   ) => Promise<Array<DBOp<any>>>

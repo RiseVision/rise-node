@@ -1,7 +1,7 @@
 // ### Chain module hooks
 import { IBlocksModel } from '@risevision/core-interfaces';
 import {
-  IConfirmedTransaction,
+  IBaseTransaction,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
@@ -27,10 +27,7 @@ export const OnDestroyBlock = createAction<
  * Called after transactions are persisted in the database
  */
 export const OnTransactionsSaved = createAction<
-  (
-    txs: Array<IConfirmedTransaction<any>>,
-    block?: SignedBlockType
-  ) => Promise<void>
+  (txs: Array<IBaseTransaction<any>>, block?: SignedBlockType) => Promise<void>
 >('core-blocks/onTransactionsSaved');
 
 export const OnReceiveBlock = createAction<

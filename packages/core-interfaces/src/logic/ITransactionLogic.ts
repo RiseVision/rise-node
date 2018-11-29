@@ -1,12 +1,9 @@
 import {
   DBOp,
   IBaseTransaction,
-  IBytesTransaction,
-  IConfirmedTransaction,
   ITransportTransaction,
   SignedBlockType,
 } from '@risevision/core-types';
-import BigNumber from 'bignumber.js';
 import { Model } from 'sequelize-typescript';
 import { IAccountsModel } from '../models';
 import { IBaseTransactionType } from './IBaseTransactionType';
@@ -42,7 +39,7 @@ export interface ITransactionLogic {
    * Hash for the transaction
    */
   getHash(
-    tx: IBaseTransaction<any, bigint>,
+    tx: IBaseTransaction<any>,
     skipSign: boolean,
     skipSecondSign: boolean
   ): Buffer;
@@ -53,7 +50,7 @@ export interface ITransactionLogic {
    */
 
   getBytes(
-    tx: IBaseTransaction<any, bigint>,
+    tx: IBaseTransaction<any>,
     skipSignature?: boolean,
     skipSecondSignature?: boolean
   ): Buffer;
@@ -68,12 +65,12 @@ export interface ITransactionLogic {
   checkBalance(
     amount: bigint,
     balanceKey: 'balance' | 'u_balance',
-    tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
+    tx: IBaseTransaction<any>,
     sender: any
   ): { error: string; exceeded: boolean };
 
   verify(
-    tx: IConfirmedTransaction<any> | IBaseTransaction<any>,
+    tx: IBaseTransaction<any>,
     sender: IAccountsModel,
     requester: IAccountsModel,
     height: number
@@ -88,14 +85,14 @@ export interface ITransactionLogic {
    * @returns {boolean} true
    */
   verifySignature(
-    tx: IBaseTransaction<any, bigint>,
+    tx: IBaseTransaction<any>,
     publicKey: Buffer,
     signature: Buffer,
     verificationType: VerificationType
   ): boolean;
 
   apply(
-    tx: IConfirmedTransaction<any, bigint>,
+    tx: IBaseTransaction<any>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
@@ -105,7 +102,7 @@ export interface ITransactionLogic {
    * @returns {Promise<void>}
    */
   undo(
-    tx: IConfirmedTransaction<any, bigint>,
+    tx: IBaseTransaction<any, bigint>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
@@ -126,7 +123,7 @@ export interface ITransactionLogic {
   ): Promise<Array<DBOp<any>>>;
 
   dbSave(
-    txs: Array<IBaseTransaction<any> & { senderId: string }>,
+    txs: Array<IBaseTransaction<any>>,
     blockId: string,
     height: number
   ): Array<DBOp<any>>;
@@ -138,10 +135,9 @@ export interface ITransactionLogic {
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
   objectNormalize(
-    tx: IConfirmedTransaction<any, string | number | bigint>
-  ): IConfirmedTransaction<any, bigint>;
-  objectNormalize(
-    tx: ITransportTransaction<any> | IBaseTransaction<any>
+    tx:
+      | IBaseTransaction<any, string | number | bigint>
+      | ITransportTransaction<any>
   ): IBaseTransaction<any, bigint>;
 
   fromProtoBuffer(buff: Buffer): IBaseTransaction<any, bigint>;
@@ -149,10 +145,10 @@ export interface ITransactionLogic {
   toProtoBuffer(tx: IBaseTransaction<any>): Buffer;
   /**
    * Attach Asset object to each transaction passed
-   * @param {Array<IConfirmedTransaction<any>>} txs
+   * @param {Array<IBaseTransaction<any>>} txs
    * @return {Promise<void>}
    */
-  attachAssets(txs: Array<IConfirmedTransaction<any>>): Promise<void>;
+  attachAssets(txs: Array<IBaseTransaction<any>>): Promise<void>;
 
   /**
    * Gets maximum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.

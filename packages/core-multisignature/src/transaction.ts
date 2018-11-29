@@ -13,7 +13,6 @@ import {
   DBOp,
   DBUpsertOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   SignedBlockType,
   TransactionType,
 } from '@risevision/core-types';
@@ -196,7 +195,7 @@ export class MultiSignatureTransaction extends BaseTx<
   }
 
   public async apply(
-    tx: IConfirmedTransaction<MultisigAsset, bigint>,
+    tx: IBaseTransaction<MultisigAsset, bigint>,
     block: SignedBlockType,
     sender: AccountsModelWithMultisig
   ): Promise<Array<DBOp<any>>> {
@@ -205,7 +204,7 @@ export class MultiSignatureTransaction extends BaseTx<
   }
 
   public async undo(
-    tx: IConfirmedTransaction<MultisigAsset>,
+    tx: IBaseTransaction<MultisigAsset, bigint>,
     block: SignedBlockType,
     sender: AccountsModelWithMultisig
   ): Promise<Array<DBOp<any>>> {
@@ -329,7 +328,7 @@ export class MultiSignatureTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IConfirmedTransaction<MultisigAsset> & { senderId: string }
+    tx: IBaseTransaction<MultisigAsset> & { senderId: string }
   ): DBCreateOp<MultiSignaturesModel> {
     return {
       model: this.MultiSignaturesModel,
@@ -367,7 +366,7 @@ export class MultiSignatureTransaction extends BaseTx<
     return this.multisigUtils.txMultiSigReady(tx, sender);
   }
 
-  public async attachAssets(txs: Array<IConfirmedTransaction<MultisigAsset>>) {
+  public async attachAssets(txs: Array<IBaseTransaction<MultisigAsset>>) {
     const res = await this.MultiSignaturesModel.findAll({
       where: { transactionId: txs.map((tx) => tx.id) },
     });

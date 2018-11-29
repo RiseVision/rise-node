@@ -9,7 +9,6 @@ import { BaseTx } from '@risevision/core-transactions';
 import {
   DBOp,
   IBaseTransaction,
-  IConfirmedTransaction,
   SignedBlockType,
   TransactionType,
 } from '@risevision/core-types';
@@ -156,7 +155,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   // tslint:disable-next-line max-line-length
   public async apply(
-    tx: IConfirmedTransaction<VoteAsset>,
+    tx: IBaseTransaction<VoteAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
@@ -172,7 +171,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   // tslint:disable-next-line max-line-length
   public async undo(
-    tx: IConfirmedTransaction<VoteAsset, bigint>,
+    tx: IBaseTransaction<VoteAsset, bigint>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
@@ -264,7 +263,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IConfirmedTransaction<VoteAsset> & { senderId: string }
+    tx: IBaseTransaction<VoteAsset> & { senderId: string }
   ): DBOp<any> {
     return {
       model: this.VotesModel,
@@ -276,7 +275,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     };
   }
 
-  public async attachAssets(txs: Array<IConfirmedTransaction<VoteAsset>>) {
+  public async attachAssets(txs: Array<IBaseTransaction<VoteAsset>>) {
     const res = await this.VotesModel.findAll({
       where: { transactionId: txs.map((tx) => tx.id) },
     });
