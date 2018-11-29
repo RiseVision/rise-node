@@ -77,9 +77,9 @@ describe('modules/multisignatures', () => {
     );
     multisigTx = container.getNamed(TXSymbols.transaction, MultisigSymbols.tx);
     tx = {
-      amount: 108910891000000,
+      amount: 108910891000000n,
       asset: {},
-      fee: 10,
+      fee: 10n,
       id: '8139741256612355994',
       recipientId: '15256762582730568272R',
       senderId: '1233456789012345R',

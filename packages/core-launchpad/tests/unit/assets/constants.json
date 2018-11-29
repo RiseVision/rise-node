@@ -4,6 +4,7 @@
     "targetTime": 30,
     "slotWindow": 5,
     "maxPayloadLength": 1048576,
+    "receiptTimeOut": 60,
     "rewards": [
       {
         "fromHeight": 1,

@@ -294,7 +294,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IBaseTransaction<DelegateAsset> & { senderId: string }
+    tx: IBaseTransaction<DelegateAsset>
   ): DBCreateOp<DelegatesModel> {
     return {
       model: this.DelegatesModel,

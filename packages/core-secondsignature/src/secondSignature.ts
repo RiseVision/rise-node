@@ -232,7 +232,7 @@ export class SecondSignatureTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IBaseTransaction<SecondSignatureAsset> & { senderId: string }
+    tx: IBaseTransaction<SecondSignatureAsset>
   ): DBOp<any> {
     return {
       model: this.SignaturesModel,

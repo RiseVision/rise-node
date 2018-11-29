@@ -841,7 +841,7 @@ describe('logic/transactions/createmultisig', () => {
 
   describe('ready', () => {
     it('return false if tx.signatures is not an array', async () => {
-      tx.signatures = {};
+      tx.signatures = {} as any;
       expect(await instance.ready(tx, sender)).to.be.false;
     });
     describe('account already multisig', () => {
@@ -874,11 +874,11 @@ describe('logic/transactions/createmultisig', () => {
         ];
         tx.signatures = [];
         expect(await instance.ready(tx, sender)).false;
-        tx.signatures.push('a');
+        tx.signatures.push('a' as any);
         expect(await instance.ready(tx, sender)).false;
-        tx.signatures.push('a');
+        tx.signatures.push('a' as any);
         expect(await instance.ready(tx, sender)).false;
-        tx.signatures.push('a');
+        tx.signatures.push('a' as any);
         expect(await instance.ready(tx, sender)).true;
       });
     });
@@ -892,7 +892,7 @@ describe('logic/transactions/createmultisig', () => {
         ];
       });
       it('should require account 3 sigs', async () => {
-        tx.signatures = ['1', '2', '3'];
+        tx.signatures = ['1', '2', '3'].map((a) => Buffer.from(a, 'utf8'));
         expect(await instance.ready(tx, sender)).true;
       });
     });
@@ -902,7 +902,7 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('return true if tx.signatures are more or equal to the sender.multimin', async () => {
-      tx.signatures = ['1', '2', '3'];
+      tx.signatures = ['1', '2', '3'].map((a) => Buffer.from(a, 'utf8'));
       sender.multimin = 2;
       expect(await instance.ready(tx, sender)).to.be.false;
     });

@@ -328,7 +328,7 @@ export class MultiSignatureTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IBaseTransaction<MultisigAsset> & { senderId: string }
+    tx: IBaseTransaction<MultisigAsset>
   ): DBCreateOp<MultiSignaturesModel> {
     return {
       model: this.MultiSignaturesModel,

@@ -7,14 +7,14 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { DBUpdateOp, TransactionType } from '@risevision/core-types';
+import { DBUpdateOp, IBaseTransaction, TransactionType } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { dPoSSymbols } from '../../../../src/helpers';
-import { RegisterDelegateTransaction } from '../../../../src/logic/delegateTransaction';
+import { DelegateAsset, RegisterDelegateTransaction } from '../../../../src/logic/delegateTransaction';
 import { AccountsModelForDPOS, DelegatesModel } from '../../../../src/models';
 
 const expect = chai.expect;
@@ -29,7 +29,7 @@ describe('logic/transactions/delegate', () => {
   let instance: RegisterDelegateTransaction;
   let accountsModel: typeof AccountsModelForDPOS;
   let delegatesModel: typeof DelegatesModel;
-  let tx: any;
+  let tx: IBaseTransaction<DelegateAsset>;
   let sender: any;
   let block: any;
 
@@ -58,20 +58,16 @@ describe('logic/transactions/delegate', () => {
     accountsModuleStub = container.get(Symbols.modules.accounts);
     systemModuleStub = container.get(Symbols.modules.system);
     tx = {
-      amount: 0,
+      amount: 0n,
       asset: {
         delegate: {
-          address: '74128139741256612355994R',
-          publicKey: Buffer.from(
-            'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
-            'hex'
-          ),
           username: 'topdelegate',
         },
       },
-      fee: 10,
+      fee: 10n,
       id: '8139741256612355994',
       senderId: '1233456789012345R',
+      recipientId: null,
       senderPublicKey: Buffer.from(
         '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
         'hex'
@@ -164,7 +160,7 @@ describe('logic/transactions/delegate', () => {
     });
 
     it('should throw when amount != 0', async () => {
-      tx.amount = 100;
+      tx.amount = 100n;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid transaction amount'
       );
@@ -421,8 +417,8 @@ describe('logic/transactions/delegate', () => {
   describe('objectNormalize', () => {
     it('should remove empty keys from asset', () => {
       const oldAsset = { ...tx.asset };
-      tx.asset.delegate.meow = null;
-      tx.asset.delegate.haha = '';
+      (tx.asset.delegate as any).meow = null;
+      (tx.asset.delegate as any).haha = '';
       instance.objectNormalize(tx);
       expect(tx.asset).deep.eq(oldAsset);
     });

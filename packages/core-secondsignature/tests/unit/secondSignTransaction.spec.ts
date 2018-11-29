@@ -7,14 +7,14 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { DBUpdateOp, TransactionType } from '@risevision/core-types';
+import { DBUpdateOp, IBaseTransaction, TransactionType } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
-import { SecondSignatureTransaction } from '../../src/secondSignature';
+import { SecondSignatureAsset, SecondSignatureTransaction } from '../../src/secondSignature';
 import { SignaturesModel } from '../../src/SignaturesModel';
 import { SigSymbols } from '../../src/symbols';
 
@@ -31,7 +31,7 @@ describe('logic/transactions/secondSignature', () => {
   let instance: SecondSignatureTransaction;
   let accountsModel: typeof AccountsModelWith2ndSign;
   let signaturesModel: typeof SignaturesModel;
-  let tx: any;
+  let tx: IBaseTransaction<SecondSignatureAsset>;
   let sender: any;
   let block: any;
 
@@ -59,15 +59,16 @@ describe('logic/transactions/secondSignature', () => {
     );
     signaturesModel = container.getNamed(ModelSymbols.model, SigSymbols.model);
     tx = {
-      amount: 0,
+      amount: 0n,
       asset: {
         signature: {
           publicKey:
             'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
         },
       },
-      fee: 10,
+      fee: 10n,
       id: '8139741256612355994',
+      recipientId: null,
       senderId: '1233456789012345R',
       senderPublicKey: Buffer.from(
         '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
@@ -84,7 +85,7 @@ describe('logic/transactions/secondSignature', () => {
 
     sender = {
       address: '1233456789012345R',
-      balance: 10000000,
+      balance: 10000000n,
       publicKey: Buffer.from(
         '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
         'hex'
@@ -165,7 +166,7 @@ describe('logic/transactions/secondSignature', () => {
     });
 
     it('should throw when amount is not zero', async () => {
-      tx.amount = 1;
+      tx.amount = 1n;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid transaction amount'
       );
@@ -401,4 +402,5 @@ describe('logic/transactions/secondSignature', () => {
       });
     });
   });
+
 });

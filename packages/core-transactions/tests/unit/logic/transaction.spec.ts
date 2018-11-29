@@ -177,6 +177,7 @@ describe('logic/transaction', () => {
     const toRestore = {} as any;
     before(() => {
       toRestore.writeByte = ByteBuffer.prototype.writeByte;
+      toRestore.append = ByteBuffer.prototype.append;
       toRestore.writeInt = ByteBuffer.prototype.writeInt;
       toRestore.writeLong = (ByteBuffer.prototype as any).writeLong;
       toRestore.flip = ByteBuffer.prototype.flip;
@@ -197,6 +198,7 @@ describe('logic/transaction', () => {
       (ByteBuffer.prototype as any).writeByte = toRestore.writeByte;
       (ByteBuffer.prototype as any).writeInt = toRestore.writeInt;
       (ByteBuffer.prototype as any).writeLong = toRestore.writeLong;
+      (ByteBuffer.prototype as any).append = toRestore.append;
       ByteBuffer.prototype.flip = toRestore.flip;
     });
 
