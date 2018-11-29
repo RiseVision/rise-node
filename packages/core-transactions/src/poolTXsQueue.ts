@@ -93,7 +93,9 @@ export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
     return res;
   }
 
-  public txList(opts: ListingOptions<T> = {}): Array<IBaseTransaction<any, bigint>> {
+  public txList(
+    opts: ListingOptions<T> = {}
+  ): Array<IBaseTransaction<any, bigint>> {
     return this.list(opts).map((t) => t.tx);
   }
 }

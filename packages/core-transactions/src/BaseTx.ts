@@ -90,7 +90,9 @@ export abstract class BaseTx<T, M extends Model<any>>
     return Promise.resolve([]);
   }
 
-  public abstract objectNormalize(tx: IBaseTransaction<T>): IBaseTransaction<T, bigint>;
+  public abstract objectNormalize(
+    tx: IBaseTransaction<T>
+  ): IBaseTransaction<T, bigint>;
 
   // tslint:disable-next-line max-line-length
   public abstract dbSave(

@@ -228,7 +228,13 @@ export class BlocksAPI {
 
   @postConstruct()
   private postConstruct() {
-    blocksSchema.getBlocks.properties.totalAmount.maximum = parseInt(this.constants.totalAmount, 10);
-    blocksSchema.getBlocks.properties.totalFee.maximum = parseInt(this.constants.totalAmount, 10);
+    blocksSchema.getBlocks.properties.totalAmount.maximum = parseInt(
+      this.constants.totalAmount,
+      10
+    );
+    blocksSchema.getBlocks.properties.totalFee.maximum = parseInt(
+      this.constants.totalAmount,
+      10
+    );
   }
 }

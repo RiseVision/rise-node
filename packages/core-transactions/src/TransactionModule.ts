@@ -107,8 +107,7 @@ export class TransactionsModule implements ITransactionsModule {
           peer ? `from peer ${peer.string}` : ' '
         }`
       );
-      await this.transactionPool.queued
-        .add(tx, { receivedAt: new Date() });
+      await this.transactionPool.queued.add(tx, { receivedAt: new Date() });
     }
   }
 

@@ -41,7 +41,7 @@ export class SignHooksListener extends ExtendableClass {
 
   @TxLogicVerify()
   public async txLogicVerify(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     sender: AccountsModelWith2ndSign
   ) {
     if (sender.secondSignature) {

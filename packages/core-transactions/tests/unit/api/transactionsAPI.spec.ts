@@ -351,8 +351,7 @@ describe('apis/transactionsAPI', () => {
         .map(() => createRandomTransaction());
       txs = transportTxs.map((t) => toBufferedTransaction(t));
 
-      txs.forEach((tx) => txPool.queued
-        .add(tx, { receivedAt: new Date() }));
+      txs.forEach((tx) => txPool.queued.add(tx, { receivedAt: new Date() }));
       transportTxs.forEach((tx) => (tx.signatures = undefined));
     });
     it('filtering by senderPublicKey & address', async () => {
@@ -362,10 +361,14 @@ describe('apis/transactionsAPI', () => {
       });
       expect(result).to.deep.equal({
         count: 5,
-        transactions: [{ ...transportTxs[0],
-          amount: `${transportTxs[0].amount}`,
-          fee: `${transportTxs[0].fee}`,
-          signSignature: null }],
+        transactions: [
+          {
+            ...transportTxs[0],
+            amount: `${transportTxs[0].amount}`,
+            fee: `${transportTxs[0].fee}`,
+            signSignature: null,
+          },
+        ],
       });
     });
 
@@ -375,10 +378,14 @@ describe('apis/transactionsAPI', () => {
       });
       expect(result).to.deep.equal({
         count: 5,
-        transactions: [{ ...transportTxs[1],
-          amount: `${transportTxs[1].amount}`,
-          fee: `${transportTxs[1].fee}`,
-          signSignature: null }],
+        transactions: [
+          {
+            ...transportTxs[1],
+            amount: `${transportTxs[1].amount}`,
+            fee: `${transportTxs[1].fee}`,
+            signSignature: null,
+          },
+        ],
       });
     });
 
@@ -388,10 +395,14 @@ describe('apis/transactionsAPI', () => {
       });
       expect(result).to.deep.equal({
         count: 5,
-        transactions: [{ ...transportTxs[2],
-          amount: `${transportTxs[2].amount}`,
-          fee: `${transportTxs[2].fee}`,
-          signSignature: null }],
+        transactions: [
+          {
+            ...transportTxs[2],
+            amount: `${transportTxs[2].amount}`,
+            fee: `${transportTxs[2].fee}`,
+            signSignature: null,
+          },
+        ],
       });
     });
 
@@ -399,12 +410,12 @@ describe('apis/transactionsAPI', () => {
       result = await instance.getQueuedTxs({});
       expect(result).to.deep.equal({
         count: 5,
-        transactions: transportTxs
-          .reverse()
-          .map((tx) => ({ ...tx,
-            amount: `${tx.amount}`,
-            fee: `${tx.fee}`,
-            signSignature: null })),
+        transactions: transportTxs.reverse().map((tx) => ({
+          ...tx,
+          amount: `${tx.amount}`,
+          fee: `${tx.fee}`,
+          signSignature: null,
+        })),
       });
     });
   });
@@ -427,14 +438,20 @@ describe('apis/transactionsAPI', () => {
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
-          { ...transportTXS[1],
+          {
+            ...transportTXS[1],
             amount: `${transportTXS[1].amount}`,
             fee: `${transportTXS[1].fee}`,
-            signSignature: null, signatures: undefined },
-          { ...transportTXS[0],
+            signSignature: null,
+            signatures: undefined,
+          },
+          {
+            ...transportTXS[0],
             amount: `${transportTXS[0].amount}`,
             fee: `${transportTXS[0].fee}`,
-            signSignature: null, signatures: undefined },
+            signSignature: null,
+            signatures: undefined,
+          },
         ],
       });
     });
@@ -443,12 +460,13 @@ describe('apis/transactionsAPI', () => {
       result = await instance.getUnconfirmedTxs({});
       expect(result).to.deep.equal({
         count: 5,
-        transactions: transportTXS
-          .reverse()
-          .map((tx) => ({ ...tx,
-            amount: `${tx.amount}`,
-            fee: `${tx.fee}`,
-            signSignature: null, signatures: undefined })),
+        transactions: transportTXS.reverse().map((tx) => ({
+          ...tx,
+          amount: `${tx.amount}`,
+          fee: `${tx.fee}`,
+          signSignature: null,
+          signatures: undefined,
+        })),
       });
     });
   });

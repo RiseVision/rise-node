@@ -137,7 +137,9 @@ export interface ITransactionLogic {
    * Epurates the tx object by removing null and undefined fields
    * Pass it through schema validation and then calls subtype objectNormalize.
    */
-  objectNormalize(tx: IConfirmedTransaction<any, string | number | bigint>): IConfirmedTransaction<any, bigint>;
+  objectNormalize(
+    tx: IConfirmedTransaction<any, string | number | bigint>
+  ): IConfirmedTransaction<any, bigint>;
   objectNormalize(
     tx: ITransportTransaction<any> | IBaseTransaction<any>
   ): IBaseTransaction<any, bigint>;

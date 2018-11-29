@@ -22,7 +22,9 @@ export interface ITransactionsModule {
    * Gets requester if requesterPublicKey and calls applyUnconfirmed.
    */
   applyUnconfirmed(
-    transaction: IBaseTransaction<any, bigint> | IConfirmedTransaction<any, bigint>,
+    transaction:
+      | IBaseTransaction<any, bigint>
+      | IConfirmedTransaction<any, bigint>,
     sender: IAccountsModel
   ): Promise<void>;
 

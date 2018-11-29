@@ -99,7 +99,9 @@ export class SendTransaction extends BaseTx<void, null> {
     );
   }
 
-  public objectNormalize(tx: IBaseTransaction<void, bigint>): IBaseTransaction<void, bigint> {
+  public objectNormalize(
+    tx: IBaseTransaction<void, bigint>
+  ): IBaseTransaction<void, bigint> {
     return tx;
   }
 

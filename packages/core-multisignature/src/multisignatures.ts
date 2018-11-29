@@ -99,7 +99,7 @@ export class MultisignaturesModule {
   }
 
   private async processNormalTxSignature(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     signature: Buffer,
     sender: AccountsModelWithMultisig
   ) {
@@ -129,7 +129,7 @@ export class MultisignaturesModule {
   }
 
   private async processMultiSigSignature(
-    tx: IBaseTransaction<MultisigAsset>,
+    tx: IBaseTransaction<MultisigAsset, bigint>,
     signature: Buffer,
     sender: AccountsModelWithMultisig
   ) {

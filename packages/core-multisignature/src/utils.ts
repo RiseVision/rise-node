@@ -51,7 +51,7 @@ export class MultiSigUtils {
    * @param pubKey the pubKey to test
    */
   public isTxSignedByPubKey(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     pubKey: Buffer
   ): boolean {
     if (tx.signatures && tx.signatures.length > 0) {

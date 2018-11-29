@@ -4,7 +4,7 @@ import { createActionDecorator as createAction } from '@risevision/core-utils';
 
 export const TxLogicStaticCheck = createAction<
   (
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     sender?: IAccountsModel,
     requester?: IAccountsModel,
     height?: number
@@ -13,7 +13,7 @@ export const TxLogicStaticCheck = createAction<
 
 export const TxLogicVerify = createAction<
   (
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     sender?: IAccountsModel,
     requester?: IAccountsModel,
     height?: number
@@ -21,5 +21,5 @@ export const TxLogicVerify = createAction<
 >('core-transactions/txlogic/verify/tx');
 
 export const OnNewUnconfirmedTransation = createAction<
-  (tx: IBaseTransaction<any>, broadcast?: boolean) => Promise<void>
+  (tx: IBaseTransaction<any, bigint>, broadcast?: boolean) => Promise<void>
 >('core-transactions/pool/onUnconfirmedTx');

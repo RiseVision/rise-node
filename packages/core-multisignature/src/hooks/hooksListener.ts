@@ -93,7 +93,7 @@ export class MultisigHooksListener extends ExtendableClass {
 
   @TxLogicVerify()
   public async txLogicVerify(
-    tx: IBaseTransaction<any>,
+    tx: IBaseTransaction<any, bigint>,
     sender: AccountsModelWithMultisig,
     requester: AccountsModelWithMultisig
   ) {

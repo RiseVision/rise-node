@@ -79,9 +79,9 @@ export async function createContainer(
     },
   });
 
-  container.rebind(Symbols.generic.constants).toConstantValue(
-    require(`${__dirname}/../assets/constants.json`)
-  );
+  container
+    .rebind(Symbols.generic.constants)
+    .toConstantValue(require(`${__dirname}/../assets/constants.json`));
   // container.get<any>(Symbols.generic.constants).addressSuffix = 'R';
   // const infoModel = container.getNamed<IBaseModel>(ModelSymbols.model, ModelSymbols.names.info);
   for (const sm of sortedModules) {

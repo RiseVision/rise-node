@@ -106,7 +106,7 @@ export class TransactionLogic implements ITransactionLogic {
    */
   public getHash(
     tx: IBaseTransaction<any, bigint>,
-    skipSign: boolean       = false,
+    skipSign: boolean = false,
     skipSecondSign: boolean = false
   ): Buffer {
     return crypto
@@ -122,7 +122,7 @@ export class TransactionLogic implements ITransactionLogic {
   // tslint:disable-next-line cognitive-complexity
   public getBytes(
     tx: IBaseTransaction<any, bigint>,
-    skipSignature: boolean       = false,
+    skipSignature: boolean = false,
     skipSecondSignature: boolean = false
   ): Buffer {
     if (!(tx.type in this.types)) {
@@ -160,7 +160,7 @@ export class TransactionLogic implements ITransactionLogic {
         0,
         -this.constants.addressSuffix.length
       );
-      const recBuf    = new MyBigNumb(recipient).toBuffer({ size: 8 });
+      const recBuf = new MyBigNumb(recipient).toBuffer({ size: 8 });
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(recBuf[i] || 0);
@@ -201,17 +201,19 @@ export class TransactionLogic implements ITransactionLogic {
     return bb.toBuffer() as any;
   }
 
-  public toProtoBuffer(tx: IBaseTransaction<any, bigint> & { relays: number }): Buffer {
+  public toProtoBuffer(
+    tx: IBaseTransaction<any, bigint> & { relays: number }
+  ): Buffer {
     const obj = {
-      bytes                : this.getBytes(tx),
-      fee                  : toBufferLE(tx.fee, this.constants.amountBytes),
+      bytes: this.getBytes(tx),
+      fee: toBufferLE(tx.fee, this.constants.amountBytes),
       hasRequesterPublicKey:
         typeof tx.requesterPublicKey !== 'undefined' &&
         tx.requesterPublicKey != null,
-      hasSignSignature     :
+      hasSignSignature:
         typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
-      relays               : Number.isInteger(tx.relays) ? tx.relays : 1,
-      signatures           : tx.signatures,
+      relays: Number.isInteger(tx.relays) ? tx.relays : 1,
+      signatures: tx.signatures,
     };
 
     return this.protoBufHelper.encode(
@@ -231,12 +233,12 @@ export class TransactionLogic implements ITransactionLogic {
       'bytesTransaction'
     );
 
-    const bb               = ByteBuffer.wrap(tx.bytes, 'binary', true);
-    const type             = bb.readByte(0);
-    const timestamp        = bb.readUint32(1);
-    const senderPublicKey  = tx.bytes.slice(5, 37);
+    const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
+    const type = bb.readByte(0);
+    const timestamp = bb.readUint32(1);
+    const senderPublicKey = tx.bytes.slice(5, 37);
     let requesterPublicKey = null;
-    let offset             = 37;
+    let offset = 37;
 
     // Read requesterPublicKey if available
     if (tx.hasRequesterPublicKey) {
@@ -247,7 +249,7 @@ export class TransactionLogic implements ITransactionLogic {
     // RecipientId is valid only if it's not 8 bytes with 0 value
     const recipientIdBytes = tx.bytes.slice(offset, offset + 8);
     offset += 8;
-    let recipientValid     = false;
+    let recipientValid = false;
     for (let i = 0; i < 8; i++) {
       if (recipientIdBytes.readUInt8(i) !== 0) {
         recipientValid = true;
@@ -256,10 +258,13 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     const recipientId = recipientValid
-      ? MyBigNumb.fromBuffer(recipientIdBytes).toString() + this.constants.addressSuffix
+      ? MyBigNumb.fromBuffer(recipientIdBytes).toString() +
+        this.constants.addressSuffix
       : null;
 
-    const amount = toBigIntLE(tx.bytes.slice(offset, offset + this.constants.amountBytes));
+    const amount = toBigIntLE(
+      tx.bytes.slice(offset, offset + this.constants.amountBytes)
+    );
     offset += this.constants.amountBytes;
 
     const signature = tx.hasSignSignature
@@ -273,11 +278,18 @@ export class TransactionLogic implements ITransactionLogic {
     );
 
     // All remaining bytes between amount and signSignature (or signature) are the asset.
-    let assetBytes               = null;
+    let assetBytes = null;
     const optionalElementsLength =
-          (tx.hasRequesterPublicKey ? 32 : 0) + (tx.hasSignSignature ? 64 : 0);
-    const assetLength            =
-          bb.buffer.length - (1 + 4 + 32 + this.constants.amountBytes + 8 + 64 + optionalElementsLength);
+      (tx.hasRequesterPublicKey ? 32 : 0) + (tx.hasSignSignature ? 64 : 0);
+    const assetLength =
+      bb.buffer.length -
+      (1 +
+        4 +
+        32 +
+        this.constants.amountBytes +
+        8 +
+        64 +
+        optionalElementsLength);
 
     if (assetLength < 0) {
       throw new Error('Buffer length does not match expected sequence');
@@ -287,10 +299,10 @@ export class TransactionLogic implements ITransactionLogic {
 
     const transaction: IBaseTransaction<any, bigint> & { relays: number } = {
       amount,
-      fee     : toBigIntLE(tx.fee),
-      id      : this.getIdFromBytes(tx.bytes),
+      fee: toBigIntLE(tx.fee),
+      id: this.getIdFromBytes(tx.bytes),
       recipientId,
-      relays  : tx.relays,
+      relays: tx.relays,
       requesterPublicKey,
       senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey),
       senderPublicKey,
@@ -342,11 +354,11 @@ export class TransactionLogic implements ITransactionLogic {
   ) {
     const exceededBalance = sender[balanceKey] < amount;
     // tslint:disable-next-line
-    const exceeded        = tx['blockId'] !== this.genesisBlock.id && exceededBalance;
+    const exceeded = tx['blockId'] !== this.genesisBlock.id && exceededBalance;
     return {
       error: exceeded
         ? `Account does not have enough currency: ${sender.address} balance: ${
-          sender[balanceKey]
+            sender[balanceKey]
           } - ${amount}`
         : null,
       exceeded,
@@ -428,7 +440,7 @@ export class TransactionLogic implements ITransactionLogic {
     this.assertValidAmounts(tx);
 
     // Check confirmed sender balance
-    const amount        = BigInt(tx.amount) + BigInt(tx.fee);
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
     const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
@@ -468,7 +480,7 @@ export class TransactionLogic implements ITransactionLogic {
       return false;
     }
     // ALL
-    let skipSign       = false;
+    let skipSign = false;
     let skipSecondSign = false;
     switch (verificationType) {
       case VerificationType.SECOND_SIGNATURE:
@@ -494,7 +506,7 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Transaction is not ready');
     }
 
-    const amount        = BigInt(tx.amount) + BigInt(tx.fee);
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
     const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
@@ -505,7 +517,7 @@ export class TransactionLogic implements ITransactionLogic {
       balance: -amount,
       blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
-      sender : sender.address,
+      sender: sender.address,
     });
     const ops = this.accountLogic.merge(sender.address, {
       balance: -amount,
@@ -538,7 +550,7 @@ export class TransactionLogic implements ITransactionLogic {
       balance: amount,
       blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
-      sender : sender.address,
+      sender: sender.address,
     });
     const ops = this.accountLogic.merge(sender.address, {
       balance: amount,
@@ -561,7 +573,7 @@ export class TransactionLogic implements ITransactionLogic {
     sender: IAccountsModel,
     requester?: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
-    const amount        = BigInt(tx.amount) + BigInt(tx.fee);
+    const amount = BigInt(tx.amount) + BigInt(tx.fee);
     const senderBalance = this.checkBalance(amount, 'u_balance', tx, sender);
     if (senderBalance.exceeded) {
       throw new Error(senderBalance.error);
@@ -612,41 +624,41 @@ export class TransactionLogic implements ITransactionLogic {
       return [];
     }
     const bulkCreate: DBBulkCreateOp<ITransactionsModel> = {
-      model : this.TransactionsModel,
-      type  : 'bulkCreate',
+      model: this.TransactionsModel,
+      type: 'bulkCreate',
       values: txs.map((tx) => {
         this.assertKnownTransactionType(tx.type);
-        const senderPublicKey    = tx.senderPublicKey;
-        const signature          = tx.signature;
-        const signSignature      = tx.signSignature ? tx.signSignature : null;
+        const senderPublicKey = tx.senderPublicKey;
+        const signature = tx.signature;
+        const signSignature = tx.signSignature ? tx.signSignature : null;
         const requesterPublicKey = tx.requesterPublicKey
           ? tx.requesterPublicKey
           : null;
         return {
           // tslint:disable object-literal-sort-keys
-          id         : tx.id,
+          id: tx.id,
           blockId,
           height,
-          type       : tx.type,
-          timestamp  : tx.timestamp,
+          type: tx.type,
+          timestamp: tx.timestamp,
           senderPublicKey,
           requesterPublicKey,
-          senderId   : tx.senderId,
+          senderId: tx.senderId,
           recipientId: tx.recipientId || null,
-          amount     : BigInt(tx.amount),
-          fee        : BigInt(tx.fee),
+          amount: BigInt(tx.amount),
+          fee: BigInt(tx.fee),
           signature,
           signSignature,
-          signatures : tx.signatures
+          signatures: tx.signatures
             ? (tx.signatures
-              .map((s: Buffer) => s.toString('hex'))
-              .join(',') as any) // Signatures are stringified and joined.
+                .map((s: Buffer) => s.toString('hex'))
+                .join(',') as any) // Signatures are stringified and joined.
             : null,
           // tslint:enable object-literal-sort-keys
         };
       }),
     };
-    const subOps: Array<DBOp<any>>                       = txs
+    const subOps: Array<DBOp<any>> = txs
       .map((tx) => this.types[tx.type].dbSave(tx, blockId, height))
       .filter((op) => op);
 
@@ -695,7 +707,7 @@ export class TransactionLogic implements ITransactionLogic {
     });
 
     tx.amount = BigInt(tx.amount);
-    tx.fee    = BigInt(tx.fee);
+    tx.fee = BigInt(tx.fee);
     this.assertValidAmounts(tx as IBaseTransaction<any, bigint>);
 
     const report = this.schema.validate(tx, txSchema);
@@ -709,7 +721,10 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     // After processing the tx object becomes a IBaseTransaction<any>
-    return this.types[tx.type].objectNormalize(tx as IBaseTransaction<any, bigint>);
+    return this.types[tx.type].objectNormalize(tx as IBaseTransaction<
+      any,
+      bigint
+    >);
   }
 
   public async attachAssets(
@@ -748,15 +763,17 @@ export class TransactionLogic implements ITransactionLogic {
   }
 
   private assertValidAmounts(tx: IBaseTransaction<any, bigint>) {
-// Check amount
+    // Check amount
     const amountFields = ['fee', 'amount'];
     amountFields.forEach((k) => {
       const v: bigint = tx[k];
-      if (typeof (v) !== 'bigint') {
+      if (typeof v !== 'bigint') {
         throw new Error(`${k} is not a bigint`);
       }
       if (v < 0 || v > BigInt(this.constants.totalAmount)) {
-        throw new Error(`tx.${k} is either negative or greater than totalAmount`);
+        throw new Error(
+          `tx.${k} is either negative or greater than totalAmount`
+        );
       }
     });
   }
