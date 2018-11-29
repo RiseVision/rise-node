@@ -132,5 +132,8 @@
     "tslint-sonarts": "=1.8.0",
     "typescript": "=3.2.0-rc",
     "utility-types": "^2.1.0"
+  },
+  "resolutions": {
+    "nan": "2.10.0"
   }
 }
