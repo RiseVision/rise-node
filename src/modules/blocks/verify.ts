@@ -69,7 +69,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Verifies block before fork detection and return all possible errors related to block
    */
   public verifyReceipt(block: SignedBlockType): { errors: string[], verified: boolean } {
-    const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
+    const lastBlock = this.blocksModule.lastBlock;
 
     block.height           = lastBlock.height + 1;
     const errors: string[] = [
@@ -95,7 +95,7 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
    * Verify block before processing and return all possible errors related to block
    */
   public async verifyBlock(block: SignedBlockType): Promise<{ errors: string[], verified: boolean }> {
-    const lastBlock: SignedBlockType = this.blocksModule.lastBlock;
+    const lastBlock = this.blocksModule.lastBlock;
 
     const errors = [
       this.verifySignature(block),

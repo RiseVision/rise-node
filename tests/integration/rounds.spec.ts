@@ -111,7 +111,7 @@ describe('rounds', () => {
   });
 
   async function getmappedDelObj() {
-    const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc' });
+    const preRes       = await delegatesModule.getDelegates({ orderBy: 'vote:desc', includeBanned: true });
     const preResMapped = preRes.delegates.map(mapDelegate);
     return mappedDelegatesToHASH(preResMapped);
   }
@@ -158,12 +158,13 @@ describe('rounds', () => {
     });
     it('should update delegate votes and rank!', async function () {
       this.timeout(10000);
-      const { postOBJ } = await getPREPostOBJ();
+      const { preOBJ, preLastBlock, postOBJ } = await getPREPostOBJ();
       for (let i = 1; i <= 101; i++) {
         const delegateName = `genesisDelegate${i}`;
         expect(postOBJ[delegateName].vote).to.be.eq(99890000000 - i);
         expect(delegateName).to.be.eq(`genesisDelegate${i}`);
         expect(postOBJ[delegateName].rank).to.be.eq(i);
+        expect(postOBJ[delegateName].vote).to.be.not.eq(preLastBlock[delegateName].vote);
       }
     });
   });

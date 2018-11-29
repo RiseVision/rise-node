@@ -92,9 +92,10 @@ export type AccountFilterData = {
   isDelegate?: 1 | 0;
   username?: string;
   address?: string | { $in: string[] };
-  publicKey?: Buffer;
+  publicKey?: Buffer | sequelize.WhereLogic;
   limit?: number;
   offset?: number;
+  cmb?: sequelize.WhereLogic;
   sort?: string | { [k: string]: -1 | 1 }
 };
 
@@ -287,11 +288,18 @@ export class AccountLogic implements IAccountLogic {
 
     const sort: any = filter.sort ? filter.sort : {};
 
-    const condition: any = filterObject(filter, ['isDelegate', 'username', 'address', 'publicKey']);
+    const condition: any = filterObject(filter, ['isDelegate', 'username', 'address']);
     if (typeof(filter.address) === 'string') {
       condition.address = filter.address.toUpperCase();
     } else if (typeof (filter.address) !== 'undefined') {
       condition.address = { [Op.in]: filter.address.$in.map((add) => add.toUpperCase()) };
+    }
+    // FilterObject cannot be used as it removes symbols.
+    if (filter.cmb) {
+      condition.cmb = filter.cmb;
+    }
+    if (filter.publicKey) {
+      condition.publicKey = filter.publicKey;
     }
     // Remove fields = undefined (such as limit, offset and sort)
     Object.keys(condition).forEach((k) => {
@@ -360,18 +368,6 @@ export class AccountLogic implements IAccountLogic {
           }
           if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
             update[fieldName] = sequelize.literal(`${fieldName} + ${Math.floor(trueValue)}`);
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
-            }
           } else if (trueValue < 0) {
             update[fieldName] = sequelize.literal(`${fieldName} - ${Math.floor(Math.abs(trueValue))}`);
             // If decrementing u_balance on account
@@ -379,22 +375,14 @@ export class AccountLogic implements IAccountLogic {
               // Remove virginity and ensure marked columns become immutable
               update.virgin = 0;
             }
-            if (fieldName === 'balance') {
-              dbOps.push({
-                model: this.RoundsModel,
-                query: this.RoundsModel.insertMemRoundBalanceSQL({
-                  address,
-                  amount : trueValue,
-                  blockId: diff.blockId,
-                  round  : diff.round,
-                }),
-                type : 'custom',
-              });
-            }
           }
           break;
       }
 
+    }
+
+    if (diff.cmb === 0) {
+      update['cmb'] = 0;
     }
 
     dbOps.push({

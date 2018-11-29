@@ -99,10 +99,15 @@ export default {
           'productivity:desc', 'productivity:asc',
           'rank:desc', 'rank:asc',
           'vote:desc', 'vote:asc',
+          'votesWeight:desc', 'votesWeight:asc',
           'address:desc', 'address:asc',
           'username:desc', 'username:asc',
           'publicKey:desc', 'publicKey:asc',
         ],
+      },
+      includeBanned: {
+        type: 'string',
+        enum: [ 'true', 'false' ],
       },
       limit  : {
         type   : 'integer',

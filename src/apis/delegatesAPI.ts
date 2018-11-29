@@ -70,12 +70,14 @@ export class DelegatesAPI {
   @ResponseSchema('responses.delegates.getDelegates')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates, { castNumbers: true })
-                            @QueryParams() data: { orderBy: string, limit: number, offset: number }) {
-    const d         = await this.delegatesModule.getDelegates(data);
+                            @QueryParams() data: { orderBy: string, limit: number, offset: number, includeBanned: 'true'|'false' }) {
+    const d         = await this.delegatesModule
+      .getDelegates({... data, includeBanned: data.includeBanned === 'true'} );
     const delegates = d.delegates.map((item) => {
       // tslint:disable object-literal-sort-keys
       return {
         address       : item.delegate.address,
+        cmb           : item.delegate.cmb,
         username      : item.delegate.username,
         publicKey     : item.delegate.hexPublicKey,
         vote          : item.delegate.vote ? `${item.delegate.vote}` : '0',
@@ -90,7 +92,7 @@ export class DelegatesAPI {
       // tslint:enable object-literal-sort-keys
     });
     if (d.sortField) {
-      if (['approval', 'productivity', 'rank', 'vote'].indexOf(d.sortField) > -1) {
+      if (['approval', 'productivity', 'rank', 'vote', 'votesWeight'].indexOf(d.sortField) > -1) {
         delegates.sort((a, b) => {
           if (d.sortMethod === 'ASC') {
             return a[d.sortField] - b[d.sortField];
@@ -181,14 +183,14 @@ export class DelegatesAPI {
                            @QueryParams() params: { publicKey: publicKey, username: string }) {
     // FIXME: Delegates returned are automatically limited by maxDelegates. This means that a delegate cannot be found
     // if ranked (username) below the desired value.
-    const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc' });
+    const { delegates } = await this.delegatesModule.getDelegates({ orderBy: 'username:asc', includeBanned: true });
     const delegate      = delegates
       .find((d) => d.delegate.hexPublicKey === params.publicKey || d.delegate.username === params.username);
     if (delegate) {
       return {
         delegate: filterObject(
           { ...delegate.delegate.toPOJO(), ...delegate.info, ...{ rate: delegate.info.rank } },
-          ['username', 'address', 'publicKey', 'vote', 'producedblocks',
+          ['username', 'address', 'cmb', 'publicKey', 'vote', 'producedblocks', 'votesWeight',
             'missedblocks', 'rank', 'approval', 'productivity', 'rate']
         ),
       };

@@ -159,7 +159,7 @@ export class ForgeModule implements IForgeModule {
 
     const blockData = await this.getBlockSlotData(currentSlot, lastBlock.height + 1);
     if (blockData === null) {
-      this.logger.warn('Skipping delegate slot');
+      this.logger.debug('Skipping delegate slot');
       return;
     }
 

@@ -42,11 +42,8 @@ describe('blockProcessing', async () => {
     const b: BlocksModule = initializer.appManager.container.get(Symbols.modules.blocks);
 
     const rl = initializer.appManager.container.get<RoundsLogic>(Symbols.logic.rounds);
-    console.log(b.lastBlock);
-    console.log(rl.calcRound(b.lastBlock.height));
     const am = initializer.appManager.container.get<typeof AccountsModel>(Symbols.models.accounts);
     const accData = await am.findById(senderAccount.address);
-    console.log(accData);
 
   });
 

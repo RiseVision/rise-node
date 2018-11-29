@@ -39,6 +39,7 @@ import { IPeerLogic } from '../../../../src/ioc/interfaces/logic';
 import PeerLogicStub from '../../../stubs/logic/PeerLogicStub';
 import { CommonBlockRequest } from '../../../../src/apis/requests/CommonBlockRequest';
 import { GetBlocksRequest } from '../../../../src/apis/requests/GetBlocksRequest';
+import { createFakeBlock } from '../../../utils/blockCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -111,6 +112,8 @@ describe('modules/blocks/process', () => {
     loggerStub      = container.get(Symbols.helpers.logger);
 
     blocksModel     = container.get(Symbols.models.blocks);
+
+    blocksModule.lastBlock = createFakeBlock();
   });
 
   describe('getCommonBlock', () => {
@@ -118,6 +121,7 @@ describe('modules/blocks/process', () => {
     let peerStub: PeerLogicStub;
     beforeEach(() => {
       peerStub = new PeerLogicStub();
+      peerStub.height = 1;
       blocksUtils.enqueueResponse('getIdSequence', {ids: ['1', '2', '3', '4', '5']});
       blocksModelCountStub = sandbox.stub(blocksModel, 'count').resolves(1);
     });
@@ -225,6 +229,22 @@ describe('modules/blocks/process', () => {
         await expect(inst.getCommonBlock(peerStub as any, 10)).to
           .be.rejectedWith('Chain comparison failed');
       });
+    });
+    it('past common + peer heigher and poor consensus should trigger recoverChain', async () => {
+      peerStub.stubConfig.makeRequest.return = Promise.resolve({
+        common: {
+          height       : 8,
+          id           : 'id',
+          previousBlock: 'pb',
+        },
+      });
+      appState.stubs.getComputed.returns(true);
+      peerStub.height = 10;
+
+      blocksChain.enqueueResponse('recoverChain', Promise.resolve());
+      await inst.getCommonBlock(peerStub as any, 9);
+
+      expect(blocksChain.stubs.recoverChain.calledOnce).is.true;
     });
   });
 

@@ -173,12 +173,14 @@ describe('api/delegates', () => {
             address: '15048500907174916103R',
             publicKey: 'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
             vote: 108912391000000,
+            cmb: 0,
             producedblocks: 1,
             missedblocks: 1,
             rank: 64,
             approval: 0.99,
             productivity: 50,
             rate: 64,
+            votesWeight: 108912391000000
           });
         });
     });
@@ -194,12 +196,15 @@ describe('api/delegates', () => {
             address: '14851457879581478143R',
             publicKey: 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
             vote: 108912391000000,
+            cmb: 0,
             producedblocks: 1,
             missedblocks: 1,
             rank: 82,
             approval: 0.99,
             productivity: 50,
             rate: 82,
+            votesWeight: 108912391000000,
+
           });
         });
     });
@@ -269,6 +274,7 @@ describe('api/delegates', () => {
             address: '14851457879581478143R',
             publicKey: 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
             vote: 108912391000000,
+            cmb: 0,
             votesWeight: 108912391000000,
             producedblocks: 1,
             missedblocks: 1,
