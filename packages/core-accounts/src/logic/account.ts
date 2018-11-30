@@ -10,7 +10,7 @@ import {
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, DBOp, ModelAttributes } from '@risevision/core-types';
-import { MyBigNumb } from '@risevision/core-utils';
+import { toBigIntBE } from 'bigint-buffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named, postConstruct } from 'inversify';
@@ -273,8 +273,6 @@ export class AccountLogic implements IAccountLogic {
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return `${MyBigNumb.fromBuffer(tmp).toString()}${
-      this.constants.addressSuffix
-    }`;
+    return `${toBigIntBE(tmp).toString()}${this.constants.addressSuffix}`;
   }
 }

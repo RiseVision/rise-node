@@ -192,16 +192,15 @@ export class TransactionsAPI {
     return {
       count: txs.length,
       transactions: txs
-        .filter(
-          (tx) =>
-            params.senderPublicKey
-              ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                  tx.senderPublicKey
-                )
-              : true
+        .filter((tx) =>
+          params.senderPublicKey
+            ? Buffer.from(params.senderPublicKey, 'hex').equals(
+                tx.senderPublicKey
+              )
+            : true
         )
-        .filter(
-          (tx) => (params.address ? params.address === tx.recipientId : true)
+        .filter((tx) =>
+          params.address ? params.address === tx.recipientId : true
         )
         .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
@@ -234,16 +233,15 @@ export class TransactionsAPI {
     return {
       count: txs.length,
       transactions: txs
-        .filter(
-          (tx) =>
-            params.senderPublicKey
-              ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                  tx.senderPublicKey
-                )
-              : true
+        .filter((tx) =>
+          params.senderPublicKey
+            ? Buffer.from(params.senderPublicKey, 'hex').equals(
+                tx.senderPublicKey
+              )
+            : true
         )
-        .filter(
-          (tx) => (params.address ? params.address === tx.recipientId : true)
+        .filter((tx) =>
+          params.address ? params.address === tx.recipientId : true
         )
         .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };

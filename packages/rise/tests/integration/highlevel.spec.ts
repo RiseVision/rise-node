@@ -20,8 +20,6 @@ import {
   getRandomDelegateWallet,
   getSelfTransportPeer,
 } from './common/utils';
-import BigNumber from 'bignumber.js';
-import { Sequelize } from 'sequelize-typescript';
 import {
   BlockLogic,
   BlocksModel,

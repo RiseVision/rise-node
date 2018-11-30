@@ -49,7 +49,7 @@ describe('apis/peersAPI', () => {
       .returns('1.0');
     getByFilterStub = sandbox
       .stub(peersModuleStub, 'getByFilter')
-      .returns([{ object: () => ({ hello: 'world' }) }]);
+      .returns([{ object: () => ({ hello: 'world' }) }] as any);
     instance = container.getNamed(APISymbols.class, p2pSymbols.api.peersAPI);
   });
 

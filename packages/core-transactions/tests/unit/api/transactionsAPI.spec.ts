@@ -202,6 +202,7 @@ describe('apis/transactionsAPI', () => {
           txs.forEach((tt) => {
             tt.asset = { delegate: { username: 'meow' } };
           });
+          return null;
         });
 
       // Attach something via filter
@@ -321,11 +322,11 @@ describe('apis/transactionsAPI', () => {
 
     it('should call transactionsModule.getQueuedTransaction and return transaction', async () => {
       const id = '1';
-      const transaction = {};
+      const transaction: any = {};
       sandbox.stub(txPool.queued, 'has').returns(true);
       const getStub = sandbox
         .stub(txPool.queued, 'get')
-        .returns({ tx: transaction });
+        .returns({ tx: transaction, payload: null });
 
       expect(await instance.getQueuedTx(id)).to.be.deep.equal({ transaction });
 
@@ -547,7 +548,7 @@ describe('apis/transactionsAPI', () => {
       blocksModule.lastBlock = { height: 100 } as any;
       const objNormalizeStub = sandbox
         .stub(txLogic, 'objectNormalize')
-        .callsFake((t) => t);
+        .callsFake((t) => t as any);
       objNormalizeStub.onFirstCall().throws(new Error('objectNormalize'));
       // Create some txs.
       const txs = createRandomTransactions(8);

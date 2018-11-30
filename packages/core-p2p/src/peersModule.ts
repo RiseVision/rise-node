@@ -178,18 +178,18 @@ export class PeersModule implements IPeersModule {
       a[field] === b[field]
         ? 0
         : a[field] === null
-          ? 1
-          : b[field] === null
-            ? -1
-            : // Ascending
-              asc
-              ? a[field] < b[field]
-                ? -1
-                : 1
-              : // Descending
-                a[field] < b[field]
-                ? 1
-                : -1;
+        ? 1
+        : b[field] === null
+        ? -1
+        : // Ascending
+        asc
+        ? a[field] < b[field]
+          ? -1
+          : 1
+        : // Descending
+        a[field] < b[field]
+        ? 1
+        : -1;
 
     const peers = this.peersLogic.list(false).filter((peer) => {
       let passed = true;

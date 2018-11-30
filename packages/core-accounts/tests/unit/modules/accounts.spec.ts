@@ -45,7 +45,7 @@ describe('modules/accounts', () => {
     beforeEach(() => {
       getStub = sandbox
         .stub(accountLogic, 'get')
-        .callsFake((filter) => Promise.resolve(filter));
+        .callsFake((filter) => Promise.resolve(filter as any));
     });
     it('should call accountLogic.get', async () => {
       await accountModule.getAccount({ address: '1L' });
@@ -63,7 +63,7 @@ describe('modules/accounts', () => {
     beforeEach(() => {
       aLogicGetAllStub = sandbox
         .stub(accountLogic, 'getAll')
-        .callsFake((query) => Promise.resolve(query));
+        .callsFake((query) => Promise.resolve(query as any));
     });
     it('should directly pass params to accountLogic.getAll', async () => {
       await accountModule.getAccounts({ address: '1R' });
@@ -95,7 +95,7 @@ describe('modules/accounts', () => {
           Promise.resolve({
             publicKey,
             address: `add${publicKey.toString('hex')}`,
-          })
+          } as any)
         );
     });
     it('should throw if account is not found in db', async () => {
@@ -161,7 +161,7 @@ describe('modules/accounts', () => {
           Promise.resolve({
             publicKey,
             address: `add${publicKey.toString('hex')}`,
-          })
+          } as any)
         );
     });
     it('shouldnt complain about empty txs array', async () => {

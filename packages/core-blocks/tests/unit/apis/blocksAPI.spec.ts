@@ -253,7 +253,7 @@ describe('apis/blocksAPI', () => {
   describe('getBroadHash', () => {
     it('should return a broadhash', async () => {
       const systemModule: ISystemModule = container.get(Symbols.modules.system);
-      sandbox.stub(systemModule, 'getBroadhash').returns('thaBroadHash');
+      sandbox.stub(systemModule, 'getBroadhash').resolves('thaBroadHash');
       const ret = await instance.getBroadHash();
 
       expect(ret).to.be.deep.equal({ broadhash: 'thaBroadHash' });
@@ -368,7 +368,7 @@ describe('apis/blocksAPI', () => {
       }) as any;
 
       const systemModule: ISystemModule = container.get(Symbols.modules.system);
-      sandbox.stub(systemModule, 'getBroadhash').returns('thaBroadHash');
+      sandbox.stub(systemModule, 'getBroadhash').resolves('thaBroadHash');
 
       const res = await instance.getStatus();
 

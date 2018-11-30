@@ -20,21 +20,21 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-apis": "^1.0.0",
-    "@risevision/core-helpers": "^1.0.0",
+    "@risevision/core-blocks": "^1.0.0",
     "@risevision/core-crypto": "^1.0.0",
+    "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
-    "@risevision/core-utils": "^1.0.0",
     "@risevision/core-models": "^1.0.0",
     "@risevision/core-p2p": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
-    "@risevision/core-blocks": "^1.0.0"
+    "@risevision/core-utils": "^1.0.0"
   },
   "devDependencies": {
-    "shx": "=0.3.2",
-    "@types/node": "^9.6.0",
-    "ts-node": "=7.0.0",
+    "@types/node": "^10.12.10",
     "mocha": "=5.2.0",
+    "shx": "=0.3.2",
+    "ts-node": "7.0.1",
     "typescript": "=3.2.0-rc"
   }
 }

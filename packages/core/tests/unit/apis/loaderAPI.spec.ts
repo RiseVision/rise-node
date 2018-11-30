@@ -65,7 +65,9 @@ describe('apis/loaderAPI', () => {
 
   describe('getStatusSync', () => {
     it('should return an object with the properties: broadhash, consensus, height and syncing', () => {
-      const appStateGet = sandbox.stub(appState, 'get').returns('consensus');
+      const appStateGet = sandbox
+        .stub(appState, 'get')
+        .returns('consensus' as any);
 
       const ret = instance.getStatusSync();
       expect(appStateGet.firstCall.args.length).to.be.equal(1);

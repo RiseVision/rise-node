@@ -16,24 +16,24 @@
   "license": "ISC",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
+    "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
-    "@risevision/core-launchpad": "^1.0.0",
-    "sodium-native": "^2.2.2"
+    "sodium-native": "^2.2.3"
   },
   "devDependencies": {
-    "@types/chai": "=4.1.4",
+    "@types/chai": "4.1.7",
     "@types/chai-arrays": "^1.0.2",
     "@types/chai-as-promised": "^7.1.0",
-    "@types/node": "^9.6.0",
-    "@types/sinon": "=5.0.1",
-    "chai": "=4.1.2",
+    "@types/node": "^10.12.10",
+    "@types/sinon": "5.0.7",
+    "chai": "4.2.0",
     "chai-arrays": "=2.0.0",
     "chai-as-promised": "^7.1.1",
     "chai-sorted": "^0.2.0",
     "mocha": "=5.2.0",
     "shx": "=0.3.2",
-    "ts-node": "=7.0.0",
+    "ts-node": "7.0.1",
     "typescript": "=3.2.0-rc"
   }
 }

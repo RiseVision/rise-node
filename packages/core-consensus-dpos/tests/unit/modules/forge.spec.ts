@@ -254,8 +254,9 @@ describe('modules/forge', () => {
       // Immediately execute the jobsQueue Job for testing it
       jobsRegister = sandbox
         .stub(jobsQueueStub, 'register')
-        .callsFake((k, t) => {
+        .callsFake((k: any, t: any) => {
           t();
+          return null;
         });
       forgeStub = sandbox.stub(instance as any, 'forge');
     });
@@ -550,7 +551,7 @@ describe('modules/forge', () => {
             address: 'addr_' + filter.publicKey,
             isDelegate: true,
             publicKey: filter.publicKey,
-          };
+          } as any;
         });
       makeKeyPairStub = sandbox
         .stub(edStub, 'makeKeyPair')
@@ -558,7 +559,7 @@ describe('modules/forge', () => {
           return {
             privateKey: 'pr' + hash.toString('hex'),
             publicKey: 'pu' + hash.toString('hex'),
-          };
+          } as any;
         });
     });
 
@@ -658,7 +659,7 @@ describe('modules/forge', () => {
     beforeEach(() => {
       generateDelegateListStub = sandbox
         .stub(delegatesModuleStub, 'generateDelegateList')
-        .returns(Object.keys(delegates));
+        .returns(Object.keys(delegates) as any);
       lastSlotStub = sandbox.stub(slotsStub, 'getLastSlot').returns(2);
       getSlotTimeStub = sandbox.stub(slotsStub, 'getSlotTime').returns(1000);
     });

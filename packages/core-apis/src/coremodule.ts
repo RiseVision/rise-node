@@ -81,11 +81,11 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     // Disallow inclusion in iframe.
     app.use(middleware.attachResponseHeader('X-Frame-Options', 'DENY'));
     /* Set Content-Security-Policy headers.
-    *
-    * frame-ancestors - Defines valid sources for <frame>, <iframe>, <object>, <embed> or <applet>.
-    *
-    * W3C Candidate Recommendation -> https://www.w3.org/TR/CSP/
-    */
+     *
+     * frame-ancestors - Defines valid sources for <frame>, <iframe>, <object>, <embed> or <applet>.
+     *
+     * W3C Candidate Recommendation -> https://www.w3.org/TR/CSP/
+     */
     app.use(
       middleware.attachResponseHeader(
         'Content-Security-Policy',

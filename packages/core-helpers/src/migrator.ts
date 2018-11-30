@@ -5,14 +5,13 @@ import {
 } from '@risevision/core-interfaces';
 import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { BigNumber } from 'bignumber.js';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
 // tslint:disable-next-line interface-name
 interface MigrationEntry {
-  id: BigNumber;
+  id: bigint;
   name: string;
   path: string;
   moduleName: string;
@@ -49,7 +48,7 @@ export class Migrator {
   /**
    * Gets last migration record from db table
    */
-  private async getLastMigration(hasMigration: boolean): Promise<BigNumber> {
+  private async getLastMigration(hasMigration: boolean): Promise<bigint> {
     if (!hasMigration) {
       return;
     }
@@ -59,9 +58,9 @@ export class Migrator {
       order: [['id', 'DESC']],
     });
     if (row) {
-      return new BigNumber(row.id);
+      return BigInt(row.id);
     }
-    return new BigNumber(0);
+    return 0n;
   }
 
   /**
@@ -69,7 +68,7 @@ export class Migrator {
    */
   // tslint:disable-next-line max-line-length
   private async readPendingMigrations(
-    lastMigration: BigNumber
+    lastMigration: bigint
   ): Promise<MigrationEntry[]> {
     const pms = await Promise.all(
       this.modules.map((m) =>
@@ -85,7 +84,7 @@ export class Migrator {
 
   private async readPendingMigrationsForSingleCoreModule(
     coreModule: ICoreModule<any>,
-    lastMigration: BigNumber
+    lastMigration: bigint
   ): Promise<MigrationEntry[]> {
     const migrationsPath = path.join(coreModule.directory, 'sql', 'migrations');
     if (!fs.existsSync(migrationsPath)) {
@@ -103,7 +102,7 @@ export class Migrator {
     function matchMigrationId(file) {
       const id = file.match(/^[0-9]+/);
 
-      return Array.isArray(id) ? new BigNumber(id[0]) : null;
+      return Array.isArray(id) ? BigInt(id[0]) : null;
     }
 
     return (
@@ -120,7 +119,7 @@ export class Migrator {
         .filter((d) => fs.statSync(d.path).isFile())
         .filter((d) => /\.sql$/.test(d.path))
         // Filter only pending migrations
-        .filter((d) => !lastMigration || d.id.isGreaterThan(lastMigration))
+        .filter((d) => !lastMigration || d.id > lastMigration)
     );
   }
 

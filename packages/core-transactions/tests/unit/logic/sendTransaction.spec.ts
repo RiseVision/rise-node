@@ -75,12 +75,12 @@ describe('logic/transactions/send', () => {
     it('should call systemModule.getFees', () => {
       const systemModuleStub = sandbox
         .stub(systemModule, 'getFees')
-        .returns({ fees: { send: 101 } });
+        .returns({ fees: { send: 101n } , fromHeight: 1, toHeight: 100000, height: 10});
       const fee = instance.calculateFee(tx, sender, 10);
       expect(systemModuleStub.calledOnce).to.be.true;
       expect(systemModuleStub.firstCall.args.length).to.equal(1);
       expect(systemModuleStub.firstCall.args[0]).to.equal(10);
-      expect(fee).eq(101);
+      expect(fee).eq(101n);
     });
   });
 
@@ -107,7 +107,7 @@ describe('logic/transactions/send', () => {
     it('should return an array of objects', async () => {
       const accountMergeStub = sandbox
         .stub(accountLogic, 'merge')
-        .returns([{ foo: 'bar' }]);
+        .returns([{ foo: 'bar' }] as any);
       const result = await instance.apply(tx as any, block, sender);
       expect(result).to.be.an('array');
       expect(result[0]).to.deep.equal({ foo: 'bar' });
@@ -134,7 +134,7 @@ describe('logic/transactions/send', () => {
       const stub = sandbox.stub();
       const accountMergeStub = sandbox
         .stub(accountLogic, 'merge')
-        .returns(['a']);
+        .returns(['a'] as any);
 
       class A extends WPHooksSubscriber(Object) {
         public hookSystem: WordPressHookSystem = container.get(
@@ -163,7 +163,7 @@ describe('logic/transactions/send', () => {
     it('should return an array of objects', async () => {
       const accountMergeStub = sandbox
         .stub(accountLogic, 'merge')
-        .returns([{ foo: 'bar' }]);
+        .returns([{ foo: 'bar' }] as any);
 
       const result: DBUpsertOp<any> = (await instance.undo(
         tx as any,
@@ -195,7 +195,7 @@ describe('logic/transactions/send', () => {
       const stub = sandbox.stub();
       const accountMergeStub = sandbox
         .stub(accountLogic, 'merge')
-        .returns(['a']);
+        .returns(['a'] as any);
       // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {
         public hookSystem: WordPressHookSystem = container.get(

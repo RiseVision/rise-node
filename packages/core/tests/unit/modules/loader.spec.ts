@@ -141,7 +141,7 @@ describe('modules/loader', () => {
 
       peersCreateStub = sandbox
         .stub(peersLogicStub, 'create')
-        .callsFake((peer) => peer);
+        .callsFake((peer) => peer as any);
       listPEersStub = sandbox.stub(peersModuleStub, 'list');
     });
 

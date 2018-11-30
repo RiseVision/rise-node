@@ -342,7 +342,7 @@ describe('modules/peers', () => {
       bulkCreateStub = sandbox.stub(peersModel, 'bulkCreate');
       txStub = sandbox
         .stub(peersModel.sequelize, 'transaction')
-        .callsFake((t) => t('tx'));
+        .callsFake((t: any) => t('tx'));
       listStub = sandbox.stub(peersLogicStub, 'list');
     });
     it('should not save anything if no peers known', async () => {

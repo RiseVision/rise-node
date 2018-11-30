@@ -17,8 +17,7 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { MyBigNumb } from '@risevision/core-utils';
-import { toBigIntLE, toBufferLE } from 'bigint-buffer';
+import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
@@ -269,7 +268,7 @@ export class BlockLogic implements IBlockLogic {
     bb.writeInt(block.timestamp);
 
     if (block.previousBlock) {
-      const pb = new MyBigNumb(block.previousBlock).toBuffer({ size: 8 });
+      const pb = toBufferBE(BigInt(block.previousBlock), 8);
 
       for (let i = 0; i < 8; i++) {
         bb.writeByte(pb[i]);
@@ -358,7 +357,7 @@ export class BlockLogic implements IBlockLogic {
       }
     }
     const previousBlock = previousValid
-      ? MyBigNumb.fromBuffer(previousIdBytes).toString()
+      ? toBigIntBE(previousIdBytes).toString()
       : null;
 
     const numberOfTransactions = bb.readInt(16);
@@ -433,6 +432,6 @@ export class BlockLogic implements IBlockLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
-    return MyBigNumb.fromBuffer(temp).toString();
+    return toBigIntBE(temp).toString();
   }
 }

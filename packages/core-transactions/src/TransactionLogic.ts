@@ -21,8 +21,7 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { MyBigNumb } from '@risevision/core-utils';
-import { toBigIntLE, toBufferLE } from 'bigint-buffer';
+import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
@@ -91,13 +90,7 @@ export class TransactionLogic implements ITransactionLogic {
    * @returns {string} the id.
    */
   public getId(tx: IBaseTransaction<any, bigint>): string {
-    const hash = this.getHash(tx);
-    const temp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      temp[i] = hash[7 - i];
-    }
-
-    return MyBigNumb.fromBuffer(temp).toString();
+    return this.getIdFromBytes(this.getBytes(tx));
   }
 
   /**
@@ -140,18 +133,10 @@ export class TransactionLogic implements ITransactionLogic {
     bb.writeByte(tx.type);
     bb.writeInt(tx.timestamp);
 
-    const senderPublicKeyBuffer = tx.senderPublicKey;
-    // tslint:disable-next-line
-    for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
-      bb.writeByte(senderPublicKeyBuffer[i]);
-    }
+    bb.append(tx.senderPublicKey);
 
     if (tx.requesterPublicKey) {
-      const requesterPublicKey = tx.requesterPublicKey;
-      // tslint:disable-next-line
-      for (let i = 0; i < requesterPublicKey.length; i++) {
-        bb.writeByte(requesterPublicKey[i]);
-      }
+      bb.append(tx.requesterPublicKey);
     }
 
     if (tx.recipientId) {
@@ -159,40 +144,31 @@ export class TransactionLogic implements ITransactionLogic {
         0,
         -this.constants.addressSuffix.length
       );
-      const recBuf = new MyBigNumb(recipient).toBuffer({ size: 8 });
 
-      for (let i = 0; i < 8; i++) {
-        bb.writeByte(recBuf[i] || 0);
+      const num = BigInt(recipient);
+      let recBuf = toBufferBE(num, 8);
+      // This is due to a bug in how addresses were serialized.
+      if (num > 18446744073709551616n) {
+        recBuf = toBufferBE(num, 16).slice(0, 8);
       }
+
+      bb.append(recBuf);
     } else {
-      for (let i = 0; i < 8; i++) {
-        bb.writeByte(0);
-      }
+      bb.append(Buffer.alloc(8).fill(0));
     }
 
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
 
     if (assetBytes.length > 0) {
-      // tslint:disable-next-line
-      for (let i = 0; i < assetBytes.length; i++) {
-        bb.writeByte(assetBytes[i]);
-      }
+      bb.append(assetBytes);
     }
 
     if (!skipSignature && tx.signature) {
-      const signatureBuffer = tx.signature;
-      // tslint:disable-next-line
-      for (let i = 0; i < signatureBuffer.length; i++) {
-        bb.writeByte(signatureBuffer[i]);
-      }
+      bb.append(tx.signature);
     }
 
     if (!skipSecondSignature && tx.signSignature) {
-      const signSignatureBuffer = tx.signSignature;
-      // tslint:disable-next-line
-      for (let i = 0; i < signSignatureBuffer.length; i++) {
-        bb.writeByte(signSignatureBuffer[i]);
-      }
+      bb.append(tx.signSignature);
     }
 
     bb.flip();
@@ -257,7 +233,7 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     const recipientId = recipientValid
-      ? MyBigNumb.fromBuffer(recipientIdBytes).toString() +
+      ? toBigIntBE(recipientIdBytes).toString() +
         this.constants.addressSuffix
       : null;
 
@@ -780,6 +756,6 @@ export class TransactionLogic implements ITransactionLogic {
     for (let i = 0; i < 8; i++) {
       temp[i] = hash[7 - i];
     }
-    return MyBigNumb.fromBuffer(temp).toString();
+    return toBigIntBE(temp).toString();
   }
 }

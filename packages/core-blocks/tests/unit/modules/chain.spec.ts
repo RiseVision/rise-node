@@ -86,14 +86,16 @@ describe('modules/blocks/chain', () => {
       resolveAccountsForTransactionStub = sandbox
         .stub(accModule, 'txAccounts')
         .callsFake((txs) => {
-          const toRet = {};
+          const toRet: any = {};
           txs.forEach((tx) => (toRet[tx.senderId] = tx.senderId));
           return toRet;
         });
 
-      sandbox.stub(blocksModel.sequelize, 'transaction').callsFake((cb) => {
-        return cb('tx');
-      });
+      sandbox
+        .stub(blocksModel.sequelize, 'transaction')
+        .callsFake((cb: any) => {
+          return cb('tx');
+        });
       findStub = sandbox.stub(blocksModel, 'findById');
       findStub.onFirstCall().resolves(blocksModule.lastBlock);
       findStub.onSecondCall().resolves({ id: 'previousBlock' });
@@ -172,7 +174,7 @@ describe('modules/blocks/chain', () => {
     it('should call deleteLastBlock', async () => {
       const delLasBloStub = sinon
         .stub(instance, 'deleteLastBlock')
-        .returns(Promise.resolve({}));
+        .returns(Promise.resolve({} as any));
       await instance.recoverChain();
       expect(delLasBloStub.called).is.true;
     });

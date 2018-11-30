@@ -74,12 +74,14 @@ export const createRandomTransactions = (howMany: number): ITransaction[] => {
 export const createSendTransaction = (
   from: LiskWallet,
   recipient: string,
-  fee: number,
+  fee: number | bigint,
   obj: any = {}
 ): ITransaction => {
   const t = new dposOffline.transactions.SendTx().withTimestamp(0);
   Object.keys(obj).forEach((k) => t.set(k as any, obj[k]));
-  return from.signTransaction(t.withFees(fee).withRecipientId(recipient));
+  return from.signTransaction(
+    t.withFees(parseInt(fee.toString(), 10)).withRecipientId(recipient)
+  );
 };
 
 //

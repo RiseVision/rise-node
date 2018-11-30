@@ -9,8 +9,7 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { DBBulkCreateOp } from '@risevision/core-types';
-import { MyBigNumb } from '@risevision/core-utils';
-import { toBigIntLE, toBufferLE } from 'bigint-buffer';
+import { toBigIntBE, toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -125,13 +124,6 @@ describe('logic/transaction', () => {
   });
 
   describe('getId', () => {
-    it('should call getHash', () => {
-      const getHashSpy = sandbox.spy(instance, 'getHash');
-      instance.getId(tx);
-      expect(getHashSpy.calledOnce).to.be.true;
-      expect(getHashSpy.firstCall.args[0]).to.be.deep.equal(tx);
-    });
-
     it('should return proper id', () => {
       expect(instance.getId(tx)).eq('13691763139902401266');
     });
@@ -236,11 +228,8 @@ describe('logic/transaction', () => {
     });
 
     it('should add the senderPublicKey to the ByteBuffer', () => {
-      const senderPublicKeyBuffer = tx.senderPublicKey;
       instance.getBytes(tx);
-      for (let i = 0; i < senderPublicKeyBuffer.length; i++) {
-        expect(sequence[2 + i]).to.be.equal(senderPublicKeyBuffer[i]);
-      }
+      expect(sequence[2]).deep.eq(tx.senderPublicKey);
     });
 
     it('should add the requesterPublicKey to the ByteBuffer if tx.requesterPublicKey', () => {
@@ -249,33 +238,26 @@ describe('logic/transaction', () => {
         'hex'
       );
       instance.getBytes(tx);
-      for (let i = 0; i < tx.requesterPublicKey.length; i++) {
-        // We always get here after 34 writes to the ByteBuffer
-        expect(sequence[34 + i]).to.be.equal(tx.requesterPublicKey[i]);
-      }
+      expect(sequence[3]).deep.eq(tx.requesterPublicKey);
     });
 
     it('should add the recipientId to the ByteBuffer if tx.recipientId', () => {
       tx.recipientId = '123123123123123R';
-      const recipient = tx.recipientId.slice(0, -1);
-      const recBuf = new MyBigNumb(recipient).toBuffer({ size: 8 });
       instance.getBytes(tx);
-      for (let i = 0; i < recBuf.length; i++) {
-        expect(sequence[34 + i]).to.be.equal(recBuf[i]);
-      }
+      expect(toBigIntBE(sequence[3])).eq(123123123123123n);
     });
 
     it('should add 8 zeroes to the ByteBuffer if NOT tx.recipientId', () => {
       tx.recipientId = undefined;
       instance.getBytes(tx);
-      for (let i = 34; i < 42; i++) {
-        expect(sequence[i]).to.be.equal(0);
-      }
+
+      expect(toBigIntBE(sequence[3])).eq(0n);
+      expect(sequence[3]).deep.eq(Buffer.alloc(8).fill(0));
     });
 
     it('should add the amount to the ByteBuffer via bigint-buffer', () => {
       instance.getBytes(tx);
-      expect(sequence[42]).to.be.deep.equal(toBufferLE(tx.amount, 8));
+      expect(sequence[4]).to.be.deep.equal(toBufferLE(tx.amount, 8));
     });
 
     it('should add the asset bytes to the ByteBuffer if not empty', () => {
@@ -284,26 +266,18 @@ describe('logic/transaction', () => {
       const sampleBuffer = Buffer.from('aabbccddee', 'hex');
       getBytesStub.returns(sampleBuffer);
       instance.getBytes(tx);
-      for (let i = 0; i < sampleBuffer.length; i++) {
-        expect(sequence[43 + i]).to.be.equal(sampleBuffer[i]);
-      }
+      expect(sequence[5]).deep.eq(sampleBuffer);
       getBytesStub.restore();
     });
 
     it('should add the signature to the ByteBuffer', () => {
       instance.getBytes(tx);
-      for (let i = 0; i < tx.signature.length; i++) {
-        // tx.asset is empty so we start from 43
-        expect(sequence[43 + i]).to.be.equal(tx.signature[i]);
-      }
+      expect(sequence[5]).deep.eq(tx.signature);
     });
 
     it('should NOT add the signature to the ByteBuffer if skipSignature', () => {
       instance.getBytes(tx, true, true);
-      for (let i = 0; i < tx.signature.length; i++) {
-        // tx.asset is empty so we start from 43
-        expect(sequence[43 + i]).to.be.equal(undefined);
-      }
+      expect(sequence[5]).not.deep.eq(tx.signature);
     });
 
     it('should add the signSignature to the ByteBuffer', () => {
@@ -313,11 +287,8 @@ describe('logic/transaction', () => {
         'hex'
       );
       instance.getBytes(tx);
-
-      for (let i = 0; i < tx.signSignature.length; i++) {
-        // tx.asset is empty so we start from 43
-        expect(sequence[107 + i]).to.be.equal(tx.signSignature[i]);
-      }
+      expect(sequence[5]).deep.eq(tx.signature);
+      expect(sequence[6]).deep.eq(tx.signSignature);
     });
 
     it('should NOT add the signSignature to the ByteBuffer if skipSecondSignature', () => {
@@ -327,11 +298,7 @@ describe('logic/transaction', () => {
         'hex'
       );
       instance.getBytes(tx, false, true);
-
-      for (let i = 0; i < tx.signSignature.length; i++) {
-        // tx.asset is empty so we start from 43
-        expect(sequence[107 + i]).to.be.equal(undefined);
-      }
+      expect(sequence[6]).not.deep.eq(tx.signSignature);
     });
 
     it('should flip the ByteBuffer', () => {
@@ -358,7 +325,7 @@ describe('logic/transaction', () => {
     it('should call txType.ready and return', async () => {
       const txTypeReadyStub = sandbox
         .stub(sendTransaction, 'ready')
-        .returns('OK');
+        .returns('OK' as any);
       const retVal = await instance.ready(tx, {} as any);
       expect(txTypeReadyStub.calledOnce).to.be.true;
       expect(retVal).to.be.eq('OK');
@@ -415,7 +382,7 @@ describe('logic/transaction', () => {
         .returns(true);
       checkBalanceStub = sandbox
         .stub(instance, 'checkBalance')
-        .returns({ exceeded: false });
+        .returns({ exceeded: false } as any);
       // txType stubs
       calculateFeeStub = sandbox
         .stub(sendTransaction, 'calculateFee')
@@ -650,7 +617,7 @@ describe('logic/transaction', () => {
     beforeEach(() => {
       akttStub = sandbox
         .stub(instance, 'assertKnownTransactionType')
-        .returns(true);
+        .returns(void 0);
       getHashStub = sandbox.stub(instance, 'getHash').returns(theHash);
     });
 
@@ -736,10 +703,10 @@ describe('logic/transaction', () => {
 
     beforeEach(() => {
       // instance stubs
-      readyStub = sandbox.stub(instance, 'ready').returns(true);
+      readyStub = sandbox.stub(instance, 'ready').resolves(true);
       checkBalanceStub = sandbox
         .stub(instance, 'checkBalance')
-        .returns({ exceeded: false });
+        .returns({ exceeded: false } as any);
       // dependency stubs
       // txType stub
       txTypeApplyStub = sandbox.stub(sendTransaction, 'apply').resolves([]);
@@ -1027,7 +994,7 @@ describe('logic/transaction', () => {
       tx.senderId = sender.address;
       akttStub = sandbox
         .stub(instance, 'assertKnownTransactionType')
-        .returns(true);
+        .returns(void 0);
       txTypeDbSaveStub = sandbox
         .stub(sendTransaction, 'dbSave')
         .returns({ table: 'table', fields: [], values: [] });
@@ -1123,10 +1090,10 @@ describe('logic/transaction', () => {
       tx.senderId = sender.address;
       akttStub = sandbox
         .stub(instance, 'assertKnownTransactionType')
-        .returns(true);
+        .returns(void 0);
       txTypeAfterSaveStub = sandbox
         .stub(sendTransaction, 'afterSave')
-        .returns('txType aftersave');
+        .resolves('txType aftersave');
     });
 
     it('should call assertKnownTransactionType', async () => {
@@ -1151,10 +1118,10 @@ describe('logic/transaction', () => {
       tx.senderId = sender.address;
       akttStub = sandbox
         .stub(instance, 'assertKnownTransactionType')
-        .returns(true);
+        .resolves(true);
       txTypeObjectNormalizeStub = sandbox
         .stub(sendTransaction, 'objectNormalize')
-        .returns('txType objectNormalize');
+        .returns('txType objectNormalize' as any);
     });
 
     it('should call assertKnownTransactionType', () => {
@@ -1291,4 +1258,5 @@ describe('logic/transaction', () => {
       });
     });
   });
+
 });

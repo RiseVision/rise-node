@@ -128,17 +128,19 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     }
 
     await PromiseThrottle.all(
-      peers.map((p) => this.peersLogic.create(p)).map((peer) => () => {
-        return peer
-          .makeRequest(task.options.method, task.options.payload)
-          .catch((err) => {
-            this.logger.debug(
-              `Failed to broadcast to peer: ${peer.string}`,
-              err
-            );
-            return null;
-          });
-      }),
+      peers
+        .map((p) => this.peersLogic.create(p))
+        .map((peer) => () => {
+          return peer
+            .makeRequest(task.options.method, task.options.payload)
+            .catch((err) => {
+              this.logger.debug(
+                `Failed to broadcast to peer: ${peer.string}`,
+                err
+              );
+              return null;
+            });
+        }),
       { maxInProgress: this.p2pConstants.parallelLimit }
     );
     this.logger.debug('End broadcast');

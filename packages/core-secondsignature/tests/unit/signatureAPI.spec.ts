@@ -44,14 +44,14 @@ describe('apis/signatureAPI', () => {
   describe('fees()', () => {
     it('should return an object with the properties: fee, fromHeight, height and toHeight', async () => {
       const stub = sandbox.stub(systemModule, 'getFees').returns({
-        fees: { secondsignature: 10 },
+        fees: { secondsignature: 10n },
         fromHeight: 20,
         height: 30,
         toHeight: 40,
       });
       result = await instance.fees({ height: 123 });
       expect(result).to.deep.equal({
-        fee: 10,
+        fee: 10n,
         fromHeight: 20,
         height: 30,
         toHeight: 40,

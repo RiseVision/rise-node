@@ -66,11 +66,7 @@ export interface ISystemModule extends IModule {
     height?: number
   ): {
     fees: {
-      send: bigint;
-      vote: bigint;
-      secondsignature: bigint;
-      delegate: bigint;
-      multisignature: bigint;
+      [type: string]: bigint;
     };
     fromHeight: number;
     height: number;

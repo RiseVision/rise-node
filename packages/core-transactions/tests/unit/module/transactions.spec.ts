@@ -289,7 +289,7 @@ describe('modules/transactions', () => {
     let verifyStub: SinonStub;
     beforeEach(() => {
       tx = toBufferedTransaction(createRandomTransaction());
-      readyStub = sandbox.stub(txLogic, 'ready').returns(true);
+      readyStub = sandbox.stub(txLogic, 'ready').resolves(true);
       verifyStub = sandbox.stub(txLogic, 'verify').resolves();
       genAddressStub = sandbox
         .stub(accountsModule, 'generateAddressByPublicKey')

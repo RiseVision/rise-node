@@ -108,7 +108,7 @@ describe('logic/transactions/secondSignature', () => {
     );
     sandbox
       .stub(systemModuleStub, 'getFees')
-      .returns({ fees: { secondsignature: 1000 } });
+      .returns({ fees: { secondsignature: 1000n }, fromHeight: 1, height: 10, toHeight: 10000000000 } );
   });
 
   afterEach(() => {
@@ -118,7 +118,7 @@ describe('logic/transactions/secondSignature', () => {
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
       const retVal = instance.calculateFee(tx, sender, block.height);
-      expect(retVal).to.be.equal(1000);
+      expect(retVal).to.be.equal(1000n);
     });
   });
 

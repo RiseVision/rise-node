@@ -24,7 +24,7 @@ export class AccountsModule implements IAccountsModule {
   private AccountsModel: typeof IAccountsModel;
 
   public getAccount(
-    filter: AccountFilterData & { publicKey: Buffer }
+    filter: AccountFilterData & { publicKey?: Buffer }
   ): Promise<IAccountsModel> {
     if (filter.publicKey) {
       filter.address = this.accountLogic.generateAddressByPublicKey(

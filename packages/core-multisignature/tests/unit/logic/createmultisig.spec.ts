@@ -334,7 +334,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw if keysgroup contains an invalid key', async () => {
       // We make ready() return false so that we can skip another branch where it would throw because of invalid key
-      sandbox.stub(instance, 'ready').returns(false);
+      sandbox.stub(instance, 'ready').resolves(false);
       tx.asset.multisignature.keysgroup[0] = {};
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid member in keysgroup'
@@ -343,7 +343,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should throw if wrong math operator in keysgroup', async () => {
       // We make ready() return false so that we can skip another branch where it would throw for invalid keysgroup
-      sandbox.stub(instance, 'ready').returns(false);
+      sandbox.stub(instance, 'ready').resolves(false);
       tx.asset.multisignature.keysgroup[0] =
         '-' + tx.asset.multisignature.keysgroup[0].substr(1);
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(

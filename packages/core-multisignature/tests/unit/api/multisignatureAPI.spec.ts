@@ -147,7 +147,7 @@ describe('apis/multisignatureAPI', () => {
     getAccountsStub = sandbox.stub(accountsModule, 'getAccounts');
     genAddressStub = sandbox
       .stub(accountsModule, 'generateAddressByPublicKey')
-      .returns(1000);
+      .returns('1000');
     getAccountsStub.onFirstCall().resolves([account1, account2]);
     getAccountsStub.onSecondCall().resolves([account3]);
     getAccountsStub.onThirdCall().resolves([account4]);
@@ -252,14 +252,14 @@ describe('apis/multisignatureAPI', () => {
         },
       });
       expect(getAccountsStub.args[1][0]).to.deep.equal({
-        address: { $in: [1000, 1000, 1000] },
+        address: { $in: ['1000', '1000', '1000'] },
         sort: {
           balance: -1,
           publicKey: -1,
         },
       });
       expect(getAccountsStub.args[1][0]).to.deep.equal({
-        address: { $in: [1000, 1000, 1000] },
+        address: { $in: ['1000', '1000', '1000'] },
         sort: {
           balance: -1,
           publicKey: -1,

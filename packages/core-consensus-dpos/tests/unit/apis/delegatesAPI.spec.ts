@@ -919,7 +919,7 @@ describe('apis/delegatesAPI', () => {
       isForgeEnabledOnStub = sandbox
         .stub(forgeModule, 'isForgeEnabledOn')
         .returns(false);
-      enableForgeStub = sandbox.stub(forgeModule, 'enableForge').returns({});
+      enableForgeStub = sandbox.stub(forgeModule, 'enableForge').returns({} as any);
       getAccountStub = sandbox.stub(accounts, 'getAccount').returns(account);
 
       // ed.enqueueResponse('makeKeypair', kp);
@@ -943,7 +943,10 @@ describe('apis/delegatesAPI', () => {
     // });
 
     it('should throw error if params.publicKey isn"t undefined and pk !== params.publicKey', async () => {
-      sandbox.stub(ed, 'makeKeyPair').returns({ publicKey: 'sss' });
+      sandbox.stub(ed, 'makeKeyPair').returns({
+        publicKey: Buffer.from('sss', 'utf8'),
+        privateKey: Buffer.from('sss', 'utf8'),
+      });
 
       await expect(instance.forgingEnable(params)).to.be.rejectedWith(
         'Invalid passphrase'
@@ -1029,12 +1032,14 @@ describe('apis/delegatesAPI', () => {
       isForgeEnabledOnStub = sandbox
         .stub(forgeModule, 'isForgeEnabledOn')
         .returns(true);
-      disableForgeStub = sandbox.stub(forgeModule, 'disableForge').returns({});
+      disableForgeStub = sandbox.stub(forgeModule, 'disableForge').returns({} as any);
       getAccountStub = sandbox.stub(accounts, 'getAccount').returns(account);
     });
 
     it('should throw error if params.publicKey isn"t undefined and pk !== params.publicKey', async () => {
-      sandbox.stub(ed, 'makeKeyPair').returns({ publicKey: 'sss' });
+      sandbox.stub(ed, 'makeKeyPair').returns({
+        publicKey: Buffer.from('sss', 'utf8'),
+        privateKey: Buffer.from('sss', 'utf8'), });
       await expect(instance.forgingDisable(params)).to.be.rejectedWith(
         'Invalid passphrase'
       );

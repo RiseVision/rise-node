@@ -100,7 +100,7 @@ describe('logic/broadcaster', () => {
       const jobsQueuestub = sandbox
         .stub(jobsQueue, 'register')
         .callsFake((name: string, job: () => Promise<any>) => {
-          return job();
+          return job() as any;
         });
       const releaseQueueStub = sandbox.stub().resolves(true);
       // tslint:disable-next-line no-string-literal
@@ -114,7 +114,7 @@ describe('logic/broadcaster', () => {
       const jobsQueuestub = sandbox
         .stub(jobsQueue, 'register')
         .callsFake((name: string, job: () => Promise<any>) => {
-          return job();
+          return job() as any;
         });
       const releaseQueueStub = sandbox.stub().rejects(new Error('Booo!'));
       // tslint:disable-next-line no-string-literal

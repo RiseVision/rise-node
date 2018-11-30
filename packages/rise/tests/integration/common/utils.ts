@@ -337,7 +337,7 @@ export const createRegDelegateTransaction = async (
 
 export const createSendTransaction = async (
   confirmations: number,
-  amount: number,
+  amount: number | bigint,
   from: LiskWallet,
   dest: string,
   opts: any = {}

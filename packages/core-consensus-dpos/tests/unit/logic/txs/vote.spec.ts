@@ -136,7 +136,7 @@ describe('logic/transactions/vote', () => {
     };
     getFeesStub = sandbox
       .stub(systemModuleStub, 'getFees')
-      .returns({ fees: { vote: 1 } });
+      .returns({ fees: { vote: 1n }, fromHeight: 1, toHeight: 100000, height: 1000 });
     instance = container.getNamed(
       TXSymbols.transaction,
       dPoSSymbols.logic.voteTransaction
@@ -416,7 +416,7 @@ describe('logic/transactions/vote', () => {
       checkConfirmedDelegatesStub.restore();
       const stub = sandbox
         .stub(delegatesModuleStub, 'checkConfirmedDelegates')
-        .returns('test');
+        .returns('test' as any);
       const accountsModel1 = new accountsModel();
       const retVal = instance.checkConfirmedDelegates(tx, accountsModel1);
       expect(stub.calledOnce).to.be.true;
@@ -430,7 +430,7 @@ describe('logic/transactions/vote', () => {
     it('should call delegatesModule.checkUnconfirmedDelegates and return its result', () => {
       const stub = sandbox
         .stub(delegatesModuleStub, 'checkUnconfirmedDelegates')
-        .returns('test');
+        .returns('test'  as any);
       const accountsModel1 = new accountsModel();
       const retVal = instance.checkUnconfirmedDelegates(tx, accountsModel1);
       expect(stub.calledOnce).to.be.true;

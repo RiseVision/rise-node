@@ -211,11 +211,7 @@ export class SystemModule extends Extendable implements ISystemModule {
     height: number = this.blocksModule.lastBlock.height + 1
   ): {
     fees: {
-      send: bigint;
-      vote: bigint;
-      secondsignature: bigint;
-      delegate: bigint;
-      multisignature: bigint;
+      [kind: string]: bigint;
     };
     fromHeight: number;
     height: number;

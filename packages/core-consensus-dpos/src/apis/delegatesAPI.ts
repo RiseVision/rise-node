@@ -16,7 +16,6 @@ import {
   SchemaValid,
   ValidateSchema,
 } from '@risevision/core-utils';
-import BigNumber from 'bignumber.js';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named, postConstruct } from 'inversify';
@@ -232,12 +231,11 @@ export class DelegatesAPI {
         generatorPublicKey: params.generatorPublicKey,
         start: params.start,
       });
-      const forged = new BigNumber(reward.fees).plus(reward.rewards).toString();
       return {
         count: reward.count,
-        fees: reward.fees,
-        forged,
-        rewards: reward.rewards,
+        fees: reward.fees.toString(),
+        forged: (reward.fees + reward.rewards).toString(),
+        rewards: reward.rewards.toString(),
       };
     } else {
       const account = await this.accounts.getAccount({
@@ -505,7 +503,7 @@ export class DelegatesAPI {
     generatorPublicKey: publicKey;
     start?: number;
     end?: number;
-  }): Promise<{ fees: number; rewards: number; count: number }> {
+  }): Promise<{ fees: bigint; rewards: bigint; count: number }> {
     const params: any = {};
     params.generatorPublicKey = filter.generatorPublicKey;
     params.delegates = this.dposConstants.activeDelegates;
@@ -551,20 +549,16 @@ export class DelegatesAPI {
       },
     })) as any;
 
-    const data = {
+    const fees               = (await this.RoundsFeesModel.aggregate('fees', 'sum', {
+      where: {
+        ...timestampClausole,
+        publicKey: bufPublicKey,
+      },
+    })) as number;
+    return {
       count: parseInt(res.count, 10),
-      fees: (await this.RoundsFeesModel.aggregate('fees', 'sum', {
-        where: {
-          ...timestampClausole,
-          publicKey: bufPublicKey,
-        },
-      })) as number,
-      rewards: res.rewards === null ? 0 : parseInt(res.rewards, 10),
+      fees: isNaN(fees) ? 0n : BigInt(fees),
+      rewards: BigInt(res.rewards === null ? 0 : res.rewards),
     };
-    if (isNaN(data.fees)) {
-      // see https://github.com/sequelize/sequelize/issues/6299
-      data.fees = 0;
-    }
-    return data;
   }
 }

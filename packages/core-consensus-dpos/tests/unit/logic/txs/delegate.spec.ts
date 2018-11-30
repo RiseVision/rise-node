@@ -106,7 +106,7 @@ describe('logic/transactions/delegate', () => {
     );
     getFeesStub = sandbox
       .stub(systemModuleStub, 'getFees')
-      .returns({ fees: { delegate: 2500 } });
+      .returns({ fees: { delegate: 2500n }, fromHeight: 1, toHeight: 1000000, height: 100 });
   });
 
   afterEach(() => {
