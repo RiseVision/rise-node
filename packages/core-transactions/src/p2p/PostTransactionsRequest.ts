@@ -10,6 +10,8 @@ import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { TransactionLogic } from '../TransactionLogic';
 import { TransactionsModule } from '../TransactionModule';
+import { TXBytes } from '../txbytes';
+import { TXSymbols } from '../txSymbols';
 
 // tslint:disable-next-line
 export type PostTransactionsRequestDataType = {
@@ -35,8 +37,11 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   @inject(Symbols.modules.transactions)
   private txModule: TransactionsModule;
 
-  @inject(Symbols.logic.transaction)
-  private txLogic: TransactionLogic;
+  // @inject(Symbols.logic.transaction)
+  // private txLogic: TransactionLogic;
+
+  @inject(TXSymbols.txBytes)
+  private txBytes: TXBytes;
 
   @inject(Symbols.generic.constants)
   private constants: { blocks: { maxTxsPerBlock: number } };
@@ -87,9 +92,10 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   ): Promise<Buffer> {
     return super.encodeRequest(
       {
-        transactions: data.transactions.map((tx) =>
-          this.txLogic.toProtoBuffer(tx)
-        ) as any,
+        transactions: data.transactions.map((tx) => ({
+          relays: tx.relays,
+          tx: this.txBytes.toBuffer(tx),
+        })) as any,
       },
       peer
     );
@@ -102,9 +108,13 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   ): Promise<PostTransactionsRequestDataType> {
     const d = await super.decodeRequest(req);
     return {
-      transactions: d.transactions.map((txBuf) =>
-        this.txLogic.fromProtoBuffer(txBuf as any)
-      ),
+      transactions: d.transactions.map((data: any) => {
+        const txToRet = this.txBytes.fromBuffer(data.tx);
+        return {
+          ...txToRet,
+          relays: data.relays,
+        };
+      }),
     };
   }
 

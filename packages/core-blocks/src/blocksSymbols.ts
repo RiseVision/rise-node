@@ -7,6 +7,7 @@ export const BlocksSymbols = {
   },
   logic: {
     block: Symbols.logic.block,
+    blockBytes: Symbol.for('rise.blocks.logic.blockBytes'),
     blockReward: Symbols.logic.blockReward,
   },
   model: Symbols.models.blocks,

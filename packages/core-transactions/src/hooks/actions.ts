@@ -6,7 +6,6 @@ export const TxLogicStaticCheck = createAction<
   (
     tx: IBaseTransaction<any, bigint>,
     sender?: IAccountsModel,
-    requester?: IAccountsModel,
     height?: number
   ) => Promise<void>
 >('core-transactions/txlogic/verify/static-checks');
@@ -15,7 +14,6 @@ export const TxLogicVerify = createAction<
   (
     tx: IBaseTransaction<any, bigint>,
     sender?: IAccountsModel,
-    requester?: IAccountsModel,
     height?: number
   ) => Promise<void>
 >('core-transactions/txlogic/verify/tx');

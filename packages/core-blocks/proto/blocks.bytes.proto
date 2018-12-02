@@ -1,8 +1,7 @@
 syntax = "proto3";
 
 message bytesBlock {
-    bytes bytes = 1;
+    bytes header = 1;
     repeated bytes transactions = 2;
     uint32 height = 3;
-    uint32 relays = 4;
 }

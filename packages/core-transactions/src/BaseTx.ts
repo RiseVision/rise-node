@@ -44,11 +44,7 @@ export abstract class BaseTx<T, M extends Model<any>>
     return Promise.resolve();
   }
 
-  public getBytes(
-    tx: IBaseTransaction<T>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
-  ): Buffer {
+  public getBytes(tx: IBaseTransaction<T>): Buffer {
     return emptyBuffer;
   }
 

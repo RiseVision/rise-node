@@ -132,26 +132,9 @@ export class TransactionsModule implements ITransactionsModule {
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
     } else {
-      if (transaction.requesterPublicKey) {
-        const requester = await this.accountsModule.getAccount({
-          publicKey: transaction.requesterPublicKey,
-        });
-        if (!requester) {
-          throw new Error('Requester not found');
-        }
-
-        await this.dbHelper.performOps(
-          await this.transactionLogic.applyUnconfirmed(
-            transaction,
-            sender,
-            requester
-          )
-        );
-      } else {
-        await this.dbHelper.performOps(
-          await this.transactionLogic.applyUnconfirmed(transaction, sender)
-        );
-      }
+      await this.dbHelper.performOps(
+        await this.transactionLogic.applyUnconfirmed(transaction, sender)
+      );
     }
   }
 
@@ -208,16 +191,6 @@ export class TransactionsModule implements ITransactionsModule {
     if (!acc) {
       throw new Error('Cannot find account from accounts');
     }
-    let requester = null;
-    if (tx.requesterPublicKey) {
-      requester =
-        accountsMap[
-          this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)
-        ];
-      if (!requester) {
-        throw new Error('Cannot find requester from accounts');
-      }
-    }
-    await this.transactionLogic.verify(tx, acc, requester, height);
+    await this.transactionLogic.verify(tx, acc, height);
   }
 }

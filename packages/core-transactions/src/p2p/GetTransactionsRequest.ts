@@ -1,4 +1,4 @@
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   Peer,
@@ -8,6 +8,7 @@ import {
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { TransactionPool } from '../TransactionPool';
+import { TXBytes } from '../txbytes';
 import { TXSymbols } from '../txSymbols';
 
 // tslint:disable-next-line
@@ -39,13 +40,12 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
     type: 'object',
   };
 
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
+  @inject(TXSymbols.txBytes)
+  private txBytes: TXBytes;
 
   @inject(TXSymbols.pool)
   private pool: TransactionPool;
 
-  // TODO: lerna remove me and use tx type constants.
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
 
@@ -72,9 +72,10 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
   ): Promise<Buffer> {
     return super.encodeResponse(
       {
-        transactions: data.transactions.map((tx) =>
-          this.transactionLogic.toProtoBuffer(tx)
-        ),
+        transactions: data.transactions.map((d: any) => ({
+          relays: 3,
+          tx: this.txBytes.toBuffer(d.tx),
+        })),
       } as any,
       null
     );
@@ -89,9 +90,10 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
       peer
     )) as any;
     return {
-      transactions: (superRes.transactions || []).map((bufTx) =>
-        this.transactionLogic.fromProtoBuffer(bufTx)
-      ),
+      transactions: (superRes.transactions || []).map((d: any) => ({
+        ...this.txBytes.fromBuffer(d.tx),
+        relays: d.relays,
+      })),
     };
   }
 }

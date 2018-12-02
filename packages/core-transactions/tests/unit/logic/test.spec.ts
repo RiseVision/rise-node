@@ -36,8 +36,6 @@ describe('some real cases', () => {
       amount: 1490000000n,
       fee: 10000000n,
       signature: Buffer.from('6bdd0c83217230b809893a2b3ca301994398be276ff7858870bebfa63cc5e671fe5c8ecdf53c52a47572958363d7721510d5dbcf49b4aca633df5fc758b1a704', 'hex'),
-      signSignature: null,
-      requesterPublicKey: null,
       asset: null,
     };
 
@@ -52,9 +50,7 @@ describe('some real cases', () => {
       fee: 10000000n,
       id: '15448536942844597615',
       recipientId: '6233046836858939892R',
-      requesterPublicKey: null,
       senderPublicKey: Buffer.from('bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3', 'hex'),
-      signSignature: null,
       signature: Buffer.from('58f3ccb59fd720a0fd41381b312e17aea1fda1d26f8e3b89bb128ad217737ec4874c095a36069184a9a4113ec96824ede3269df7fbe2e036d6a399cbc6cb8107', 'hex'),
       timestamp: 40355001,
       type: 0,

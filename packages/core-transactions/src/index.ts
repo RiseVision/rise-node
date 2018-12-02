@@ -8,5 +8,6 @@ export * from './TransactionPool';
 export * from './TransactionLogic';
 export * from './TransactionModule';
 export * from './TransactionsModel';
+export * from './txbytes';
 export * from './txSymbols';
 export * from './p2p';

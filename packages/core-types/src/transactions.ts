@@ -14,7 +14,6 @@ export interface ITransportTransaction<T> {
   amount: string | number;
   senderId?: string;
   senderPublicKey: string;
-  requesterPublicKey?: string;
   timestamp: number;
   asset?: T;
   recipientId: string;
@@ -22,7 +21,6 @@ export interface ITransportTransaction<T> {
   id: string;
   fee: string | number;
   signatures?: string[];
-  signSignature?: string;
 }
 
 export interface IBaseTransaction<T, amountType = bigint> {
@@ -30,7 +28,6 @@ export interface IBaseTransaction<T, amountType = bigint> {
   amount: amountType;
   senderId?: string;
   senderPublicKey: Buffer;
-  requesterPublicKey?: Buffer;
   timestamp: number;
   asset?: T;
   recipientId: string;
@@ -38,15 +35,5 @@ export interface IBaseTransaction<T, amountType = bigint> {
   id: string;
   fee: amountType;
   blockId?: string;
-  signatures?: Buffer[];
-  signSignature?: Buffer;
-}
-
-export interface IBytesTransaction {
-  bytes: Buffer;
-  hasRequesterPublicKey: boolean;
-  hasSignSignature: boolean;
-  fee: Buffer;
-  relays?: number;
   signatures?: Buffer[];
 }

@@ -7,9 +7,9 @@ import {
 } from '@risevision/core-p2p';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
 import { BlocksSymbols } from '../blocksSymbols';
-import { OnPostApplyBlock, OnReceiveBlock } from '../hooks';
+import { BlockLogic } from '../logic';
+import { BlockBytes } from '../logic/blockBytes';
 import { BlocksModuleProcess } from '../modules';
 
 // tslint:disable-next-line
@@ -29,8 +29,11 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
     namespace: 'blocks.transport',
   };
 
-  @inject(Symbols.logic.block)
-  private blockLogic: IBlockLogic;
+  @inject(BlocksSymbols.logic.blockBytes)
+  private blockBytes: BlockBytes;
+
+  @inject(BlocksSymbols.logic.block)
+  private blockLogic: BlockLogic;
 
   @inject(BlocksSymbols.modules.process)
   private process: BlocksModuleProcess;
@@ -41,7 +44,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
   ): Promise<Buffer> {
     return super.encodeRequest(
       {
-        block: this.blockLogic.toProtoBuffer(data.block) as any,
+        block: this.blockBytes.toBuffer(data.block) as any,
       },
       peer
     );
@@ -55,7 +58,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
     const data: any = await super.decodeRequest(req);
     return {
       block: this.blockLogic.objectNormalize(
-        this.blockLogic.fromProtoBuffer(data.block)
+        this.blockBytes.fromBuffer(data.block)
       ),
     };
   }

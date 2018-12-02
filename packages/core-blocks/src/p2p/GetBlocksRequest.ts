@@ -1,7 +1,7 @@
 import {
+  IBaseTransactionType,
   IBlockLogic,
   IBlocksModel,
-  ITransactionLogic,
   ITransactionsModel,
   Symbols,
 } from '@risevision/core-interfaces';
@@ -13,12 +13,14 @@ import {
   Peer,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { TXSymbols } from '@risevision/core-transactions';
+import { BaseTx, TXSymbols } from '@risevision/core-transactions';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
+import { Model } from 'sequelize-typescript';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
+import { BlockBytes } from '../logic/blockBytes';
 import { BlocksModuleUtils } from '../modules';
 
 // tslint:disable-next-line
@@ -42,9 +44,6 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     namespace: 'blocks.transport',
   };
 
-  @inject(Symbols.logic.block)
-  private blockLogic: IBlockLogic;
-
   @inject(p2pSymbols.constants)
   private p2pConstants: P2PConstantsType;
 
@@ -61,8 +60,20 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   @inject(Symbols.generic.constants)
   private blocksConstants: BlocksConstantsType;
 
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
+  @inject(BlocksSymbols.logic.blockBytes)
+  private blockBytes: BlockBytes;
+
+  private types: { [k: number]: BaseTx<any, any> } = {};
+
+  public attachTXType<K, M extends Model<any>>(
+    instance: IBaseTransactionType<K, M>
+  ): IBaseTransactionType<K, M> {
+    if (!(instance instanceof BaseTx)) {
+      throw new Error('Invalid instance interface');
+    }
+    this.types[instance.type] = instance;
+    return instance;
+  }
 
   protected async produceResponse(
     request: SingleTransportPayload<null, { lastBlockId: string }>
@@ -91,7 +102,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   ): Promise<Buffer> {
     return super.encodeResponse(
       {
-        blocks: data.blocks.map((b) => this.blockLogic.toProtoBuffer(b)) as any,
+        blocks: data.blocks.map((b) => this.blockBytes.toBuffer(b)) as any,
       },
       req
     );
@@ -103,9 +114,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   ): Promise<GetBlocksRequestDataType> {
     const d = await super.decodeResponse(res, peer);
     return {
-      blocks: (d.blocks || []).map((b) =>
-        this.blockLogic.fromProtoBuffer(b as any)
-      ),
+      blocks: (d.blocks || []).map((b) => this.blockBytes.fromBuffer(b as any)),
     };
   }
 
@@ -115,17 +124,14 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     // We take 98% of the theoretical value to allow for some overhead
     const maxBytes = maxPayloadSize * 0.98;
     // Best case scenario: we find 1.5MB of empty blocks.
-    const maxHeightDelta = Math.ceil(
-      maxBytes / this.blockLogic.getMinBytesSize()
-    );
+    const maxHeightDelta = Math.ceil(maxBytes / this.blockBytes.headerSize);
     // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
     // In RISE the value is about 8000 TXs
     const txLimit = Math.ceil(
       (maxBytes * this.blocksConstants.blocks.maxTxsPerBlock) /
-        (this.transactionLogic.getMinBytesSize() *
-          this.blocksConstants.blocks.maxTxsPerBlock +
-          this.blockLogic.getMinBytesSize())
+        (this.getMinBytesSize() * this.blocksConstants.blocks.maxTxsPerBlock +
+          this.blockBytes.headerSize)
     );
 
     // Get only height and type for all the txs in this height range
@@ -165,7 +171,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
         // Add blocks size one by one
         for (let i = 0; i < heightDelta; i++) {
           // First add the empty block's size
-          blocksSize += this.blockLogic.getMinBytesSize();
+          blocksSize += this.blockBytes.headerSize;
           // If it doesn't fit already, don't increase the number of blocks to load.
           if (blocksSize + txsSize > maxBytes) {
             break;
@@ -174,17 +180,29 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
             blocksToLoad++;
           }
         }
-        txsSize += this.transactionLogic.getByteSizeByTxType(tx.type);
+        txsSize += this.getByteSizeByTxType(tx.type);
       }
       // If arrived here we didn't fill the payload enough, add enough empty blocks
-      if (maxBytes - blocksSize - txsSize > this.blockLogic.getMinBytesSize()) {
+      if (maxBytes - blocksSize - txsSize > this.blockBytes.headerSize) {
         blocksToLoad += Math.ceil(
-          (maxBytes - blocksSize - txsSize) / this.blockLogic.getMinBytesSize()
+          (maxBytes - blocksSize - txsSize) / this.blockBytes.headerSize
         );
       }
     } else {
       blocksToLoad = maxHeightDelta;
     }
     return Math.max(1, blocksToLoad);
+  }
+
+  private getMinBytesSize(): number {
+    let min = Number.MAX_SAFE_INTEGER;
+    Object.keys(this.types).forEach((type) => {
+      min = Math.min(min, this.types[type].getMaxBytesSize());
+    });
+    return min;
+  }
+
+  private getByteSizeByTxType(txType: number): number {
+    return this.types[txType].getMaxBytesSize();
   }
 }

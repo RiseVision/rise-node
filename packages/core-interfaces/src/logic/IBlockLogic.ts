@@ -13,13 +13,6 @@ export interface IBlockLogic {
   table: string;
   dbFields: string[];
 
-  getId(block: BlockType): string;
-
-  getBytes(
-    block: BlockType | SignedBlockType,
-    includeSignature?: boolean
-  ): Buffer;
-
   getHash(block: BlockType, includeSignature?: boolean): Buffer;
 
   create(data: {
@@ -67,20 +60,4 @@ export interface IBlockLogic {
       generatorPublicKey: Buffer;
     }
   >;
-
-  fromProtoBuffer(protoBuffer: Buffer): SignedAndChainedBlockType;
-
-  toProtoBuffer(block: SignedAndChainedBlockType): Buffer;
-
-  /**
-   * Gets maximum size in bytes for a block. Used in Protocol Buffer response space allocation calculations.
-   * @returns {number} maximum bytes size
-   */
-  getMaxBytesSize(): number;
-
-  /**
-   * Gets minimum size in bytes for a block. Used in Protocol Buffer response space allocation calculations.
-   * @returns {number} minimum bytes size
-   */
-  getMinBytesSize(): number;
 }

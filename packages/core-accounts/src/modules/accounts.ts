@@ -50,17 +50,6 @@ export class AccountsModule implements IAccountsModule {
           publicKey: tx.senderPublicKey,
         });
       }
-      if (tx.requesterPublicKey) {
-        const requesterAddress = this.accountLogic.generateAddressByPublicKey(
-          tx.requesterPublicKey
-        );
-        if (!allSenders.find((item) => item.address === requesterAddress)) {
-          allSenders.push({
-            address: requesterAddress,
-            publicKey: tx.requesterPublicKey,
-          });
-        }
-      }
     });
     return allSenders;
   }

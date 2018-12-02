@@ -292,14 +292,7 @@ export class BlocksModuleChain {
       ops.push(
         ...(await this.transactionLogic.applyUnconfirmed(
           tx,
-          accountsMap[tx.senderId],
-          tx.requesterPublicKey
-            ? accountsMap[
-                this.accountsModule.generateAddressByPublicKey(
-                  tx.requesterPublicKey
-                )
-              ]
-            : undefined
+          accountsMap[tx.senderId]
         ))
       );
     }

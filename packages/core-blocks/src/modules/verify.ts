@@ -5,18 +5,17 @@ import {
   IBlockReward,
   IBlocksModel,
   IBlocksModule,
-  IForkModule,
+  IForkModule, IIdsHandler,
   ILogger,
-  ITransactionLogic,
   ITransactionPool,
   ITransactionsModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
+import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import {
   ConstantsType,
   ForkType,
-  SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
@@ -25,6 +24,7 @@ import { WordPressHookSystem } from 'mangiafuoco';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
 import { VerifyBlock, VerifyReceipt } from '../hooks';
+import { BlockBytes } from '../logic/blockBytes';
 import { BlocksModuleChain } from './chain';
 
 @injectable()
@@ -42,9 +42,6 @@ export class BlocksModuleVerify {
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.blockReward)
   private blockRewardLogic: IBlockReward;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-
   // Modules
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -58,6 +55,12 @@ export class BlocksModuleVerify {
   private transactionsModule: ITransactionsModule;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
+  @inject(Symbols.helpers.idsHandler)
+  private idsHandler: IIdsHandler;
+  @inject(BlocksSymbols.logic.blockBytes)
+  private blockBytes: BlockBytes;
+  @inject(TXSymbols.txBytes)
+  private txBytes: TXBytes;
 
   // Models
   @inject(ModelSymbols.model)
@@ -160,7 +163,7 @@ export class BlocksModuleVerify {
   ) {
     const allIds = [];
     for (const tx of block.transactions) {
-      tx.id = this.transactionLogic.getId(tx);
+      tx.id = this.idsHandler.txIdFromBytes(this.txBytes.signableBytes(tx, true));
       // Apply block id to the tx
       tx.blockId = block.id;
       allIds.push(tx.id);
@@ -263,7 +266,7 @@ export class BlocksModuleVerify {
   }
 
   private verifyId(block: SignedBlockType) {
-    const id = this.blockLogic.getId(block);
+    const id = this.idsHandler.blockIdFromBytes(this.blockBytes.signableBytes(block, true));
     if (block.id !== id) {
       return [`BlockID: Expected ${id} - Received ${block.id}`];
     }
@@ -299,7 +302,7 @@ export class BlocksModuleVerify {
     for (const tx of block.transactions) {
       let bytes: Buffer;
       try {
-        bytes = this.transactionLogic.getBytes(tx);
+        bytes = this.txBytes.signableBytes(tx, true);
         payloadHash.update(bytes);
       } catch (e) {
         errors.push(e.toString());

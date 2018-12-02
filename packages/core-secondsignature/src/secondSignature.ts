@@ -63,9 +63,7 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public getBytes(
-    tx: IBaseTransaction<SecondSignatureAsset>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
+    tx: IBaseTransaction<SecondSignatureAsset>
   ): Buffer {
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
   }

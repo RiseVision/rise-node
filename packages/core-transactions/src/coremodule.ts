@@ -18,6 +18,7 @@ import { TransactionLogic } from './TransactionLogic';
 import { TransactionsModule } from './TransactionModule';
 import { TransactionPool } from './TransactionPool';
 import { TransactionsModel } from './TransactionsModel';
+import { TXBytes } from './txbytes';
 import { TXSymbols } from './txSymbols';
 
 // tslint:disable-next-line
@@ -89,8 +90,11 @@ export class CoreModule extends BaseCoreModule {
       Symbols.logic.transaction
     );
 
+    const txBytes = this.container.get<TXBytes>(TXSymbols.txBytes);
+
     for (const txType of TXTypes) {
       txLogic.attachAssetType(txType);
+      txBytes.attachAssetType(txType);
     }
 
     // initializes pool manager through postConstruct

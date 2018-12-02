@@ -3,22 +3,23 @@ import {
   IBlockLogic,
   IBlocksModel,
   ICrypto,
+  IIdsHandler,
   ITransactionLogic,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
+import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import {
-  BlockType, ConstantsType,
+  BlockType,
+  ConstantsType,
   DBOp,
   IBaseTransaction,
-  IBytesBlock,
   IKeypair,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
-import * as ByteBuffer from 'bytebuffer';
+import { toBigIntBE } from 'bigint-buffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named } from 'inversify';
@@ -26,6 +27,7 @@ import { Overwrite } from 'utility-types';
 import z_schema from 'z-schema';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
+import { BlockBytes } from './blockBytes';
 import { BlockRewardLogic } from './blockReward';
 
 // tslint:disable-next-line no-var-requires
@@ -67,6 +69,13 @@ export class BlockLogic implements IBlockLogic {
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
 
+  @inject(BlocksSymbols.logic.blockBytes)
+  private blockBytes: BlockBytes;
+  @inject(TXSymbols.txBytes)
+  private txBytes: TXBytes;
+  @inject(Symbols.helpers.idsHandler)
+  private idsHandler: IIdsHandler;
+
   @inject(ModelSymbols.model)
   @named(BlocksSymbols.model)
   private BlocksModel: typeof IBlocksModel;
@@ -78,21 +87,6 @@ export class BlockLogic implements IBlockLogic {
     previousBlock?: SignedAndChainedBlockType;
   }): SignedAndChainedBlockType {
     const transactions = data.transactions;
-    transactions.sort((a, b) => {
-      if (a.type < b.type) {
-        return -1;
-      }
-      if (a.type > b.type) {
-        return 1;
-      }
-      if (a.amount < b.amount) {
-        return -1;
-      }
-      if (a.amount > b.amount) {
-        return 1;
-      }
-      return 0;
-    });
 
     const nextHeight = data.previousBlock ? data.previousBlock.height + 1 : 1;
 
@@ -105,7 +99,7 @@ export class BlockLogic implements IBlockLogic {
     const payloadHash       = crypto.createHash('sha256');
 
     for (const transaction of transactions) {
-      const bytes: Buffer = this.transaction.getBytes(transaction);
+      const bytes: Buffer = this.txBytes.signableBytes(transaction, true);
 
       if (size + bytes.length > this.constants.blocks.maxPayloadLength) {
         break;
@@ -113,8 +107,8 @@ export class BlockLogic implements IBlockLogic {
 
       size += bytes.length;
 
-      totalFee += BigInt(transaction.fee);
-      totalAmount += BigInt(transaction.amount);
+      totalFee += transaction.fee;
+      totalAmount += transaction.amount;
 
       blockTransactions.push(transaction);
       payloadHash.update(bytes);
@@ -138,7 +132,8 @@ export class BlockLogic implements IBlockLogic {
     };
 
     block.blockSignature = this.sign(block, data.keypair);
-    block.id             = this.getId(block);
+    block.id             = this.idsHandler
+      .blockIdFromBytes(this.blockBytes.signableBytes(block, true));
     return this.objectNormalize(block);
   }
 
@@ -157,10 +152,6 @@ export class BlockLogic implements IBlockLogic {
    * @param {BlockType} block
    */
   public verifySignature(block: SignedBlockType): boolean {
-    // console.log(block);
-    // const res = new OldImplementation(this.ed, this.zschema, this.transaction, null)
-    //  .verifySignature(block);
-    // console.log(res);
     return this.crypto.verify(
       this.getHash(block, false),
       block.blockSignature,
@@ -242,196 +233,11 @@ export class BlockLogic implements IBlockLogic {
     return block as any;
   }
 
-  /**
-   * Calculates block id.
-   * @param {BlockType} block
-   * @returns {string}
-   */
-  public getId(block: BlockType): string {
-    return this.getIdFromBytes(this.getBytes(block));
-  }
-
   public getHash(block: BlockType, includeSignature: boolean = true) {
     return crypto
       .createHash('sha256')
-      .update(this.getBytes(block, includeSignature))
+      .update(this.blockBytes.signableBytes(block, includeSignature))
       .digest();
   }
 
-  public getBytes(
-    block: BlockType,
-    includeSignature: boolean = true
-  ): Buffer {
-    const size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
-    const bb   = new ByteBuffer(size, true /* little endian */);
-    bb.writeInt(block.version);
-    bb.writeInt(block.timestamp);
-
-    if (block.previousBlock) {
-      const pb = toBufferBE(BigInt(block.previousBlock), 8);
-
-      for (let i = 0; i < 8; i++) {
-        bb.writeByte(pb[i]);
-      }
-    } else {
-      for (let i = 0; i < 8; i++) {
-        bb.writeByte(0);
-      }
-    }
-
-    bb.writeInt(block.numberOfTransactions);
-
-    bb.append(toBufferLE(block.totalAmount, this.constants.amountBytes));
-    bb.append(toBufferLE(block.totalFee, this.constants.amountBytes));
-    bb.append(toBufferLE(block.reward, this.constants.amountBytes));
-
-    bb.writeInt(block.payloadLength);
-
-    const payloadHashBuffer = block.payloadHash;
-    // tslint:disable-next-line
-    for (let i = 0; i < payloadHashBuffer.length; i++) {
-      bb.writeByte(payloadHashBuffer[i]);
-    }
-
-    const generatorPublicKeyBuffer = block.generatorPublicKey;
-    // tslint:disable-next-line
-    for (let i = 0; i < generatorPublicKeyBuffer.length; i++) {
-      bb.writeByte(generatorPublicKeyBuffer[i]);
-    }
-
-    if (
-      typeof (block as SignedBlockType).blockSignature !== 'undefined' &&
-      includeSignature
-    ) {
-      const blockSignatureBuffer = (block as SignedBlockType).blockSignature;
-      // tslint:disable-next-line
-      for (let i = 0; i < blockSignatureBuffer.length; i++) {
-        bb.writeByte(blockSignatureBuffer[i]);
-      }
-    }
-
-    bb.flip();
-
-    return bb.toBuffer() as any;
-  }
-
-  public toProtoBuffer(
-    block: SignedAndChainedBlockType & { relays?: number }
-  ): Buffer {
-    const blk = {
-      bytes       : this.getBytes(block),
-      height      : block.height,
-      relays      : Number.isInteger(block.relays) ? block.relays : 1,
-      transactions: (block.transactions || []).map((tx) =>
-        this.transaction.toProtoBuffer(tx)
-      ),
-    };
-    return this.protobufHelper.encode(blk, 'blocks.bytes', 'bytesBlock');
-  }
-
-  /**
-   * Restores a block from its bytes
-   */
-  public fromProtoBuffer(
-    buffer: Buffer
-  ): SignedAndChainedBlockType & { relays: number } {
-    if (buffer === null || typeof buffer === 'undefined') {
-      return null;
-    }
-    const blk: IBytesBlock = this.protobufHelper.decode(
-      buffer,
-      'blocks.bytes',
-      'bytesBlock'
-    );
-    const bb               = ByteBuffer.wrap(blk.bytes, 'binary', true);
-    const version          = bb.readInt(0);
-    const timestamp        = bb.readInt(4);
-
-    // PreviousBlock is valid only if it's not 8 bytes with 0 value
-    const previousIdBytes = blk.bytes.slice(8, 16);
-    let previousValid     = false;
-    for (let i = 0; i < 8; i++) {
-      if (previousIdBytes.readUInt8(i) !== 0) {
-        previousValid = true;
-        break;
-      }
-    }
-    const previousBlock = previousValid
-      ? toBigIntBE(previousIdBytes).toString()
-      : null;
-
-    const numberOfTransactions = bb.readInt(16);
-    let offset                 = 20;
-    const step                   = this.constants.amountBytes;
-    const totalAmount          = toBigIntLE(blk.bytes.slice(offset, offset + step));
-    offset += step;
-    const totalFee             = toBigIntLE(blk.bytes.slice(offset, offset + step));
-    offset += step;
-    const reward               = toBigIntLE(blk.bytes.slice(offset, offset + step));
-    offset += step;
-    const payloadLength        = bb.readInt(offset);
-    offset += 4;
-    const payloadHash          = blk.bytes.slice(offset, offset + 32);
-    offset += 32;
-    const generatorPublicKey   = blk.bytes.slice(offset, offset + 32);
-    offset += 32;
-    const blockSignature       =
-            blk.bytes.length === offset + 64 ? blk.bytes.slice(offset, offset + 64) : null;
-    const id                   = this.getIdFromBytes(blk.bytes);
-    const transactions         = blk.transactions.map((tx) => {
-      const baseTx = this.transaction.fromProtoBuffer(tx);
-      return {
-        ...baseTx,
-        blockId : id,
-        height  : blk.height,
-        senderId: this.accountLogic.generateAddressByPublicKey(
-          baseTx.senderPublicKey
-        ),
-      };
-    });
-
-    // tslint:disable object-literal-sort-keys
-    return {
-      id,
-      version,
-      timestamp,
-      previousBlock,
-      numberOfTransactions,
-      totalAmount,
-      totalFee,
-      reward,
-      payloadLength,
-      payloadHash,
-      generatorPublicKey,
-      blockSignature,
-      transactions,
-      height: blk.height,
-      relays: blk.relays,
-    };
-  }
-
-  public getMinBytesSize(): number {
-    let size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64; // Block's bytes
-    size += 4; // height
-    return size;
-  }
-
-  public getMaxBytesSize(): number {
-    let size        = this.getMinBytesSize();
-    const maxTxSize = this.transaction.getMaxBytesSize();
-    size += this.constants.blocks.maxTxsPerBlock * maxTxSize; // transactions
-    return size;
-  }
-
-  private getIdFromBytes(bytes: Buffer): string {
-    const hash = crypto
-      .createHash('sha256')
-      .update(bytes)
-      .digest();
-    const temp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      temp[i] = hash[7 - i];
-    }
-    return toBigIntBE(temp).toString();
-  }
 }

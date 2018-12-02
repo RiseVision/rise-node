@@ -13,6 +13,7 @@ export const Symbols = {
   },
   helpers: {
     db: Symbol.for('rise.dbHelper'),
+    idsHandler: Symbol.for('rise.helpers.iidsHandler'),
     jobsQueue: Symbol.for('rise.jobsQueue'),
     logger: Symbol.for('rise.logger'),
     sequence: Symbol.for('rise.sequence'),

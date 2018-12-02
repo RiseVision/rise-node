@@ -347,12 +347,7 @@ export class BlocksModuleProcess {
       }
 
       try {
-        await this.transactionLogic.verify(
-          tx,
-          sender,
-          null,
-          previousBlock.height
-        );
+        await this.transactionLogic.verify(tx, sender, previousBlock.height);
         ready.push(tx);
       } catch (err) {
         // TODO: why is error swallowed here? shouldn't we better handle this error?
