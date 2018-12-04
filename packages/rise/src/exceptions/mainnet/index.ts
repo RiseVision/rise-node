@@ -29,7 +29,7 @@ export async function registerExceptions(
   setupExceptionOnInstance(
     excManager,
     tl,
-    'checkBalance',
+    'assertEnoughBalance',
     excSymbols.txlogic_checkBalance
   );
   await tx1563714189640390961(excManager);

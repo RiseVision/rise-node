@@ -5,7 +5,6 @@ import {
   ITransactionLogic,
   ITransactionPool,
   Symbols,
-  VerificationType,
 } from '@risevision/core-interfaces';
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { logOnly, WrapInBalanceSequence } from '@risevision/core-utils';
@@ -105,10 +104,6 @@ export class MultisignaturesModule {
   ) {
     const multisignatures = sender.multisignatures;
 
-    if (tx.requesterPublicKey) {
-      multisignatures.push(tx.senderPublicKey.toString('hex'));
-    }
-
     tx.signatures = tx.signatures || [];
     if (tx.signatures.some((s) => s.compare(signature) === 0)) {
       throw new Error('Signature already exists');
@@ -118,10 +113,10 @@ export class MultisignaturesModule {
       verify = this.transactionLogic.verifySignature(
         tx,
         Buffer.from(multisignatures[i], 'hex'),
-        signature,
-        VerificationType.ALL
+        signature
       );
     }
+    // TODO: Verify signature is not from an already existing key!
 
     if (!verify) {
       throw new Error('Failed to verify signature');
@@ -149,10 +144,10 @@ export class MultisignaturesModule {
       verify = this.transactionLogic.verifySignature(
         tx,
         Buffer.from(key, 'hex'),
-        signature,
-        VerificationType.ALL
+        signature
       );
     }
+    // TODO: Verify signature is not from an already existing key! (Maybe use utils.ts)
     if (!verify) {
       throw new Error('Failed to verify signature');
     }

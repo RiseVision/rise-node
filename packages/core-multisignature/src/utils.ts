@@ -1,8 +1,4 @@
-import {
-  ITransactionLogic,
-  Symbols,
-  VerificationType,
-} from '@risevision/core-interfaces';
+import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
@@ -58,12 +54,7 @@ export class MultiSigUtils {
       let verified = false;
       for (let i = 0; i < tx.signatures.length && !verified; i++) {
         const signature = tx.signatures[i];
-        verified = this.txLogic.verifySignature(
-          tx,
-          pubKey,
-          signature,
-          VerificationType.ALL
-        );
+        verified = this.txLogic.verifySignature(tx, pubKey, signature);
       }
       return verified;
     }

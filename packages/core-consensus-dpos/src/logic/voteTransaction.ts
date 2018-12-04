@@ -126,11 +126,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     return this.checkConfirmedDelegates(tx, sender);
   }
 
-  public getBytes(
-    tx: IBaseTransaction<VoteAsset>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
-  ): Buffer {
+  public getBytes(tx: IBaseTransaction<VoteAsset>): Buffer {
     return tx.asset.votes ? Buffer.from(tx.asset.votes.join(''), 'utf8') : null;
   }
 

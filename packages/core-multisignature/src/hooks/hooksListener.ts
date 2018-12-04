@@ -1,9 +1,5 @@
 import { FilterAPIGetAccount } from '@risevision/core-accounts';
-import {
-  ITransactionLogic,
-  Symbols,
-  VerificationType,
-} from '@risevision/core-interfaces';
+import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import {
   TxLogicStaticCheck,
   TxLogicVerify,
@@ -45,16 +41,8 @@ export class MultisigHooksListener extends ExtendableClass {
   @TxLogicStaticCheck()
   public async txLogicStaticChecks(
     tx: IBaseTransaction<any>,
-    sender: AccountsModelWithMultisig,
-    requester: AccountsModelWithMultisig
+    sender: AccountsModelWithMultisig
   ) {
-    if (
-      tx.requesterPublicKey &&
-      (!sender.isMultisignature() || requester == null)
-    ) {
-      throw new Error('Account or requester account is not multisignature');
-    }
-
     if (
       tx.asset &&
       tx.asset.multisignature &&
@@ -64,14 +52,6 @@ export class MultisigHooksListener extends ExtendableClass {
         if (!key || typeof key !== 'string') {
           throw new Error('Invalid member in keysgroup');
         }
-      }
-    } else if (tx.requesterPublicKey) {
-      // tslint:disable-next-line
-      if (
-        sender.multisignatures.indexOf(tx.requesterPublicKey.toString('hex')) <
-        0
-      ) {
-        throw new Error('Account does not belong to multisignature group');
       }
     }
 
@@ -92,10 +72,10 @@ export class MultisigHooksListener extends ExtendableClass {
   }
 
   @TxLogicVerify()
+  // tslint:disable-next-line cognitive-complexity
   public async txLogicVerify(
     tx: IBaseTransaction<any, bigint>,
-    sender: AccountsModelWithMultisig,
-    requester: AccountsModelWithMultisig
+    sender: AccountsModelWithMultisig
   ) {
     const multisignatures = (
       sender.multisignatures ||
@@ -130,9 +110,12 @@ export class MultisigHooksListener extends ExtendableClass {
           valid = this.txLogic.verifySignature(
             tx,
             Buffer.from(multisignatures[s], 'hex'),
-            sig,
-            VerificationType.ALL
+            sig
           );
+          // Avoid same publicKey to provide 2 diff signatures to the same
+          if (valid) {
+            multisignatures.splice(s, 1);
+          }
         }
 
         if (!valid) {

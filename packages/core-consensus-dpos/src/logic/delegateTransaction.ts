@@ -64,9 +64,7 @@ export class RegisterDelegateTransaction extends BaseTx<
   }
 
   public getBytes(
-    tx: IBaseTransaction<DelegateAsset>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
+    tx: IBaseTransaction<DelegateAsset>
   ): Buffer {
     if (!tx.asset.delegate.username) {
       return null;

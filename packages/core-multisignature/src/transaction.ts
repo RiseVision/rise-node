@@ -3,8 +3,7 @@ import {
   ISystemModule,
   ITransactionLogic,
   ITransactionsModel,
-  Symbols,
-  VerificationType,
+  Symbols
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
@@ -104,9 +103,7 @@ export class MultiSignatureTransaction extends BaseTx<
   }
 
   public getBytes(
-    tx: IBaseTransaction<MultisigAsset>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
+    tx: IBaseTransaction<MultisigAsset>
   ): Buffer {
     const keysBuff = Buffer.from(
       tx.asset.multisignature.keysgroup.join(''),
@@ -168,12 +165,14 @@ export class MultiSignatureTransaction extends BaseTx<
               valid = this.transactionLogic.verifySignature(
                 tx,
                 Buffer.from(key.substring(1), 'hex'),
-                tx.signatures[i],
-                VerificationType.ALL
+                tx.signatures[i]
               );
             }
           }
         }
+
+        // TODO: either remove  this ^^ or check that
+        //       there are not 2 signatures for the same publickey
 
         if (!valid) {
           throw new Error(
