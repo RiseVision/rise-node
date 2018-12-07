@@ -10,6 +10,7 @@ import { BlocksConstantsType } from './blocksConstants';
 import { BlocksSymbols } from './blocksSymbols';
 import { BlockLoader } from './hooks/';
 import { BlockLogic, BlockRewardLogic } from './logic/';
+import { BlockBytes } from './logic/blockBytes';
 import { BlocksModel } from './models/BlocksModel';
 import {
   BlocksModule,
@@ -107,6 +108,11 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .to(HeightRequest)
       .inSingletonScope()
       .whenTargetNamed(BlocksSymbols.p2p.getHeight);
+
+    this.container
+      .bind(BlocksSymbols.logic.blockBytes)
+      .to(BlockBytes)
+      .inSingletonScope();
 
     this.container
       .bind(BlocksSymbols.__internals.mainP2P)

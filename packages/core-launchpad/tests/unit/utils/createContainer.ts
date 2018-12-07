@@ -16,6 +16,7 @@ import {
   loadCoreSortedModules,
   resolveModule,
 } from '../../../src/modulesLoader';
+import { TestIdsHandler } from './idshandler';
 
 activeHandles.hookSetInterval();
 
@@ -63,6 +64,7 @@ export async function createContainer(
     sortedModule.addElementsToContainer();
   }
 
+  container.bind(Symbols.helpers.idsHandler).to(TestIdsHandler).inSingletonScope();
   container.bind(Symbols.generic.genesisBlock).toConstantValue(block);
   container.bind(Symbols.generic.appConfig).toConstantValue(config);
   container.bind(Symbols.generic.nonce).toConstantValue('nonce');

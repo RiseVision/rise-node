@@ -5,7 +5,7 @@ message singleTransportTx {
     uint32 relays = 2;
 }
 message transportTransactions {
-    repeated singleTransportTx = 1;
+    repeated singleTransportTx transactions = 1;
 }
 
 message transportTx {

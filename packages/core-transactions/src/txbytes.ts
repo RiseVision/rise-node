@@ -7,7 +7,7 @@ import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
-import { inject, injectable, multiInject } from 'inversify';
+import { inject, injectable, multiInject, optional } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import { BaseTx } from './BaseTx';
 import { TXSymbols } from './txSymbols';
@@ -36,7 +36,8 @@ export class TXBytes {
   private protoBufHelper: ProtoBufHelper;
 
   @multiInject(TXSymbols.p2p.codecs)
-  private p2ptxcodecs: Array<P2PTxCodec<any>>;
+  @optional()
+  private p2ptxcodecs: Array<P2PTxCodec<any>> = [];
 
   @inject(Symbols.helpers.idsHandler)
   private idsHandler: IIdsHandler;

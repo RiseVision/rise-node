@@ -11,17 +11,11 @@ export const toBufferedTransaction = <T>(
 ): IBaseTransaction<T, bigint> & { senderId: string } => {
   return {
     ...t,
-
-    requesterPublicKey:
-      t.requesterPublicKey === null ||
-      typeof t.requesterPublicKey === 'undefined'
-        ? null
-        : Buffer.from(t.requesterPublicKey, 'hex'),
     senderPublicKey: Buffer.from(t.senderPublicKey, 'hex'),
-    signSignature:
-      t.signSignature === null || typeof t.signSignature === 'undefined'
-        ? null
-        : Buffer.from(t.signSignature, 'hex'),
+    // signSignature:
+    //   t.signSignature === null || typeof t.signSignature === 'undefined'
+    //     ? null
+    //     : Buffer.from(t.signSignature, 'hex'),
     signature: Buffer.from(t.signature, 'hex'),
     signatures: t.signatures
       ? t.signatures.map((s) => Buffer.from(s, 'hex'))
@@ -38,16 +32,12 @@ export const fromBufferedTransaction = <T>(
     ...t,
     amount: parseInt(`${t.amount}`, 10),
     fee: parseInt(`${t.fee}`, 10),
-    requesterPublicKey:
-      t.requesterPublicKey === null ||
-      typeof t.requesterPublicKey === 'undefined'
-        ? null
-        : t.requesterPublicKey.toString('hex'),
     senderPublicKey: t.senderPublicKey.toString('hex'),
-    signSignature:
-      t.signSignature === null || typeof t.signSignature === 'undefined'
-        ? null
-        : t.signSignature.toString('hex'),
+    requesterPublicKey: null,
+    // signSignature:
+    //   t.signSignature === null || typeof t.signSignature === 'undefined'
+    //     ? null
+    //     : t.signSignature.toString('hex'),
     signature: t.signature.toString('hex'),
     senderId: t.senderId,
     asset: t.asset,

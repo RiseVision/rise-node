@@ -4,13 +4,15 @@ import {
   IBlockLogic,
   IBlockReward,
   IBlocksModel,
-  IForkModule,
+  IForkModule, IIdsHandler,
   ITransactionLogic,
   ITransactionsModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
+import { TXBytes } from '@risevision/core-transactions';
 import {
   createRandomTransactions,
   toBufferedTransaction,
@@ -21,6 +23,7 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import 'reflect-metadata';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
 import {
@@ -30,6 +33,7 @@ import {
   BlocksSymbols,
 } from '../../../src';
 import { VerifyReceipt } from '../../../src/hooks';
+import { BlockBytes } from '../../../src/logic/blockBytes';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);
@@ -45,9 +49,11 @@ describe('modules/blocks/verify', () => {
   let txModule: ITransactionsModule;
   let accountsModule: IAccountsModule;
 
+  let txBytes: TXBytes;
+  let blockBytes: BlockBytes;
+  let idsHandler: IIdsHandler;
   let blockLogic: IBlockLogic;
   let blockRewardLogic: IBlockReward;
-  let txLogic: ITransactionLogic;
 
   let blocksModel: typeof IBlocksModel;
   let AccountsModel: typeof IAccountsModel;
@@ -70,6 +76,10 @@ describe('modules/blocks/verify', () => {
     inst = container.get(BlocksSymbols.modules.verify);
 
     sandbox = sinon.createSandbox();
+    txBytes = container.get(TXSymbols.txBytes);
+    blockBytes = container.get(BlocksSymbols.logic.blockBytes);
+    idsHandler = container.get(Symbols.helpers.idsHandler);
+    blocksModule = container.get(Symbols.modules.blocks);
     blocksModule = container.get(Symbols.modules.blocks);
     blocksChain = container.get(BlocksSymbols.modules.chain);
     forkModule = container.get(Symbols.modules.fork);
@@ -78,7 +88,6 @@ describe('modules/blocks/verify', () => {
 
     blockLogic = container.get(Symbols.logic.block);
     blockRewardLogic = container.get(Symbols.logic.blockReward);
-    txLogic = container.get(Symbols.logic.transaction);
 
     AccountsModel = container.getNamed(
       ModelSymbols.model,
@@ -160,7 +169,7 @@ describe('modules/blocks/verify', () => {
               .join(''),
             'hex'
           );
-          block.id = blockLogic.getId(block);
+          block.id = idsHandler.blockIdFromBytes(blockBytes.signableBytes(block, true));
           const res = await inst[what](block);
           expect(res.errors).to.be.deep.eq([
             'Failed to verify block signature',
@@ -211,7 +220,8 @@ describe('modules/blocks/verify', () => {
                 .concat([txs[0]])
                 .map((t) => toBufferedTransaction(t)),
             });
-            sandbox.stub(txLogic, 'getBytes').returns(Buffer.alloc(10));
+            idsHandler.blockIdFromBytes(blockBytes.signableBytes(block, true));
+            sandbox.stub(txBytes, 'signableBytes').returns(Buffer.alloc(10));
             const res = await inst[what](block);
             expect(res.errors).to.contain(
               `Encountered duplicate transaction: ${txs[0].id}`
@@ -224,7 +234,7 @@ describe('modules/blocks/verify', () => {
               timestamp: block.timestamp,
               transactions: txs.map((t) => toBufferedTransaction(t)),
             });
-            const getBytesStub = sandbox.stub(txLogic, 'getBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
             getBytesStub.returns(Buffer.alloc(10));
             getBytesStub.onCall(1).throws(new Error('meow'));
 
@@ -238,13 +248,13 @@ describe('modules/blocks/verify', () => {
               timestamp: block.timestamp,
               transactions: txs.map((t) => toBufferedTransaction(t)),
             });
-            const getBytesStub = sandbox.stub(txLogic, 'getBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
             getBytesStub.returns(Buffer.alloc(10));
             const res = await inst[what](block);
             expect(res.errors).to.contain('Invalid payload hash');
           });
           it('should return error computed totalAmount differs block.totalAmount', async () => {
-            const getBytesStub = sandbox.stub(txLogic, 'getBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
             getBytesStub.returns(Buffer.alloc(10));
             const txs = createRandomTransactions(10);
             block = createFakeBlock(container, {
@@ -257,7 +267,7 @@ describe('modules/blocks/verify', () => {
             expect(res.errors).to.contain('Invalid total amount');
           });
           it('should return error if computed totalFee differs block.totalFee', async () => {
-            const getBytesStub = sandbox.stub(txLogic, 'getBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
 
             getBytesStub.returns(Buffer.alloc(10));
             const txs = createRandomTransactions(10);

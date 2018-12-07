@@ -80,6 +80,11 @@ export class CoreModule extends BaseCoreModule {
       .bind(TXSymbols.loader)
       .to(TXLoader)
       .inSingletonScope();
+
+    this.container
+      .bind(TXSymbols.txBytes)
+      .to(TXBytes)
+      .inSingletonScope();
   }
 
   public async initAppElements() {
