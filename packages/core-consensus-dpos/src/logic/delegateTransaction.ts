@@ -63,26 +63,21 @@ export class RegisterDelegateTransaction extends BaseTx<
     return this.systemModule.getFees(height).fees.delegate;
   }
 
-  public getBytes(
+  public assetBytes(
     tx: IBaseTransaction<DelegateAsset>
   ): Buffer {
-    if (!tx.asset.delegate.username) {
-      return null;
-    }
     return Buffer.from(tx.asset.delegate.username, 'utf8');
   }
 
-  /**
-   * Returns asset, given Buffer containing it
-   */
-  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): DelegateAsset {
-    if (bytes === null) {
-      return null;
-    }
+  public readAssetFromBytes(bytes: Buffer): { asset: DelegateAsset; consumedBytes: number } {
+    const username = bytes.slice(0, bytes.length - Math.floor(bytes.length / 64) * 64).toString('utf8');
     return {
-      delegate: {
-        username: bytes.toString('utf8'),
+      asset: {
+        delegate: {
+          username,
+        },
       },
+      consumedBytes: 1,
     };
   }
 

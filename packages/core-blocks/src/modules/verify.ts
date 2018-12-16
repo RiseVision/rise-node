@@ -163,7 +163,7 @@ export class BlocksModuleVerify {
   ) {
     const allIds = [];
     for (const tx of block.transactions) {
-      tx.id = this.idsHandler.txIdFromBytes(this.txBytes.signableBytes(tx, true));
+      tx.id = this.idsHandler.txIdFromBytes(this.txBytes.fullBytes(tx));
       // Apply block id to the tx
       tx.blockId = block.id;
       allIds.push(tx.id);
@@ -302,7 +302,7 @@ export class BlocksModuleVerify {
     for (const tx of block.transactions) {
       let bytes: Buffer;
       try {
-        bytes = this.txBytes.signableBytes(tx, true);
+        bytes = this.txBytes.fullBytes(tx);
         payloadHash.update(bytes);
       } catch (e) {
         errors.push(e.toString());

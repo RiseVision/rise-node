@@ -18,11 +18,15 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
 
   verify(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<void>;
 
-  getBytes(
-    tx: IBaseTransaction<T>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
-  ): Buffer;
+  fullBytes(tx: IBaseTransaction<T>): Buffer;
+
+  signableBytes(tx: IBaseTransaction<T>): Buffer;
+
+  assetBytes(tx: IBaseTransaction<T>): Buffer;
+
+  readAssetFromBytes(bytes: Buffer): { asset: T; consumedBytes: number };
+
+  fromBytes(buff: Buffer): IBaseTransaction<T, bigint>;
 
   apply(
     tx: IBaseTransaction<T>,

@@ -283,16 +283,16 @@ describe('modules/multisignatures', () => {
       sender.multisignatures = [existingSigner];
     });
 
-    it('should add the senderPublicKey to tx.multisignatures if tx.requesterPublicKey', async () => {
-      tx.requesterPublicKey = Buffer.from('pubkey');
-      await (instance as any).processNormalTxSignature(tx, signature, sender);
-      expect(Array.isArray(sender.multisignatures)).to.be.true;
-      expect(sender.multisignatures.length).to.be.equal(2);
-      expect(sender.multisignatures[0]).to.be.equal(existingSigner);
-      expect(sender.multisignatures[1]).to.be.equal(
-        tx.senderPublicKey.toString('hex')
-      );
-    });
+    // it('should add the senderPublicKey to tx.multisignatures if tx.requesterPublicKey', async () => {
+    //   tx.requesterPublicKey = Buffer.from('pubkey');
+    //   await (instance as any).processNormalTxSignature(tx, signature, sender);
+    //   expect(Array.isArray(sender.multisignatures)).to.be.true;
+    //   expect(sender.multisignatures.length).to.be.equal(2);
+    //   expect(sender.multisignatures[0]).to.be.equal(existingSigner);
+    //   expect(sender.multisignatures[1]).to.be.equal(
+    //     tx.senderPublicKey.toString('hex')
+    //   );
+    // });
 
     it('should throw if passed signature is already in tx.signatures', async () => {
       tx.signatures = [signature];
@@ -301,32 +301,32 @@ describe('modules/multisignatures', () => {
       ).to.be.rejectedWith('Signature already exists');
     });
 
-    it('should call transactionLogic.verifySignature until publicKey that verifies is found', async () => {
-      tx.requesterPublicKey = Buffer.from('reqPubKey');
-      // In this case, tx.senderpublicKey verifies the passed signature
-      // transactionLogic.reset();
-      verifySignStub.onCall(0).returns(false);
-      verifySignStub.onCall(1).returns(false);
-      verifySignStub.onCall(2).returns(true);
-      sender.multisignatures = ['aa', 'bb']; // tx.senderPublicKey is added...
-      await (instance as any).processNormalTxSignature(tx, signature, sender);
-      expect(verifySignStub.callCount).to.be.equal(3);
-      expect(verifySignStub.getCall(0).args[0]).to.be.deep.equal(tx);
-      expect(verifySignStub.getCall(0).args[1]).to.be.deep.equal(
-        Buffer.from(sender.multisignatures[0], 'hex')
-      );
-      expect(verifySignStub.getCall(0).args[2]).to.be.deep.equal(signature);
-      expect(verifySignStub.getCall(1).args[0]).to.be.deep.equal(tx);
-      expect(verifySignStub.getCall(1).args[1]).to.be.deep.equal(
-        Buffer.from(sender.multisignatures[1], 'hex')
-      );
-      expect(verifySignStub.getCall(1).args[2]).to.be.deep.equal(signature);
-      expect(verifySignStub.getCall(2).args[0]).to.be.deep.equal(tx);
-      expect(verifySignStub.getCall(2).args[1]).to.be.deep.equal(
-        tx.senderPublicKey
-      );
-      expect(verifySignStub.getCall(2).args[2]).to.be.deep.equal(signature);
-    });
+    // it('should call transactionLogic.verifySignature until publicKey that verifies is found', async () => {
+    //   tx.requesterPublicKey = Buffer.from('reqPubKey');
+    //   // In this case, tx.senderpublicKey verifies the passed signature
+    //   // transactionLogic.reset();
+    //   verifySignStub.onCall(0).returns(false);
+    //   verifySignStub.onCall(1).returns(false);
+    //   verifySignStub.onCall(2).returns(true);
+    //   sender.multisignatures = ['aa', 'bb']; // tx.senderPublicKey is added...
+    //   await (instance as any).processNormalTxSignature(tx, signature, sender);
+    //   expect(verifySignStub.callCount).to.be.equal(3);
+    //   expect(verifySignStub.getCall(0).args[0]).to.be.deep.equal(tx);
+    //   expect(verifySignStub.getCall(0).args[1]).to.be.deep.equal(
+    //     Buffer.from(sender.multisignatures[0], 'hex')
+    //   );
+    //   expect(verifySignStub.getCall(0).args[2]).to.be.deep.equal(signature);
+    //   expect(verifySignStub.getCall(1).args[0]).to.be.deep.equal(tx);
+    //   expect(verifySignStub.getCall(1).args[1]).to.be.deep.equal(
+    //     Buffer.from(sender.multisignatures[1], 'hex')
+    //   );
+    //   expect(verifySignStub.getCall(1).args[2]).to.be.deep.equal(signature);
+    //   expect(verifySignStub.getCall(2).args[0]).to.be.deep.equal(tx);
+    //   expect(verifySignStub.getCall(2).args[1]).to.be.deep.equal(
+    //     tx.senderPublicKey
+    //   );
+    //   expect(verifySignStub.getCall(2).args[2]).to.be.deep.equal(signature);
+    // });
 
     it('should throw if no publicKey verifying the signature is found', async () => {
       // transactionLogic.reset();

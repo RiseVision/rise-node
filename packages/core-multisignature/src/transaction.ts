@@ -54,7 +54,7 @@ export class MultiSignatureTransaction extends BaseTx<
   private schema: z_schema;
 
   @inject(MultisigSymbols.multisigConstants)
-  private constants: MultisigConstantsType;
+  private multisigConstants: MultisigConstantsType;
   @inject(MultisigSymbols.utils)
   private multisigUtils: MultiSigUtils;
 
@@ -102,7 +102,7 @@ export class MultiSignatureTransaction extends BaseTx<
     return this.systemModule.getFees(height).fees.multisignature;
   }
 
-  public getBytes(
+  public assetBytes(
     tx: IBaseTransaction<MultisigAsset>
   ): Buffer {
     const keysBuff = Buffer.from(
@@ -122,30 +122,33 @@ export class MultiSignatureTransaction extends BaseTx<
     return bb.toBuffer() as any;
   }
 
-  /**
-   * Returns asset, given Buffer containing it
-   */
-  public fromBytes(bytes: Buffer, tx: IBaseTransaction<any>): MultisigAsset {
-    if (bytes === null) {
-      return null;
+  public readAssetFromBytes(bytes: Buffer): { asset: MultisigAsset; consumedBytes: number } {
+    const min = bytes.readUInt8(0);
+    const lifetime = bytes.readUInt8(1);
+
+    const keysBuf = bytes.slice(2);
+    let totalKeys = 0;
+    for (; ['-', '+'].indexOf(keysBuf.slice(totalKeys * 65, 1).toString('utf8')) !== -1; totalKeys++) {
+      // Noop
     }
-    const bb = ByteBuffer.wrap(bytes, 'binary');
-    const min = bb.readByte(0);
-    const lifetime = bb.readByte(1);
-    const keysString = bytes.slice(2, bb.buffer.length).toString('utf8');
-    // Cut keys string into 32-bytes chunks
-    const keysgroup = [].concat.apply(
-      [],
-      keysString
-        .split('')
-        .map((x, i) => (i % 65 ? [] : keysString.slice(i, i + 65)))
-    );
+
+    const keysgroup: string[] = [];
+
+    for (let i = 0; i < totalKeys; i++) {
+      keysgroup.push(
+        keysBuf.slice(i * 65, (i + 1) * 65).toString('utf8')
+      );
+    }
+
     return {
-      multisignature: {
-        keysgroup,
-        lifetime,
-        min,
+      asset: {
+        multisignature: {
+          keysgroup,
+          lifetime,
+          min,
+        },
       },
+      consumedBytes: 2 + totalKeys * 65,
     };
   }
 
@@ -496,14 +499,14 @@ export class MultiSignatureTransaction extends BaseTx<
 
     if (
       tx.asset.multisignature.min <
-        this.constants.multisigConstraints.min.minimum ||
+        this.multisigConstants.multisigConstraints.min.minimum ||
       tx.asset.multisignature.min >
-        this.constants.multisigConstraints.min.maximum
+        this.multisigConstants.multisigConstraints.min.maximum
     ) {
       throw new Error(
         `Invalid multisignature min. Must be between ${
-          this.constants.multisigConstraints.min.minimum
-        } and ${this.constants.multisigConstraints.min.maximum}`
+          this.multisigConstants.multisigConstraints.min.minimum
+        } and ${this.multisigConstants.multisigConstraints.min.maximum}`
       );
     }
 
@@ -517,14 +520,14 @@ export class MultiSignatureTransaction extends BaseTx<
 
     if (
       tx.asset.multisignature.lifetime <
-        this.constants.multisigConstraints.lifetime.minimum ||
+        this.multisigConstants.multisigConstraints.lifetime.minimum ||
       tx.asset.multisignature.lifetime >
-        this.constants.multisigConstraints.lifetime.maximum
+        this.multisigConstants.multisigConstraints.lifetime.maximum
     ) {
       throw new Error(
         `Invalid multisignature lifetime. Must be between ${
-          this.constants.multisigConstraints.lifetime.minimum
-        } and ${this.constants.multisigConstraints.lifetime.maximum}`
+          this.multisigConstants.multisigConstraints.lifetime.minimum
+        } and ${this.multisigConstants.multisigConstraints.lifetime.maximum}`
       );
     }
 
@@ -569,18 +572,18 @@ export class MultiSignatureTransaction extends BaseTx<
       id: 'Multisignature',
       properties: {
         keysgroup: {
-          maxItems: this.constants.multisigConstraints.keysgroup.maxItems,
-          minItems: this.constants.multisigConstraints.keysgroup.minItems,
+          maxItems: this.multisigConstants.multisigConstraints.keysgroup.maxItems,
+          minItems: this.multisigConstants.multisigConstraints.keysgroup.minItems,
           type: 'array',
         },
         lifetime: {
-          maximum: this.constants.multisigConstraints.lifetime.maximum,
-          minimum: this.constants.multisigConstraints.lifetime.minimum,
+          maximum: this.multisigConstants.multisigConstraints.lifetime.maximum,
+          minimum: this.multisigConstants.multisigConstraints.lifetime.minimum,
           type: 'integer',
         },
         min: {
-          maximum: this.constants.multisigConstraints.min.maximum,
-          minimum: this.constants.multisigConstraints.min.minimum,
+          maximum: this.multisigConstants.multisigConstraints.min.maximum,
+          minimum: this.multisigConstants.multisigConstraints.min.minimum,
           type: 'integer',
         },
       },

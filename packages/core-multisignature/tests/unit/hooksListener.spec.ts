@@ -1,15 +1,16 @@
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import { IIdsHandler, ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TxReadyFilter } from '@risevision/core-transactions';
+import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import {
   createRandomTransaction,
   fromBufferedTransaction,
   toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { IBaseTransaction } from '@risevision/core-types';
-import { expect } from 'chai';
 import * as chai from 'chai';
+import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { LiskWallet } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
@@ -128,15 +129,13 @@ describe('HooksListener', () => {
 
   describe('txVerify through txLogic.', () => {
     let txLogic: ITransactionLogic;
-    let requester: AccountsModelWithMultisig;
 
-    function signMultiSigTxRequester(r: LiskWallet) {
+    function signMultiSigTxRequester() {
       tx.senderPublicKey = wallet.publicKey;
-      tx.requesterPublicKey = r.publicKey;
       delete tx.id;
       delete tx.signature;
       const txOBJ = createTransactionFromOBJ(tx);
-      txOBJ.signature = txOBJ.createSignature(r.privKey);
+      txOBJ.signature = txOBJ.createSignature(wallet.privKey);
       const toRet = toBufferedTransaction({
         ...txOBJ.toObj(),
         senderId: wallet.address,
@@ -149,48 +148,32 @@ describe('HooksListener', () => {
 
     beforeEach(() => {
       txLogic = container.get(Symbols.logic.transaction);
-      requester = new AccountsModel({
-        publicKey: Buffer.from(multisigners[0].publicKey, 'hex'),
-      });
     });
     it('should allow signed tx', async () => {
-      const ttx = signMultiSigTxRequester(multisigners[0]);
+      const ttx = signMultiSigTxRequester();
       // ttx.signatures; // already signed by all multisigners;
-      await expect(txLogic.verify(ttx, sender, requester, 1)).to.not.rejected;
+      await expect(txLogic.verify(ttx, sender, 1)).to.not.rejected;
     });
 
     it('should reject tx if it is not ready', async () => {
-      const ttx = signMultiSigTxRequester(multisigners[0]);
+      const ttx = signMultiSigTxRequester();
       ttx.signatures.splice(0, 2);
-      await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith(
+      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
         `MultiSig Transaction ${ttx.id} is not ready`
       );
     });
-    it('should reject tx if requesetPublicKey and account is not multisign', async () => {
-      sender.multilifetime = 0;
-      const ttx = signMultiSigTxRequester(multisigners[0]);
-      await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith(
-        'Account or requester account is not multisignature'
-      );
-    });
-    it('should reject tx if requesterPublicKey, account is multisign but requester is null', async () => {
-      const ttx = signMultiSigTxRequester(multisigners[0]);
-      await expect(txLogic.verify(ttx, sender, null, 1)).to.rejectedWith(
-        'Account or requester account is not multisignature'
-      );
-    });
     it('should reject if a signature is invalid', async () => {
-      const ttx = signMultiSigTxRequester(multisigners[0]);
+      const ttx = signMultiSigTxRequester();
       ttx.signatures[0] = Buffer.from(
         `5e1${ttx.signatures[0].toString('hex').substr(3)}`,
         'hex'
       );
-      await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith(
+      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
         'Failed to verify multisignature'
       );
     });
     it('should reject if extra signature of non member provided', async () => {
-      const ttx = signMultiSigTxRequester(multisigners[0]);
+      const ttx = signMultiSigTxRequester();
       ttx.signatures.push(
         Buffer.from(
           new LiskWallet('other').getSignatureOfTransaction(
@@ -199,20 +182,14 @@ describe('HooksListener', () => {
           'hex'
         )
       );
-      await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith(
+      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
         'Failed to verify multisignature'
       );
     });
-    it('should reject if requesterPublicKey is not part of multisig group', async () => {
-      const ttx = signMultiSigTxRequester(new LiskWallet('other'));
-      await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith(
-        'Account does not belong to multisignature group'
-      );
-    });
     it('should reject if duplicated signature', async () => {
-      const ttx = signMultiSigTxRequester(multisigners[0]);
+      const ttx = signMultiSigTxRequester();
       ttx.signatures.push(ttx.signatures[0]);
-      await expect(txLogic.verify(ttx, sender, requester, 1)).to.rejectedWith(
+      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
         'Encountered duplicate signature in transaction'
       );
     });
@@ -237,8 +214,11 @@ describe('HooksListener', () => {
         const signedTX = wallet.signTransaction(tx);
         signedTX.asset.multisignature.keysgroup.push(1);
         const btx = toBufferedTransaction(signedTX);
-        btx.id = txLogic.getId(btx);
-        await expect(txLogic.verify(btx, sender, requester, 1)).to.rejectedWith(
+        const idsHandler = container.get<IIdsHandler>(Symbols.helpers.idsHandler);
+        const txBytes = container.get<TXBytes>(TXSymbols.txBytes);
+        // btx.id = txLogic.getId(btx);
+        btx.id = idsHandler.txIdFromBytes(txBytes.signableBytes(btx, true));
+        await expect(txLogic.verify(btx, sender, 1)).to.rejectedWith(
           'Invalid member in keysgroup'
         );
       });
@@ -247,15 +227,6 @@ describe('HooksListener', () => {
       it(
         'should not reject if signed by requester publickey adn account already was multisign'
       );
-      it('should reject if signed by requester but account was NOT multisign', async () => {
-        sender.multimin = 0;
-        sender.multisignatures = [];
-        sender.multilifetime = 0;
-        const resTX = signMultiSigTxRequester(multisigners[0]);
-        await expect(
-          txLogic.verify(resTX, sender, requester, 1)
-        ).to.rejectedWith('Account or requester account is not multisignature');
-      });
     });
   });
 });

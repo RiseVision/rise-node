@@ -92,13 +92,10 @@ export class TransactionLogic implements ITransactionLogic {
   /**
    * Hash for the transaction
    */
-  public getHash(
-    tx: IBaseTransaction<any, bigint>,
-    includeSignature: boolean
-  ): Buffer {
+  public getHash(tx: IBaseTransaction<any, bigint>): Buffer {
     return crypto
       .createHash('sha256')
-      .update(this.txBytes.signableBytes(tx, includeSignature))
+      .update(this.types[tx.type].signableBytes(tx))
       .digest();
   }
 
@@ -165,10 +162,12 @@ export class TransactionLogic implements ITransactionLogic {
     }
 
     const txID = this.idsHandler.txIdFromBytes(
-      this.txBytes.signableBytes(tx, true)
+      this.types[tx.type].signableBytes(tx)
     );
     if (txID !== tx.id) {
-      throw new Error('Invalid transaction id');
+      throw new Error(
+        `Invalid transaction id - Expected ${txID}, Received ${tx.id}`
+      );
     }
 
     // Check sender public key
@@ -234,7 +233,8 @@ export class TransactionLogic implements ITransactionLogic {
     if (!signature) {
       return false;
     }
-    return this.crypto.verify(this.getHash(tx, true), signature, publicKey);
+    const hash = this.getHash(tx);
+    return this.crypto.verify(hash, signature, publicKey);
   }
 
   public async apply(

@@ -245,20 +245,20 @@ describe('logic/transactions/vote', () => {
   describe('getBytes', () => {
     it('should return null if no votes', () => {
       delete tx.asset.votes;
-      const retVal = instance.getBytes(tx, false, false);
+      const retVal = instance.getBytes(tx);
       expect(retVal).to.be.null;
     });
 
     it('should call Buffer.from', () => {
       const fromSpy = sandbox.spy(Buffer, 'from');
-      instance.getBytes(tx, false, false);
+      instance.getBytes(tx);
       expect(fromSpy.calledOnce).to.be.true;
       expect(fromSpy.firstCall.args[0]).to.be.equal(tx.asset.votes.join(''));
       expect(fromSpy.firstCall.args[1]).to.be.equal('utf8');
     });
 
     it('should return a Buffer', () => {
-      const retVal = instance.getBytes(tx, false, false);
+      const retVal = instance.getBytes(tx);
       expect(retVal).to.be.deep.equal(
         Buffer.from(tx.asset.votes.join(''), 'utf8')
       );

@@ -16,11 +16,7 @@ export interface ITransactionLogic {
   /**
    * Hash for the transaction
    */
-  getHash(
-    tx: IBaseTransaction<any>,
-    skipSign: boolean,
-    skipSecondSign: boolean
-  ): Buffer;
+  getHash(tx: IBaseTransaction<any>): Buffer;
 
   ready(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<boolean>;
 

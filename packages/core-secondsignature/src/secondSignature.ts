@@ -62,26 +62,26 @@ export class SecondSignatureTransaction extends BaseTx<
     return this.systemModule.getFees(height).fees.secondsignature;
   }
 
-  public getBytes(
-    tx: IBaseTransaction<SecondSignatureAsset>
-  ): Buffer {
+  public assetBytes(tx: IBaseTransaction<SecondSignatureAsset>): Buffer {
     return Buffer.from(tx.asset.signature.publicKey, 'hex');
   }
 
   /**
    * Returns asset, given Buffer containing it
    */
-  public fromBytes(
-    bytes: Buffer,
-    tx?: IBaseTransaction<any>
-  ): SecondSignatureAsset {
+  public readAssetFromBytes(
+    bytes: Buffer
+  ): { asset: SecondSignatureAsset, consumedBytes: number } {
     if (bytes === null) {
       return null;
     }
     return {
-      signature: {
-        publicKey: bytes.toString('hex'),
+      asset: {
+        signature: {
+          publicKey: bytes.slice(0, 32).toString('hex'),
+        },
       },
+      consumedBytes: 32,
     };
   }
 

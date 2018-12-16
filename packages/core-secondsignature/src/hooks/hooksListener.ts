@@ -55,7 +55,7 @@ export class SignHooksListener extends ExtendableClass {
     if (sender.secondSignature) {
       const hash = crypto
         .createHash('sha256')
-        .update(this.txBytes.signableBytes(tx, true))
+        .update(this.txBytes.signableBytes(tx))
         .digest();
       const verified = this.crypto.verify(
         hash,

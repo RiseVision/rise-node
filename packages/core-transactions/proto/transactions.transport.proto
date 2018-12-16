@@ -9,5 +9,6 @@ message transportTransactions {
 }
 
 message transportTx {
-    repeated bytes buffers = 1;
+    bytes data = 1;
+    repeated bytes buffers = 2;
 }

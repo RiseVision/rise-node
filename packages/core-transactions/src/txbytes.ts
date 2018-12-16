@@ -51,98 +51,35 @@ export class TXBytes {
     this.types[instance.type] = instance;
     return instance;
   }
-  /**
-   * Creates bytes to either verify or sign a transaction
-   * @param tx
-   * @param includeSignature
-   */
-  public signableBytes(
-    tx: IBaseTransaction<any, bigint>,
-    includeSignature: boolean
-  ): Buffer {
-    const bb = new ByteBuffer(1024, true);
 
-    bb.writeByte(tx.type);
-    bb.writeInt(tx.timestamp);
-    bb.append(tx.senderPublicKey);
-    bb.append(this.idsHandler.addressToBytes(tx.recipientId));
-    bb.append(toBufferLE(tx.fee, this.constants.amountBytes));
-    bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
-    bb.append(this.types[tx.type].getBytes(tx));
-    if (includeSignature) {
-      bb.append(tx.signature);
-    }
-    bb.flip();
-    return bb.toBuffer() as any;
+  public fullBytes(tx: IBaseTransaction<any, bigint>): Buffer {
+    return this.types[tx.type].fullBytes(tx);
   }
 
-  public fromSignableBytes<T>(buff: Buffer): IBaseTransaction<T, bigint> {
-    let offset = 0;
-    const type = buff.readUInt8(0);
-    offset += 1;
-    const timestamp = buff.readUInt32LE(offset);
-    offset += 4;
-    const senderPublicKey = buff.slice(offset, offset + 32);
-    offset += 32;
-    const recipientId = this.idsHandler.addressFromBytes(
-      buff.slice(offset, offset + this.idsHandler.addressBytes)
-    );
-    offset += this.idsHandler.addressBytes;
-
-    const fee = toBigIntLE(
-      buff.slice(offset, offset + this.constants.amountBytes)
-    );
-    offset += this.constants.amountBytes;
-    const amount = toBigIntLE(
-      buff.slice(offset, offset + this.constants.amountBytes)
-    );
-    offset += this.constants.amountBytes;
-
-    const childBytes = buff.length - offset - 64;
-    const assetBytes = buff.slice(offset, offset + childBytes);
-    offset += childBytes;
-
-    const signature = buff.slice(offset, offset + 64);
-
-    const id = this.idsHandler.txIdFromBytes(buff);
-
-    const toRet: IBaseTransaction<T, bigint> = {
-      amount,
-      asset: null,
-      fee,
-      id,
-      recipientId,
-      senderId: this.idsHandler.addressFromPubKey(senderPublicKey),
-      senderPublicKey,
-      signature,
-      timestamp,
-      type,
-    };
-
-    toRet.asset = this.types[toRet.type].fromBytes(assetBytes, toRet);
-    return toRet;
+  public signableBytes(tx: IBaseTransaction<any, bigint>): Buffer {
+    return this.types[tx.type].signableBytes(tx);
   }
 
   public toBuffer(tx: IBaseTransaction<any, bigint>) {
-    const buffers: Buffer[] = [this.signableBytes(tx, true)].concat(
-      this.p2ptxcodecs.map((codec) => codec.toBuffer(tx))
+    const buffers: Buffer[] = this.p2ptxcodecs.map((codec) =>
+      codec.toBuffer(tx)
     );
 
     return this.protoBufHelper.encode(
-      { buffers },
+      { data: this.fullBytes(tx), buffers },
       'transactions.transport',
       'transportTx'
     );
   }
 
   public fromBuffer(buf: Buffer) {
-    const { buffers } = this.protoBufHelper.decode(
-      buf,
-      'transactions.transport',
-      'transportTx'
-    );
-    const txObj = this.fromSignableBytes(buffers[0]);
-    for (let i = 1; i < buffers.length; i++) {
+    const { data, buffers } = this.protoBufHelper.decode<{
+      data: Buffer;
+      buffers: Buffer[];
+    }>(buf, 'transactions.transport', 'transportTx');
+    const type = data.readUInt8(0);
+    const txObj = this.types[type].fromBytes(data);
+    for (let i = 1; i < (buffers || []).length; i++) {
       this.p2ptxcodecs[i - 1].applyFromBuffer(buffers[i], txObj);
     }
     return txObj;

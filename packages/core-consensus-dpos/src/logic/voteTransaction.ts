@@ -126,26 +126,32 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     return this.checkConfirmedDelegates(tx, sender);
   }
 
-  public getBytes(tx: IBaseTransaction<VoteAsset>): Buffer {
-    return tx.asset.votes ? Buffer.from(tx.asset.votes.join(''), 'utf8') : null;
+  public assetBytes(tx: IBaseTransaction<VoteAsset>): Buffer {
+    return Buffer.from(tx.asset.votes.join(''), 'utf8');
   }
 
-  /**
-   * Returns asset, given Buffer containing it
-   */
-  public fromBytes(bytes: Buffer, tx?: IBaseTransaction<any>): VoteAsset {
-    if (bytes === null) {
-      return null;
+  public readAssetFromBytes(
+    bytes: Buffer
+  ): { asset: VoteAsset; consumedBytes: number } {
+    let totalKeys = 0;
+    for (
+      ;
+      ['-', '+'].indexOf(bytes.slice(totalKeys * 65, 1).toString('utf8')) !==
+      -1;
+      totalKeys++
+    ) {
+      // Noop
     }
-    const votesString = bytes.toString('utf8');
-    // Splits the votes into 33 bytes chunks (1 for the sign, 32 for the publicKey)
+    const votes: string[] = [];
+
+    for (let i = 0; i < totalKeys; i++) {
+      votes.push(bytes.slice(i * 65, (i + 1) * 65).toString('utf8'));
+    }
     return {
-      votes: [].concat.apply(
-        [],
-        votesString
-          .split('')
-          .map((x, i) => (i % 65 ? [] : votesString.slice(i, i + 65)))
-      ),
+      asset: {
+        votes,
+      },
+      consumedBytes: totalKeys * 65,
     };
   }
 

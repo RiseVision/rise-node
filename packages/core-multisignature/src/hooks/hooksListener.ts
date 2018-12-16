@@ -1,5 +1,9 @@
 import { FilterAPIGetAccount } from '@risevision/core-accounts';
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import {
+  ICrypto,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-interfaces';
 import {
   TxLogicStaticCheck,
   TxLogicVerify,
@@ -25,6 +29,9 @@ export class MultisigHooksListener extends ExtendableClass {
 
   @inject(Symbols.logic.transaction)
   private txLogic: ITransactionLogic;
+
+  @inject(Symbols.generic.crypto)
+  private crypto: ICrypto;
 
   @TxReadyFilter()
   public async readynessFilter(
@@ -107,12 +114,12 @@ export class MultisigHooksListener extends ExtendableClass {
       for (const sig of tx.signatures) {
         let valid = false;
         for (let s = 0; s < multisignatures.length && !valid; s++) {
-          valid = this.txLogic.verifySignature(
+          valid = this.verifySignature(
             tx,
             Buffer.from(multisignatures[s], 'hex'),
             sig
           );
-          // Avoid same publicKey to provide 2 diff signatures to the same
+          // Avoid same publicKey to provide 2 diff signatures to the same tx
           if (valid) {
             multisignatures.splice(s, 1);
           }
@@ -132,5 +139,17 @@ export class MultisigHooksListener extends ExtendableClass {
       multisignatures: accData.multisignatures,
       u_multisignatures: accData.u_multisignatures,
     };
+  }
+
+  public verifySignature(
+    tx: IBaseTransaction<any, bigint>,
+    publicKey: Buffer,
+    signature: Buffer
+  ): boolean {
+    if (!signature) {
+      return false;
+    }
+    const hash = this.txLogic.getHash(tx);
+    return this.crypto.verify(hash, signature, publicKey);
   }
 }

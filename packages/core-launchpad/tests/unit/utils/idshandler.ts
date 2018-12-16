@@ -1,5 +1,5 @@
 import { IIdsHandler } from '@risevision/core-interfaces';
-import { toBigIntLE, toBufferLE } from 'bigint-buffer';
+import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
 import { injectable } from 'inversify';
 import * as supersha from 'supersha';
 
@@ -17,7 +17,10 @@ export class TestIdsHandler implements IIdsHandler {
   }
 
   public addressToBytes(address: string): Buffer {
-    return toBufferLE(BigInt(address.slice(0, -1)), 8);
+    if (!address) {
+      return toBufferBE(0n, 8);
+    }
+    return toBufferBE(BigInt(address.slice(0, -1)), 8);
   }
 
   public blockIdFromBytes(bytes: Buffer): string {
@@ -38,12 +41,11 @@ export class TestIdsHandler implements IIdsHandler {
 
   private toBigInt(bytes: Buffer) {
     const hash = supersha.sha256(bytes);
-
     const tmp = Buffer.alloc(8);
     for (let i = 0; i < 8; i++) {
       tmp[i] = hash[7 - i];
     }
-    return toBigIntLE(tmp);
+    return toBigIntBE(tmp);
   }
 
 }

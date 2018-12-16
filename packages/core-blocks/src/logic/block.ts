@@ -99,7 +99,7 @@ export class BlockLogic implements IBlockLogic {
     const payloadHash       = crypto.createHash('sha256');
 
     for (const transaction of transactions) {
-      const bytes: Buffer = this.txBytes.signableBytes(transaction, true);
+      const bytes: Buffer = this.txBytes.fullBytes(transaction);
 
       if (size + bytes.length > this.constants.blocks.maxPayloadLength) {
         break;
