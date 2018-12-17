@@ -164,7 +164,7 @@ export class BlocksModuleVerify {
   ) {
     const allIds = [];
     for (const tx of block.transactions) {
-      tx.id = this.idsHandler.txIdFromBytes(this.txBytes.fullBytes(tx));
+      tx.id = this.idsHandler.calcTxIdFromBytes(this.txBytes.fullBytes(tx));
       // Apply block id to the tx
       tx.blockId = block.id;
       allIds.push(tx.id);
@@ -267,7 +267,7 @@ export class BlocksModuleVerify {
   }
 
   private verifyId(block: SignedBlockType) {
-    const id = this.idsHandler.blockIdFromBytes(
+    const id = this.idsHandler.calcBlockIdFromBytes(
       this.blockBytes.signableBytes(block, true)
     );
     if (block.id !== id) {

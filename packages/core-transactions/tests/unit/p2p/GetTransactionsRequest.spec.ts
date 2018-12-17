@@ -54,7 +54,6 @@ describe('apis/requests/GetTransactionsRequest', () => {
     const tx = toBufferedTransaction(createRandomTransaction());
     txPool.unconfirmed.add(tx, { receivedAt: new Date() });
     const finalData = await createRequest();
-    delete tx.signSignature;
     delete tx.signatures;
     expect(finalData).deep.eq({
       transactions: [{ ...tx, relays: 1, asset: null }],
@@ -69,9 +68,6 @@ describe('apis/requests/GetTransactionsRequest', () => {
     txPool.pending.add(pending, { receivedAt: new Date(), ready: false });
     txPool.ready.add(ready, { receivedAt: new Date() });
 
-    delete unconfirmed.signSignature;
-    delete pending.signSignature;
-    delete ready.signSignature;
     delete unconfirmed.signatures;
     delete pending.signatures;
     delete ready.signatures;

@@ -300,13 +300,13 @@ describe('modules/transactions', () => {
         'Cannot find account from accounts'
       );
     });
-    it('should throw if tx has requesterPublicKey but notin accountsMap', async () => {
-      tx.requesterPublicKey = Buffer.from('abababab', 'hex');
-      genAddressStub.returns('1111R');
-      await expect(
-        instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1)
-      ).to.rejectedWith('Cannot find requester from accounts');
-    });
+    // it('should throw if tx has requesterPublicKey but notin accountsMap', async () => {
+    //   tx.requesterPublicKey = Buffer.from('abababab', 'hex');
+    //   genAddressStub.returns('1111R');
+    //   await expect(
+    //     instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1)
+    //   ).to.rejectedWith('Cannot find requester from accounts');
+    // });
 
     // it('should query readyness and throw if not ready', async () => {
     //   readyStub.returns(false);
@@ -314,7 +314,6 @@ describe('modules/transactions', () => {
     //     .to.rejectedWith(`Transaction ${tx.id} is not ready`);
     // });
     it('should query txLogic.verify with proper data', async () => {
-      tx.requesterPublicKey = Buffer.from('abababab', 'hex');
       genAddressStub.returns('1111R');
       readyStub.returns(true);
       verifyStub.resolves();

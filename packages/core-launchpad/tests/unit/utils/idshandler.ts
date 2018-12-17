@@ -29,8 +29,12 @@ export class TestIdsHandler implements IIdsHandler {
     return toBufferBE(num, 8);
   }
 
-  public blockIdFromBytes(bytes: Buffer): string {
+  public calcBlockIdFromBytes(bytes: Buffer): string {
     return this.toBigInt(bytes).toString();
+  }
+
+  public blockIdFromBytes(bytes: Buffer): string {
+    return toBigIntLE(bytes).toString();
   }
 
   public blockIdToBytes(id: string): Buffer {
@@ -40,8 +44,12 @@ export class TestIdsHandler implements IIdsHandler {
     return toBufferLE(BigInt(id), 8);
   }
 
-  public txIdFromBytes(bytes: Buffer): string {
+  public calcTxIdFromBytes(bytes: Buffer): string {
     return `${this.toBigInt(bytes)}`;
+  }
+
+  public txIdFromBytes(bytes: Buffer): string {
+    return toBigIntBE(bytes).toString();
   }
 
   private toBigInt(bytes: Buffer) {

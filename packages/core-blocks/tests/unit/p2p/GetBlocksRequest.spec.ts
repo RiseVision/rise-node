@@ -88,7 +88,7 @@ describe('apis/requests/GetBlocksRequest', () => {
       const st = sandbox.stub(blocksUtils, 'loadBlocksData').resolves([]);
       const res = await createRequest({ lastBlockId: '10' });
       expect(res).deep.eq({ blocks: [] });
-      expect(st.firstCall.args[0]).deep.eq({ lastId: '10', limit: 8378 });
+      expect(st.firstCall.args[0]).deep.eq({ lastId: '10', limit: 8758 });
     });
 
     it('should encode/decode some blocks', async () => {
@@ -107,7 +107,7 @@ describe('apis/requests/GetBlocksRequest', () => {
         .resolves([block2, block3, block4]);
       const res = await createRequest({ lastBlockId: '10' });
       expect(res).deep.eq({
-        blocks: [block2, block3, block4].map((r) => ({ ...r, relays: 1 })),
+        blocks: [block2, block3, block4].map((r) => ({ ...r })),
       });
     });
   });

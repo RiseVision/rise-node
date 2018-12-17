@@ -9,8 +9,9 @@ export interface IIdsHandler {
   addressFromBytes(bytes: Buffer): string;
   addressToBytes(address: string): Buffer;
 
-  txIdFromBytes(bytes: Buffer): string;
+  calcTxIdFromBytes(bytes: Buffer): string;
 
+  calcBlockIdFromBytes(bytes: Buffer): string;
   blockIdFromBytes(bytes: Buffer): string;
   blockIdToBytes(id: string): Buffer;
 }

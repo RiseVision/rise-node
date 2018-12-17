@@ -159,21 +159,21 @@ describe('logic/block', () => {
     sandbox.restore();
   });
 
-  describe('creat1e', () => {
+  describe('create', () => {
     it('should return a valid signed block', () => {
       const newBlock = instance.create(data);
       expect(newBlock).to.be.an.instanceof(Object);
       expect(newBlock.totalFee).to.equal(11n);
       expect(newBlock.numberOfTransactions).to.equal(3);
       expect(newBlock.transactions).to.have.lengthOf(3);
-      expect(newBlock.payloadLength).eq(351);
+      expect(newBlock.payloadLength).eq(375);
       expect(newBlock.previousBlock).eq('1');
       expect(newBlock.reward).eq(30000000n);
       expect(newBlock.totalAmount).eq(326732673000000n);
 
       expect(newBlock.payloadHash).deep.eq(
         Buffer.from(
-          '6bb2fdf548c3a6c51f9e24e5069c94d09176bedffd91ecc875f477344be8b652',
+          '4bc8afd4cae9da825bed497a39af5dede58c580e3730d50dff5abb09497cc942',
           'hex'
         )
       );
@@ -213,45 +213,13 @@ describe('logic/block', () => {
   // });
 
   describe('getHash', () => {
-    it('should return a hash of Uint8Array type', () => {
+    it('should return a hash of Buffer type', () => {
       const hash = instance.getHash(dummyBlock);
-      expect(hash).to.be.an.instanceof(Uint8Array);
+      expect(hash).to.be.an.instanceof(Buffer);
       expect(hash).to.be.ofSize(32);
-      const dummyHash = Uint8Array.from([
-        33,
-        231,
-        109,
-        34,
-        81,
-        45,
-        206,
-        26,
-        221,
-        6,
-        171,
-        168,
-        208,
-        242,
-        96,
-        79,
-        166,
-        77,
-        243,
-        219,
-        78,
-        12,
-        172,
-        171,
-        166,
-        123,
-        127,
-        92,
-        0,
-        242,
-        227,
-        135,
-      ]);
-      expect(hash).to.be.equalTo(dummyHash as any);
+      expect(hash.toString('hex')).to.be.eq(
+        '990d5054f3e1421274f6b9d4e60e31896483c495c17b373b4170736fb74d3b5f'
+      );
     });
 
     it('should call crypto.createHash', () => {

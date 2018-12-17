@@ -132,7 +132,7 @@ export class BlockLogic implements IBlockLogic {
     };
 
     block.blockSignature = this.sign(block, data.keypair);
-    block.id = this.idsHandler.blockIdFromBytes(
+    block.id = this.idsHandler.calcBlockIdFromBytes(
       this.blockBytes.signableBytes(block, true)
     );
     return this.objectNormalize(block);

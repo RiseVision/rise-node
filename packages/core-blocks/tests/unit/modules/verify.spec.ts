@@ -153,8 +153,8 @@ describe('modules/blocks/verify', () => {
       describe(what, () => {
         it('should pass for valid block', async () => {
           const res = await inst[what](block);
-          expect(res.verified).is.true;
           expect(res.errors).is.empty;
+          expect(res.verified).is.true;
         });
         it('should fail for invalid id', async () => {
           block.id = '1';
@@ -170,7 +170,7 @@ describe('modules/blocks/verify', () => {
               .join(''),
             'hex'
           );
-          block.id = idsHandler.blockIdFromBytes(
+          block.id = idsHandler.calcBlockIdFromBytes(
             blockBytes.signableBytes(block, true)
           );
           const res = await inst[what](block);
@@ -237,7 +237,7 @@ describe('modules/blocks/verify', () => {
               timestamp: block.timestamp,
               transactions: txs.map((t) => toBufferedTransaction(t)),
             });
-            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'fullBytes');
             getBytesStub.returns(Buffer.alloc(10));
             getBytesStub.onCall(1).throws(new Error('meow'));
 
@@ -251,13 +251,13 @@ describe('modules/blocks/verify', () => {
               timestamp: block.timestamp,
               transactions: txs.map((t) => toBufferedTransaction(t)),
             });
-            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'fullBytes');
             getBytesStub.returns(Buffer.alloc(10));
             const res = await inst[what](block);
             expect(res.errors).to.contain('Invalid payload hash');
           });
           it('should return error computed totalAmount differs block.totalAmount', async () => {
-            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'fullBytes');
             getBytesStub.returns(Buffer.alloc(10));
             const txs = createRandomTransactions(10);
             block = createFakeBlock(container, {
@@ -270,7 +270,7 @@ describe('modules/blocks/verify', () => {
             expect(res.errors).to.contain('Invalid total amount');
           });
           it('should return error if computed totalFee differs block.totalFee', async () => {
-            const getBytesStub = sandbox.stub(txBytes, 'signableBytes');
+            const getBytesStub = sandbox.stub(txBytes, 'fullBytes');
 
             getBytesStub.returns(Buffer.alloc(10));
             const txs = createRandomTransactions(10);

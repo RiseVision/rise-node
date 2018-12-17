@@ -177,25 +177,6 @@ describe('modules/accounts', () => {
       ]);
       expect(r).deep.eq({});
     });
-
-    it('should also query for requesterPublicKey', async () => {
-      sandbox.stub(accountLogic, 'generateAddressByPublicKey').returns('add33');
-      findAllStub.resolves([
-        { address: 'add11', publicKey: Buffer.from('11', 'hex') },
-        { address: 'add33', publicKey: Buffer.from('33', 'hex') },
-      ]);
-      await accountModule.txAccounts([
-        {
-          senderId: 'add11',
-          senderPublicKey: Buffer.from('11', 'hex'),
-          requesterPublicKey: Buffer.from('33', 'hex'),
-        } as any,
-      ]);
-      expect(findAllStub.calledOnce).is.true;
-      expect(findAllStub.firstCall.args[0]).is.deep.eq({
-        where: { address: ['add11', 'add33'] },
-      });
-    });
   });
 
   describe('.assignPublicKeyToAccount', () => {

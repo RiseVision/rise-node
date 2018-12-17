@@ -155,7 +155,7 @@ export class BlockBytes {
       ...blockHeader,
       blockSignature: blockHeader.blockSignature,
       height,
-      id: this.idsHandler.blockIdFromBytes(header),
+      id: this.idsHandler.calcBlockIdFromBytes(header),
       transactions: transformedTxs,
     };
   }
