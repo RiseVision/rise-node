@@ -21,8 +21,8 @@
     "lodash": "4.17.11"
   },
   "devDependencies": {
-    "@types/lodash": "4.14.118",
+    "@types/lodash": "4.14.119",
     "shx": "=0.3.2",
-    "typescript": "=3.2.0-rc"
+    "typescript": "3.2.2"
   }
 }

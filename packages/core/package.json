@@ -31,10 +31,10 @@
     "@risevision/core-utils": "^1.0.0"
   },
   "devDependencies": {
-    "@types/node": "^10.12.10",
+    "@types/node": "^10.12.15",
     "mocha": "=5.2.0",
     "shx": "=0.3.2",
     "ts-node": "7.0.1",
-    "typescript": "=3.2.0-rc"
+    "typescript": "3.2.2"
   }
 }
