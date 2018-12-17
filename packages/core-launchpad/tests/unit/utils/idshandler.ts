@@ -3,6 +3,8 @@ import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
 import { injectable } from 'inversify';
 import * as supersha from 'supersha';
 
+const maxAddress = 18446744073709551615n;
+
 @injectable()
 export class TestIdsHandler implements IIdsHandler {
   public addressBytes: number = 8;
@@ -20,7 +22,11 @@ export class TestIdsHandler implements IIdsHandler {
     if (!address) {
       return toBufferBE(0n, 8);
     }
-    return toBufferBE(BigInt(address.slice(0, -1)), 8);
+    const num = BigInt(address.slice(0, -1));
+    if (num > maxAddress) {
+      return toBufferBE(num, 16).slice(0, 8);
+    }
+    return toBufferBE(num, 8);
   }
 
   public blockIdFromBytes(bytes: Buffer): string {

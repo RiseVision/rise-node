@@ -168,7 +168,7 @@ describe('logic/transactions/createmultisig', () => {
     });
   });
 
-  describe('getBytes', () => {
+  describe('assetBytes', () => {
     const expectedBuffer = Buffer.from('');
     let sequence: any[];
     let lastBB: any;
@@ -202,7 +202,7 @@ describe('logic/transactions/createmultisig', () => {
 
     it('should call Buffer.from', () => {
       const fromSpy = sandbox.spy(Buffer, 'from');
-      instance.getBytes(tx);
+      instance.assetBytes(tx);
       expect(fromSpy.calledOnce).to.be.true;
       expect(fromSpy.firstCall.args[0]).to.be.equal(
         tx.asset.multisignature.keysgroup.join('')
@@ -211,19 +211,19 @@ describe('logic/transactions/createmultisig', () => {
     });
 
     it('should create a ByteBuffer', () => {
-      instance.getBytes(tx);
+      instance.assetBytes(tx);
       expect(lastBB).to.be.instanceof(ByteBuffer);
     });
 
     it('should write bytes to bytebuffer', () => {
-      instance.getBytes(tx);
+      instance.assetBytes(tx);
       expect(sequence[0]).to.be.equal(tx.asset.multisignature.min);
       expect(sequence[1]).to.be.equal(tx.asset.multisignature.lifetime);
       expect(lastBB.flip.calledOnce).to.be.true;
     });
 
     it('should call toBuffer and return a Buffer', () => {
-      const retVal = instance.getBytes(tx);
+      const retVal = instance.assetBytes(tx);
       expect(lastBB.toBuffer.calledOnce).to.be.true;
       expect(retVal).to.be.deep.equal(expectedBuffer);
     });

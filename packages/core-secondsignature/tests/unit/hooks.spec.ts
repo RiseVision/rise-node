@@ -82,7 +82,7 @@ describe('secondSignHooks', () => {
       const btx: any = toBufferedTransaction(tx);
       btx.signSignature = Buffer.from(btx.signSignature, 'hex');
       btx.id = idsHandler.txIdFromBytes(
-        txBytesHandler.signableBytes(btx, true)
+        txBytesHandler.fullBytes(btx)
       );
       await expect(txLogic.verify(btx, sender, 1)).rejectedWith(
         'Invalid second signature'

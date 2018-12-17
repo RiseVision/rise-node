@@ -132,10 +132,10 @@ describe('logic/transactions/secondSignature', () => {
     });
   });
 
-  describe('getBytes', () => {
+  describe('assetBytes', () => {
     it('should call Buffer.from', () => {
       const fromSpy = sandbox.spy(Buffer, 'from');
-      instance.getBytes(tx, false, false);
+      instance.assetBytes(tx);
       expect(fromSpy.calledOnce).to.be.true;
       expect(fromSpy.firstCall.args[0]).to.be.equal(
         tx.asset.signature.publicKey
@@ -145,7 +145,7 @@ describe('logic/transactions/secondSignature', () => {
     });
 
     it('should return a Buffer', () => {
-      const retVal = instance.getBytes(tx, false, false);
+      const retVal = instance.assetBytes(tx);
       expect(retVal).to.be.deep.equal(
         Buffer.from(tx.asset.signature.publicKey, 'hex')
       );

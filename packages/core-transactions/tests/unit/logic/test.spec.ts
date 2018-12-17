@@ -1,14 +1,15 @@
 // tslint:disable object-literal-sort-keys max-line-length
-import { Symbols } from '@risevision/core-interfaces';
+import { IIdsHandler, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { IBaseTransaction } from '@risevision/core-types';
 import { expect } from 'chai';
 import { Container } from 'inversify';
 import 'reflect-metadata';
-import { TransactionLogic } from '../../../src';
+import { TransactionLogic, TXBytes, TXSymbols } from '../../../src';
 
 describe('some real cases', () => {
-  let instance: TransactionLogic;
+  let txBytes: TXBytes;
+  let idsHandler: IIdsHandler;
   let container: Container;
   before(async () => {
     container = await createContainer([
@@ -21,12 +22,13 @@ describe('some real cases', () => {
     ]);
   });
   beforeEach(async () => {
-    instance = container.get(Symbols.logic.transaction);
+    txBytes = container.get(TXSymbols.txBytes);
+    idsHandler = container.get(Symbols.helpers.idsHandler);
   });
 
-  it('6132221392997475140', () => {
+  it('943334541211736263', () => {
     const tx: IBaseTransaction<any> = {
-      id: '6132221392997475140',
+      id: '943334541211736263',
       type: 0,
       timestamp: 40355030,
       senderPublicKey: Buffer.from(
@@ -44,11 +46,11 @@ describe('some real cases', () => {
       asset: null,
     };
 
-    const id = instance.getId(tx);
+    const id = idsHandler.txIdFromBytes(txBytes.fullBytes(tx));
 
-    expect(id).eq('6132221392997475140');
+    expect(id).eq('943334541211736263');
   });
-  it('15448536942844597615', () => {
+  it('9173713943469915539', () => {
     const tx: IBaseTransaction<any> = {
       amount: 33630309776n,
       asset: null,
@@ -67,8 +69,8 @@ describe('some real cases', () => {
       type: 0,
     };
 
-    const id = instance.getId(tx);
+    const id = idsHandler.txIdFromBytes(txBytes.fullBytes(tx));
 
-    expect(id).eq('15448536942844597615');
+    expect(id).eq('9173713943469915539');
   });
 });
