@@ -55,8 +55,8 @@ describe('secondSignHooks', () => {
     it('should allow proper tx', async () => {
       tx = senderWallet.signTransaction(tx, secondSignWallet);
       // tx.id;
-      await expect(txLogic.verify(toBufferedTransaction(tx), sender, 1))
-        .not.rejected;
+      await expect(txLogic.verify(toBufferedTransaction(tx), sender, 1)).not
+        .rejected;
     });
     it('should reject with signSignature when account does not have one', async () => {
       sender.secondSignature = 0;
@@ -75,23 +75,25 @@ describe('secondSignHooks', () => {
       ).rejectedWith('Missing second signature');
     });
     it('should reject tx if signSignature is not valid', async () => {
-      tx                   = senderWallet.signTransaction(tx, secondSignWallet);
-      tx.signSignature     = new Array(128).fill('a').join('');
-      const idsHandler     = container.get<IIdsHandler>(Symbols.helpers.idsHandler);
+      tx = senderWallet.signTransaction(tx, secondSignWallet);
+      tx.signSignature = new Array(128).fill('a').join('');
+      const idsHandler = container.get<IIdsHandler>(Symbols.helpers.idsHandler);
       const txBytesHandler = container.get<TXBytes>(TXSymbols.txBytes);
-      const btx: any       = toBufferedTransaction(tx);
+      const btx: any = toBufferedTransaction(tx);
       btx.signSignature = Buffer.from(btx.signSignature, 'hex');
-      btx.id = idsHandler.txIdFromBytes(txBytesHandler.signableBytes(btx, true));
-      await expect(
-        txLogic.verify(btx, sender, 1)
-      ).rejectedWith('Invalid second signature');
+      btx.id = idsHandler.txIdFromBytes(
+        txBytesHandler.signableBytes(btx, true)
+      );
+      await expect(txLogic.verify(btx, sender, 1)).rejectedWith(
+        'Invalid second signature'
+      );
     });
     it('should not complain if tx is not from a secondSign enabled sender', async () => {
       sender.secondPublicKey = null;
       sender.secondSignature = 0;
       tx = senderWallet.signTransaction(tx);
-      await expect(txLogic.verify(toBufferedTransaction(tx), sender, 1))
-        .not.rejected;
+      await expect(txLogic.verify(toBufferedTransaction(tx), sender, 1)).not
+        .rejected;
     });
   });
 

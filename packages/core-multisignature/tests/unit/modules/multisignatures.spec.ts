@@ -131,7 +131,9 @@ describe('modules/multisignatures', () => {
     let getPayloadStub: SinonStub;
     let hasPendingTX: SinonStub;
     beforeEach(() => {
-      getPendingTXStub = sandbox.stub(pendingQueue, 'get').returns({ tx, payload: null });
+      getPendingTXStub = sandbox
+        .stub(pendingQueue, 'get')
+        .returns({ tx, payload: null });
       hasPendingTX = sandbox.stub(pendingQueue, 'has').returns(true);
 
       // transactionsModule.enqueueResponse('getMultisignatureTransaction', tx);

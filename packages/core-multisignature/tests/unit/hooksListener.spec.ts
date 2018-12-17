@@ -1,4 +1,8 @@
-import { IIdsHandler, ITransactionLogic, Symbols } from '@risevision/core-interfaces';
+import {
+  IIdsHandler,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TxReadyFilter } from '@risevision/core-transactions';
@@ -214,7 +218,9 @@ describe('HooksListener', () => {
         const signedTX = wallet.signTransaction(tx);
         signedTX.asset.multisignature.keysgroup.push(1);
         const btx = toBufferedTransaction(signedTX);
-        const idsHandler = container.get<IIdsHandler>(Symbols.helpers.idsHandler);
+        const idsHandler = container.get<IIdsHandler>(
+          Symbols.helpers.idsHandler
+        );
         const txBytes = container.get<TXBytes>(TXSymbols.txBytes);
         // btx.id = txLogic.getId(btx);
         btx.id = idsHandler.txIdFromBytes(txBytes.signableBytes(btx, true));

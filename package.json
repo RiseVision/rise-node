@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "pre-commit": [
+    "prettier",
     "tslint"
   ],
   "scripts": {

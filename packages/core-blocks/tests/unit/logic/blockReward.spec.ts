@@ -45,7 +45,7 @@ describe('logic/blockReward', () => {
         { fromHeight: 3162240, reward: 600000000n },
         { fromHeight: 4216320, reward: 300000000n },
         { fromHeight: 5270400, reward: 100000000n },
-        ]);
+      ]);
     });
   });
 
@@ -141,8 +141,13 @@ describe('logic/blockReward', () => {
       },
       {
         height: 100,
-        supply: // tslint:disable-next-line
-          11000001491000000n + 30000000n + 20000000n + 1500000000n * (100n - 12n),
+        // tslint:disable-next-line
+        supply:
+          11000001491000000n +
+          30000000n +
+          20000000n +
+          // tslint:disable-next-line
+          1500000000n * (100n - 12n),
       },
     ];
     tests.forEach((supplyTest) => {

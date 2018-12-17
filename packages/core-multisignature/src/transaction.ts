@@ -3,7 +3,7 @@ import {
   ISystemModule,
   ITransactionLogic,
   ITransactionsModel,
-  Symbols
+  Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
@@ -102,9 +102,7 @@ export class MultiSignatureTransaction extends BaseTx<
     return this.systemModule.getFees(height).fees.multisignature;
   }
 
-  public assetBytes(
-    tx: IBaseTransaction<MultisigAsset>
-  ): Buffer {
+  public assetBytes(tx: IBaseTransaction<MultisigAsset>): Buffer {
     const keysBuff = Buffer.from(
       tx.asset.multisignature.keysgroup.join(''),
       'utf8'
@@ -122,22 +120,27 @@ export class MultiSignatureTransaction extends BaseTx<
     return bb.toBuffer() as any;
   }
 
-  public readAssetFromBytes(bytes: Buffer): { asset: MultisigAsset; consumedBytes: number } {
+  public readAssetFromBytes(
+    bytes: Buffer
+  ): { asset: MultisigAsset; consumedBytes: number } {
     const min = bytes.readUInt8(0);
     const lifetime = bytes.readUInt8(1);
 
     const keysBuf = bytes.slice(2);
     let totalKeys = 0;
-    for (; ['-', '+'].indexOf(keysBuf.slice(totalKeys * 65, 1).toString('utf8')) !== -1; totalKeys++) {
+    for (
+      ;
+      ['-', '+'].indexOf(keysBuf.slice(totalKeys * 65, 1).toString('utf8')) !==
+      -1;
+      totalKeys++
+    ) {
       // Noop
     }
 
     const keysgroup: string[] = [];
 
     for (let i = 0; i < totalKeys; i++) {
-      keysgroup.push(
-        keysBuf.slice(i * 65, (i + 1) * 65).toString('utf8')
-      );
+      keysgroup.push(keysBuf.slice(i * 65, (i + 1) * 65).toString('utf8'));
     }
 
     return {
@@ -572,8 +575,10 @@ export class MultiSignatureTransaction extends BaseTx<
       id: 'Multisignature',
       properties: {
         keysgroup: {
-          maxItems: this.multisigConstants.multisigConstraints.keysgroup.maxItems,
-          minItems: this.multisigConstants.multisigConstraints.keysgroup.minItems,
+          maxItems: this.multisigConstants.multisigConstraints.keysgroup
+            .maxItems,
+          minItems: this.multisigConstants.multisigConstraints.keysgroup
+            .minItems,
           type: 'array',
         },
         lifetime: {

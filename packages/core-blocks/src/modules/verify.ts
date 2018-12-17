@@ -5,7 +5,8 @@ import {
   IBlockReward,
   IBlocksModel,
   IBlocksModule,
-  IForkModule, IIdsHandler,
+  IForkModule,
+  IIdsHandler,
   ILogger,
   ITransactionPool,
   ITransactionsModule,
@@ -266,7 +267,9 @@ export class BlocksModuleVerify {
   }
 
   private verifyId(block: SignedBlockType) {
-    const id = this.idsHandler.blockIdFromBytes(this.blockBytes.signableBytes(block, true));
+    const id = this.idsHandler.blockIdFromBytes(
+      this.blockBytes.signableBytes(block, true)
+    );
     if (block.id !== id) {
       return [`BlockID: Expected ${id} - Received ${block.id}`];
     }

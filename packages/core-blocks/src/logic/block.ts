@@ -35,7 +35,7 @@ const blockSchema = require('../../schema/block.json');
 
 @injectable()
 export class BlockLogic implements IBlockLogic {
-  public table    = 'blocks';
+  public table = 'blocks';
   public dbFields = [
     'id',
     'version',
@@ -90,13 +90,13 @@ export class BlockLogic implements IBlockLogic {
 
     const nextHeight = data.previousBlock ? data.previousBlock.height + 1 : 1;
 
-    const reward    = this.blockReward.calcReward(nextHeight);
-    let totalFee    = 0n;
+    const reward = this.blockReward.calcReward(nextHeight);
+    let totalFee = 0n;
     let totalAmount = 0n;
-    let size        = 0;
+    let size = 0;
 
     const blockTransactions = [];
-    const payloadHash       = crypto.createHash('sha256');
+    const payloadHash = crypto.createHash('sha256');
 
     for (const transaction of transactions) {
       const bytes: Buffer = this.txBytes.fullBytes(transaction);
@@ -115,25 +115,26 @@ export class BlockLogic implements IBlockLogic {
     }
 
     const block: SignedAndChainedBlockType = {
-      blockSignature      : undefined,
-      generatorPublicKey  : data.keypair.publicKey,
-      height              : data.previousBlock.height + 1,
-      id                  : undefined,
+      blockSignature: undefined,
+      generatorPublicKey: data.keypair.publicKey,
+      height: data.previousBlock.height + 1,
+      id: undefined,
       numberOfTransactions: blockTransactions.length,
-      payloadHash         : payloadHash.digest(),
-      payloadLength       : size,
-      previousBlock       : data.previousBlock.id,
+      payloadHash: payloadHash.digest(),
+      payloadLength: size,
+      previousBlock: data.previousBlock.id,
       reward,
-      timestamp           : data.timestamp,
+      timestamp: data.timestamp,
       totalAmount,
       totalFee,
-      transactions        : blockTransactions,
-      version             : 0,
+      transactions: blockTransactions,
+      version: 0,
     };
 
     block.blockSignature = this.sign(block, data.keypair);
-    block.id             = this.idsHandler
-      .blockIdFromBytes(this.blockBytes.signableBytes(block, true));
+    block.id = this.idsHandler.blockIdFromBytes(
+      this.blockBytes.signableBytes(block, true)
+    );
     return this.objectNormalize(block);
   }
 
@@ -167,7 +168,7 @@ export class BlockLogic implements IBlockLogic {
     const values = { ...filterObject(block, this.dbFields) };
     return {
       model: this.BlocksModel,
-      type : 'create',
+      type: 'create',
       values,
     };
   }
@@ -182,14 +183,16 @@ export class BlockLogic implements IBlockLogic {
   // TODO: Change this to a pure function!!!
   public objectNormalize<T extends BlockType<string | Buffer, string | bigint>>(
     block: T
-  ): Overwrite<T,
+  ): Overwrite<
+    T,
     {
       totalAmount: bigint;
       reward: bigint;
       payloadHash: Buffer;
       blockSignature: Buffer;
       generatorPublicKey: Buffer;
-    }> {
+    }
+  > {
     // Delete null or undefined elements in block obj
     for (const key in block) {
       if (block[key] === null || typeof block[key] === 'undefined') {
@@ -215,12 +218,18 @@ export class BlockLogic implements IBlockLogic {
       );
     }
 
-    (block as any).reward      = BigInt(block.reward);
-    (block as any).totalFee    = BigInt(block.totalFee);
+    (block as any).reward = BigInt(block.reward);
+    (block as any).totalFee = BigInt(block.totalFee);
     (block as any).totalAmount = BigInt(block.totalAmount);
 
-    if (block.reward as bigint < 0n || block.totalFee as bigint < 0n || block.totalAmount as bigint < 0n) {
-      throw new Error('Block validation failed. One of reward,totalFee,totalAmount is lt 0');
+    if (
+      (block.reward as bigint) < 0n ||
+      (block.totalFee as bigint) < 0n ||
+      (block.totalAmount as bigint) < 0n
+    ) {
+      throw new Error(
+        'Block validation failed. One of reward,totalFee,totalAmount is lt 0'
+      );
     }
 
     for (let i = 0; i < block.transactions.length; i++) {
@@ -239,5 +248,4 @@ export class BlockLogic implements IBlockLogic {
       .update(this.blockBytes.signableBytes(block, includeSignature))
       .digest();
   }
-
 }

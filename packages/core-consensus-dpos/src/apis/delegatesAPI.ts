@@ -549,7 +549,7 @@ export class DelegatesAPI {
       },
     })) as any;
 
-    const fees               = (await this.RoundsFeesModel.aggregate('fees', 'sum', {
+    const fees = (await this.RoundsFeesModel.aggregate('fees', 'sum', {
       where: {
         ...timestampClausole,
         publicKey: bufPublicKey,

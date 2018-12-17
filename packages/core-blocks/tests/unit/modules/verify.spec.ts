@@ -4,7 +4,8 @@ import {
   IBlockLogic,
   IBlockReward,
   IBlocksModel,
-  IForkModule, IIdsHandler,
+  IForkModule,
+  IIdsHandler,
   ITransactionLogic,
   ITransactionsModule,
   Symbols,
@@ -169,7 +170,9 @@ describe('modules/blocks/verify', () => {
               .join(''),
             'hex'
           );
-          block.id = idsHandler.blockIdFromBytes(blockBytes.signableBytes(block, true));
+          block.id = idsHandler.blockIdFromBytes(
+            blockBytes.signableBytes(block, true)
+          );
           const res = await inst[what](block);
           expect(res.errors).to.be.deep.eq([
             'Failed to verify block signature',

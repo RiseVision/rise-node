@@ -71,7 +71,7 @@ export class SecondSignatureTransaction extends BaseTx<
    */
   public readAssetFromBytes(
     bytes: Buffer
-  ): { asset: SecondSignatureAsset, consumedBytes: number } {
+  ): { asset: SecondSignatureAsset; consumedBytes: number } {
     if (bytes === null) {
       return null;
     }
@@ -229,9 +229,7 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(
-    tx: IBaseTransaction<SecondSignatureAsset>
-  ): DBOp<any> {
+  public dbSave(tx: IBaseTransaction<SecondSignatureAsset>): DBOp<any> {
     return {
       model: this.SignaturesModel,
       type: 'create',

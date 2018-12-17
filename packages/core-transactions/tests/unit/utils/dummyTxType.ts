@@ -19,7 +19,9 @@ export class DummyTxType extends BaseTx<void, any> {
     return undefined;
   }
 
-  public objectNormalize(tx: IBaseTransaction<void, bigint>): IBaseTransaction<void, bigint> {
+  public objectNormalize(
+    tx: IBaseTransaction<void, bigint>
+  ): IBaseTransaction<void, bigint> {
     return undefined;
   }
 }

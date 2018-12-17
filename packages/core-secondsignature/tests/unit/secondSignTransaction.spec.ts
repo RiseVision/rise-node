@@ -7,14 +7,21 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { DBUpdateOp, IBaseTransaction, TransactionType } from '@risevision/core-types';
+import {
+  DBUpdateOp,
+  IBaseTransaction,
+  TransactionType,
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
-import { SecondSignatureAsset, SecondSignatureTransaction } from '../../src/secondSignature';
+import {
+  SecondSignatureAsset,
+  SecondSignatureTransaction,
+} from '../../src/secondSignature';
 import { SignaturesModel } from '../../src/SignaturesModel';
 import { SigSymbols } from '../../src/symbols';
 
@@ -106,9 +113,12 @@ describe('logic/transactions/secondSignature', () => {
       TXSymbols.transaction,
       SigSymbols.transaction
     );
-    sandbox
-      .stub(systemModuleStub, 'getFees')
-      .returns({ fees: { secondsignature: 1000n }, fromHeight: 1, height: 10, toHeight: 10000000000 } );
+    sandbox.stub(systemModuleStub, 'getFees').returns({
+      fees: { secondsignature: 1000n },
+      fromHeight: 1,
+      height: 10,
+      toHeight: 10000000000,
+    });
   });
 
   afterEach(() => {
@@ -402,5 +412,4 @@ describe('logic/transactions/secondSignature', () => {
       });
     });
   });
-
 });

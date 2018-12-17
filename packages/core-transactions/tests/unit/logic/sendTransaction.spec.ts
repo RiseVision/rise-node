@@ -73,9 +73,12 @@ describe('logic/transactions/send', () => {
 
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
-      const systemModuleStub = sandbox
-        .stub(systemModule, 'getFees')
-        .returns({ fees: { send: 101n } , fromHeight: 1, toHeight: 100000, height: 10});
+      const systemModuleStub = sandbox.stub(systemModule, 'getFees').returns({
+        fees: { send: 101n },
+        fromHeight: 1,
+        height: 10,
+        toHeight: 100000,
+      });
       const fee = instance.calculateFee(tx, sender, 10);
       expect(systemModuleStub.calledOnce).to.be.true;
       expect(systemModuleStub.firstCall.args.length).to.equal(1);

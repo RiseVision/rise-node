@@ -208,7 +208,7 @@ export class AccountLogic implements IAccountLogic {
           let fixedValue: bigint = trueValue;
           let operand = '+';
           if (trueValue < 0n) {
-            fixedValue = - fixedValue;
+            fixedValue = -fixedValue;
             operand = '-';
           }
           update[fieldName] = sequelize.literal(

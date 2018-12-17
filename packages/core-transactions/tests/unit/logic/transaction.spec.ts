@@ -494,22 +494,24 @@ describe('logic/transaction', () => {
       tx.amount = -100n;
       await expect(
         instance.verify(tx, sender, requester, 1)
-      ).to.be.rejectedWith('tx.amount is either negative or greater than totalAmount');
+      ).to.be.rejectedWith(
+        'tx.amount is either negative or greater than totalAmount'
+      );
     });
 
     it('should throw if amount is > totalAmout', async () => {
       (tx as any).amount = BigInt('10999999991000001');
       await expect(
         instance.verify(tx, sender, requester, 1)
-      ).to.be.rejectedWith('tx.amount is either negative or greater than totalAmount');
+      ).to.be.rejectedWith(
+        'tx.amount is either negative or greater than totalAmount'
+      );
     });
 
     // tslint:disable-next-line
     it('should throw if amount is written in exponential notation', async () => {
       (tx as any).amount = '10e3';
-      await expect(
-        instance.verify(tx, sender, requester, 1)
-      ).to.be.rejected;
+      await expect(instance.verify(tx, sender, requester, 1)).to.be.rejected;
     });
 
     it('should reject tx if verifySignature throws (for whatever reason', async () => {
@@ -1258,5 +1260,4 @@ describe('logic/transaction', () => {
       });
     });
   });
-
 });

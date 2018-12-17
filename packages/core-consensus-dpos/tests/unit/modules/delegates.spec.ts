@@ -620,7 +620,11 @@ describe('modules/delegates', () => {
       retVal.delegates.forEach((delegate, key) => {
         expect(delegate.info.rank).to.be.equal(key + 1);
         expect(delegate.info.approval).to.be.equal(
-          Math.floor((parseInt(`${delegate.delegate.vote}`, 10) / parseInt(`${totalSupply}`, 10)) * 1e4) / 1e2
+          Math.floor(
+            (parseInt(`${delegate.delegate.vote}`, 10) /
+              parseInt(`${totalSupply}`, 10)) *
+              1e4
+          ) / 1e2
         );
         const percent =
           Math.abs(

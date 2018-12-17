@@ -17,7 +17,8 @@ export class RoundChanges {
     this.roundFees = scope.roundFees || 0n;
     this.roundRewards = scope.roundRewards || [];
     this.fees = this.roundFees / BigInt(this.slots.delegates);
-    this.feesRemaining = this.roundFees - this.fees * BigInt(this.slots.delegates);
+    this.feesRemaining =
+      this.roundFees - this.fees * BigInt(this.slots.delegates);
   }
 
   /**

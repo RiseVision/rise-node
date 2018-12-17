@@ -12,8 +12,10 @@ export class BlockRewardLogic implements IBlockReward {
 
   @postConstruct()
   public initRewards() {
-    this.rewards = this.blocksConstants.blocks.rewards
-      .map((r) => ({...r, reward: BigInt(r.reward)}));
+    this.rewards = this.blocksConstants.blocks.rewards.map((r) => ({
+      ...r,
+      reward: BigInt(r.reward),
+    }));
   }
 
   public calcMilestone(height: number) {
@@ -38,14 +40,17 @@ export class BlockRewardLogic implements IBlockReward {
     let amountAccounted = 0n;
 
     for (let i = 0; i < milestone; i++) {
-      const amount = BigInt(this.rewards[i + 1].fromHeight - this.rewards[i].fromHeight);
+      const amount = BigInt(
+        this.rewards[i + 1].fromHeight - this.rewards[i].fromHeight
+      );
       // remove this milestone
       amountAccounted += amount;
       supply += amount * this.rewards[i].reward;
     }
 
     // add current milestone
-    supply += (BigInt(height) - amountAccounted) * this.rewards[milestone].reward;
+    supply +=
+      (BigInt(height) - amountAccounted) * this.rewards[milestone].reward;
 
     return supply;
   }

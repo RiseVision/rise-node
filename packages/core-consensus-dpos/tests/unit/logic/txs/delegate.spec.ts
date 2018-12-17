@@ -7,14 +7,21 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { DBUpdateOp, IBaseTransaction, TransactionType } from '@risevision/core-types';
+import {
+  DBUpdateOp,
+  IBaseTransaction,
+  TransactionType,
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { dPoSSymbols } from '../../../../src/helpers';
-import { DelegateAsset, RegisterDelegateTransaction } from '../../../../src/logic/delegateTransaction';
+import {
+  DelegateAsset,
+  RegisterDelegateTransaction,
+} from '../../../../src/logic/delegateTransaction';
 import { AccountsModelForDPOS, DelegatesModel } from '../../../../src/models';
 
 const expect = chai.expect;
@@ -104,9 +111,12 @@ describe('logic/transactions/delegate', () => {
       TXSymbols.transaction,
       dPoSSymbols.logic.delegateTransaction
     );
-    getFeesStub = sandbox
-      .stub(systemModuleStub, 'getFees')
-      .returns({ fees: { delegate: 2500n }, fromHeight: 1, toHeight: 1000000, height: 100 });
+    getFeesStub = sandbox.stub(systemModuleStub, 'getFees').returns({
+      fees: { delegate: 2500n },
+      fromHeight: 1,
+      toHeight: 1000000,
+      height: 100,
+    });
   });
 
   afterEach(() => {

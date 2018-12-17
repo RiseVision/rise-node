@@ -13,7 +13,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
 import {
   fromBufferedTransaction,
-  toBufferedTransaction
+  toBufferedTransaction,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
   DBCreateOp,
@@ -324,8 +324,14 @@ describe('logic/transactions/createmultisig', () => {
       tx.asset.multisignature.keysgroup[0] =
         '+' + sender.publicKey.toString('hex');
       tx.signatures = [
-        Buffer.from(sig2Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)), 'hex'),
-        Buffer.from(senderWallet.getSignatureOfTransaction(fromBufferedTransaction(tx)), 'hex'),
+        Buffer.from(
+          sig2Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
+          'hex'
+        ),
+        Buffer.from(
+          senderWallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
+          'hex'
+        ),
       ];
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid multisignature keysgroup. Cannot contain sender'

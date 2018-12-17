@@ -222,7 +222,11 @@ export class DelegatesModule {
     }> = [];
     for (let i = 0; i < delegates.length; i++) {
       const rank = i + 1;
-      const approval = parseInt(((delegates[i].vote * 10n ** 4n ) / totalSupply).toString(), 10) / 100;
+      const approval =
+        parseInt(
+          ((delegates[i].vote * 10n ** 4n) / totalSupply).toString(),
+          10
+        ) / 100;
 
       const percent =
         Math.abs(

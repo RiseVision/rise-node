@@ -24,7 +24,6 @@ export class TestIdsHandler implements IIdsHandler {
   }
 
   public blockIdFromBytes(bytes: Buffer): string {
-
     return this.toBigInt(bytes).toString();
   }
 
@@ -47,5 +46,4 @@ export class TestIdsHandler implements IIdsHandler {
     }
     return toBigIntBE(tmp);
   }
-
 }
