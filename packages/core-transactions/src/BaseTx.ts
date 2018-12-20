@@ -126,7 +126,7 @@ export abstract class BaseTx<T, M extends Model<any>>
       amount,
       asset,
       fee,
-      id: this.idsHandler.txIdFromBytes(buff),
+      id: this.idsHandler.calcTxIdFromBytes(buff),
       recipientId,
       senderId: this.idsHandler.addressFromPubKey(senderPublicKey),
       senderPublicKey,

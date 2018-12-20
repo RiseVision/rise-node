@@ -161,8 +161,8 @@ export class TransactionLogic implements ITransactionLogic {
       );
     }
 
-    const txID = this.idsHandler.txIdFromBytes(
-      this.types[tx.type].signableBytes(tx)
+    const txID = this.idsHandler.calcTxIdFromBytes(
+      this.types[tx.type].fullBytes(tx)
     );
     if (txID !== tx.id) {
       throw new Error(
