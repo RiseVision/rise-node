@@ -46,7 +46,7 @@ describe('some real cases', () => {
       asset: null,
     };
 
-    const id = idsHandler.txIdFromBytes(txBytes.fullBytes(tx));
+    const id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
 
     expect(id).eq('943334541211736263');
   });
@@ -69,7 +69,7 @@ describe('some real cases', () => {
       type: 0,
     };
 
-    const id = idsHandler.txIdFromBytes(txBytes.fullBytes(tx));
+    const id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
 
     expect(id).eq('9173713943469915539');
   });

@@ -223,7 +223,7 @@ describe('HooksListener', () => {
         );
         const txBytes = container.get<TXBytes>(TXSymbols.txBytes);
         // btx.id = txLogic.getId(btx);
-        btx.id = idsHandler.txIdFromBytes(txBytes.fullBytes(btx));
+        btx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(btx));
         await expect(txLogic.verify(btx, sender, 1)).to.rejectedWith(
           'Invalid member in keysgroup'
         );

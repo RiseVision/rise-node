@@ -106,7 +106,7 @@ describe('apis/requests/PostBlockRequest', () => {
       });
 
       for (const b of blocks) {
-        await createRequest(null, { block: b });
+        const r = await createRequest(null, { block: b });
         expect(bpOnReceiveBlockStub.calledOnce).true;
         expect(bpOnReceiveBlockStub.firstCall.args[0]).deep.eq({
           ...b,

@@ -13,7 +13,7 @@ import { BlockBytes } from '../logic/blockBytes';
 import { BlocksModuleProcess } from '../modules';
 
 // tslint:disable-next-line
-export type PostBlockRequestDataType = { block: SignedAndChainedBlockType };
+export type PostBlockRequestDataType = { block: SignedAndChainedBlockType, relays: number };
 
 @injectable()
 export class PostBlockRequest extends BaseProtobufTransportMethod<
@@ -45,6 +45,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
     return super.encodeRequest(
       {
         block: this.blockBytes.toBuffer(data.block) as any,
+        relays: data.relays,
       },
       peer
     );
@@ -60,6 +61,7 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
       block: this.blockLogic.objectNormalize(
         this.blockBytes.fromBuffer(data.block)
       ),
+      relays: data.relays,
     };
   }
 
@@ -68,7 +70,9 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
   ): Promise<null> {
     const normalizedBlock = this.blockLogic.objectNormalize(req.body.block);
 
-    await this.process.onReceiveBlock(normalizedBlock);
+    // We propagate relays here so that the next postblockrequest has a relay to handle.
+    ( normalizedBlock as any ).relays = req.body.relays;
+    await this.process.onReceiveBlock( normalizedBlock );
     return null;
   }
 }
