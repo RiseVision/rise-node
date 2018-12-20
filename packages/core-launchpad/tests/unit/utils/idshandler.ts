@@ -11,7 +11,7 @@ export class TestIdsHandler implements IIdsHandler {
   public blockIdByteSize: number = 8;
 
   public addressFromBytes(bytes: Buffer): string {
-    return `${toBigIntLE(bytes)}R`;
+    return `${toBigIntBE(bytes)}R`;
   }
 
   public addressFromPubKey(pubKey: Buffer): string {
@@ -46,10 +46,6 @@ export class TestIdsHandler implements IIdsHandler {
 
   public calcTxIdFromBytes(bytes: Buffer): string {
     return `${this.toBigInt(bytes)}`;
-  }
-
-  public txIdFromBytes(bytes: Buffer): string {
-    return toBigIntBE(bytes).toString();
   }
 
   private toBigInt(bytes: Buffer) {

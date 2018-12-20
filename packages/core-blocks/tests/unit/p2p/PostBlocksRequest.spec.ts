@@ -99,14 +99,11 @@ describe('apis/requests/PostBlockRequest', () => {
       );
 
       blocks[3].transactions.forEach((t: any) => {
-        t.blockId = blocks[3].id;
-        t.relays = 1;
-        t.height = blocks[3].height;
         delete t.asset;
       });
 
       for (const b of blocks) {
-        const r = await createRequest(null, { block: b });
+        const r = await createRequest(null, { block: b, relays: 1 });
         expect(bpOnReceiveBlockStub.calledOnce).true;
         expect(bpOnReceiveBlockStub.firstCall.args[0]).deep.eq({
           ...b,
