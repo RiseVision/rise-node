@@ -1,4 +1,10 @@
+import {
+  ICrypto,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { TXSymbols } from '@risevision/core-transactions';
 import {
   createRandomTransaction,
   toBufferedTransaction,
@@ -14,6 +20,8 @@ import { MultisigSymbols, MultiSigUtils } from '../../src';
 // tslint:disable no-unused-expression
 describe('multisigUtils', () => {
   let container: Container;
+  let crypto: ICrypto;
+  let txLogic: ITransactionLogic;
   let instance: MultiSigUtils;
   beforeEach(async () => {
     container = await createContainer([
@@ -23,6 +31,8 @@ describe('multisigUtils', () => {
       'core-crypto',
     ]);
     instance = container.get(MultisigSymbols.utils);
+    crypto = container.get(Symbols.generic.crypto);
+    txLogic = container.get(TXSymbols.logic);
   });
 
   describe('txMultiSigReady', () => {
@@ -49,9 +59,12 @@ describe('multisigUtils', () => {
       accounts = new Array(100)
         .fill(null)
         .map(() => new LiskWallet(uuid.v4(), 'R'));
-      tx.signatures = accounts
-        .map((acc) => acc.getSignatureOfTransaction(t))
-        .map((s) => Buffer.from(s, 'hex'));
+      tx.signatures = accounts.map((acc) =>
+        crypto.sign(txLogic.getHash(tx), {
+          privateKey: Buffer.from(acc.privKey, 'hex'),
+          publicKey: Buffer.from(acc.publicKey, 'hex'),
+        })
+      );
     });
     it('should return false if tx is not signed by that pubKey', () => {
       expect(

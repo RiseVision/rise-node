@@ -135,7 +135,7 @@ describe('logic/transactions/delegate', () => {
     it('should return null if no username', () => {
       delete tx.asset.delegate.username;
       const retVal = instance.assetBytes(tx);
-      expect(retVal).to.be.null;
+      expect(retVal).to.be.deep.eq(Buffer.alloc(0));
     });
 
     it('should call Buffer.from', () => {

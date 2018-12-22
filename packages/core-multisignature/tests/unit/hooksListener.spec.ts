@@ -1,4 +1,5 @@
 import {
+  ICrypto,
   IIdsHandler,
   ITransactionLogic,
   Symbols,
@@ -36,6 +37,9 @@ chai.use(chaiAsPromised);
 describe('HooksListener', () => {
   let container: Container;
   let instance: MultisigHooksListener;
+  let idsHandler: IIdsHandler;
+  let txBytes: TXBytes;
+  let crypto: ICrypto;
   let utils: MultiSigUtils;
   let sandbox: SinonSandbox;
   let txReadySpy: SinonSpy;
@@ -79,6 +83,10 @@ describe('HooksListener', () => {
       multisignatures: multisigners.map((m) => m.publicKey),
       multimin: 4,
     });
+
+    idsHandler = container.get(Symbols.helpers.idsHandler);
+    txBytes = container.get(TXSymbols.txBytes);
+    crypto = container.get(Symbols.generic.crypto);
   });
 
   it('should call txReadyStub', async () => {
@@ -139,14 +147,25 @@ describe('HooksListener', () => {
       delete tx.id;
       delete tx.signature;
       const txOBJ = createTransactionFromOBJ(tx);
+      // Needed for toObj but overridden later in code.
       txOBJ.signature = txOBJ.createSignature(wallet.privKey);
       const toRet = toBufferedTransaction({
         ...txOBJ.toObj(),
         senderId: wallet.address,
       });
-      toRet.signatures = multisigners
-        .map((m) => m.getSignatureOfTransaction(txOBJ))
-        .map((s) => Buffer.from(s, 'hex'));
+      delete toRet.signature;
+      toRet.signature = crypto.sign(txLogic.getHash(toRet), {
+        publicKey: Buffer.from(wallet.publicKey, 'hex'),
+        privateKey: Buffer.from(wallet.privKey, 'hex'),
+      });
+      toRet.signatures = multisigners.map((m) =>
+        crypto.sign(txLogic.getHash(toRet), {
+          publicKey: Buffer.from(m.publicKey, 'hex'),
+          privateKey: Buffer.from(m.privKey, 'hex'),
+        })
+      );
+
+      toRet.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(toRet));
       return toRet;
     }
 
@@ -172,6 +191,7 @@ describe('HooksListener', () => {
         `5e1${ttx.signatures[0].toString('hex').substr(3)}`,
         'hex'
       );
+      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(ttx));
       await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
         'Failed to verify multisignature'
       );
@@ -186,6 +206,7 @@ describe('HooksListener', () => {
           'hex'
         )
       );
+      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(ttx));
       await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
         'Failed to verify multisignature'
       );
@@ -193,6 +214,7 @@ describe('HooksListener', () => {
     it('should reject if duplicated signature', async () => {
       const ttx = signMultiSigTxRequester();
       ttx.signatures.push(ttx.signatures[0]);
+      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(ttx));
       await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
         'Encountered duplicate signature in transaction'
       );
@@ -218,10 +240,6 @@ describe('HooksListener', () => {
         const signedTX = wallet.signTransaction(tx);
         signedTX.asset.multisignature.keysgroup.push(1);
         const btx = toBufferedTransaction(signedTX);
-        const idsHandler = container.get<IIdsHandler>(
-          Symbols.helpers.idsHandler
-        );
-        const txBytes = container.get<TXBytes>(TXSymbols.txBytes);
         // btx.id = txLogic.getId(btx);
         btx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(btx));
         await expect(txLogic.verify(btx, sender, 1)).to.rejectedWith(

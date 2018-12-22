@@ -188,15 +188,15 @@ export class MultiSignatureTransaction extends BaseTx<
       }
     }
 
-    if (
-      tx.asset.multisignature.keysgroup.indexOf(
-        `+${sender.publicKey.toString('hex')}`
-      ) !== -1
-    ) {
-      throw new Error(
-        'Invalid multisignature keysgroup. Cannot contain sender'
-      );
-    }
+    // if (
+    //   tx.asset.multisignature.keysgroup.indexOf(
+    //     `+${sender.publicKey.toString('hex')}`
+    //   ) !== -1
+    // ) {
+    //   throw new Error(
+    //     'Invalid multisignature keysgroup. Cannot contain sender'
+    //   );
+    // }
   }
 
   public async apply(

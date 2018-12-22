@@ -3,6 +3,8 @@ import {
   IAccountLogic,
   IAccountsModel,
   IAccountsModule,
+  ICrypto,
+  IIdsHandler,
   ISystemModule,
   ITransactionLogic,
   ITransactionsModel,
@@ -11,6 +13,7 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
+import { TXBytes } from '@risevision/core-transactions';
 import {
   fromBufferedTransaction,
   toBufferedTransaction,
@@ -49,7 +52,10 @@ describe('logic/transactions/createmultisig', () => {
   let sandbox: SinonSandbox;
   let socketIO: any;
   let accountLogic: IAccountLogic;
+  let crypto: ICrypto;
   let transactionLogic: ITransactionLogic;
+  let txBytes: TXBytes;
+  let idsHandler: IIdsHandler;
   let accountsModule: IAccountsModule;
   let systemModule: ISystemModule;
   let AccountsModel: typeof IAccountsModel;
@@ -113,6 +119,9 @@ describe('logic/transactions/createmultisig', () => {
     transactionLogic = container.get(Symbols.logic.transaction);
     accountsModule = container.get(Symbols.modules.accounts);
     systemModule = container.get(Symbols.modules.system);
+    idsHandler = container.get(Symbols.helpers.idsHandler);
+    txBytes = container.get(TXSymbols.txBytes);
+    crypto = container.get(Symbols.generic.crypto);
 
     senderWallet = new LiskWallet('meow', 'R');
     sig1Wallet = new LiskWallet('meow.sig1', 'R');
@@ -134,12 +143,12 @@ describe('logic/transactions/createmultisig', () => {
       timestamp: 0,
       type: TransactionType.MULTI,
     } as any);
-    tx2.signatures = [
-      sig1Wallet.getSignatureOfTransaction(tx2),
-      sig2Wallet.getSignatureOfTransaction(tx2),
-    ];
 
     tx = toBufferedTransaction(tx2);
+    tx.signature = crypto.sign(transactionLogic.getHash(tx), {
+      publicKey: Buffer.from(senderWallet.publicKey, 'hex'),
+      privateKey: Buffer.from(senderWallet.privKey, 'hex'),
+    });
 
     sender = new AccountsModel({
       address: senderWallet.address,
@@ -155,6 +164,16 @@ describe('logic/transactions/createmultisig', () => {
 
     instance = container.getNamed(TXSymbols.transaction, MultisigSymbols.tx);
     (instance as any).io = socketIO;
+    tx.signatures = [
+      crypto.sign(transactionLogic.getHash(tx), {
+        publicKey: Buffer.from(sig1Wallet.publicKey, 'hex'),
+        privateKey: Buffer.from(sig1Wallet.privKey, 'hex'),
+      }),
+      crypto.sign(transactionLogic.getHash(tx), {
+        publicKey: Buffer.from(sig2Wallet.publicKey, 'hex'),
+        privateKey: Buffer.from(sig2Wallet.privKey, 'hex'),
+      }),
+    ];
   });
 
   afterEach(() => {
@@ -230,11 +249,6 @@ describe('logic/transactions/createmultisig', () => {
   });
 
   describe('verify', () => {
-    // beforeEach(() => {
-    //   transactionLogic.enqueueResponse('verifySignature', true);
-    //   transactionLogic.enqueueResponse('verifySignature', true);
-    // });
-
     it('should throw when !tx.asset || !tx.asset.multisignature', async () => {
       delete tx.asset.multisignature;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
@@ -323,19 +337,9 @@ describe('logic/transactions/createmultisig', () => {
     it('should throw if keysgroup contains the sender', async () => {
       tx.asset.multisignature.keysgroup[0] =
         '+' + sender.publicKey.toString('hex');
-      tx.signatures = [
-        Buffer.from(
-          sig2Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
-          'hex'
-        ),
-        Buffer.from(
-          senderWallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
-          'hex'
-        ),
-      ];
-      await expect(instance.verify(tx, sender)).to.be.rejectedWith(
-        'Invalid multisignature keysgroup. Cannot contain sender'
-      );
+      tx.signatures.splice(0, 1);
+      tx.signatures.push(tx.signature);
+      await expect(instance.verify(tx, sender)).to.be.rejected;
     });
 
     it('should throw if keysgroup contains an invalid key', async () => {

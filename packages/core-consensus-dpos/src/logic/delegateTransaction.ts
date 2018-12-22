@@ -64,7 +64,7 @@ export class RegisterDelegateTransaction extends BaseTx<
   }
 
   public assetBytes(tx: IBaseTransaction<DelegateAsset>): Buffer {
-    return Buffer.from(tx.asset.delegate.username, 'utf8');
+    return Buffer.from(tx.asset.delegate.username || '', 'utf8');
   }
 
   public readAssetFromBytes(

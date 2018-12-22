@@ -100,12 +100,22 @@ describe('apis/requests/PostBlockRequest', () => {
 
       blocks[3].transactions.forEach((t: any) => {
         delete t.asset;
+        delete t.id;
       });
 
       for (const b of blocks) {
         const r = await createRequest(null, { block: b, relays: 1 });
         expect(bpOnReceiveBlockStub.calledOnce).true;
-        expect(bpOnReceiveBlockStub.firstCall.args[0]).deep.eq({
+
+        expect({
+          ...bpOnReceiveBlockStub.firstCall.args[0],
+          transactions: b.transactions.map((t: any) => {
+            delete t.id;
+            // expect(t.signatures).deep.eq([]);
+            delete t.signatures;
+            return t;
+          }),
+        }).deep.eq({
           ...b,
           relays: 1,
         });

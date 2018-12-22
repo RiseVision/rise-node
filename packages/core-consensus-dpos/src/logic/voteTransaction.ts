@@ -127,7 +127,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   }
 
   public assetBytes(tx: IBaseTransaction<VoteAsset>): Buffer {
-    return Buffer.from(tx.asset.votes.join(''), 'utf8');
+    return Buffer.from((tx.asset.votes || []).join(''), 'utf8');
   }
 
   public readAssetFromBytes(
