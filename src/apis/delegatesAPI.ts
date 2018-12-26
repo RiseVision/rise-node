@@ -210,7 +210,12 @@ export class DelegatesAPI {
       delQuery,
       { raw: true, type: sequelize.QueryTypes.SELECT }
     );
-    return { delegates };
+    return {
+      delegates: delegates.map((d) => {
+        d.rate = d.rank;
+        return d;
+      }),
+    };
   }
 
   @Get('/count')

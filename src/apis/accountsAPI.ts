@@ -108,6 +108,7 @@ export class AccountsAPI {
           .map((d) => ({
             address       : d.delegate.address,
             approval      : d.info.approval,
+            cmb           : d.delegate.cmb,
             missedblocks  : d.delegate.missedblocks,
             producedblocks: d.delegate.producedblocks,
             productivity  : d.info.productivity,
@@ -116,6 +117,7 @@ export class AccountsAPI {
             rate          : d.info.rank,
             username      : d.delegate.username,
             vote          : d.delegate.vote,
+            votesWeight   : d.delegate.votesWeight,
           })),
       };
     }
