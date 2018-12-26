@@ -105,6 +105,9 @@ export class BlocksAPI {
       await this.transactionLogic.attachAssets(b.transactions);
       return this.BlocksModel.toStringBlockType(b, this.TransactionsModel, this.blocksModule);
     });
+    if (typeof (block as any).TransactionsModel !== 'undefined') {
+      delete (block as any).TransactionsModel;
+    }
     return { block };
   }
 
