@@ -1,8 +1,7 @@
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { RiseTransaction, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Op } from 'sequelize';
@@ -11,12 +10,10 @@ import { SinonSandbox, SinonStub } from 'sinon';
 import * as uuid from 'uuid';
 import { APISymbols } from '../../../../core-apis/src/helpers';
 import { Symbols } from '../../../../core-interfaces/src';
-import { ITransactionLogic } from '../../../../core-interfaces/src/logic';
 import { ITransactionsModel } from '../../../../core-interfaces/src/models';
 import {
   IAccountsModule,
   IBlocksModule,
-  ITransactionsModule,
 } from '../../../../core-interfaces/src/modules';
 import { ModelSymbols } from '../../../../core-models/src/helpers';
 import {
@@ -34,7 +31,7 @@ import {
 import {
   createRandomTransaction,
   createRandomTransactions,
-  toBufferedTransaction,
+  toNativeTx,
 } from '../utils/txCrafter';
 
 // tslint:disable-next-line no-var-requires
@@ -42,7 +39,20 @@ const assertArrays = require('chai-arrays');
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
-
+function toTransportTx(t: RiseTransaction<any>) {
+  const toRet = {
+    ...t,
+    senderPublicKey: t.senderPublicKey.toString('hex'),
+    signature: t.signature.toString('hex'),
+    signatures: t.signatures
+      ? t.signatures.map((s) => s.toString('hex'))
+      : null,
+  };
+  if (!t.signatures) {
+    delete toRet.signatures;
+  }
+  return toRet;
+}
 // tslint:disable no-unused-expression no-big-function
 describe('apis/transactionsAPI', () => {
   let sandbox: SinonSandbox;
@@ -93,12 +103,16 @@ describe('apis/transactionsAPI', () => {
     it('should query for data with proper manipulation (casted numbers, bufferd publickeys and untouched elements', async () => {
       const accounts = new Array(3)
         .fill(null)
-        .map(() => new LiskWallet(uuid.v4(), 'R'));
+        .map(() => RiseV2.deriveKeypair(uuid.v4()));
       const body = {
         blockId: '100',
         fromHeight: '123',
-        recipientIds: accounts.map((acc) => acc.address).join(','),
-        senderPublicKeys: accounts.map((acc) => acc.publicKey).join(','),
+        recipientIds: accounts
+          .map((acc) => RiseV2.calcAddress(acc.publicKey))
+          .join(','),
+        senderPublicKeys: accounts
+          .map((acc) => acc.publicKey.toString('hex'))
+          .join(','),
       };
       // body['and:senderIds'] = 'a,b,c';
       result = await instance.getTransactions(body);
@@ -115,14 +129,14 @@ describe('apis/transactionsAPI', () => {
       // recipients arrayified from csv
       expect(
         findAndCountAllStub.firstCall.args[0].where[Op.or].recipientId[Op.in]
-      ).deep.eq(accounts.map((acc) => acc.address));
+      ).deep.eq(accounts.map((acc) => RiseV2.calcAddress(acc.publicKey)));
 
       // publickeys parsed to buffer.
       expect(
         findAndCountAllStub.firstCall.args[0].where[Op.or].senderPublicKey[
           Op.in
         ]
-      ).deep.eq(accounts.map((acc) => Buffer.from(acc.publicKey, 'hex')));
+      ).deep.eq(accounts.map((acc) => acc.publicKey));
     });
 
     it('Schema error', async () => {
@@ -187,7 +201,7 @@ describe('apis/transactionsAPI', () => {
   describe('getTX()', () => {
     it('should return tx with attached assets and passed through filter.', async () => {
       const t = createRandomTransaction();
-      const tx = toBufferedTransaction(t);
+      const tx = toNativeTx(t);
       const TxModel = container.getNamed<typeof TransactionsModel>(
         ModelSymbols.model,
         TXSymbols.model
@@ -232,8 +246,8 @@ describe('apis/transactionsAPI', () => {
           },
           cat: 'meows',
           fee: `${t.fee}`,
-          // Filter
-          signSignature: null,
+          senderPublicKey: t.senderPublicKey.toString('hex'),
+          signature: t.signature.toString('hex'),
           signatures: [],
         },
       });
@@ -344,13 +358,13 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getQueuedTxs()', () => {
-    let transportTxs: Array<ITransaction<any>>;
+    let transportTxs: Array<RiseTransaction<any>>;
     let txs: Array<IBaseTransaction<any, bigint>>;
     beforeEach(() => {
       transportTxs = new Array(5)
         .fill(null)
         .map(() => createRandomTransaction());
-      txs = transportTxs.map((t) => toBufferedTransaction(t));
+      txs = transportTxs.map((t) => toNativeTx(t));
 
       txs.forEach((tx) => txPool.queued.add(tx, { receivedAt: new Date() }));
       transportTxs.forEach((tx) => (tx.signatures = undefined));
@@ -358,35 +372,34 @@ describe('apis/transactionsAPI', () => {
     it('filtering by senderPublicKey & address', async () => {
       result = await instance.getQueuedTxs({
         address: transportTxs[0].recipientId,
-        senderPublicKey: transportTxs[0].senderPublicKey,
+        senderPublicKey: transportTxs[0].senderPublicKey.toString('hex'),
       });
+      const expected = {
+        ...toTransportTx(transportTxs[0]),
+        amount: `${transportTxs[0].amount}`,
+        fee: `${transportTxs[0].fee}`,
+      };
+      delete expected.signatures;
       expect(result).to.deep.equal({
         count: 5,
-        transactions: [
-          {
-            ...transportTxs[0],
-            amount: `${transportTxs[0].amount}`,
-            fee: `${transportTxs[0].fee}`,
-            signSignature: null,
-          },
-        ],
+        transactions: [expected],
       });
     });
 
     it('filtering by senderPublicKey', async () => {
       result = await instance.getQueuedTxs({
-        senderPublicKey: transportTxs[1].senderPublicKey,
+        senderPublicKey: transportTxs[1].senderPublicKey.toString('hex'),
       });
+      const expected = {
+        ...toTransportTx(transportTxs[1]),
+        amount: `${transportTxs[1].amount}`,
+        fee: `${transportTxs[1].fee}`,
+      };
+      delete expected.signatures;
+
       expect(result).to.deep.equal({
         count: 5,
-        transactions: [
-          {
-            ...transportTxs[1],
-            amount: `${transportTxs[1].amount}`,
-            fee: `${transportTxs[1].fee}`,
-            signSignature: null,
-          },
-        ],
+        transactions: [expected],
       });
     });
 
@@ -394,16 +407,15 @@ describe('apis/transactionsAPI', () => {
       result = await instance.getQueuedTxs({
         address: transportTxs[2].recipientId,
       });
+      const expected = {
+        ...toTransportTx(transportTxs[2]),
+        amount: `${transportTxs[2].amount}`,
+        fee: `${transportTxs[2].fee}`,
+      };
+      delete expected.signatures;
       expect(result).to.deep.equal({
         count: 5,
-        transactions: [
-          {
-            ...transportTxs[2],
-            amount: `${transportTxs[2].amount}`,
-            fee: `${transportTxs[2].fee}`,
-            signSignature: null,
-          },
-        ],
+        transactions: [expected],
       });
     });
 
@@ -412,21 +424,20 @@ describe('apis/transactionsAPI', () => {
       expect(result).to.deep.equal({
         count: 5,
         transactions: transportTxs.reverse().map((tx) => ({
-          ...tx,
+          ...toTransportTx(tx),
           amount: `${tx.amount}`,
           fee: `${tx.fee}`,
-          signSignature: null,
         })),
       });
     });
   });
 
   describe('getUnconfirmedTxs()', () => {
-    let transportTXS: ITransaction[];
+    let transportTXS: Array<RiseTransaction<any>>;
     beforeEach(() => {
       transportTXS = createRandomTransactions(5);
       transportTXS.forEach((t) =>
-        txPool.unconfirmed.add(toBufferedTransaction(t), {
+        txPool.unconfirmed.add(toNativeTx(t), {
           receivedAt: new Date(),
         })
       );
@@ -434,24 +445,20 @@ describe('apis/transactionsAPI', () => {
     it('filtering by senderPublicKey &  address', async () => {
       result = await instance.getUnconfirmedTxs({
         address: transportTXS[0].recipientId,
-        senderPublicKey: transportTXS[1].senderPublicKey,
+        senderPublicKey: transportTXS[1].senderPublicKey.toString('hex'),
       });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
           {
-            ...transportTXS[1],
+            ...toTransportTx(transportTXS[1]),
             amount: `${transportTXS[1].amount}`,
             fee: `${transportTXS[1].fee}`,
-            signSignature: null,
-            signatures: undefined,
           },
           {
-            ...transportTXS[0],
+            ...toTransportTx(transportTXS[0]),
             amount: `${transportTXS[0].amount}`,
             fee: `${transportTXS[0].fee}`,
-            signSignature: null,
-            signatures: undefined,
           },
         ],
       });
@@ -462,11 +469,9 @@ describe('apis/transactionsAPI', () => {
       expect(result).to.deep.equal({
         count: 5,
         transactions: transportTXS.reverse().map((tx) => ({
-          ...tx,
+          ...toTransportTx(tx),
           amount: `${tx.amount}`,
           fee: `${tx.fee}`,
-          signSignature: null,
-          signatures: undefined,
         })),
       });
     });
@@ -481,18 +486,15 @@ describe('apis/transactionsAPI', () => {
 
     it("should to be reject with a message 'Transaction not found'", async () => {
       const t = createRandomTransaction();
-      txPool.unconfirmed.add(toBufferedTransaction(t), {
+      txPool.unconfirmed.add(toNativeTx(t), {
         receivedAt: new Date(),
       });
       const r = await instance.getUnconfirmedTx(t.id);
       expect(r).deep.eq({
         transaction: {
-          ...t,
+          ...toTransportTx(t),
           amount: `${t.amount}`,
           fee: `${t.fee}`,
-          requesterPublicKey: null,
-          signSignature: null,
-          signatures: undefined,
         },
       });
     });
@@ -530,8 +532,8 @@ describe('apis/transactionsAPI', () => {
         .stub(txLogic, 'objectNormalize')
         .throws(new Error('cant normalize'));
       const ret = await instance.put({
-        transaction: txs[0],
-        transactions: txs.slice(1),
+        transaction: toTransportTx(txs[0]),
+        transactions: txs.slice(1).map(toTransportTx),
       });
 
       expect(ret).deep.eq({
@@ -569,8 +571,8 @@ describe('apis/transactionsAPI', () => {
       sandbox.stub(txModule, 'processIncomingTransactions').resolves();
 
       const res = await instance.put({
-        transaction: sendTX,
-        transactions: txs,
+        transaction: toTransportTx(sendTX),
+        transactions: txs.map(toTransportTx),
       });
       expect(res).deep.eq({
         accepted: validTXs.map((t) => t.id),

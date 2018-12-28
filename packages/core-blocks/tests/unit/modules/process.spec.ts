@@ -12,12 +12,12 @@ import { ModelSymbols } from '@risevision/core-models';
 import { TransactionPool } from '@risevision/core-transactions';
 import {
   createRandomTransactions,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
@@ -421,16 +421,21 @@ describe('modules/blocks/process', () => {
         .resolves([txs[0].id, txs[2].id]);
       stubs.amGettAccount = sandbox
         .stub(accountsModule, 'getAccount')
-        .callsFake((what) => Promise.resolve(new AccountsModel(what)));
+        .callsFake((what) =>
+          Promise.resolve(
+            new AccountsModel({
+              ...what,
+              address: RiseV2.calcAddress(what.publicKey as any),
+              u_balance: 0n,
+              balance: 0n,
+            } as any)
+          )
+        );
     });
     it('should use blockLogic.create with the proper data and post result to verify.processBlock', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
       const createSpy = sandbox.spy(blockLogic, 'create');
-      const wallet = new LiskWallet('meow', 'R');
-      const keypair = {
-        privateKey: Buffer.from(wallet.privKey, 'hex'),
-        publicKey: Buffer.from(wallet.publicKey, 'hex'),
-      };
+      const keypair = RiseV2.deriveKeypair('meow');
       const r = await instance.generateBlock(keypair, 10);
 
       expect(createSpy.called).is.true;
@@ -450,9 +455,7 @@ describe('modules/blocks/process', () => {
     });
     it('should filter transactions by verifying them', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
-      const ttxs = createRandomTransactions(3).map((t) =>
-        toBufferedTransaction(t)
-      );
+      const ttxs = createRandomTransactions(3).map((t) => toNativeTx(t));
       ttxs.forEach((t) =>
         txPool.unconfirmed.add(t, { receivedAt: new Date() })
       );
@@ -461,12 +464,8 @@ describe('modules/blocks/process', () => {
       stub.onCall(2).rejects();
       const createSpy = sandbox.spy(blockLogic, 'create');
 
-      const wallet = new LiskWallet('meow', 'R');
-      const keypair = {
-        privateKey: Buffer.from(wallet.privKey, 'hex'),
-        publicKey: Buffer.from(wallet.publicKey, 'hex'),
-      };
-      await instance.generateBlock(keypair, 10);
+      const wallet = RiseV2.deriveKeypair('meow');
+      await instance.generateBlock(wallet, 10);
 
       expect(createSpy.firstCall.args[0].transactions.length).eq(2);
       expect(createSpy.firstCall.args[0].transactions).deep.eq([
@@ -476,25 +475,16 @@ describe('modules/blocks/process', () => {
     });
     it('should filter transactions that are not ready', async () => {
       blocksModule.lastBlock = { height: 10, id: '11' } as any;
-      const ttxs = createRandomTransactions(3).map((t) =>
-        toBufferedTransaction(t)
-      );
+      const ttxs = createRandomTransactions(3).map((t) => toNativeTx(t));
       ttxs.forEach((t) =>
         txPool.unconfirmed.add(t, { receivedAt: new Date() })
       );
-
       const stub = sandbox.stub(txLogic, 'ready').resolves(true);
       sandbox.stub(txLogic, 'verify').resolves(true);
       stub.onCall(2).resolves(false);
       const createSpy = sandbox.spy(blockLogic, 'create');
-
-      const wallet = new LiskWallet('meow', 'R');
-      const keypair = {
-        privateKey: Buffer.from(wallet.privKey, 'hex'),
-        publicKey: Buffer.from(wallet.publicKey, 'hex'),
-      };
+      const keypair = RiseV2.deriveKeypair('meow');
       await instance.generateBlock(keypair, 10);
-
       expect(createSpy.firstCall.args[0].transactions.length).eq(2);
       expect(createSpy.firstCall.args[0].transactions).deep.eq([
         ttxs[0],

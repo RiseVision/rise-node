@@ -3,10 +3,11 @@ import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/cre
 import { p2pSymbols } from '@risevision/core-p2p';
 import {
   createRandomTransaction,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { IBaseTransaction } from '@risevision/core-types';
 import { expect } from 'chai';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
@@ -53,11 +54,11 @@ describe('apis/requests/PostSignaturesRequest', () => {
       .map((t, indx) => {
         t.signatures = [];
         for (let i = 0; i < indx; i++) {
-          t.signatures.push(generateAccount().getSignatureOfTransaction(t));
+          t.signatures.push(RiseV2.txs.calcSignature(t, generateAccount()));
         }
         return t;
       })
-      .map((t) => toBufferedTransaction(t));
+      .map((t) => toNativeTx(t));
   });
 
   async function createRequest(body: PostSignaturesRequestDataType) {

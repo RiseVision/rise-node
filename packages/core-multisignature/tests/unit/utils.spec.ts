@@ -7,11 +7,11 @@ import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/cre
 import { TXSymbols } from '@risevision/core-transactions';
 import {
   createRandomTransaction,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { IBaseTransaction } from '@risevision/core-types';
 import { expect } from 'chai';
-import { LiskWallet } from 'dpos-offline';
+import { IKeypair, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import * as uuid from 'uuid';
 import { MultisigSymbols, MultiSigUtils } from '../../src';
@@ -52,33 +52,25 @@ describe('multisigUtils', () => {
 
   describe('isTxSignedByPubKey', () => {
     let tx: IBaseTransaction<any>;
-    let accounts: LiskWallet[];
+    let accounts: IKeypair[];
     beforeEach(() => {
       const t = createRandomTransaction();
-      tx = toBufferedTransaction(t);
+      tx = toNativeTx(t);
       accounts = new Array(100)
         .fill(null)
-        .map(() => new LiskWallet(uuid.v4(), 'R'));
+        .map(() => RiseV2.deriveKeypair(uuid.v4()));
       tx.signatures = accounts.map((acc) =>
-        crypto.sign(txLogic.getHash(tx), {
-          privateKey: Buffer.from(acc.privKey, 'hex'),
-          publicKey: Buffer.from(acc.publicKey, 'hex'),
-        })
+        crypto.sign(txLogic.getHash(tx), acc)
       );
     });
     it('should return false if tx is not signed by that pubKey', () => {
       expect(
-        instance.isTxSignedByPubKey(
-          tx,
-          Buffer.from(new LiskWallet('meow').publicKey, 'hex')
-        )
+        instance.isTxSignedByPubKey(tx, RiseV2.deriveKeypair('meow').publicKey)
       ).is.false;
     });
     it('should return true for all pubKey that signed the tx', () => {
       for (const account of accounts) {
-        expect(
-          instance.isTxSignedByPubKey(tx, Buffer.from(account.publicKey, 'hex'))
-        ).is.true;
+        expect(instance.isTxSignedByPubKey(tx, account.publicKey)).is.true;
       }
     });
   });

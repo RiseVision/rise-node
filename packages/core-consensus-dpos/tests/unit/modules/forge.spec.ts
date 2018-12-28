@@ -11,16 +11,12 @@ import {
 } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import {
-  BroadcasterLogic,
-  IPeersModule,
-  p2pSymbols,
-} from '@risevision/core-p2p';
+import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
 import { ConstantsType } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
@@ -643,14 +639,8 @@ describe('modules/forge', () => {
 
   describe('getBlockSlotData', () => {
     const delegates = {
-      puk1: {
-        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex'),
-        publicKey: Buffer.from(new LiskWallet('puk1', 'R').publicKey, 'hex'),
-      },
-      puk2: {
-        privateKey: Buffer.from(new LiskWallet('puk1', 'R').privKey, 'hex'),
-        publicKey: Buffer.from(new LiskWallet('puk2', 'R').publicKey, 'hex'),
-      },
+      puk1: RiseV2.deriveKeypair('puk1'),
+      puk2: RiseV2.deriveKeypair('puk2'),
     };
 
     let generateDelegateListStub: SinonStub;

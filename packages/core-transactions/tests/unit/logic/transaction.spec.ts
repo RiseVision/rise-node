@@ -13,7 +13,7 @@ import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
-import { LiskWallet } from 'dpos-offline';
+import { Address, IKeypair, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import 'reflect-metadata';
@@ -38,10 +38,7 @@ import {
 } from '../../../src';
 import { SendTransaction } from '../../../src/sendTransaction';
 import { DummyTxType } from '../utils/dummyTxType';
-import {
-  createSendTransaction,
-  toBufferedTransaction,
-} from '../utils/txCrafter';
+import { createSendTransaction, toNativeTx } from '../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 
@@ -62,7 +59,7 @@ describe('logic/transaction', () => {
   let txModel: typeof TransactionsModel;
 
   let tx: IBaseTransaction<any, bigint>;
-  let account: LiskWallet;
+  let account: IKeypair;
 
   let sender: IAccountsModel;
   before(async () => {
@@ -89,9 +86,9 @@ describe('logic/transaction', () => {
       ModelSymbols.model,
       Symbols.models.transactions
     );
-    account = new LiskWallet('meow', 'R');
-    tx = toBufferedTransaction(
-      createSendTransaction(account, '15256762582730568272R', 10, {
+    account = RiseV2.deriveKeypair('meow');
+    tx = toNativeTx(
+      createSendTransaction(account, '15256762582730568272R' as Address, 10, {
         amount: 108910891000000,
       })
     );
@@ -101,7 +98,7 @@ describe('logic/transaction', () => {
     );
     sandbox = sinon.createSandbox();
     sender = new AccountsModel({
-      address: account.address,
+      address: RiseV2.calcAddress(account.publicKey),
       publicKey: tx.senderPublicKey,
       balance: 10n,
       u_balance: 9n,
@@ -137,9 +134,10 @@ describe('logic/transaction', () => {
 
     it('should return correct buffer', () => {
       const retVal = instance.getHash(tx);
+
       expect(retVal).deep.eq(
         Buffer.from(
-          'f26aab9e08ea02be9be0c26f4d65879b6ae6ff0fcf48d6d4bba58bb6939e67eb',
+          'fc2746b86c4a03807521158c205adbb160ce830e61957e4d0f2e7a37ec0c47b5',
           'hex'
         )
       );
@@ -378,6 +376,7 @@ describe('logic/transaction', () => {
 
     it('should throw if the tx.id is wrong', async () => {
       // instGetIdStub.returns('10');
+      tx.id = '1';
       await expect(instance.verify(tx, sender, null)).to.be.rejectedWith(
         'Invalid transaction id'
       );
@@ -996,12 +995,18 @@ describe('logic/transaction', () => {
       (instance as any).types[2] = new DummyTxType(2);
 
       const txs = [
-        createSendTransaction(account, '1R', 10, { amount: 1 }),
-        createSendTransaction(account, '1R', 11, { amount: 1 }),
-        { ...createSendTransaction(account, '1R', 10, { amount: 1 }), type: 2 },
-        { ...createSendTransaction(account, '1R', 10, { amount: 1 }), type: 2 },
+        createSendTransaction(account, '1R' as Address, 10, { amount: 1 }),
+        createSendTransaction(account, '1R' as Address, 11, { amount: 1 }),
+        {
+          ...createSendTransaction(account, '1R' as Address, 10, { amount: 1 }),
+          type: 2,
+        },
+        {
+          ...createSendTransaction(account, '1R' as Address, 10, { amount: 1 }),
+          type: 2,
+        },
       ]
-        .map((t) => toBufferedTransaction(t))
+        .map((t) => toNativeTx(t))
         .map((t) => ({ ...t, senderId: t.recipientId }));
       const retVal = instance.dbSave(txs, '11', 100);
       expect(retVal[0].model).to.be.deep.eq(txModel);

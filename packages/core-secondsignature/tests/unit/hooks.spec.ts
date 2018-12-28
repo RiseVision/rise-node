@@ -1,10 +1,10 @@
 import { TXBytes, TXSymbols } from '@risevision/core-transactions';
-import { expect } from 'chai';
 import * as chai from 'chai';
+import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
+import { IKeypair, RiseTransaction, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
+import { As } from 'type-tagger';
 import * as uuid from 'uuid';
 import { IIdsHandler, Symbols } from '../../../core-interfaces/src';
 import { ITransactionLogic } from '../../../core-interfaces/src/logic';
@@ -12,7 +12,7 @@ import { createContainer } from '../../../core-launchpad/tests/unit/utils/create
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import {
   createRandomTransaction,
-  toBufferedTransaction,
+  toNativeTx,
 } from '../../../core-transactions/tests/unit/utils/txCrafter';
 import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
 
@@ -21,8 +21,8 @@ describe('secondSignHooks', () => {
   let container: Container;
   let txLogic: ITransactionLogic;
   let sender: AccountsModelWith2ndSign;
-  let senderWallet: LiskWallet;
-  let secondSignWallet: LiskWallet;
+  let senderWallet: IKeypair;
+  let secondSignWallet: IKeypair;
   let AccountsModel: typeof AccountsModelWith2ndSign;
   beforeEach(async () => {
     container = await createContainer([
@@ -35,51 +35,52 @@ describe('secondSignHooks', () => {
       ModelSymbols.model,
       Symbols.models.accounts
     );
-    senderWallet = new LiskWallet(uuid.v4(), 'R');
-    secondSignWallet = new LiskWallet(uuid.v4(), 'R');
+    senderWallet = RiseV2.deriveKeypair(uuid.v4());
+    secondSignWallet = RiseV2.deriveKeypair(uuid.v4());
     sender = new AccountsModel({
-      address: senderWallet.address,
+      address: RiseV2.calcAddress(senderWallet.publicKey),
       balance: 10n ** 10n,
-      publicKey: Buffer.from(senderWallet.publicKey, 'hex'),
-      secondPublicKey: Buffer.from(secondSignWallet.publicKey, 'hex'),
+      publicKey: senderWallet.publicKey,
+      secondPublicKey: secondSignWallet.publicKey,
       secondSignature: 1,
     });
     txLogic = container.get(Symbols.logic.transaction);
   });
   describe('transaction hooks', () => {
-    let tx: ITransaction<any>;
+    let tx: RiseTransaction<any>;
     beforeEach(() => {
       tx = createRandomTransaction(senderWallet);
       // tx.signature = null;
     });
     it('should allow proper tx', async () => {
-      tx = senderWallet.signTransaction(tx, secondSignWallet);
+      tx.signSignature = RiseV2.txs.calcSignature(tx, secondSignWallet, {
+        skipSecondSign: false,
+        skipSignature: true,
+      });
       // tx.id;
-      await expect(txLogic.verify(toBufferedTransaction(tx), sender, 1)).not
-        .rejected;
+      await expect(txLogic.verify(toNativeTx(tx), sender, 1)).not.rejected;
     });
     it('should reject with signSignature when account does not have one', async () => {
       sender.secondSignature = 0;
       sender.secondPublicKey = null;
-      tx = senderWallet.signTransaction(tx, secondSignWallet);
-      await expect(
-        txLogic.verify(toBufferedTransaction(tx), sender, 1)
-      ).rejectedWith(
+      tx.signSignature = RiseV2.txs.calcSignature(tx, secondSignWallet);
+      await expect(txLogic.verify(toNativeTx(tx), sender, 1)).rejectedWith(
         'Second Signature provided but account does not have one registered'
       );
     });
     it('should reject tx without signSignature when account have one', async () => {
-      tx = senderWallet.signTransaction(tx);
-      await expect(
-        txLogic.verify(toBufferedTransaction(tx), sender, 1)
-      ).rejectedWith('Missing second signature');
+      await expect(txLogic.verify(toNativeTx(tx), sender, 1)).rejectedWith(
+        'Missing second signature'
+      );
     });
     it('should reject tx if signSignature is not valid', async () => {
-      tx = senderWallet.signTransaction(tx, secondSignWallet);
-      tx.signSignature = new Array(128).fill('a').join('');
+      tx.signSignature = Buffer.from(
+        new Array(128).fill('a').join(''),
+        'hex'
+      ) as Buffer & As<'signature'>;
       const idsHandler = container.get<IIdsHandler>(Symbols.helpers.idsHandler);
       const txBytesHandler = container.get<TXBytes>(TXSymbols.txBytes);
-      const btx: any = toBufferedTransaction(tx);
+      const btx: any = toNativeTx(tx);
       btx.signSignature = Buffer.from(btx.signSignature, 'hex');
       btx.id = idsHandler.calcTxIdFromBytes(txBytesHandler.fullBytes(btx));
       await expect(txLogic.verify(btx, sender, 1)).rejectedWith(
@@ -89,9 +90,7 @@ describe('secondSignHooks', () => {
     it('should not complain if tx is not from a secondSign enabled sender', async () => {
       sender.secondPublicKey = null;
       sender.secondSignature = 0;
-      tx = senderWallet.signTransaction(tx);
-      await expect(txLogic.verify(toBufferedTransaction(tx), sender, 1)).not
-        .rejected;
+      await expect(txLogic.verify(toNativeTx(tx), sender, 1)).not.rejected;
     });
   });
 

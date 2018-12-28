@@ -1,7 +1,7 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { Address, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import 'reflect-metadata';
@@ -16,10 +16,7 @@ import { ModelSymbols } from '../../../../core-models/src/helpers';
 import { DBUpsertOp, IBaseTransaction } from '../../../../core-types/src';
 import { SendTxApplyFilter, SendTxUndoFilter, TXSymbols } from '../../../src';
 import { SendTransaction } from '../../../src/sendTransaction';
-import {
-  createSendTransaction,
-  toBufferedTransaction,
-} from '../utils/txCrafter';
+import { createSendTransaction, toNativeTx } from '../utils/txCrafter';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -56,8 +53,8 @@ describe('logic/transactions/send', () => {
     systemModule = container.get(Symbols.modules.system);
 
     sender = new AccountsModel({ publicKey: new Buffer('123') });
-    tx = toBufferedTransaction(
-      createSendTransaction(new LiskWallet('meow', 'R'), '1R', 10, {
+    tx = toNativeTx(
+      createSendTransaction(RiseV2.deriveKeypair('meow'), '1R' as Address, 10, {
         amount: 10,
       })
     );

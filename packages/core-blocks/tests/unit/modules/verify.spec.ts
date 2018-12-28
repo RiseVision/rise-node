@@ -16,7 +16,7 @@ import { TXSymbols } from '@risevision/core-transactions';
 import { TXBytes } from '@risevision/core-transactions';
 import {
   createRandomTransactions,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { ForkType, SignedBlockType } from '@risevision/core-types';
 import * as chai from 'chai';
@@ -219,9 +219,7 @@ describe('modules/blocks/verify', () => {
             block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
               timestamp: block.timestamp,
-              transactions: txs
-                .concat([txs[0]])
-                .map((t) => toBufferedTransaction(t)),
+              transactions: txs.concat([txs[0]]).map((t) => toNativeTx(t)),
             });
             idsHandler.blockIdFromBytes(blockBytes.signableBytes(block, true));
             sandbox.stub(txBytes, 'signableBytes').returns(Buffer.alloc(10));
@@ -235,7 +233,7 @@ describe('modules/blocks/verify', () => {
             block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
               timestamp: block.timestamp,
-              transactions: txs.map((t) => toBufferedTransaction(t)),
+              transactions: txs.map((t) => toNativeTx(t)),
             });
             const getBytesStub = sandbox.stub(txBytes, 'fullBytes');
             getBytesStub.returns(Buffer.alloc(10));
@@ -249,7 +247,7 @@ describe('modules/blocks/verify', () => {
             block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
               timestamp: block.timestamp,
-              transactions: txs.map((t) => toBufferedTransaction(t)),
+              transactions: txs.map((t) => toNativeTx(t)),
             });
             const getBytesStub = sandbox.stub(txBytes, 'fullBytes');
             getBytesStub.returns(Buffer.alloc(10));
@@ -263,7 +261,7 @@ describe('modules/blocks/verify', () => {
             block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
               timestamp: block.timestamp,
-              transactions: txs.map((t) => toBufferedTransaction(t)),
+              transactions: txs.map((t) => toNativeTx(t)),
             });
             block.totalAmount = block.totalAmount + 1n;
             const res = await inst[what](block);
@@ -277,7 +275,7 @@ describe('modules/blocks/verify', () => {
             block = createFakeBlock(container, {
               previousBlock: { id: '1', height: 100 } as any,
               timestamp: block.timestamp,
-              transactions: txs.map((t) => toBufferedTransaction(t)),
+              transactions: txs.map((t) => toNativeTx(t)),
             });
             block.totalFee = block.totalFee + 1n;
             const res = await inst[what](block);

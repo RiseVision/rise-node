@@ -5,11 +5,12 @@ import { p2pSymbols } from '@risevision/core-p2p';
 import { TXSymbols } from '@risevision/core-transactions';
 import {
   createRandomTransaction,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { SinonSandbox } from 'sinon';
 import * as sinon from 'sinon';
@@ -64,11 +65,11 @@ describe('apis/requests/GetSignaturesRequest', () => {
         .map((t, indx) => {
           t.signatures = [];
           for (let i = 0; i < indx; i++) {
-            t.signatures.push(generateAccount().getSignatureOfTransaction(t));
+            t.signatures.push(RiseV2.txs.calcSignature(t, generateAccount()));
           }
           return t;
         })
-        .map((t) => toBufferedTransaction(t));
+        .map((t) => toNativeTx(t));
 
       for (const tx of txs) {
         txPool.pending.add(tx, { receivedAt: new Date(), ready: false });

@@ -26,9 +26,9 @@ describe('some real cases', () => {
     idsHandler = container.get(Symbols.helpers.idsHandler);
   });
 
-  it('943334541211736263', () => {
+  it('13913036632641786022', () => {
     const tx: IBaseTransaction<any> = {
-      id: '943334541211736263',
+      id: '13913036632641786022',
       type: 0,
       timestamp: 40355030,
       senderPublicKey: Buffer.from(
@@ -48,14 +48,14 @@ describe('some real cases', () => {
 
     const id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
 
-    expect(id).eq('943334541211736263');
+    expect(id).eq('13913036632641786022');
   });
-  it('9173713943469915539', () => {
+  it('15522908816116909885', () => {
     const tx: IBaseTransaction<any> = {
       amount: 33630309776n,
       asset: null,
       fee: 10000000n,
-      id: '15448536942844597615',
+      id: '15522908816116909885',
       recipientId: '6233046836858939892R',
       senderPublicKey: Buffer.from(
         'bf4809a1a08c9dffbba741f0c7b9f49145602341d5fa306fb3cd592d3e1058b3',
@@ -71,6 +71,6 @@ describe('some real cases', () => {
 
     const id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
 
-    expect(id).eq('9173713943469915539');
+    expect(id).eq('15522908816116909885');
   });
 });

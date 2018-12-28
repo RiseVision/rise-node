@@ -10,7 +10,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { IKeypair, RiseV2 } from 'dpos-offline';
 import * as filterObject from 'filter-object';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
@@ -49,7 +49,7 @@ describe('apis/multisignatureAPI', () => {
   let accounts2multisignaturesModel: typeof Accounts2MultisignaturesModel;
   let transactionLogic: ITransactionLogic;
   let txPool: ITransactionPool;
-  let accounts: LiskWallet[];
+  let accounts: IKeypair[];
   let getAccountsStub: SinonStub;
   let genAddressStub: SinonStub;
   let verifySignatureStub: SinonStub;
@@ -77,11 +77,11 @@ describe('apis/multisignatureAPI', () => {
 
     accounts = new Array(6)
       .fill(null)
-      .map((_, idx) => new LiskWallet(`account${idx + 1}`, 'R'));
+      .map((_, idx) => RiseV2.deriveKeypair(`account${idx + 1}`));
     account1 = new AccountsModel({
-      address: accounts[0].address,
+      address: RiseV2.calcAddress(accounts[0].publicKey),
       balance: 100,
-      publicKey: Buffer.from(accounts[0].publicKey, 'hex'),
+      publicKey: accounts[0].publicKey,
       id: 1,
       multilifetime: 101,
       multimin: 2,
@@ -92,9 +92,9 @@ describe('apis/multisignatureAPI', () => {
       ],
     } as any);
     account2 = new AccountsModel({
-      address: accounts[1].address,
+      address: RiseV2.calcAddress(accounts[1].publicKey),
       balance: 200,
-      publicKey: Buffer.from(accounts[1].publicKey, 'hex'),
+      publicKey: accounts[1].publicKey,
       id: 2,
       multilifetime: 201,
       multimin: 202,
@@ -106,8 +106,8 @@ describe('apis/multisignatureAPI', () => {
     } as any);
     account3 = new AccountsModel({
       id: 3,
-      address: accounts[2].address,
-      publicKey: Buffer.from(accounts[2].publicKey, 'hex'),
+      address: RiseV2.calcAddress(accounts[2].publicKey),
+      publicKey: accounts[2].publicKey,
       balance: 300,
       multilifetime: 301,
       multimin: 302,
@@ -119,13 +119,13 @@ describe('apis/multisignatureAPI', () => {
     } as any);
     account4 = new AccountsModel({
       id: 4,
-      address: accounts[3].address,
-      publicKey: Buffer.from(accounts[3].publicKey, 'hex'),
+      address: RiseV2.calcAddress(accounts[3].publicKey),
+      publicKey: accounts[3].publicKey,
       balance: 400,
     } as any);
     account5 = new AccountsModel({
-      address: accounts[4].address,
-      publicKey: Buffer.from(accounts[4].publicKey, 'hex'),
+      address: RiseV2.calcAddress(accounts[4].publicKey),
+      publicKey: accounts[4].publicKey,
       u_multilifetime: 20,
       u_multimin: 10,
       u_multisignatures: [
@@ -135,8 +135,8 @@ describe('apis/multisignatureAPI', () => {
       ],
     } as any);
     account6 = new AccountsModel({
-      address: accounts[5].address,
-      publicKey: Buffer.from(accounts[5].publicKey, 'hex'),
+      address: RiseV2.calcAddress(accounts[5].publicKey),
+      publicKey: accounts[5].publicKey,
       multilifetime: 200,
       multimin: 100,
       u_multisignatures: undefined,
@@ -215,7 +215,7 @@ describe('apis/multisignatureAPI', () => {
         .stub(accounts2multisignaturesModel, 'findAll')
         .resolves([{ accountId: '1' }, { accountId: '2' }, { accountId: '3' }]);
       result = await instance.getAccounts({
-        publicKey: new LiskWallet('meow').publicKey,
+        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
       });
 
       const accts = [];
@@ -309,8 +309,10 @@ describe('apis/multisignatureAPI', () => {
 
     it('should match also for multisig accounts pubkey', async () => {
       tx2.type = 0;
-      tx2.signatures = [accounts[4].getSignatureOfTransaction(tx4)];
-      result = await instance.getPending({ publicKey: accounts[4].publicKey });
+      tx2.signatures = [RiseV2.txs.calcSignature(tx4, accounts[4])];
+      result = await instance.getPending({
+        publicKey: accounts[4].publicKey.toString('hex'),
+      });
       expect(result).to.be.deep.eq({
         transactions: [
           {
@@ -323,7 +325,9 @@ describe('apis/multisignatureAPI', () => {
         ],
       });
       tx2.signatures = [];
-      result = await instance.getPending({ publicKey: accounts[4].publicKey });
+      result = await instance.getPending({
+        publicKey: accounts[4].publicKey.toString('hex'),
+      });
       expect(result).to.be.deep.eq({
         transactions: [
           {

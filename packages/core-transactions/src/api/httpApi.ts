@@ -25,7 +25,7 @@ import {
   SchemaValid,
   ValidateSchema,
 } from '@risevision/core-utils';
-import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
+import { Address, RiseV2 } from 'dpos-offline';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -317,23 +317,27 @@ export class TransactionsAPI {
     amount: number;
     secondSecret?: string;
   }) {
-    const w = new RISEWallet(body.secret, this.constants.addressSuffix);
-    const second = body.secondSecret
-      ? new RISEWallet(body.secondSecret, this.constants.addressSuffix)
+    const kp = RiseV2.deriveKeypair(body.secret);
+    const skp = body.secondSecret
+      ? RiseV2.deriveKeypair(body.secondSecret)
       : undefined;
-    const transaction = w.signTransaction(
-      new SendTx()
-        .set('amount', body.amount)
-        .set('timestamp', this.timeToEpoch.getTime())
-        .set('recipientId', body.recipientId)
-        .set(
-          'fee',
-          parseInt(this.systemModule.getFees().fees.send.toString(), 10)
-        ),
-      second
+
+    const transaction = RiseV2.txs.createAndSign(
+      {
+        amount: `${body.amount}`,
+        kind: 'send',
+        recipient: body.recipientId as Address,
+      },
+      kp,
+      true
     );
 
-    const res = await this.put({ transaction });
+    if (skp) {
+      transaction.signSignature = RiseV2.txs.calcSignature(transaction, skp);
+    }
+
+    const postableTx = RiseV2.txs.toPostable(transaction);
+    const res = await this.put({ transaction: postableTx as any });
     if (res.accepted && res.accepted.length === 1) {
       return { transactionId: res.accepted[0] };
     } else {

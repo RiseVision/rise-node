@@ -13,7 +13,7 @@ import { IBaseTransaction, TransactionType } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
@@ -108,8 +108,8 @@ describe('modules/multisignatures', () => {
         'hex'
       ),
       multisignatures: [
-        Buffer.from(new LiskWallet('meeow').publicKey, 'hex'),
-        Buffer.from(new LiskWallet('meeow2').publicKey, 'hex'),
+        RiseV2.deriveKeypair('meeow').publicKey,
+        RiseV2.deriveKeypair('meeow2').publicKey,
       ],
       multilifetime: 24,
     } as any);

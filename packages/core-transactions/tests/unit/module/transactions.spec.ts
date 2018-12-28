@@ -26,10 +26,7 @@ import {
   TXSymbols,
 } from '../../../src';
 import { InnerTXQueue } from '../../../src/poolTXsQueue';
-import {
-  createRandomTransaction,
-  toBufferedTransaction,
-} from '../utils/txCrafter';
+import { createRandomTransaction, toNativeTx } from '../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 // tslint:disable
@@ -115,13 +112,13 @@ describe('modules/transactions', () => {
         address: acc.address,
         balance: BigInt(tx.amount * 2 + tx.fee),
         u_balance: BigInt(tx.amount * 2 + tx.fee),
-        publicKey: Buffer.from(acc.publicKey, 'hex'),
+        publicKey: acc.publicKey,
       });
 
       const req = generateAccount();
       requester = new AccountsModel({
         address: req.address,
-        publicKey: Buffer.from(req.publicKey, 'hex'),
+        publicKey: req.publicKey,
       });
       getAccountStub = sandbox
         .stub(accountsModule, 'getAccount')
@@ -194,7 +191,7 @@ describe('modules/transactions', () => {
         address: acc.address,
         balance: BigInt(tx.amount * 2 + tx.fee),
         u_balance: BigInt(tx.amount * 2 + tx.fee),
-        publicKey: Buffer.from(acc.publicKey, 'hex'),
+        publicKey: acc.publicKey,
       });
       getAccountStub = sandbox
         .stub(accountsModule, 'getAccount')
@@ -288,7 +285,7 @@ describe('modules/transactions', () => {
     let genAddressStub: SinonStub;
     let verifyStub: SinonStub;
     beforeEach(() => {
-      tx = toBufferedTransaction(createRandomTransaction());
+      tx = toNativeTx(createRandomTransaction());
       readyStub = sandbox.stub(txLogic, 'ready').resolves(true);
       verifyStub = sandbox.stub(txLogic, 'verify').resolves();
       genAddressStub = sandbox

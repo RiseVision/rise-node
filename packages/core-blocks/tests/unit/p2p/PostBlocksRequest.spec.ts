@@ -4,7 +4,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import {
   createRandomTransactions,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { expect } from 'chai';
@@ -94,7 +94,7 @@ describe('apis/requests/PostBlockRequest', () => {
       blocks.push(
         createFakeBlock(container, {
           previousBlock: blocks[2],
-          transactions: createRandomTransactions(3).map(toBufferedTransaction),
+          transactions: createRandomTransactions(3).map(toNativeTx),
         })
       );
 

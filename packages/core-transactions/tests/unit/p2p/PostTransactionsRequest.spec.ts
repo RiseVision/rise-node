@@ -10,7 +10,7 @@ import {
   TransactionsModule,
   TXSymbols,
 } from '../../../src';
-import { createRandomTransactions } from '../utils/txCrafter';
+import { createRandomTransactions, toNativeTx } from '../utils/txCrafter';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/PostTransactionsRequest', () => {
@@ -44,14 +44,14 @@ describe('apis/requests/PostTransactionsRequest', () => {
   describe('mergeRequests', () => {
     it('should merge other requests into one', () => {
       const txs = createRandomTransactions(1).map((t) => ({
-        ...txLogic.objectNormalize(t),
+        ...txLogic.objectNormalize(toNativeTx(t)),
         relays: 1,
       }));
       const body1 = { body: { transactions: txs } };
       const body2 = {
         body: {
           transactions: createRandomTransactions(5).map((t) => ({
-            ...txLogic.objectNormalize(t),
+            ...txLogic.objectNormalize(toNativeTx(t)),
             relays: 1,
           })),
         },
@@ -63,14 +63,17 @@ describe('apis/requests/PostTransactionsRequest', () => {
     });
     it('should remove duplicates', () => {
       const txs = createRandomTransactions(1).map((t) => ({
-        ...txLogic.objectNormalize(t),
+        ...txLogic.objectNormalize(toNativeTx(t)),
         relays: 1,
       }));
       const body = { body: { transactions: txs } };
       const body2 = {
         body: {
           transactions: createRandomTransactions(5)
-            .map((t) => ({ ...txLogic.objectNormalize(t), relays: 1 }))
+            .map((t) => ({
+              ...txLogic.objectNormalize(toNativeTx(t)),
+              relays: 1,
+            }))
             .concat(txs),
         },
       };
@@ -84,7 +87,7 @@ describe('apis/requests/PostTransactionsRequest', () => {
   describe('isRequestExpired', () => {
     it('should return true if all txs are confirmed', async () => {
       const txs = createRandomTransactions(10).map((t) =>
-        txLogic.objectNormalize(t)
+        txLogic.objectNormalize(toNativeTx(t))
       );
       const txModule: TransactionsModule = container.get(TXSymbols.module);
       sandbox
@@ -97,7 +100,7 @@ describe('apis/requests/PostTransactionsRequest', () => {
     });
     it('should return false if at least one  of the tx is unconfirmed', async () => {
       const txs = createRandomTransactions(10).map((t) =>
-        txLogic.objectNormalize(t)
+        txLogic.objectNormalize(toNativeTx(t))
       );
       const txModule: TransactionsModule = container.get(TXSymbols.module);
       sandbox

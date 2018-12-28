@@ -12,7 +12,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { RiseV2 } from 'dpos-offline';
 import * as filterObject from 'filter-object';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
@@ -542,7 +542,7 @@ describe('apis/delegatesAPI', () => {
     let getDelegatesStub: SinonStub;
     beforeEach(() => {
       params = {
-        publicKey: new LiskWallet('meow', 'R').publicKey,
+        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
         username: 'username',
       };
       delegates = [
@@ -614,25 +614,29 @@ describe('apis/delegatesAPI', () => {
     beforeEach(() => {
       row = { accountIds: [{}] };
       accountsObject = {};
-      params = { publicKey: new LiskWallet('meow', 'R').publicKey };
+      params = {
+        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
+      };
       findAll = sandbox.stub(accounts2delegatesModel, 'findAll').resolves([]);
       getAccountsStub = sandbox.stub(accounts, 'getAccounts').resolves([]);
     });
 
     it('should correctly query Accounts2DelegatesModel', async () => {
       await instance.getVoters({
-        publicKey: new LiskWallet('meow', 'R').publicKey,
+        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
       });
       expect(findAll.firstCall.args[0]).to.be.deep.eq({
         attributes: ['accountId'],
-        where: { dependentId: new LiskWallet('meow', 'R').publicKey },
+        where: {
+          dependentId: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
+        },
       });
     });
     it('should correctly query accountsModule.getAccounts', async () => {
       findAll.resolves([{ accountId: '1' }, { accountId: '2' }]);
       getAccountsStub.resolves([new accountsModel(), new accountsModel()]);
       await instance.getVoters({
-        publicKey: new LiskWallet('meow', 'R').publicKey,
+        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
       });
       expect(getAccountsStub.firstCall.args[0]).to.be.deep.eq({
         sort: 'balance',
@@ -861,7 +865,9 @@ describe('apis/delegatesAPI', () => {
     let getEnabledKeysStub: SinonStub;
 
     beforeEach(() => {
-      params = { publicKey: new LiskWallet('meow', 'R').publicKey };
+      params = {
+        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
+      };
       enabled = true;
       delegates = [{}, {}];
 
@@ -910,7 +916,7 @@ describe('apis/delegatesAPI', () => {
 
     beforeEach(() => {
       account = { isDelegate: true };
-      publicKey = new LiskWallet('meow', 'R').publicKey;
+      publicKey = RiseV2.deriveKeypair('meow').publicKey.toString('hex');
       params = {
         publicKey,
         secret: 'meow',
@@ -1006,10 +1012,7 @@ describe('apis/delegatesAPI', () => {
       expect(enableForgeStub.firstCall.args.length).to.be.equal(1);
       expect(enableForgeStub.firstCall.args[0]).to.be.deep.equal({
         publicKey: Buffer.from(publicKey, 'hex'),
-        privateKey: Buffer.from(
-          new LiskWallet(params.secret, 'R').privKey,
-          'hex'
-        ),
+        privateKey: RiseV2.deriveKeypair(params.secret).privateKey,
       });
     });
   });
@@ -1025,7 +1028,7 @@ describe('apis/delegatesAPI', () => {
 
     beforeEach(() => {
       account = { isDelegate: true };
-      publicKey = new LiskWallet('meow', 'R').publicKey;
+      publicKey = RiseV2.deriveKeypair('meow').publicKey.toString('hex');
       params = {
         publicKey,
         secret: 'meow',

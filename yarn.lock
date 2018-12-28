@@ -760,7 +760,7 @@
     "@types/connect" "*"
     "@types/node" "*"
 
-"@types/bytebuffer@=5.0.37", "@types/bytebuffer@^5.0.33":
+"@types/bytebuffer@=5.0.37":
   version "5.0.37"
   resolved "https://registry.yarnpkg.com/@types/bytebuffer/-/bytebuffer-5.0.37.tgz#795c0082cfb8c43a4cf3a8fc97d108ec76e59579"
   integrity sha512-ktTBUX8hHsosJbt3Pxx5/pUpEFkLlimJLeddGFz7illfm/gTk43Ln7lAdr0rEPi8QIJjuFuV0bvVSa1sKcYszg==
@@ -920,9 +920,9 @@
   integrity sha512-lAVp+Kj54ui/vLUFxsJTMtWvZraZxum3w3Nwkble2dNuV5VnPA+Mi2oGX9XYJAaIvZi3tn3cbjS/qcJXRb6Bww==
 
 "@types/node@*":
-  version "10.11.4"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.11.4.tgz#e8bd933c3f78795d580ae41d86590bfc1f4f389d"
-  integrity sha512-ojnbBiKkZFYRfQpmtnnWTMw+rzGp/JiystjluW9jgN3VzRwilXddJ6aGQ9V/7iuDG06SBgn7ozW9k3zcAnYjYQ==
+  version "10.12.18"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.18.tgz#1d3ca764718915584fcd9f6344621b7672665c67"
+  integrity sha512-fh+pAqt4xRzPfqA6eh3Z2y6fyZavRIumvjhaCL753+TVkGKGhpPeyrJG2JftD0T9q4GF00KjefsQ+PQNDdWQaQ==
 
 "@types/node@6.0.41":
   version "6.0.41"
@@ -1422,11 +1422,6 @@ bignumber.js@8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-8.0.1.tgz#5d419191370fb558c64e3e5f70d68e5947138832"
   integrity sha512-zAySveTJXkgLYCBi0b14xzfnOs+f3G6x36I8w2a1+PFQpWk/dp0mI0F+ZZK2bu+3ELewDcSyP+Cfq++NcHX7sg==
-
-bignumber.js@^7.2.1:
-  version "7.2.1"
-  resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-7.2.1.tgz#80c048759d826800807c4bfd521e50edbba57a5f"
-  integrity sha512-S4XzBk5sMB+Rcb/LNcpzXr57VRTxgAvaAEDAl1AwRx27j00hT84O6OkteE7u8UB3NuaaygCRrEpqox4uDOrbdQ==
 
 bin-links@^1.1.2:
   version "1.1.2"
@@ -2497,17 +2492,19 @@ dpos-api-wrapper@^1.3.2:
   dependencies:
     axios "^0.16.2"
 
-dpos-offline@=1.6.1:
-  version "1.6.1"
-  resolved "https://registry.yarnpkg.com/dpos-offline/-/dpos-offline-1.6.1.tgz#a88221f2a3ac432bb50362e0e46e84ba3c889d07"
-  integrity sha512-bNL4dUiLwBtfbcMrLssbHVp+Qp3abAVLjZanZvoUVFTx7oQykoVyqCubCjeOlnmxqTbeGSSjqbasSK89Svm/Bw==
+dpos-offline@=2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/dpos-offline/-/dpos-offline-2.0.4.tgz#8e38167ac09c6a84a032da401846f031dcc8655e"
+  integrity sha512-KsObSkUctANmY+7feG8uOYpNrpEJUXpSBINzg1PTReJiupDXbmwNunVSaMprAaKdKe5wTcg7AVakx4/LG0a8lQ==
   dependencies:
-    "@types/bytebuffer" "^5.0.33"
-    bignumber.js "^7.2.1"
     bytebuffer "^5.0.1"
     is-empty "^1.2.0"
+    long "^4.0.0"
     tweetnacl "^1.0.0"
     tweetnacl-util "^0.15.0"
+    type-tagger "^1.0.0"
+    utility-types "^2.1.0"
+    varuint-bitcoin "^1.1.0"
 
 duplexer@^0.1.1:
   version "0.1.1"
@@ -7412,6 +7409,11 @@ type-is@~1.6.16:
     media-typer "0.3.0"
     mime-types "~2.1.18"
 
+type-tagger@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/type-tagger/-/type-tagger-1.0.0.tgz#dc6297e52e17097c1b92b42c16816a18f631e7f4"
+  integrity sha512-FIPqqpmDgdaulCnRoKv1/d3U4xVBUrYn42QXWNP3XYmgfPUDuBUsgFOb9ntT0aIe0UsUP+lknpQ5d9Kn36RssA==
+
 typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
@@ -7558,6 +7560,13 @@ validator@^10.0.0, validator@^10.4.0:
   version "10.8.0"
   resolved "https://registry.yarnpkg.com/validator/-/validator-10.8.0.tgz#8acb15a5c39411cbc8ef2be0c98c2514da4410a7"
   integrity sha512-mXqMxfCh5NLsVgYVKl9WvnHNDPCcbNppHSPPowu0VjtSsGWVY+z8hJF44edLR1nbLNzi3jYoYsIl8KZpioIk6g==
+
+varuint-bitcoin@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/varuint-bitcoin/-/varuint-bitcoin-1.1.0.tgz#7a343f50537607af6a3059312b9782a170894540"
+  integrity sha512-jCEPG+COU/1Rp84neKTyDJQr478/hAfVp5xxYn09QEH0yBjbmPeMfuuQIrp+BUD83hybtYZKhr5elV3bvdV1bA==
+  dependencies:
+    safe-buffer "^5.1.1"
 
 vary@^1, vary@~1.1.2:
   version "1.1.2"

@@ -15,10 +15,6 @@ import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
 import { TXBytes } from '@risevision/core-transactions';
 import {
-  fromBufferedTransaction,
-  toBufferedTransaction,
-} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import {
   DBCreateOp,
   DBRemoveOp,
   DBUpdateOp,
@@ -29,7 +25,8 @@ import { IBaseTransaction } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+
+import { IKeypair, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
@@ -40,6 +37,8 @@ import {
   MultiSignatureTransaction,
   MultisigSymbols,
 } from '../../../src';
+
+import { toNativeTx } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
 
@@ -68,9 +67,9 @@ describe('logic/transactions/createmultisig', () => {
   let sender: any;
   let block: any;
   let container: Container;
-  let senderWallet: LiskWallet;
-  let sig1Wallet: LiskWallet;
-  let sig2Wallet: LiskWallet;
+  let senderWallet: IKeypair;
+  let sig1Wallet: IKeypair;
+  let sig2Wallet: IKeypair;
 
   before(async () => {
     container = await createContainer([
@@ -123,15 +122,18 @@ describe('logic/transactions/createmultisig', () => {
     txBytes = container.get(TXSymbols.txBytes);
     crypto = container.get(Symbols.generic.crypto);
 
-    senderWallet = new LiskWallet('meow', 'R');
-    sig1Wallet = new LiskWallet('meow.sig1', 'R');
-    sig2Wallet = new LiskWallet('meow.sig2', 'R');
+    senderWallet = RiseV2.deriveKeypair('meow');
+    sig1Wallet = RiseV2.deriveKeypair('meow.sig1');
+    sig2Wallet = RiseV2.deriveKeypair('meow.sig2');
 
-    const tx2 = senderWallet.signTransaction({
+    const tx2 = {
       amount: 0,
       asset: {
         multisignature: {
-          keysgroup: [`+${sig1Wallet.publicKey}`, `+${sig2Wallet.publicKey}`],
+          keysgroup: [
+            `+${sig1Wallet.publicKey.toString('hex')}`,
+            `+${sig2Wallet.publicKey.toString('hex')}`,
+          ],
           lifetime: 33,
           min: 2,
         },
@@ -142,19 +144,21 @@ describe('logic/transactions/createmultisig', () => {
       fee: 10,
       timestamp: 0,
       type: TransactionType.MULTI,
-    } as any);
+    } as any;
+    tx2.signature = RiseV2.txs.calcSignature(tx2, senderWallet);
 
-    tx = toBufferedTransaction(tx2);
-    tx.signature = crypto.sign(transactionLogic.getHash(tx), {
-      publicKey: Buffer.from(senderWallet.publicKey, 'hex'),
-      privateKey: Buffer.from(senderWallet.privKey, 'hex'),
-    });
-
+    tx = toNativeTx(tx2);
+    tx.senderId = RiseV2.calcAddress(senderWallet.publicKey);
+    tx.signature = crypto.sign(transactionLogic.getHash(tx), senderWallet);
+    tx.id = RiseV2.txs.identifier(tx2);
     sender = new AccountsModel({
-      address: senderWallet.address,
+      address: RiseV2.calcAddress(senderWallet.publicKey),
       balance: 10000000,
-      publicKey: Buffer.from(senderWallet.publicKey, 'hex'),
-      multisignatures: [sig1Wallet.publicKey, sig2Wallet.publicKey],
+      publicKey: senderWallet.publicKey,
+      multisignatures: [
+        sig1Wallet.publicKey.toString('hex'),
+        sig2Wallet.publicKey.toString('hex'),
+      ],
     } as any);
 
     block = {
@@ -165,14 +169,8 @@ describe('logic/transactions/createmultisig', () => {
     instance = container.getNamed(TXSymbols.transaction, MultisigSymbols.tx);
     (instance as any).io = socketIO;
     tx.signatures = [
-      crypto.sign(transactionLogic.getHash(tx), {
-        publicKey: Buffer.from(sig1Wallet.publicKey, 'hex'),
-        privateKey: Buffer.from(sig1Wallet.privKey, 'hex'),
-      }),
-      crypto.sign(transactionLogic.getHash(tx), {
-        publicKey: Buffer.from(sig2Wallet.publicKey, 'hex'),
-        privateKey: Buffer.from(sig2Wallet.privKey, 'hex'),
-      }),
+      crypto.sign(transactionLogic.getHash(tx), sig1Wallet),
+      crypto.sign(transactionLogic.getHash(tx), sig2Wallet),
     ];
   });
 
@@ -378,9 +376,9 @@ describe('logic/transactions/createmultisig', () => {
       tx.asset.multisignature.keysgroup[1] =
         tx.asset.multisignature.keysgroup[0];
       tx.signatures = [
-        sig1Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
-        sig1Wallet.getSignatureOfTransaction(fromBufferedTransaction(tx)),
-      ].map((s) => Buffer.from(s, 'hex'));
+        crypto.sign(transactionLogic.getHash(tx), sig1Wallet),
+        crypto.sign(transactionLogic.getHash(tx), sig1Wallet),
+      ];
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Encountered duplicate public key in multisignature keysgroup'
       );
@@ -433,8 +431,8 @@ describe('logic/transactions/createmultisig', () => {
         const [first, second] = ops.slice(2 + i * 2, 2 + i * 2 + 2);
         expect(first.type).eq('upsert');
         expect((first as any).values).deep.eq({
-          address: w[i].address,
-          publicKey: Buffer.from(w[i].publicKey, 'hex'),
+          address: RiseV2.calcAddress(w[i].publicKey),
+          publicKey: w[i].publicKey,
         });
 
         expect(second.type).eq('create');
@@ -450,8 +448,8 @@ describe('logic/transactions/createmultisig', () => {
       sender = new AccountsModel(sender);
       await instance.apply(tx, block, sender);
       expect(sender.multisignatures).deep.eq([
-        sig1Wallet.publicKey,
-        sig2Wallet.publicKey,
+        sig1Wallet.publicKey.toString('hex'),
+        sig2Wallet.publicKey.toString('hex'),
       ]);
       expect(sender.multimin).deep.eq(2);
       expect(sender.multilifetime).deep.eq(33);
@@ -499,14 +497,17 @@ describe('logic/transactions/createmultisig', () => {
         });
       });
       it('should return proper ops when account was previously multisig (prevtx)', async () => {
-        const otherW = new LiskWallet('other1', 'R');
-        const otherW2 = new LiskWallet('other1', 'R');
+        const otherW = RiseV2.deriveKeypair('other1');
+        const otherW2 = RiseV2.deriveKeypair('other1');
         txFindOne.resolves({
           asset: {
             multisignature: {
               min: 10,
               lifetime: 20,
-              keysgroup: [`+${otherW.publicKey}`, `+${otherW2.publicKey}`],
+              keysgroup: [
+                `+${otherW.publicKey.toString('hex')}`,
+                `+${otherW2.publicKey.toString('hex')}`,
+              ],
             },
           },
         });
@@ -535,19 +536,19 @@ describe('logic/transactions/createmultisig', () => {
           const op1: DBUpsertOp<any> = ops[2 + 2 * i] as any;
           const op2: DBCreateOp<any> = ops[2 + 2 * i + 1] as any;
           const pk = i === 0 ? otherW.publicKey : otherW2.publicKey;
-          const add = i === 0 ? otherW.address : otherW2.address;
+          const add = RiseV2.calcAddress(pk);
           expect(op1.type).eq('upsert');
           expect(op1.model).deep.eq(AccountsModel);
           expect(op1.values).deep.eq({
             address: add,
-            publicKey: Buffer.from(pk, 'hex'),
+            publicKey: pk,
           });
 
           expect(op2.type).eq('create');
           expect(op2.model).deep.eq(accounts2MultisigModel);
           expect(op2.values).deep.eq({
             accountId: sender.address,
-            dependentId: pk,
+            dependentId: pk.toString('hex'),
           });
         }
       });
@@ -563,20 +564,26 @@ describe('logic/transactions/createmultisig', () => {
     });
     it('should update sender obj properly if rollback to prev multisig state', async () => {
       sender = new AccountsModel(sender);
-      const w1 = new LiskWallet('other', 'R');
-      const w2 = new LiskWallet('other2', 'R');
+      const w1 = RiseV2.deriveKeypair('other');
+      const w2 = RiseV2.deriveKeypair('other2');
       txFindOne.resolves({
         asset: {
           multisignature: {
             min: 10,
             lifetime: 20,
-            keysgroup: [`+${w1.publicKey}`, `+${w2.publicKey}`],
+            keysgroup: [
+              `+${w1.publicKey.toString('hex')}`,
+              `+${w2.publicKey.toString('hex')}`,
+            ],
           },
         },
       });
       await instance.undo(tx, block, sender);
       expect(sender.isMultisignature()).true;
-      expect(sender.multisignatures).deep.eq([w1.publicKey, w2.publicKey]);
+      expect(sender.multisignatures).deep.eq([
+        w1.publicKey.toString('hex'),
+        w2.publicKey.toString('hex'),
+      ]);
       expect(sender.multimin).deep.eq(10);
       expect(sender.multilifetime).deep.eq(20);
     });
@@ -640,8 +647,8 @@ describe('logic/transactions/createmultisig', () => {
     it('should update sender object properly', async () => {
       await instance.applyUnconfirmed(tx, sender);
       expect(sender.u_multisignatures).deep.eq([
-        sig1Wallet.publicKey,
-        sig2Wallet.publicKey,
+        sig1Wallet.publicKey.toString('hex'),
+        sig2Wallet.publicKey.toString('hex'),
       ]);
       expect(sender.u_multimin).deep.eq(2);
       expect(sender.u_multilifetime).deep.eq(33);
@@ -673,8 +680,8 @@ describe('logic/transactions/createmultisig', () => {
         const [first, second] = ops.slice(2 + i * 2, 2 + i * 2 + 2);
         expect(first.type).eq('upsert');
         expect((first as any).values).deep.eq({
-          address: w[i].address,
-          publicKey: Buffer.from(w[i].publicKey, 'hex'),
+          address: RiseV2.calcAddress(w[i].publicKey),
+          publicKey: w[i].publicKey,
         });
 
         expect(second.type).eq('create');
@@ -829,10 +836,12 @@ describe('logic/transactions/createmultisig', () => {
       const saveOp = instance.dbSave(tx);
       expect(saveOp.type).is.eq('create');
       expect(saveOp.values).is.deep.eq({
-        keysgroup: `+${sig1Wallet.publicKey},+${sig2Wallet.publicKey}`,
+        keysgroup: `+${sig1Wallet.publicKey.toString(
+          'hex'
+        )},+${sig2Wallet.publicKey.toString('hex')}`,
         lifetime: 33,
         min: 2,
-        transactionId: '10358927820922634350',
+        transactionId: '5055691369973016096',
       });
       expect(saveOp.model).is.deep.eq(multisigModel);
     });

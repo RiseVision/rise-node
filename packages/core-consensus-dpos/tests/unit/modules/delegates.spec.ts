@@ -84,7 +84,7 @@ describe('modules/delegates', () => {
 
     const lastBlock = {
       blockSignature: Buffer.from('blockSignature'),
-      generatorPublicKey: Buffer.from(testAccounts[33].publicKey, 'hex'),
+      generatorPublicKey: testAccounts[33].publicKey,
       height: 12422,
       id: 'blockID',
       numberOfTransactions: 0,
@@ -159,7 +159,10 @@ describe('modules/delegates', () => {
       // Copy the original accounts so we can safely manipulate them
       const delegates = testAccounts.slice();
       // Create an array of publicKeys
-      keys = delegates.map((d) => ({ publicKey: d.publicKey, vote: 1 }));
+      keys = delegates.map((d) => ({
+        publicKey: d.publicKey.toString('hex'),
+        vote: 1,
+      }));
       getKeysSortByVoteStub = sandbox.stub(
         instance as any,
         'getFilteredDelegatesSortedByVote'
@@ -674,7 +677,7 @@ describe('modules/delegates', () => {
       // Create an array of publicKeys
       keys = [];
       delegates.forEach((el) => {
-        keys.push({ publicKey: el.publicKey, vote: 1 });
+        keys.push({ publicKey: el.publicKey.toString('hex'), vote: 1 });
       });
       getKeysSortByVoteStub = sandbox.stub(
         instance as any,
@@ -761,8 +764,8 @@ describe('modules/delegates', () => {
     let getAccountStub: SinonStub;
     beforeEach(() => {
       theAccount = new accountsModel({ address: testAccounts[0].address });
-      theAccount.publicKey = Buffer.from(testAccounts[0].publicKey, 'hex');
-      theAccount.privKey = Buffer.from(testAccounts[0].privKey, 'hex');
+      theAccount.publicKey = testAccounts[0].publicKey;
+      theAccount.privKey = testAccounts[0].privateKey;
       theAccount.delegates = [];
       theAccount.u_delegates = [];
       getAccountStub = sandbox.stub(accountsModule, 'getAccount').resolves({});
@@ -825,8 +828,8 @@ describe('modules/delegates', () => {
     it('should throw if trying to vote or unvote too many delegates', async () => {
       getAccountStub.onSecondCall().resolves({});
       const wrongVotes = [
-        '+' + testAccounts[0].publicKey,
-        '+' + testAccounts[1].publicKey,
+        '+' + testAccounts[0].publicKey.toString('hex'),
+        '+' + testAccounts[1].publicKey.toString('hex'),
       ];
       await expect(
         (instance as any).checkDelegates(

@@ -67,8 +67,8 @@ export abstract class BaseTx<T, M extends Model<any>>
     bb.writeInt(tx.timestamp);
     bb.append(tx.senderPublicKey);
     bb.append(this.idsHandler.addressToBytes(tx.recipientId));
-    bb.append(toBufferLE(tx.fee, this.constants.amountBytes));
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
+    bb.append(toBufferLE(tx.fee, this.constants.amountBytes));
     bb.append(this.assetBytes(tx));
     bb.flip();
     return new Buffer(bb.toBuffer());

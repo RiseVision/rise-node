@@ -4,7 +4,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
@@ -252,12 +252,10 @@ describe('modules/accounts', () => {
   describe('.generateAddressByPublicKey', () => {
     it('should resolve pubkey and addresses correctly', () => {
       for (let i = 0; i < 100; i++) {
-        const w = new LiskWallet(`a${i}`, 'R');
-        expect(
-          accountModule.generateAddressByPublicKey(
-            Buffer.from(w.publicKey, 'hex')
-          )
-        ).deep.eq(w.address);
+        const w = RiseV2.deriveKeypair(`a${i}`);
+        expect(accountModule.generateAddressByPublicKey(w.publicKey)).deep.eq(
+          RiseV2.calcAddress(w.publicKey)
+        );
       }
     });
   });

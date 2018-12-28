@@ -10,16 +10,13 @@ import { TxReadyFilter } from '@risevision/core-transactions';
 import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import {
   createRandomTransaction,
-  fromBufferedTransaction,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { IBaseTransaction } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import { createTransactionFromOBJ } from 'dpos-offline/dist/es5/utils/txFactory';
+import { IKeypair, RiseTransaction, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { SinonSandbox, SinonSpy } from 'sinon';
@@ -44,12 +41,12 @@ describe('HooksListener', () => {
   let sandbox: SinonSandbox;
   let txReadySpy: SinonSpy;
   let hookSystem: WordPressHookSystem;
-  let tx: ITransaction<any>;
-  let bufTX: IBaseTransaction<any>;
+  let tx: RiseTransaction<any>;
+  let nativeTx: IBaseTransaction<any>;
   let AccountsModel: typeof AccountsModelWithMultisig;
   let sender: AccountsModelWithMultisig;
-  let wallet: LiskWallet;
-  let multisigners: LiskWallet[];
+  let wallet: IKeypair;
+  let multisigners: IKeypair[];
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
     container = await createContainer([
@@ -69,18 +66,19 @@ describe('HooksListener', () => {
     expect(instance).not.undefined;
 
     tx = createRandomTransaction();
-    bufTX = toBufferedTransaction(tx);
-    wallet = new LiskWallet('theWallet', 'R');
+
+    nativeTx = toNativeTx(tx);
+    wallet = RiseV2.deriveKeypair('theWallet');
     multisigners = new Array(5)
       .fill(null)
-      .map(() => new LiskWallet(uuid.v4(), 'R'));
+      .map(() => RiseV2.deriveKeypair(uuid.v4()));
     sender = new AccountsModel({
-      address: wallet.address,
-      publicKey: Buffer.from(wallet.publicKey, 'hex'),
+      address: RiseV2.calcAddress(wallet.publicKey),
+      publicKey: wallet.publicKey,
       balance: 10n ** 10n,
       u_balance: 10n ** 10n,
       multilifetime: 10,
-      multisignatures: multisigners.map((m) => m.publicKey),
+      multisignatures: multisigners.map((m) => m.publicKey.toString('hex')),
       multimin: 4,
     });
 
@@ -90,52 +88,59 @@ describe('HooksListener', () => {
   });
 
   it('should call txReadyStub', async () => {
-    await hookSystem.apply_filters(TxReadyFilter.name, true, bufTX, sender);
+    await hookSystem.apply_filters(TxReadyFilter.name, true, nativeTx, sender);
     expect(txReadySpy.calledOnce).is.true;
   });
 
   it('should return true', async () => {
-    const account = new LiskWallet('meow', 'R');
-    const account2 = new LiskWallet('meow2', 'R');
-    sender.multisignatures = [account.publicKey, account2.publicKey];
+    const account = RiseV2.deriveKeypair('meow');
+    const account2 = RiseV2.deriveKeypair('meow2');
+    sender.multisignatures = [
+      account.publicKey.toString('hex'),
+      account2.publicKey.toString('hex'),
+    ];
     sender.multilifetime = 24;
     sender.multimin = 2;
-    bufTX.signatures = [
-      Buffer.from(account.getSignatureOfTransaction(tx), 'hex'),
-      Buffer.from(account2.getSignatureOfTransaction(tx), 'hex'),
+    nativeTx.signatures = [
+      RiseV2.txs.calcSignature(tx, account),
+      RiseV2.txs.calcSignature(tx, account2),
     ];
     expect(
-      await hookSystem.apply_filters(TxReadyFilter.name, true, bufTX, sender)
+      await hookSystem.apply_filters(TxReadyFilter.name, true, nativeTx, sender)
     ).true;
 
     sender.multimin = 1;
     expect(
-      await hookSystem.apply_filters(TxReadyFilter.name, true, bufTX, sender)
+      await hookSystem.apply_filters(TxReadyFilter.name, true, nativeTx, sender)
     ).true;
   });
   it('should return false', async () => {
-    const account = new LiskWallet('meow', 'R');
-    const account2 = new LiskWallet('meow2', 'R');
-    sender.multisignatures = [account.publicKey, account2.publicKey];
+    const account = RiseV2.deriveKeypair('meow');
+    const account2 = RiseV2.deriveKeypair('meow2');
+    sender.multisignatures = [
+      account.publicKey.toString('hex'),
+      account2.publicKey.toString('hex'),
+    ];
     sender.multilifetime = 24;
     sender.multimin = 2;
-    bufTX.signatures = [
-      Buffer.from(account.getSignatureOfTransaction(tx), 'hex'),
-    ];
+    nativeTx.signatures = [RiseV2.txs.calcSignature(tx, account)];
     expect(
-      await hookSystem.apply_filters(TxReadyFilter.name, true, bufTX, sender)
+      await hookSystem.apply_filters(TxReadyFilter.name, true, nativeTx, sender)
     ).false;
 
     // should not return true if provided payload is already false.
-    bufTX.signatures.push(
-      Buffer.from(account2.getSignatureOfTransaction(tx), 'hex')
-    );
+    nativeTx.signatures.push(RiseV2.txs.calcSignature(tx, account2));
     expect(
-      await hookSystem.apply_filters(TxReadyFilter.name, true, bufTX, sender)
+      await hookSystem.apply_filters(TxReadyFilter.name, true, nativeTx, sender)
     ).true; // just to make sure tx is now valid
     // Real check ->
     expect(
-      await hookSystem.apply_filters(TxReadyFilter.name, false, bufTX, sender)
+      await hookSystem.apply_filters(
+        TxReadyFilter.name,
+        false,
+        nativeTx,
+        sender
+      )
     ).false;
   });
 
@@ -146,27 +151,19 @@ describe('HooksListener', () => {
       tx.senderPublicKey = wallet.publicKey;
       delete tx.id;
       delete tx.signature;
-      const txOBJ = createTransactionFromOBJ(tx);
-      // Needed for toObj but overridden later in code.
-      txOBJ.signature = txOBJ.createSignature(wallet.privKey);
-      const toRet = toBufferedTransaction({
-        ...txOBJ.toObj(),
-        senderId: wallet.address,
-      });
-      delete toRet.signature;
-      toRet.signature = crypto.sign(txLogic.getHash(toRet), {
-        publicKey: Buffer.from(wallet.publicKey, 'hex'),
-        privateKey: Buffer.from(wallet.privKey, 'hex'),
-      });
-      toRet.signatures = multisigners.map((m) =>
-        crypto.sign(txLogic.getHash(toRet), {
-          publicKey: Buffer.from(m.publicKey, 'hex'),
-          privateKey: Buffer.from(m.privKey, 'hex'),
+      tx.signature = RiseV2.txs.calcSignature(tx, wallet);
+      tx.senderId = RiseV2.calcAddress(wallet.publicKey);
+      const id = RiseV2.txs.identifier(tx);
+      tx.signatures = multisigners.map((m) =>
+        RiseV2.txs.calcSignature(tx, m, {
+          skipSignature: true,
+          skipSecondSign: false,
         })
       );
 
-      toRet.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(toRet));
-      return toRet;
+      tx.id = RiseV2.txs.identifier(tx);
+      expect(id).not.eq(tx.id);
+      return tx;
     }
 
     beforeEach(() => {
@@ -175,13 +172,13 @@ describe('HooksListener', () => {
     it('should allow signed tx', async () => {
       const ttx = signMultiSigTxRequester();
       // ttx.signatures; // already signed by all multisigners;
-      await expect(txLogic.verify(ttx, sender, 1)).to.not.rejected;
+      await expect(txLogic.verify(toNativeTx(ttx), sender, 1)).to.not.rejected;
     });
 
     it('should reject tx if it is not ready', async () => {
       const ttx = signMultiSigTxRequester();
       ttx.signatures.splice(0, 2);
-      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
+      await expect(txLogic.verify(toNativeTx(ttx), sender, 1)).to.rejectedWith(
         `MultiSig Transaction ${ttx.id} is not ready`
       );
     });
@@ -190,41 +187,39 @@ describe('HooksListener', () => {
       ttx.signatures[0] = Buffer.from(
         `5e1${ttx.signatures[0].toString('hex').substr(3)}`,
         'hex'
-      );
-      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(ttx));
-      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
+      ) as any;
+      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(toNativeTx(ttx)));
+      await expect(txLogic.verify(toNativeTx(ttx), sender, 1)).to.rejectedWith(
         'Failed to verify multisignature'
       );
     });
     it('should reject if extra signature of non member provided', async () => {
       const ttx = signMultiSigTxRequester();
       ttx.signatures.push(
-        Buffer.from(
-          new LiskWallet('other').getSignatureOfTransaction(
-            fromBufferedTransaction(ttx)
-          ),
-          'hex'
-        )
+        RiseV2.txs.calcSignature(ttx, RiseV2.deriveKeypair('other'))
       );
-      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(ttx));
-      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
+      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(toNativeTx(ttx)));
+      await expect(txLogic.verify(toNativeTx(ttx), sender, 1)).to.rejectedWith(
         'Failed to verify multisignature'
       );
     });
     it('should reject if duplicated signature', async () => {
       const ttx = signMultiSigTxRequester();
       ttx.signatures.push(ttx.signatures[0]);
-      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(ttx));
-      await expect(txLogic.verify(ttx, sender, 1)).to.rejectedWith(
+      ttx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(toNativeTx(ttx)));
+      await expect(txLogic.verify(toNativeTx(ttx), sender, 1)).to.rejectedWith(
         'Encountered duplicate signature in transaction'
       );
     });
     describe('multisig registration', () => {
-      let newMultiSigners: LiskWallet[];
+      let newMultiSigners: IKeypair[];
       beforeEach(() => {
         newMultiSigners = multisigners
           .slice(0, 2)
-          .concat(new Array(3).fill(null).map(() => new LiskWallet(uuid.v4())));
+          .concat(
+            new Array(3).fill(null).map(() => RiseV2.deriveKeypair(uuid.v4()))
+          );
+        tx.asset = {};
         tx.asset.multisignature = {
           min: 4,
           lifetime: 10,
@@ -237,9 +232,9 @@ describe('HooksListener', () => {
         delete tx.recipientId;
       });
       it('should reject if multisignature.keysgroup has non string members', async () => {
-        const signedTX = wallet.signTransaction(tx);
-        signedTX.asset.multisignature.keysgroup.push(1);
-        const btx = toBufferedTransaction(signedTX);
+        tx.signature = RiseV2.txs.calcSignature(tx, wallet);
+        tx.asset.multisignature.keysgroup.push(1);
+        const btx = toNativeTx(tx);
         // btx.id = txLogic.getId(btx);
         btx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(btx));
         await expect(txLogic.verify(btx, sender, 1)).to.rejectedWith(

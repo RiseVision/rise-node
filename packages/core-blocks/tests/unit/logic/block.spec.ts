@@ -173,7 +173,7 @@ describe('logic/block', () => {
 
       expect(newBlock.payloadHash).deep.eq(
         Buffer.from(
-          '4bc8afd4cae9da825bed497a39af5dede58c580e3730d50dff5abb09497cc942',
+          '86e7a3fba0217c29ae3b198d32963138c64e213d7e864ee0423c134f955dfc45',
           'hex'
         )
       );
