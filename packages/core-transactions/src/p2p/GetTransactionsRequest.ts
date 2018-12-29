@@ -72,9 +72,9 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
   ): Promise<Buffer> {
     return super.encodeResponse(
       {
-        transactions: data.transactions.map((d: any) => ({
+        transactions: data.transactions.map((d) => ({
           relays: 3,
-          tx: this.txBytes.toBuffer(d.tx),
+          tx: this.txBytes.toBuffer(d),
         })),
       } as any,
       null

@@ -107,11 +107,11 @@ describe('modules/transactions', () => {
     let applyUnconfirmedSpy: SinonSpy;
     beforeEach(() => {
       const acc = generateAccount();
-      tx = createRandomTransaction(acc);
+      tx = toNativeTx(createRandomTransaction(acc));
       sender = new AccountsModel({
         address: acc.address,
-        balance: BigInt(tx.amount * 2 + tx.fee),
-        u_balance: BigInt(tx.amount * 2 + tx.fee),
+        balance: BigInt(tx.amount * 2n + tx.fee),
+        u_balance: BigInt(tx.amount * 2n + tx.fee),
         publicKey: acc.publicKey,
       });
 
@@ -133,47 +133,12 @@ describe('modules/transactions', () => {
         instance.applyUnconfirmed(tx as any, undefined)
       ).to.be.rejectedWith('Invalid sender');
     });
-
-    describe('when requesterPublicKey is set', () => {
-      beforeEach(() => {
-        tx.requesterPublicKey = 'requesterPublicKey';
-      });
-
-      it('should call accountsModule.getAccount', async () => {
-        await instance.applyUnconfirmed(tx as any, sender);
-        expect(getAccountStub.calledOnce).to.be.true;
-        expect(getAccountStub.firstCall.args.length).to.be.equal(1);
-        expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
-          publicKey: tx.requesterPublicKey,
-        });
-      });
-
-      it('should throw if requester not found', async () => {
-        getAccountStub.returns(false);
-        await expect(
-          instance.applyUnconfirmed(tx as any, sender)
-        ).to.be.rejectedWith('Requester not found');
-      });
-
-      it('should call transactionLogic.applyUnconfirmed with 3 parameters', async () => {
-        await instance.applyUnconfirmed(tx as any, sender);
-        expect(applyUnconfirmedSpy.calledOnce).to.be.true;
-        expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(3);
-        expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
-        expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
-        expect(applyUnconfirmedSpy.firstCall.args[2]).to.be.deep.equal(
-          requester
-        );
-      });
-    });
-    describe('when requesterPublicKey is NOT set', () => {
-      it('should call transactionLogic.applyUnconfirmed with 2 parameters', async () => {
-        await instance.applyUnconfirmed(tx as any, sender);
-        expect(applyUnconfirmedSpy.calledOnce).to.be.true;
-        expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(2);
-        expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
-        expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
-      });
+    it('should call transactionLogic.applyUnconfirmed with 2 parameters', async () => {
+      await instance.applyUnconfirmed(tx as any, sender);
+      expect(applyUnconfirmedSpy.calledOnce).to.be.true;
+      expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(2);
+      expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
     });
   });
 
@@ -329,8 +294,7 @@ describe('modules/transactions', () => {
       expect(verifyStub.calledOnce).true;
       expect(verifyStub.firstCall.args[0]).deep.eq(tx);
       expect(verifyStub.firstCall.args[1]).deep.eq(account);
-      expect(verifyStub.firstCall.args[2]).deep.eq(requester);
-      expect(verifyStub.firstCall.args[3]).deep.eq(1);
+      expect(verifyStub.firstCall.args[2]).deep.eq(1);
     });
   });
 

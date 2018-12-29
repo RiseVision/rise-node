@@ -100,11 +100,11 @@ export abstract class BaseTx<T, M extends Model<any>>
     );
     offset += this.idsHandler.addressBytes;
 
-    const fee = toBigIntLE(
+    const amount = toBigIntLE(
       buff.slice(offset, offset + this.constants.amountBytes)
     );
     offset += this.constants.amountBytes;
-    const amount = toBigIntLE(
+    const fee = toBigIntLE(
       buff.slice(offset, offset + this.constants.amountBytes)
     );
     offset += this.constants.amountBytes;

@@ -2,6 +2,7 @@ import {
   IAccountLogic,
   IAccountsModel,
   ICrypto,
+  IIdsHandler,
   ILogger,
   Symbols,
 } from '@risevision/core-interfaces';
@@ -30,6 +31,7 @@ import {
   TransactionsModel,
   TxApplyFilter,
   TxApplyUnconfirmedFilter,
+  TXBytes,
   TxLogicStaticCheck,
   TxLogicVerify,
   TXSymbols,
@@ -57,7 +59,8 @@ describe('logic/transaction', () => {
   let logger: ILogger;
   let genesisBlock: SignedAndChainedBlockType;
   let txModel: typeof TransactionsModel;
-
+  let idsHandler: IIdsHandler;
+  let txBytes: TXBytes;
   let tx: IBaseTransaction<any, bigint>;
   let account: IKeypair;
 
@@ -78,6 +81,8 @@ describe('logic/transaction', () => {
       Symbols.models.accounts
     );
     instance = container.get(Symbols.logic.transaction);
+    idsHandler = container.get(Symbols.helpers.idsHandler);
+    txBytes = container.get(TXSymbols.txBytes);
     cryptoImpl = container.get(Symbols.generic.crypto);
     accountLogic = container.get(Symbols.logic.account);
     logger = container.get(Symbols.helpers.logger);
@@ -440,6 +445,7 @@ describe('logic/transaction', () => {
     it('should throw if sender publicKey and tx.senderPublicKey mismatches', async () => {
       sender.publicKey = Buffer.from('ahaha');
       tx.senderPublicKey = Buffer.from('anotherPublicKey');
+      tx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
       await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
         /Invalid sender public key/
       );
@@ -449,6 +455,7 @@ describe('logic/transaction', () => {
       sender.publicKey = genesisBlock.generatorPublicKey;
       tx.senderPublicKey = sender.publicKey;
       (tx as any).blockId = 'anotherBlockId';
+      tx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
       await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
         'Invalid sender. Can not send from genesis account'
       );
@@ -475,6 +482,7 @@ describe('logic/transaction', () => {
 
     it('should throw if amount is < 0', async () => {
       tx.amount = -100n;
+      tx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
       await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
         'tx.amount is either negative or greater than totalAmount'
       );
@@ -482,15 +490,10 @@ describe('logic/transaction', () => {
 
     it('should throw if amount is > totalAmout', async () => {
       (tx as any).amount = BigInt('10999999991000001');
+      tx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
       await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
         'tx.amount is either negative or greater than totalAmount'
       );
-    });
-
-    // tslint:disable-next-line
-    it('should throw if amount is written in exponential notation', async () => {
-      (tx as any).amount = '10e3';
-      await expect(instance.verify(tx, sender, 1)).to.be.rejected;
     });
 
     it('should reject tx if verifySignature throws (for whatever reason', async () => {
@@ -500,7 +503,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call checkBalance and throw if checkBalance returns an error', async () => {
-      checkBalanceStub.returns({ exceeded: true, error: 'checkBalance error' });
+      checkBalanceStub.throws(new Error('checkBalance error'));
       await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
         'checkBalance error'
       );
@@ -615,22 +618,6 @@ describe('logic/transaction', () => {
         instance.verifySignature(tx, tx.senderPublicKey, tx.signature);
         expect(getHashStub.calledOnce).to.be.true;
         expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
-        expect(getHashStub.firstCall.args[1]).to.be.equal(false);
-        expect(getHashStub.firstCall.args[2]).to.be.equal(false);
-      });
-      it('should call getHash with false, true when VerificationType is SECOND_SIGNATURE', () => {
-        instance.verifySignature(tx, tx.senderPublicKey, tx.signature);
-        expect(getHashStub.calledOnce).to.be.true;
-        expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
-        expect(getHashStub.firstCall.args[1]).to.be.equal(false);
-        expect(getHashStub.firstCall.args[2]).to.be.equal(true);
-      });
-      it('should call getHash with true, true when VerificationType is SIGNATURE', () => {
-        instance.verifySignature(tx, tx.senderPublicKey, tx.signature);
-        expect(getHashStub.calledOnce).to.be.true;
-        expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
-        expect(getHashStub.firstCall.args[1]).to.be.equal(true);
-        expect(getHashStub.firstCall.args[2]).to.be.equal(true);
       });
     });
     it('should call false if signature is null', () => {
@@ -684,7 +671,7 @@ describe('logic/transaction', () => {
     });
 
     it('should throw if checkBalance returns an error', async () => {
-      assertEnoughBalance.throws('checkBalance error');
+      assertEnoughBalance.throws(new Error('checkBalance error'));
       await expect(instance.apply(tx as any, block, sender)).to.be.rejectedWith(
         'checkBalance error'
       );

@@ -52,9 +52,8 @@ describe('apis/requests/GetTransactionsRequest', () => {
     const tx = toNativeTx(createRandomTransaction());
     txPool.unconfirmed.add(tx, { receivedAt: new Date() });
     const finalData = await createRequest();
-    delete tx.signatures;
     expect(finalData).deep.eq({
-      transactions: [{ ...tx, relays: 1, asset: null }],
+      transactions: [{ ...tx, relays: 3, signatures: [], asset: null }],
     });
   });
   it('with some txs from dif pool - order is respected', async () => {
@@ -66,16 +65,13 @@ describe('apis/requests/GetTransactionsRequest', () => {
     txPool.pending.add(pending, { receivedAt: new Date(), ready: false });
     txPool.ready.add(ready, { receivedAt: new Date() });
 
-    delete unconfirmed.signatures;
-    delete pending.signatures;
-    delete ready.signatures;
-
     const finalData = await createRequest();
     expect(finalData).deep.eq({
       transactions: [unconfirmed, pending, ready].map((t) => ({
         ...t,
         asset: null,
-        relays: 1,
+        relays: 3,
+        signatures: [],
       })),
     });
   });
