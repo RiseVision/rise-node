@@ -86,6 +86,7 @@ describe('logic/transactions/delegate', () => {
       ),
       timestamp: 0,
       type: TransactionType.DELEGATE,
+      version: 0,
     };
 
     sender = {

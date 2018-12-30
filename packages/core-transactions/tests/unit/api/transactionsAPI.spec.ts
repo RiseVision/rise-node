@@ -41,6 +41,7 @@ chai.use(chaiAsPromised);
 chai.use(assertArrays);
 function toTransportTx(t: RiseTransaction<any>) {
   const toRet = {
+    version: 0,
     ...t,
     senderPublicKey: t.senderPublicKey.toString('hex'),
     signature: t.signature.toString('hex'),
@@ -249,6 +250,7 @@ describe('apis/transactionsAPI', () => {
           senderPublicKey: t.senderPublicKey.toString('hex'),
           signature: t.signature.toString('hex'),
           signatures: [],
+          version: 0,
         },
       });
 

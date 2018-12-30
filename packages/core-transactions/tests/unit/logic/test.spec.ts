@@ -44,6 +44,7 @@ describe('some real cases', () => {
         'hex'
       ),
       asset: null,
+      version: 0,
     };
 
     const id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
@@ -67,6 +68,7 @@ describe('some real cases', () => {
       ),
       timestamp: 40355001,
       type: 0,
+      version: 0,
     };
 
     const id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));

@@ -53,5 +53,6 @@ export const toNativeTx = <T = any>(
     amount: BigInt(tx.amount),
     fee: BigInt(tx.fee),
     signature: tx.signature,
+    version: (tx as any).version || 0,
   };
 };

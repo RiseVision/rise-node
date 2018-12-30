@@ -377,6 +377,7 @@ export class TransactionLogic implements ITransactionLogic {
           recipientId: tx.recipientId || null,
           amount: BigInt(tx.amount),
           fee: BigInt(tx.fee),
+          version: tx.version || 0,
           signature,
           // signSignature,
           signatures: tx.signatures

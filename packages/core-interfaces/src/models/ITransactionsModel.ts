@@ -45,6 +45,8 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<
 
   public signatures: Buffer[];
 
+  public version: number;
+
   public toTransport(): ITransportTransaction<Asset> {
     return null;
   }

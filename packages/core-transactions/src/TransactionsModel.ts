@@ -123,6 +123,9 @@ export class TransactionsModel<Asset = any>
   @Column(DataType.BLOB)
   public requesterPublicKey: Buffer;
 
+  @Column(DataType.INTEGER)
+  public version: number = 0;
+
   public asset: Asset = null;
 
   constructor(

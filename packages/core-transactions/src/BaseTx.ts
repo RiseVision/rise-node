@@ -64,7 +64,10 @@ export abstract class BaseTx<T, M extends Model<any>>
     const bb = new ByteBuffer(1024, true);
 
     bb.writeByte(tx.type);
-    bb.writeInt(tx.timestamp);
+    if (tx.version) {
+      bb.writeUint32(2 ** 32 - 128 + tx.version);
+    }
+    bb.writeUint32(tx.timestamp);
     bb.append(tx.senderPublicKey);
     bb.append(this.idsHandler.addressToBytes(tx.recipientId));
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
@@ -89,38 +92,51 @@ export abstract class BaseTx<T, M extends Model<any>>
    */
   public fromBytes(buff: Buffer): IBaseTransaction<T, bigint> {
     let offset = 0;
-    const type = buff.readUInt8(0);
-    offset += 1;
-    const timestamp = buff.readUInt32LE(offset);
-    offset += 4;
-    const senderPublicKey = buff.slice(offset, offset + 32);
-    offset += 32;
-    const recipientId = this.idsHandler.addressFromBytes(
-      buff.slice(offset, offset + this.idsHandler.addressBytes)
-    );
-    offset += this.idsHandler.addressBytes;
+    function readUint8() {
+      const toRet = buff.readUInt8(offset);
+      offset += 1;
+      return toRet;
+    }
+    function readUint32() {
+      const toRet = buff.readUInt32LE(offset);
+      offset += 4;
+      return toRet;
+    }
+    function readSlice(howMuch: number) {
+      const toRet = buff.slice(offset, offset + howMuch);
+      offset += howMuch;
+      return toRet;
+    }
 
-    const amount = toBigIntLE(
-      buff.slice(offset, offset + this.constants.amountBytes)
+    const type = readUint8();
+    let timestamp = readUint32();
+    let version = 0;
+    if (timestamp >= 2 ** 32 - 128) {
+      version = timestamp - 2 ** 32 - 128;
+      timestamp = readUint32();
+    }
+
+    const senderPublicKey = readSlice(32);
+
+    const recipientId = this.idsHandler.addressFromBytes(
+      readSlice(this.idsHandler.addressBytes)
     );
-    offset += this.constants.amountBytes;
-    const fee = toBigIntLE(
-      buff.slice(offset, offset + this.constants.amountBytes)
-    );
-    offset += this.constants.amountBytes;
+
+    const amount = toBigIntLE(readSlice(this.constants.amountBytes));
+
+    const fee = toBigIntLE(readSlice(this.constants.amountBytes));
 
     const { asset, consumedBytes } = this.readAssetFromBytes(
       buff.slice(offset)
     );
     offset += consumedBytes;
 
-    const signature = buff.slice(offset, offset + 64);
-    offset += 64;
+    const signature = readSlice(64);
 
     const nSignatures = Math.floor((buff.length - offset) / 64);
     const signatures = new Array(nSignatures)
       .fill(null)
-      .map((a, idx) => buff.slice(idx * 64 + offset, idx * 64 + offset + 64));
+      .map(() => readSlice(64));
 
     return {
       amount,
@@ -134,6 +150,7 @@ export abstract class BaseTx<T, M extends Model<any>>
       signatures,
       timestamp,
       type,
+      version,
     };
   }
 
@@ -208,7 +225,7 @@ export abstract class BaseTx<T, M extends Model<any>>
 
   public getMaxBytesSize(): number {
     let size = 0;
-    size += 1 + 4 + 32 + 32 + 8 + 8 + 64; // TransactionLogic.getBytes Buffer base size
+    size += 1 + 4 + 4 + 32 + 32 + 8 + 8 + 64; // TransactionLogic.getBytes Buffer base size
     size += 6; // hasRequesterPublicKey, has signSignature, fee;
     return size;
   }

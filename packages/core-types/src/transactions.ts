@@ -25,6 +25,7 @@ export interface ITransportTransaction<T> {
 
 export interface IBaseTransaction<T, amountType = bigint> {
   type: TransactionType;
+  version: number;
   amount: amountType;
   senderId?: string;
   senderPublicKey: Buffer;

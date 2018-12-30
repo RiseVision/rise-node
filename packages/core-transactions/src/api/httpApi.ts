@@ -337,7 +337,12 @@ export class TransactionsAPI {
     }
 
     const postableTx = RiseV2.txs.toPostable(transaction);
-    const res = await this.put({ transaction: postableTx as any });
+    const res = await this.put({
+      transaction: {
+        ...postableTx,
+        version: (postableTx as any).version || 0,
+      } as any,
+    });
     if (res.accepted && res.accepted.length === 1) {
       return { transactionId: res.accepted[0] };
     } else {

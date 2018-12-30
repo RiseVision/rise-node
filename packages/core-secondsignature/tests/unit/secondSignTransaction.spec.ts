@@ -88,6 +88,7 @@ describe('logic/transactions/secondSignature', () => {
       ),
       timestamp: 0,
       type: TransactionType.SIGNATURE,
+      version: 0,
     };
 
     sender = {

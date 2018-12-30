@@ -94,6 +94,7 @@ describe('modules/multisignatures', () => {
       ),
       timestamp: 0,
       type: TransactionType.MULTI,
+      version: 0,
     };
     signature = Buffer.from(
       '72d33c7dd285d84c5e6c984b10c4141e9ff8fbf9b8433bf1bbea971dc8b14c67' +
