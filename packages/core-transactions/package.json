@@ -34,6 +34,7 @@
     "sequelize": "4.42.0",
     "sequelize-typescript": "0.6.6",
     "strftime": "=0.10.0",
+    "varuint-bitcoin": "^1.1.0",
     "z-schema": "3.24.2"
   },
   "devDependencies": {

@@ -22,9 +22,9 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
     accMap: { [address: string]: T }
   ): Promise<void>;
 
-  getAccount(filter: AccountFilterData & { publicKey?: Buffer }): Promise<T>;
+  getAccount(filter: AccountFilterData<T> & { publicKey?: Buffer }): Promise<T>;
 
-  getAccounts(filter: AccountFilterData): Promise<T[]>;
+  getAccounts(filter: AccountFilterData<T>): Promise<T[]>;
 
   /**
    * Assign public key to the account

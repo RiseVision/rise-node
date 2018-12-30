@@ -606,7 +606,6 @@ describe('apis/delegatesAPI', () => {
   });
 
   describe('getVoters', () => {
-    let params;
     let row;
     let accountsObject;
     let findAll: SinonStub;
@@ -614,29 +613,26 @@ describe('apis/delegatesAPI', () => {
     beforeEach(() => {
       row = { accountIds: [{}] };
       accountsObject = {};
-      params = {
-        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
-      };
       findAll = sandbox.stub(accounts2delegatesModel, 'findAll').resolves([]);
       getAccountsStub = sandbox.stub(accounts, 'getAccounts').resolves([]);
     });
 
     it('should correctly query Accounts2DelegatesModel', async () => {
       await instance.getVoters({
-        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
+        username: 'meow',
       });
       expect(findAll.firstCall.args[0]).to.be.deep.eq({
         attributes: ['accountId'],
         where: {
-          dependentId: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
+          username: 'meow',
         },
       });
     });
     it('should correctly query accountsModule.getAccounts', async () => {
-      findAll.resolves([{ accountId: '1' }, { accountId: '2' }]);
+      findAll.resolves([{ address: '1' }, { address: '2' }]);
       getAccountsStub.resolves([new accountsModel(), new accountsModel()]);
       await instance.getVoters({
-        publicKey: RiseV2.deriveKeypair('meow').publicKey.toString('hex'),
+        username: 'meow',
       });
       expect(getAccountsStub.firstCall.args[0]).to.be.deep.eq({
         sort: 'balance',
@@ -655,7 +651,7 @@ describe('apis/delegatesAPI', () => {
           publicKey: Buffer.from('bb', 'hex'),
         }),
       ]);
-      const res = await instance.getVoters(params);
+      const res = await instance.getVoters({ username: 'meow' });
       expect(res).to.be.deep.eq({
         accounts: [
           { address: '1', publicKey: 'aa' },

@@ -17,6 +17,7 @@ import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable, unmanaged } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
+import * as varuint from 'varuint-bitcoin';
 import { TxReadyFilter } from './hooks/filters';
 
 const emptyBuffer = new Buffer(0);
@@ -72,7 +73,9 @@ export abstract class BaseTx<T, M extends Model<any>>
     bb.append(this.idsHandler.addressToBytes(tx.recipientId));
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
     bb.append(toBufferLE(tx.fee, this.constants.amountBytes));
-    bb.append(this.assetBytes(tx));
+    const assetBytes = this.assetBytes(tx);
+    bb.append(varuint.encode(assetBytes.length));
+    bb.append(assetBytes);
     bb.flip();
     return new Buffer(bb.toBuffer());
   }
@@ -81,10 +84,8 @@ export abstract class BaseTx<T, M extends Model<any>>
     return emptyBuffer;
   }
 
-  public readAssetFromBytes(
-    bytes: Buffer
-  ): { asset: T; consumedBytes: number } {
-    return { asset: null, consumedBytes: 0 };
+  public readAssetFromBytes(bytes: Buffer): T {
+    return null;
   }
 
   /**
@@ -126,10 +127,9 @@ export abstract class BaseTx<T, M extends Model<any>>
 
     const fee = toBigIntLE(readSlice(this.constants.amountBytes));
 
-    const { asset, consumedBytes } = this.readAssetFromBytes(
-      buff.slice(offset)
-    );
-    offset += consumedBytes;
+    const assetLength = varuint.decode(buff, offset);
+    offset += varuint.decode.bytes;
+    const asset = this.readAssetFromBytes(readSlice(assetLength));
 
     const signature = readSlice(64);
 

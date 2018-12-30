@@ -305,13 +305,13 @@ export class DelegatesAPI {
   public async getVoters(@SchemaValid(schema.getVoters)
   @QueryParams()
   params: {
-    publicKey: publicKey;
+    username: string;
   }) {
     const rows = await this.Accounts2DelegatesModel.findAll({
       attributes: ['accountId'],
-      where: { dependentId: params.publicKey },
+      where: { username: params.username },
     });
-    const addresses = rows.map((r) => r.accountId);
+    const addresses = rows.map((r) => r.address);
 
     const accounts = await this.accounts.getAccounts({
       address: { $in: addresses },
@@ -552,7 +552,7 @@ export class DelegatesAPI {
     const fees = (await this.RoundsFeesModel.aggregate('fees', 'sum', {
       where: {
         ...timestampClausole,
-        publicKey: bufPublicKey,
+        username: acc.username,
       },
     })) as number;
     return {

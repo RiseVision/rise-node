@@ -307,7 +307,7 @@ describe('logic/transactions/vote', () => {
         options: {
           limit: 1,
           where: {
-            accountId: tx.senderId,
+            address: tx.senderId,
             dependentId: [
               tx.asset.votes.filter((v) => v[0] === '-')[0].substr(1),
             ],

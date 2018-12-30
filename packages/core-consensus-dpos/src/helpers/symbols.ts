@@ -4,6 +4,7 @@ export const dPoSSymbols = {
   delegatesAPI: Symbol.for('rise.dpos.delegatesAPI'),
   helpers: {
     dposV2: Symbol.for('rise.dpos.dposV2'),
+    forgingPKsInMemoryStore: Symbol.for('rise.dpos.forgingPKsInMemoryStore'),
     roundChanges: Symbol.for('rise.dpos.roundChanges'),
     slots: Symbol.for('rise.dpos.slots'),
   },

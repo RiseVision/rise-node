@@ -3,15 +3,13 @@ import * as sequelize from 'sequelize';
 import { IAccountsModel } from '../models';
 
 // tslint:disable-next-line
-export type AccountFilterData = {
-  isDelegate?: 1 | 0;
-  username?: string;
-  address?: string | { $in: string[] };
-  publicKey?: Buffer | sequelize.WhereLogic;
+export type AccountFilterData<T = IAccountsModel> = {
+  [k in keyof T]?: T[k]
+} & {
+  publicKey?: sequelize.WhereLogic;
   limit?: number;
   offset?: number;
-  cmb?: sequelize.WhereLogic;
-  sort?: string | { [k: string]: -1 | 1 };
+  sort?: string | { [k in keyof T]: -1 | 1 };
 };
 
 export type AccountDiffType<IAM = IAccountsModel> = {

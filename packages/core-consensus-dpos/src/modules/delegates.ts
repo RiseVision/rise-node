@@ -326,9 +326,10 @@ export class DelegatesModule {
       throw new Error('Account not found');
     }
 
-    const delegates: publicKey[] =
+    const delegates: publicKey[] = (
       (state === 'confirmed' ? account.delegates : account.u_delegates) ||
-      ([] as any);
+      ([] as any)
+    ).map((b: Buffer) => b.toString('hex'));
     const existingVotes = Array.isArray(delegates) ? delegates.length : 0;
 
     let additions = 0;

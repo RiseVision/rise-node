@@ -8,7 +8,7 @@ import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 const buildArrayArgAttribute = (table: string): any => {
   return [
     sequelize.literal(
-      `(SELECT ARRAY_AGG("dependentId") FROM mem_accounts2${table} WHERE "accountId" = "AccountsModel"."address")`
+      `(SELECT ARRAY_AGG("delegatePublicKey") FROM mem_accounts2${table} WHERE "address" = "AccountsModel"."address")`
     ),
     table,
   ];
@@ -21,6 +21,10 @@ const buildArrayArgAttribute = (table: string): any => {
     'u_username',
     'u_isDelegate',
     'vote',
+    'producedblocks',
+    'missedblocks',
+    'fees',
+    'rewards',
     buildArrayArgAttribute('delegates'),
     buildArrayArgAttribute('u_delegates'),
   ],
@@ -31,7 +35,7 @@ export class AccountsModelForDPOS extends IAccountsModel {
   @Column
   public isDelegate: 0 | 1;
   @Column(DataType.TEXT)
-  public delegates?: publicKey[];
+  public delegates?: Buffer[];
   @Column(DataType.BIGINT)
   public vote: bigint;
   @Column
@@ -46,7 +50,21 @@ export class AccountsModelForDPOS extends IAccountsModel {
   public u_isDelegate: 0 | 1;
   @Column(DataType.TEXT)
   // tslint:disable-next-line
-  public u_delegates?: publicKey[];
+  public u_delegates?: Buffer[];
+
+  @Column
+  public producedblocks: number;
+
+  @Column
+  public missedblocks: number;
+
+  @Column(DataType.BIGINT)
+  public fees: bigint;
+  @Column(DataType.BIGINT)
+  public rewards: bigint;
+
+  @Column(DataType.BLOB)
+  public forgingPK: Buffer;
 
   public constructor(
     values?: FilteredModelAttributes<AccountsModelForDPOS>,

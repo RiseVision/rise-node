@@ -24,7 +24,7 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
 
   assetBytes(tx: IBaseTransaction<T>): Buffer;
 
-  readAssetFromBytes(bytes: Buffer): { asset: T; consumedBytes: number };
+  readAssetFromBytes(bytes: Buffer): T;
 
   fromBytes(buff: Buffer): IBaseTransaction<T, bigint>;
 

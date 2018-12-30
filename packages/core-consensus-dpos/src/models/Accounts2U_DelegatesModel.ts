@@ -9,14 +9,8 @@ export class Accounts2U_DelegatesModel extends BaseModel<
 > {
   @PrimaryKey
   @Column
-  public dependentId: string;
+  public username: string;
   @PrimaryKey
-  @ForeignKey(() =>
-    Accounts2U_DelegatesModel.container.getNamed(
-      ModelSymbols.model,
-      Symbols.models.accounts
-    )
-  )
   @Column
-  public accountId: string;
+  public address: string;
 }

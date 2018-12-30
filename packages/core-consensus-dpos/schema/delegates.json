@@ -78,12 +78,14 @@
     "id": "delegates.getVoters",
     "type": "object",
     "properties": {
-      "publicKey": {
+      "username": {
         "type": "string",
-        "format": "publicKey"
+        "format": "username",
+        "minLength": 1,
+        "maxLength": 20
       }
     },
-    "required": ["publicKey"]
+    "required": ["username"]
   },
   "getDelegates": {
     "id": "delegates.getDelegates",

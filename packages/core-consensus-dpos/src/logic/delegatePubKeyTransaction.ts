@@ -23,16 +23,13 @@ import { AccountsModelForDPOS, DelegatesModel } from '../models/';
 const delegateAssetSchema = require('../../schema/asset.json');
 
 // tslint:disable-next-line interface-over-type-literal
-export type DelegateAsset = {
-  delegate: {
-    username: string;
-    forgingPK: Buffer;
-  };
+export type NewForgingPKAsset = {
+  newForgingPK: Buffer;
 };
 
 @injectable()
-export class RegisterDelegateTransaction extends BaseTx<
-  DelegateAsset,
+export class ChangeDelegatePubKeyTransaction extends BaseTx<
+  NewForgingPKAsset,
   DelegatesModel
 > {
   // Generic
@@ -53,38 +50,29 @@ export class RegisterDelegateTransaction extends BaseTx<
   private DelegatesModel: typeof DelegatesModel;
 
   constructor() {
-    super(TransactionType.DELEGATE);
+    super(5);
   }
 
   public calculateFee(
-    tx: IBaseTransaction<DelegateAsset>,
+    tx: IBaseTransaction<NewForgingPKAsset>,
     sender: AccountsModelForDPOS,
     height: number
   ) {
     return this.systemModule.getFees(height).fees.delegate;
   }
 
-  public assetBytes(tx: IBaseTransaction<DelegateAsset>): Buffer {
-    return Buffer.concat([
-      tx.asset.delegate.forgingPK,
-      Buffer.from(tx.asset.delegate.username || '', 'utf8'),
-    ]);
+  public assetBytes(tx: IBaseTransaction<NewForgingPKAsset>): Buffer {
+    return tx.asset.newForgingPK;
   }
 
-  public readAssetFromBytes(bytes: Buffer): DelegateAsset {
-    const forgingPK = bytes.slice(0, 32);
-    const username = bytes.slice(32).toString('utf8');
-
+  public readAssetFromBytes(bytes: Buffer): NewForgingPKAsset {
     return {
-      delegate: {
-        forgingPK,
-        username,
-      },
+      newForgingPK: bytes.slice(0, 32),
     };
   }
 
   public async verify(
-    tx: IBaseTransaction<DelegateAsset>,
+    tx: IBaseTransaction<NewForgingPKAsset>,
     sender: AccountsModelForDPOS
   ): Promise<void> {
     if (tx.recipientId) {
@@ -95,80 +83,39 @@ export class RegisterDelegateTransaction extends BaseTx<
       throw new Error('Invalid transaction amount');
     }
 
-    if (sender.isDelegate) {
-      throw new Error('Account is already a delegate');
+    if (!sender.isDelegate) {
+      throw new Error('Account is NOT a delegate');
     }
 
-    if (!tx.asset || !tx.asset.delegate) {
-      throw new Error('Invalid transaction asset');
-    }
-
-    if (!tx.asset.delegate.username) {
-      throw new Error('Username is undefined');
-    }
-
-    if (!tx.asset.delegate.forgingPK) {
+    if (!tx.asset.newForgingPK) {
       throw new Error('ForgingPK is undefined');
     }
 
-    if (tx.asset.delegate.forgingPK.length !== 32) {
+    if (tx.asset.newForgingPK.length !== 32) {
       throw new Error('ForgingPK is not 32bytes long');
     }
 
-    if (
-      tx.asset.delegate.username !== tx.asset.delegate.username.toLowerCase()
-    ) {
-      throw new Error('Username must be lowercase');
-    }
+    const account = await this.accountsModule.getAccount({
+      forgingPK: tx.asset.newForgingPK,
+    });
 
-    const username = String(tx.asset.delegate.username)
-      .toLowerCase()
-      .trim();
-
-    if (username === '') {
-      throw new Error('Empty username');
-    }
-
-    if (username.length > 20) {
-      throw new Error('Username is too long. Maximum is 20 characters');
-    }
-
-    if (
-      this.schema.validate(tx.asset.delegate.username, {
-        format: 'address',
-      })
-    ) {
-      throw new Error('Username can not be a potential address');
-    }
-
-    if (
-      !this.schema.validate(tx.asset.delegate.username, { format: 'username' })
-    ) {
-      throw new Error(
-        'Username can only contain alphanumeric characters with the exception of !@$&_.'
-      );
-    }
-
-    const account = await this.accountsModule.getAccount({ username });
     if (account) {
-      throw new Error(`Username already exists: ${username}`);
+      throw new Error(
+        `An account with such forging public key already exists: ${
+          account.username
+        }`
+      );
     }
   }
 
   // tslint:disable-next-line max-line-length
   public async apply(
-    tx: IBaseTransaction<DelegateAsset>,
+    tx: IBaseTransaction<NewForgingPKAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     const data = {
-      isDelegate: 1 as any,
-      u_isDelegate: 1 as any,
-      vote: 0n,
-      // tslint:disable-next-line
-      u_username: tx.asset.delegate.username,
-      username: tx.asset.delegate.username,
-      forgingPK: tx.asset.delegate.publicKey,
+      forgingPK: tx.asset.newForgingPK,
     };
     sender.applyValues(data);
     return [
@@ -185,7 +132,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
   // tslint:disable-next-line max-line-length
   public async undo(
-    tx: IBaseTransaction<DelegateAsset>,
+    tx: IBaseTransaction<NewForgingPKAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
@@ -195,7 +142,6 @@ export class RegisterDelegateTransaction extends BaseTx<
       vote: 0n,
       // tslint:disable-next-line
       username: null,
-      forgingPK: null,
       u_username: tx.asset.delegate.username,
     };
     sender.applyValues(data);
@@ -215,7 +161,7 @@ export class RegisterDelegateTransaction extends BaseTx<
    * Stores in accounts that sender is now an unconfirmed delegate
    */
   public async applyUnconfirmed(
-    tx: IBaseTransaction<DelegateAsset>,
+    tx: IBaseTransaction<NewForgingPKAsset>,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     const data = {
@@ -242,7 +188,7 @@ export class RegisterDelegateTransaction extends BaseTx<
   }
 
   public async undoUnconfirmed(
-    tx: IBaseTransaction<DelegateAsset>,
+    tx: IBaseTransaction<NewForgingPKAsset>,
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     const data = {
@@ -266,8 +212,8 @@ export class RegisterDelegateTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<DelegateAsset, bigint>
-  ): IBaseTransaction<DelegateAsset, bigint> {
+    tx: IBaseTransaction<NewForgingPKAsset, bigint>
+  ): IBaseTransaction<NewForgingPKAsset, bigint> {
     removeEmptyObjKeys(tx.asset.delegate);
 
     const report = this.schema.validate(tx.asset.delegate, delegateAssetSchema);
@@ -283,9 +229,23 @@ export class RegisterDelegateTransaction extends BaseTx<
     return tx;
   }
 
+  public dbRead(raw: any): NewForgingPKAsset {
+    if (!raw.d_username) {
+      return null;
+    } else {
+      // tslint:disable object-literal-sort-keys
+      return {
+        delegate: {
+          username: raw.d_username,
+        },
+      };
+      // tslint:enable object-literal-sort-keys
+    }
+  }
+
   // tslint:disable-next-line max-line-length
   public dbSave(
-    tx: IBaseTransaction<DelegateAsset>
+    tx: IBaseTransaction<NewForgingPKAsset>
   ): DBCreateOp<DelegatesModel> {
     return {
       model: this.DelegatesModel,
@@ -297,7 +257,7 @@ export class RegisterDelegateTransaction extends BaseTx<
     };
   }
 
-  public async attachAssets(txs: Array<IBaseTransaction<DelegateAsset>>) {
+  public async attachAssets(txs: Array<IBaseTransaction<NewForgingPKAsset>>) {
     const res = await this.DelegatesModel.findAll({
       where: { transactionId: txs.map((tx) => tx.id) },
     });
@@ -312,7 +272,6 @@ export class RegisterDelegateTransaction extends BaseTx<
       const info = res[indexes[tx.id]];
       tx.asset = {
         delegate: {
-          publicKey: info.publicKey,
           username: info.username,
         },
       };

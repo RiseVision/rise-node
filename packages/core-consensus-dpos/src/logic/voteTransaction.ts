@@ -344,8 +344,8 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
         options: {
           limit: removedPks.length,
           where: {
-            accountId: senderAddress,
-            dependentId: removedPks,
+            address: senderAddress,
+            username: removedPks,
           },
         },
         type: 'remove',
@@ -357,8 +357,8 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
         model,
         type: 'bulkCreate',
         values: addedPks.map((pk) => ({
-          accountId: senderAddress,
-          dependentId: pk,
+          address: senderAddress,
+          username: pk,
         })),
       });
     }

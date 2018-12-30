@@ -5,6 +5,10 @@
     "username": {
       "type": "string",
       "format": "username"
+    },
+    "publicKey": {
+      "type": "object",
+      "format": "publicKeyBuf"
     }
   },
   "required": ["username"]

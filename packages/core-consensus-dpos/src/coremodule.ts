@@ -27,6 +27,7 @@ import {
   Accounts2U_DelegatesModel,
   AccountsModelForDPOS,
   DelegatesModel,
+  DelegatesPublicKeyModel,
   RoundsFeesModel,
   VotesModel,
 } from './models/';
@@ -56,6 +57,10 @@ export class CoreModule extends BaseCoreModule<DposAppConfig>
       .bind(dPoSSymbols.helpers.dposV2)
       .to(DposV2Helper)
       .inSingletonScope();
+    // this.container
+    //   .bind(dPoSSymbols.helpers.forgingPKsInMemoryStore)
+    //   .to(Fo)
+    //   .inSingletonScope();
     this.container
       .bind(dPoSSymbols.helpers.roundChanges)
       .toConstructor(RoundChanges);

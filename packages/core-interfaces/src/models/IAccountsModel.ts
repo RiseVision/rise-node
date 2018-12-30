@@ -17,10 +17,6 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
   public publicKey: Buffer;
   public balance: bigint;
   public blockId: string;
-  public producedblocks: number;
-  public missedblocks: number;
-  public fees: bigint;
-  public rewards: bigint;
   public virgin: 0 | 1;
   // tslint:disable-next-line
   public u_balance: bigint;

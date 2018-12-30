@@ -3,6 +3,7 @@ import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   BelongsTo,
   Column,
+  DataType,
   ForeignKey,
   PrimaryKey,
   Table,
@@ -24,11 +25,6 @@ export class DelegatesModel extends BaseModel<DelegatesModel> {
   @Column
   public transactionId: string;
 
-  @BelongsTo(() =>
-    DelegatesModel.container.getNamed(
-      ModelSymbols.model,
-      Symbols.models.transactions
-    )
-  )
-  public transaction: ITransactionsModel = null;
+  @Column(DataType.BLOB)
+  public publicKey: Buffer;
 }

@@ -1,4 +1,4 @@
-import { Column, DataType, Model, Table } from 'sequelize-typescript';
+import { Column, Model, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'rounds_fees' })
 export class RoundsFeesModel extends Model<RoundsFeesModel> {
@@ -11,6 +11,6 @@ export class RoundsFeesModel extends Model<RoundsFeesModel> {
   @Column
   public timestamp: number;
 
-  @Column(DataType.BLOB)
-  public publicKey: Buffer;
+  @Column
+  public username: string;
 }
