@@ -60,11 +60,7 @@ export abstract class BaseTx<T, M extends Model<any>>
   }
 
   public fullBytes(tx: IBaseTransaction<T>): Buffer {
-    return Buffer.concat([
-      this.signableBytes(tx),
-      tx.signature,
-      ...(tx.signatures || []),
-    ]);
+    return Buffer.concat([this.signableBytes(tx), ...(tx.signatures || [])]);
   }
 
   public signableBytes(tx: IBaseTransaction<T>): Buffer {
@@ -75,7 +71,8 @@ export abstract class BaseTx<T, M extends Model<any>>
       bb.writeUint32(2 ** 32 - 128 + tx.version);
     }
     bb.writeUint32(tx.timestamp);
-    bb.append(tx.senderPublicKey);
+    bb.append(varuint.encode(tx.senderPubData.length));
+    bb.append(tx.senderPubData);
     bb.append(this.idsHandler.addressToBytes(tx.recipientId));
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
     bb.append(toBufferLE(tx.fee, this.constants.amountBytes));
@@ -123,7 +120,9 @@ export abstract class BaseTx<T, M extends Model<any>>
       timestamp = readUint32();
     }
 
-    const senderPublicKey = readSlice(32);
+    const pubDataLength = varuint.decode(buff, offset);
+    offset += varuint.decode.bytes;
+    const senderPubData = readSlice(pubDataLength);
 
     const recipientId = this.idsHandler.addressFromBytes(
       readSlice(this.idsHandler.addressBytes)
@@ -137,8 +136,6 @@ export abstract class BaseTx<T, M extends Model<any>>
     offset += varuint.decode.bytes;
     const asset = this.readAssetFromBytes(readSlice(assetLength));
 
-    const signature = readSlice(64);
-
     const nSignatures = Math.floor((buff.length - offset) / 64);
     const signatures = new Array(nSignatures)
       .fill(null)
@@ -150,9 +147,8 @@ export abstract class BaseTx<T, M extends Model<any>>
       fee,
       id: this.idsHandler.calcTxIdFromBytes(buff),
       recipientId,
-      senderId: this.idsHandler.addressFromPubKey(senderPublicKey),
-      senderPublicKey,
-      signature,
+      senderId: this.idsHandler.addressFromPubData(senderPubData),
+      senderPubData,
       signatures,
       timestamp,
       type,

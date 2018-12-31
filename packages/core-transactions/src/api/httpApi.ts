@@ -184,7 +184,6 @@ export class TransactionsAPI {
   public async getPendings(@SchemaValid(schema.getPooledTransactions)
   @QueryParams()
   params: {
-    senderPublicKey?: string;
     address?: string;
   }) {
     const txs = this.pool.pending.txList({ reverse: true });
@@ -192,13 +191,6 @@ export class TransactionsAPI {
     return {
       count: txs.length,
       transactions: txs
-        .filter((tx) =>
-          params.senderPublicKey
-            ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                tx.senderPublicKey
-              )
-            : true
-        )
         .filter((tx) =>
           params.address ? params.address === tx.recipientId : true
         )
@@ -225,7 +217,6 @@ export class TransactionsAPI {
   public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
   @QueryParams()
   params: {
-    senderPublicKey?: string;
     address?: string;
   }) {
     const txs = this.pool.queued.txList({ reverse: true });
@@ -233,13 +224,6 @@ export class TransactionsAPI {
     return {
       count: txs.length,
       transactions: txs
-        .filter((tx) =>
-          params.senderPublicKey
-            ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                tx.senderPublicKey
-              )
-            : true
-        )
         .filter((tx) =>
           params.address ? params.address === tx.recipientId : true
         )
@@ -266,7 +250,6 @@ export class TransactionsAPI {
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
   @QueryParams()
   params: {
-    senderPublicKey?: string;
     address?: string;
   }) {
     const txs = this.pool.unconfirmed.txList({ reverse: true });
@@ -276,15 +259,7 @@ export class TransactionsAPI {
         .filter((tx) => {
           // Either senderPublicKey or address matching as recipientId
           // or all if no params were set.
-          return (
-            (!params.senderPublicKey && !params.address) ||
-            (params.senderPublicKey
-              ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                  tx.senderPublicKey
-                )
-              : false) ||
-            (params.address ? params.address === tx.recipientId : false)
-          );
+          return params.address ? params.address === tx.recipientId : true;
         })
         .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };

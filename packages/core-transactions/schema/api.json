@@ -37,14 +37,6 @@
         "minLength": 1,
         "maxLength": 22
       },
-      "and:senderPublicKey": {
-        "type": "string",
-        "format": "publicKey"
-      },
-      "senderPublicKey": {
-        "type": "string",
-        "format": "publicKey"
-      },
       "and:recipientId": {
         "type": "string",
         "format": "address",
@@ -56,22 +48,6 @@
         "format": "address",
         "minLength": 1,
         "maxLength": 22
-      },
-      "senderPublicKeys": {
-        "type": "array",
-        "minItems": 1,
-        "items": {
-          "type": "string",
-          "format": "publicKey"
-        }
-      },
-      "recipientPublicKeys": {
-        "type": "array",
-        "minItems": 1,
-        "items": {
-          "type": "string",
-          "format": "publicKey"
-        }
       },
       "senderIds": {
         "type": "array",
@@ -218,15 +194,11 @@
     "id": "transactions.getPooledTransactions",
     "type": "object",
     "properties": {
-      "senderPublicKey": {
-        "type": "string",
-        "format": "publicKey"
-      },
       "address": {
         "type": "string",
         "format": "address",
         "minLength": 1,
-        "maxLength": 22
+        "maxLength": 250
       }
     }
   },
@@ -247,11 +219,7 @@
         "type": "string",
         "format": "address",
         "minLength": 1,
-        "maxLength": 22
-      },
-      "publicKey": {
-        "type": "string",
-        "format": "publicKey"
+        "maxLength": 250
       },
       "secondSecret": {
         "type": "string",

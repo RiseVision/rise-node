@@ -327,7 +327,7 @@ export class BlocksModuleProcess {
     );
     for (const tx of txs) {
       const sender = await this.accountsModule.getAccount({
-        publicKey: tx.senderPublicKey,
+        address: tx.senderId,
       });
       if (!sender) {
         throw new Error('Sender not found');

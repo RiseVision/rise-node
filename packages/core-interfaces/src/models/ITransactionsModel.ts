@@ -27,7 +27,7 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<
 
   public timestamp: number;
 
-  public senderPublicKey: Buffer;
+  public senderPubData: Buffer;
 
   public senderId: string;
 
@@ -36,10 +36,6 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<
   public amount: bigint;
 
   public fee: bigint;
-  public signature: Buffer;
-  public signSignature: Buffer;
-
-  public requesterPublicKey: Buffer;
 
   public asset: Asset;
 

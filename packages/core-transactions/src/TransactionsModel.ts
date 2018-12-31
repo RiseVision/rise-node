@@ -24,23 +24,6 @@ import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 export class TransactionsModel<Asset = any>
   extends BaseModel<TransactionsModel<Asset>>
   implements ITransactionsModel<Asset> {
-  @Column(DataType.BLOB)
-  public get signatures(): Buffer[] {
-    if (this.getDataValue('signatures')) {
-      return this.getDataValue('signatures').split(',');
-    }
-    return [];
-  }
-
-  public set signatures(value: Buffer[]) {
-    this.setDataValue(
-      'signatures',
-      Array.isArray(value)
-        ? value.map((s: Buffer) => s.toString('hex')).join(',')
-        : value
-    );
-  }
-
   public static toTransportTransaction<Asset>(
     t: IBaseTransaction<Asset>
   ): ITransportTransaction<Asset> & { confirmations?: number } {
@@ -53,12 +36,7 @@ export class TransactionsModel<Asset = any>
     } else {
       obj = { ...t };
     }
-    [
-      'requesterPublicKey',
-      'senderPublicKey',
-      'signSignature',
-      'signature',
-    ].forEach((k) => {
+    ['senderPublicKey', 'signature'].forEach((k) => {
       if (typeof obj[k] !== 'undefined' && obj[k] !== null) {
         obj[k] = obj[k].toString('hex');
       }
@@ -100,7 +78,7 @@ export class TransactionsModel<Asset = any>
   public timestamp: number;
 
   @Column(DataType.BLOB)
-  public senderPublicKey: Buffer;
+  public senderPubData: Buffer;
 
   @Column
   public senderId: string;
@@ -114,14 +92,8 @@ export class TransactionsModel<Asset = any>
   @Column(DataType.BIGINT)
   public fee: bigint;
 
-  @Column(DataType.BLOB)
-  public signature: Buffer;
-
-  @Column(DataType.BLOB)
-  public signSignature: Buffer;
-
-  @Column(DataType.BLOB)
-  public requesterPublicKey: Buffer;
+  @Column(DataType.ARRAY(DataType.BLOB))
+  public signatures: Buffer[];
 
   @Column(DataType.INTEGER)
   public version: number = 0;

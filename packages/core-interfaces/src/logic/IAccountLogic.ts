@@ -7,7 +7,7 @@ import { IAccountsModel } from '../models';
 // tslint:disable-next-line
 export type AccountFilterData<T extends IAccountsModel = IAccountsModel> = Omit<
   { [k in keyof T]?: T[k] | WhereLogic },
-  'address' | 'publicKey'
+  'address'
 > & {
   address?: string | { $in: string[] };
   publicKey?: Buffer | sequelize.WhereLogic;
@@ -31,5 +31,5 @@ export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
    */
   merge(address: string, diff: AccountDiffType): Array<DBOp<any>>;
 
-  generateAddressByPublicKey(pk: Buffer): string;
+  generateAddressFromPubData(pubData: Buffer): string;
 }

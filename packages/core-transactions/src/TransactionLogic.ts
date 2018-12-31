@@ -189,31 +189,32 @@ export class TransactionLogic implements ITransactionLogic {
       );
     }
 
-    // Check sender public key
-    if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
-      // tslint:disable-next-line
-      throw new Error(
-        `Invalid sender public key: ${tx.senderPublicKey.toString(
-          'hex'
-        )} expected ${sender.publicKey.toString('hex')}`
-      );
-    }
+    // // Check sender public key
+    // if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
+    //   // tslint:disable-next-line
+    //   throw new Error(
+    //     `Invalid sender public key: ${tx.senderPublicKey.toString(
+    //       'hex'
+    //     )} expected ${sender.publicKey.toString('hex')}`
+    //   );
+    // }
 
     // Check sender is not genesis account unless block id equals genesis
-    if (
-      this.genesisBlock.generatorPublicKey.equals(sender.publicKey) &&
-      (tx as IBaseTransaction<any>).blockId !== this.genesisBlock.id
-    ) {
-      throw new Error('Invalid sender. Can not send from genesis account');
-    }
+    // if (
+    //   this.genesisBlock.generatorPublicKey.equals(sender.publicKey) &&
+    //   (tx as IBaseTransaction<any>).blockId !== this.genesisBlock.id
+    // ) {
+    //   throw new Error('Invalid sender. Can not send from genesis account');
+    // }
 
     if (tx.senderId !== sender.address) {
       throw new Error('Invalid sender address');
     }
 
-    if (!this.verifySignature(tx, tx.senderPublicKey, tx.signature)) {
-      throw new Error('Failed to verify signature');
-    }
+    // FIXME:
+    // if (!this.verifySignature(tx, tx.senderPubData, tx.signature)) {
+    //   throw new Error('Failed to verify signature');
+    // }
 
     // Check fee
     const fee = this.types[tx.type].calculateFee(tx, sender, height);
@@ -240,7 +241,6 @@ export class TransactionLogic implements ITransactionLogic {
    * @param {IBaseTransaction<any>} tx
    * @param {Buffer} publicKey
    * @param {string} signature
-   * @param {VerificationType} verificationType
    * @returns {boolean} true
    */
   public verifySignature(
@@ -381,8 +381,8 @@ export class TransactionLogic implements ITransactionLogic {
       type: 'bulkCreate',
       values: txs.map((tx) => {
         this.assertKnownTransactionType(tx.type);
-        const senderPublicKey = tx.senderPublicKey;
-        const signature = tx.signature;
+        const senderPubData = tx.senderPubData;
+        // const signature          = tx.signature;
         // const signSignature   = tx.signSignature ? tx.signSignature : null;
         return {
           // tslint:disable object-literal-sort-keys
@@ -391,19 +391,13 @@ export class TransactionLogic implements ITransactionLogic {
           height,
           type: tx.type,
           timestamp: tx.timestamp,
-          senderPublicKey,
+          senderPubData,
           senderId: tx.senderId,
           recipientId: tx.recipientId || null,
           amount: BigInt(tx.amount),
           fee: BigInt(tx.fee),
           version: tx.version || 0,
-          signature,
-          // signSignature,
-          signatures: tx.signatures
-            ? (tx.signatures
-                .map((s: Buffer) => s.toString('hex'))
-                .join(',') as any) // Signatures are stringified and joined.
-            : null,
+          signatures: tx.signatures,
           // tslint:enable object-literal-sort-keys
         };
       }),

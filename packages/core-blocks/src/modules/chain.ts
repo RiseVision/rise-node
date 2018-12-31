@@ -176,9 +176,8 @@ export class BlocksModuleChain {
     try {
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        const sender = await this.accountsModule.assignPublicKeyToAccount({
+        const sender = await this.accountsModule.getAccount({
           address: tx.senderId,
-          publicKey: tx.senderPublicKey,
         });
         // Apply tx.
         const ops: Array<DBOp<any>> = [

@@ -5,7 +5,7 @@ export interface IIdsHandler {
   addressBytes: number;
   blockIdByteSize: number;
 
-  addressFromPubKey(pubKey: Buffer): string;
+  addressFromPubData(pubData: Buffer): string;
   addressFromBytes(bytes: Buffer): string;
   addressToBytes(address: string): Buffer;
 

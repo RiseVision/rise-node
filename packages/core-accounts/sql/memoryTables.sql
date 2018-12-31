@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS "mem_accounts"(
   "secondSignature" SMALLINT DEFAULT 0,
   "u_secondSignature" SMALLINT DEFAULT 0,
   "address" VARCHAR(22) NOT NULL UNIQUE PRIMARY KEY,
-  "publicKey" BYTEA,
   "secondPublicKey" BYTEA,
   "balance" BIGINT DEFAULT 0,
   "u_balance" BIGINT DEFAULT 0,

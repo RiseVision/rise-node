@@ -15,14 +15,7 @@ import { Container } from 'inversify';
 import { BaseModel } from '@risevision/core-models';
 
 @DefaultScope({
-  attributes: [
-    'address',
-    'publicKey',
-    'balance',
-    'blockId',
-    'virgin',
-    'u_balance',
-  ].sort(),
+  attributes: ['address', 'balance', 'blockId', 'virgin', 'u_balance'].sort(),
 })
 @Table({ tableName: 'mem_accounts' })
 export class AccountsModel extends BaseModel<AccountsModel>
@@ -30,9 +23,6 @@ export class AccountsModel extends BaseModel<AccountsModel>
   @PrimaryKey
   @Column
   public address: string;
-
-  @Column(DataType.BLOB)
-  public publicKey: Buffer;
 
   @Column(DataType.BIGINT)
   public balance: bigint;
@@ -45,18 +35,6 @@ export class AccountsModel extends BaseModel<AccountsModel>
 
   @Column(DataType.BIGINT)
   public u_balance: bigint;
-
-  private _hexPublicKey: publicKey;
-  public get hexPublicKey(): publicKey {
-    if (typeof this._hexPublicKey === 'undefined') {
-      if (this.publicKey === null) {
-        this._hexPublicKey = null;
-      } else {
-        this._hexPublicKey = this.publicKey.toString('hex');
-      }
-    }
-    return this._hexPublicKey;
-  }
 
   public toPOJO() {
     const toRet = this.toJSON();

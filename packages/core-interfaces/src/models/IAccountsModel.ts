@@ -14,14 +14,11 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
     throw new Error('NotImplementedException');
   }
   public address: string;
-  public publicKey: Buffer;
   public balance: bigint;
   public blockId: string;
   public virgin: 0 | 1;
   // tslint:disable-next-line
   public u_balance: bigint;
-
-  public readonly hexPublicKey: publicKey;
 
   // public isMultisignature(): boolean {
   //   return null;

@@ -13,14 +13,14 @@ export interface ITransportTransaction<T> {
   type: TransactionType;
   amount: string | number;
   senderId?: string;
-  senderPublicKey: string;
+  senderPubData: string;
   timestamp: number;
   asset?: T;
   recipientId: string;
-  signature: string;
   id: string;
   fee: string | number;
-  signatures?: string[];
+  signatures: string[];
+  version?: number;
 }
 
 export interface IBaseTransaction<T, amountType = bigint> {
@@ -28,13 +28,12 @@ export interface IBaseTransaction<T, amountType = bigint> {
   version: number;
   amount: amountType;
   senderId?: string;
-  senderPublicKey: Buffer;
+  senderPubData: Buffer;
   timestamp: number;
   asset?: T;
   recipientId: string;
-  signature: Buffer;
   id: string;
   fee: amountType;
   blockId?: string;
-  signatures?: Buffer[];
+  signatures: Buffer[];
 }

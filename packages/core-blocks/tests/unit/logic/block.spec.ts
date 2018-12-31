@@ -166,14 +166,14 @@ describe('logic/block', () => {
       expect(newBlock.totalFee).to.equal(11n);
       expect(newBlock.numberOfTransactions).to.equal(3);
       expect(newBlock.transactions).to.have.lengthOf(3);
-      expect(newBlock.payloadLength).eq(375);
+      expect(newBlock.payloadLength).eq(378);
       expect(newBlock.previousBlock).eq('1');
       expect(newBlock.reward).eq(30000000n);
       expect(newBlock.totalAmount).eq(326732673000000n);
 
       expect(newBlock.payloadHash).deep.eq(
         Buffer.from(
-          '86e7a3fba0217c29ae3b198d32963138c64e213d7e864ee0423c134f955dfc45',
+          'dbdb611f7ece0794e5273993124834f7acdec2a3f2a753d97a33965df14c211c',
           'hex'
         )
       );

@@ -4,14 +4,13 @@ import {
   AccountFilterData,
   IAccountLogic,
   IAccountsModel,
+  IIdsHandler,
   ILogger,
   Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, DBOp, ModelAttributes } from '@risevision/core-types';
-import { toBigIntBE } from 'bigint-buffer';
-import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import * as sequelize from 'sequelize';
@@ -19,7 +18,7 @@ import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { AccountsSymbols } from '../symbols';
 import { accountsModelCreator } from './models/account';
-import { IModelField, IModelFilter } from './models/modelField';
+import { IModelField } from './models/modelField';
 
 @injectable()
 export class AccountLogic implements IAccountLogic {
@@ -48,6 +47,9 @@ export class AccountLogic implements IAccountLogic {
 
   @inject(CoreSymbols.constants)
   private constants: ConstantsType;
+
+  @inject(Symbols.helpers.idsHandler)
+  private idsHandler: IIdsHandler;
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -86,39 +88,6 @@ export class AccountLogic implements IAccountLogic {
     this.editable = this.model
       .filter((field) => !field.immutable)
       .map((field) => field.name);
-  }
-
-  /**
-   * Verifies validity of public Key
-   * @param {string} publicKey
-   * @param {boolean} allowUndefined
-   */
-  public assertPublicKey(
-    publicKey: string | Buffer,
-    allowUndefined: boolean = true
-  ) {
-    if (typeof publicKey !== 'undefined') {
-      if (Buffer.isBuffer(publicKey)) {
-        if (publicKey.length !== 32) {
-          throw new Error(
-            'Invalid public key. If buffer it must be 32 bytes long'
-          );
-        }
-      } else {
-        if (typeof publicKey !== 'string') {
-          throw new Error('Invalid public key, must be a string');
-        }
-        if (publicKey.length !== 64) {
-          throw new Error('Invalid public key, must be 64 characters long');
-        }
-
-        if (!this.schema.validate(publicKey, { format: 'hex' })) {
-          throw new Error('Invalid public key, must be a hex string');
-        }
-      }
-    } else if (!allowUndefined) {
-      throw new Error('Public Key is undefined');
-    }
   }
 
   /**
@@ -177,8 +146,6 @@ export class AccountLogic implements IAccountLogic {
    * @param fields
    */
   public async set(address: string, fields: ModelAttributes<IAccountsModel>) {
-    this.assertPublicKey(fields.publicKey);
-    address = String(address).toUpperCase();
     fields.address = address;
     await this.AccountsModel.upsert(fields);
   }
@@ -194,7 +161,6 @@ export class AccountLogic implements IAccountLogic {
     address = address.toUpperCase();
     const dbOps: Array<DBOp<any>> = [];
 
-    this.assertPublicKey(diff.publicKey);
     for (const fieldName of this.editable) {
       if (typeof diff[fieldName] === 'undefined') {
         continue;
@@ -261,18 +227,7 @@ export class AccountLogic implements IAccountLogic {
     });
   }
 
-  public generateAddressByPublicKey(publicKey: Buffer): string {
-    this.assertPublicKey(publicKey, false);
-
-    const hash = crypto
-      .createHash('sha256')
-      .update(publicKey)
-      .digest();
-
-    const tmp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      tmp[i] = hash[7 - i];
-    }
-    return `${toBigIntBE(tmp).toString()}${this.constants.addressSuffix}`;
+  public generateAddressFromPubData(pubData: Buffer): string {
+    return this.idsHandler.addressFromPubData(pubData);
   }
 }

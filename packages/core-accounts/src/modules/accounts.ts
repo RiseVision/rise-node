@@ -27,7 +27,7 @@ export class AccountsModule implements IAccountsModule {
     filter: AccountFilterData & { publicKey?: Buffer }
   ): Promise<IAccountsModel> {
     if (filter.publicKey) {
-      filter.address = this.accountLogic.generateAddressByPublicKey(
+      filter.address = this.accountLogic.generateAddressFromPubData(
         filter.publicKey
       );
       delete filter.publicKey;
@@ -131,7 +131,7 @@ export class AccountsModule implements IAccountsModule {
   }
 
   public generateAddressByPublicKey(pk: Buffer) {
-    return this.accountLogic.generateAddressByPublicKey(pk);
+    return this.accountLogic.generateAddressFromPubData(pk);
   }
 
   private fixAndCheckInputParams<
@@ -143,7 +143,7 @@ export class AccountsModule implements IAccountsModule {
     // We calculate address in the case it was not provided or
     // in case publicKey was provided (even if address was provided for security reasons)
     if (what.publicKey || !what.address) {
-      what.address = this.accountLogic.generateAddressByPublicKey(
+      what.address = this.accountLogic.generateAddressFromPubData(
         what.publicKey
       );
     }
