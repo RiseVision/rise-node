@@ -53,6 +53,12 @@ export abstract class BaseTx<T, M extends Model<any>>
     return Promise.resolve();
   }
 
+  public async findConflicts(
+    txs: Array<IBaseTransaction<T>>
+  ): Promise<Array<IBaseTransaction<T>>> {
+    return [];
+  }
+
   public fullBytes(tx: IBaseTransaction<T>): Buffer {
     return Buffer.concat([
       this.signableBytes(tx),

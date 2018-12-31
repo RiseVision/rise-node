@@ -138,6 +138,25 @@ export class TransactionLogic implements ITransactionLogic {
     }
   }
 
+  public async findConflicts(
+    txs: Array<IBaseTransaction<any>>
+  ): Promise<Array<IBaseTransaction<any>>> {
+    const allConflicts: Array<IBaseTransaction<any>> = [];
+    const txsByGroup = _.groupBy(txs, (i) => i.type);
+    // tslint:disable-next-line forin
+    for (const type in txsByGroup) {
+      const loopTXs = txsByGroup[type];
+      this.assertKnownTransactionType(loopTXs[0].type);
+
+      const conflictingTransactions = await this.types[
+        loopTXs[0].type
+      ].findConflicts(loopTXs);
+      allConflicts.push(...conflictingTransactions);
+    }
+
+    return allConflicts;
+  }
+
   public async verify(
     tx: IBaseTransaction<any, bigint>,
     sender: IAccountsModel,

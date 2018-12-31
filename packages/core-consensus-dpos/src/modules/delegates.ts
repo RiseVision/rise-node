@@ -286,7 +286,7 @@ export class DelegatesModule {
     height: number,
     exclusionList: Buffer[]
   ): Promise<Array<{ publicKey: Buffer; vote: bigint }>> {
-    const filter: AccountFilterData = {
+    const filter: AccountFilterData<AccountsModelForDPOS> = {
       isDelegate: 1,
     };
     if (this.dposV2Helper.isV1(height)) {

@@ -2,8 +2,8 @@ BEGIN
 
 ALTER TABLE "mem_accounts"
  ADD COLUMN "cmb" SMALLINT DEFAULT 0,
- ADD COLUMN "username" VARCHAR(20),
- ADD COLUMN "forgingPK" bytea,
+ ADD COLUMN "username" VARCHAR(20) UNIQUE,
+ ADD COLUMN "forgingPK" bytea UNIQUE,
  ADD COLUMN "vote" BIGINT DEFAULT 0,
  ADD COLUMN "votesWeight" BIGINT DEFAULT 0,
  ADD COLUMN "rank" INTEGER DEFAULT 0,
@@ -21,14 +21,8 @@ CREATE TABLE IF NOT EXISTS "votes" (
 );
 
 CREATE TABLE IF NOT EXISTS "delegates" (
-  "username" character varying(20) NOT NULL,
-  "forgingPK" bytea NOT NULL,
-  "transactionId" character varying(250) NOT NULL,
-  FOREIGN KEY("transactionId") REFERENCES "trs"("id") ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS "delegatesPKChange" (
-  "forgingPK" bytea NOT NULL,
+  "username" character varying(20) UNIQUE,
+  "forgingPK" bytea NOT NULL UNIQUE,
   "transactionId" character varying(250) NOT NULL,
   FOREIGN KEY("transactionId") REFERENCES "trs"("id") ON DELETE CASCADE
 );

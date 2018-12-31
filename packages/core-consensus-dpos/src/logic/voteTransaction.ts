@@ -14,6 +14,7 @@ import {
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
+import * as _ from 'lodash';
 import { Model } from 'sequelize-typescript';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols } from '../helpers/';
@@ -126,13 +127,30 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     return this.checkConfirmedDelegates(tx, sender);
   }
 
+  public async findConflicts(
+    txs: Array<IBaseTransaction<VoteAsset>>
+  ): Promise<Array<IBaseTransaction<VoteAsset>>> {
+    // This piece of logic does not really finds conflicting transactions
+    // It will allow only one tx per given set per sender.
+    // this will ensure no conflicting votes will be casted that could cause a block to be invalid.
+
+    const grouped = _.groupBy(txs, (a) => a.senderId);
+    const conflictingTransactions: Array<IBaseTransaction<VoteAsset>> = [];
+    // tslint:disable-next-line
+    for (const senderId in grouped) {
+      const groupedTXsBySender = grouped[senderId];
+      if (groupedTXsBySender.length > 1) {
+        conflictingTransactions.push(...groupedTXsBySender.slice(1));
+      }
+    }
+    return conflictingTransactions;
+  }
+
   public assetBytes(tx: IBaseTransaction<VoteAsset>): Buffer {
     return Buffer.from((tx.asset.votes || []).join(''), 'utf8');
   }
 
-  public readAssetFromBytes(
-    bytes: Buffer
-  ): { asset: VoteAsset; consumedBytes: number } {
+  public readAssetFromBytes(bytes: Buffer): VoteAsset {
     let totalKeys = 0;
     for (
       ;
@@ -147,12 +165,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     for (let i = 0; i < totalKeys; i++) {
       votes.push(bytes.slice(i * 65, (i + 1) * 65).toString('utf8'));
     }
-    return {
-      asset: {
-        votes,
-      },
-      consumedBytes: totalKeys * 65,
-    };
+    return { votes };
   }
 
   // tslint:disable-next-line max-line-length

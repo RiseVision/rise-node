@@ -315,7 +315,7 @@ export class DelegatesAPI {
 
     const accounts = await this.accounts.getAccounts({
       address: { $in: addresses },
-      sort: 'balance',
+      sort: { balance: -1 },
     });
 
     return {

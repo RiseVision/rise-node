@@ -120,9 +120,7 @@ export class MultiSignatureTransaction extends BaseTx<
     return bb.toBuffer() as any;
   }
 
-  public readAssetFromBytes(
-    bytes: Buffer
-  ): { asset: MultisigAsset; consumedBytes: number } {
+  public readAssetFromBytes(bytes: Buffer): MultisigAsset {
     const min = bytes.readUInt8(0);
     const lifetime = bytes.readUInt8(1);
 
@@ -144,14 +142,11 @@ export class MultiSignatureTransaction extends BaseTx<
     }
 
     return {
-      asset: {
-        multisignature: {
-          keysgroup,
-          lifetime,
-          min,
-        },
+      multisignature: {
+        keysgroup,
+        lifetime,
+        min,
       },
-      consumedBytes: 2 + totalKeys * 65,
     };
   }
 

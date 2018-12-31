@@ -69,19 +69,14 @@ export class SecondSignatureTransaction extends BaseTx<
   /**
    * Returns asset, given Buffer containing it
    */
-  public readAssetFromBytes(
-    bytes: Buffer
-  ): { asset: SecondSignatureAsset; consumedBytes: number } {
+  public readAssetFromBytes(bytes: Buffer): SecondSignatureAsset {
     if (bytes === null) {
       return null;
     }
     return {
-      asset: {
-        signature: {
-          publicKey: bytes.slice(0, 32).toString('hex'),
-        },
+      signature: {
+        publicKey: bytes.slice(0, 32).toString('hex'),
       },
-      consumedBytes: 32,
     };
   }
 

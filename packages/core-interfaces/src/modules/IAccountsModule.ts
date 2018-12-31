@@ -4,6 +4,7 @@ import {
   IBaseTransaction,
   publicKey,
 } from '@risevision/core-types';
+import { Omit } from 'utility-types';
 import { AccountDiffType, AccountFilterData } from '../logic';
 import { IAccountsModel } from '../models';
 import { IModule } from './IModule';
@@ -22,7 +23,9 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
     accMap: { [address: string]: T }
   ): Promise<void>;
 
-  getAccount(filter: AccountFilterData<T> & { publicKey?: Buffer }): Promise<T>;
+  getAccount(
+    filter: Omit<AccountFilterData<T>, 'publicKey'> & { publicKey?: Buffer }
+  ): Promise<T>;
 
   getAccounts(filter: AccountFilterData<T>): Promise<T[]>;
 

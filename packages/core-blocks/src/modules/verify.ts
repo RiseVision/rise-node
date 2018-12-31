@@ -8,6 +8,7 @@ import {
   IForkModule,
   IIdsHandler,
   ILogger,
+  ITransactionLogic,
   ITransactionPool,
   ITransactionsModule,
   Symbols,
@@ -54,6 +55,8 @@ export class BlocksModuleVerify {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(TXSymbols.logic)
+  private transactionLogic: ITransactionLogic;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
   @inject(Symbols.helpers.idsHandler)
@@ -198,6 +201,15 @@ export class BlocksModuleVerify {
       }
       throw new Error(
         `Transactions already confirmed: ${confirmedIDs.join(', ')}`
+      );
+    }
+
+    const conflicts = await this.transactionLogic.findConflicts(
+      block.transactions
+    );
+    if (conflicts.length > 0) {
+      throw new Error(
+        'Found conflicting transactions in block. Block is invalid!'
       );
     }
 

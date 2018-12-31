@@ -161,7 +161,7 @@ export class AccountsAPI {
     const accs = await this.accountsModule.getAccounts({
       limit,
       offset,
-      sort: { balance: -1 },
+      sort: { balance: -1 as -1 },
     });
 
     return {

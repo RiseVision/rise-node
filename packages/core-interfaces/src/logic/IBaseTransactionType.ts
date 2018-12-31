@@ -18,6 +18,10 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
 
   verify(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<void>;
 
+  findConflicts(
+    txs: Array<IBaseTransaction<T>>
+  ): Promise<Array<IBaseTransaction<T>>>;
+
   fullBytes(tx: IBaseTransaction<T>): Buffer;
 
   signableBytes(tx: IBaseTransaction<T>): Buffer;
@@ -25,9 +29,7 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
   assetBytes(tx: IBaseTransaction<T>): Buffer;
 
   readAssetFromBytes(bytes: Buffer): T;
-
   fromBytes(buff: Buffer): IBaseTransaction<T, bigint>;
-
   apply(
     tx: IBaseTransaction<T>,
     block: SignedBlockType,

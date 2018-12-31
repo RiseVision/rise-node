@@ -58,7 +58,10 @@ export class AccountsAPI {
       return {
         delegates: delegates
           .filter(
-            (d) => account.delegates.indexOf(d.delegate.hexPublicKey) !== -1
+            (d) =>
+              account.delegates
+                .map((pk) => pk.toString('hex'))
+                .indexOf(d.delegate.hexPublicKey) !== -1
           )
           .map((d) => ({
             address: d.delegate.address,

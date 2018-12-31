@@ -106,6 +106,10 @@ export interface ITransactionLogic {
    */
   attachAssets(txs: Array<IBaseTransaction<any>>): Promise<void>;
 
+  findConflicts(
+    txs: Array<IBaseTransaction<any>>
+  ): Promise<Array<IBaseTransaction<any>>>;
+
   /**
    * Gets maximum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.
    * @returns {number} maximum bytes size

@@ -6,10 +6,10 @@
       "type": "string",
       "format": "username"
     },
-    "publicKey": {
+    "forgingPK": {
       "type": "object",
       "format": "publicKeyBuf"
     }
   },
-  "required": ["username"]
+  "required": ["forgingPK"]
 }

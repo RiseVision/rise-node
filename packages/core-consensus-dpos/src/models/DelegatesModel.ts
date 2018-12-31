@@ -26,5 +26,5 @@ export class DelegatesModel extends BaseModel<DelegatesModel> {
   public transactionId: string;
 
   @Column(DataType.BLOB)
-  public publicKey: Buffer;
+  public forgingPK: Buffer;
 }
