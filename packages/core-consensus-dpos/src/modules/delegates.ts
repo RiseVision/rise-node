@@ -199,8 +199,8 @@ export class DelegatesModule {
     const delegates = await this.accountsModule.getAccounts({
       isDelegate: 1,
       sort: this.dposV2Helper.isV1()
-        ? { vote: -1, publicKey: 1 }
-        : { votesWeight: -1, publicKey: 1 },
+        ? { vote: -1, forgingPK: 1 }
+        : { votesWeight: -1, forgingPK: 1 },
     });
 
     const limit = Math.min(
@@ -290,9 +290,9 @@ export class DelegatesModule {
       isDelegate: 1,
     };
     if (this.dposV2Helper.isV1(height)) {
-      filter.sort = { vote: -1, publicKey: 1 };
+      filter.sort = { vote: -1, forgingPK: 1 };
     } else {
-      filter.sort = { votesWeight: -1, publicKey: 1 };
+      filter.sort = { votesWeight: -1, forgingPK: 1 };
       filter.publicKey = { [Op.notIn]: exclusionList || [] };
       filter.cmb = {
         [Op.lte]: this.dposConstants.dposv2.maxContinuousMissedBlocks,
@@ -305,7 +305,7 @@ export class DelegatesModule {
     }
     const rows = await this.accountsModule.getAccounts(filter);
     return rows.map((r) => ({
-      publicKey: r.publicKey,
+      publicKey: r.forgingPK,
       vote: this.dposV2Helper.isV2(height) ? r.votesWeight : r.vote,
     }));
   }
@@ -367,8 +367,8 @@ export class DelegatesModule {
       // check voted (or unvoted) is actually a delegate.
       // TODO: This can be optimized as it's only effective when "Adding" a vote.
       const del = await this.accountsModule.getAccount({
+        forgingPK: new Buffer(curPK, 'hex'),
         isDelegate: 1,
-        publicKey: new Buffer(curPK, 'hex'),
       });
       if (!del) {
         throw new Error('Delegate not found');

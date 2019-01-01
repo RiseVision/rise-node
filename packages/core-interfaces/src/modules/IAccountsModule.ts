@@ -12,7 +12,7 @@ import { IModule } from './IModule';
 export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
   unfoldSenders(
     txs: Array<IBaseTransaction<any>>
-  ): Array<{ address: string; publicKey: Buffer }>;
+  ): Array<{ address: string; pubData: Buffer }>;
 
   txAccounts(
     txs: Array<IBaseTransaction<any>>
@@ -23,21 +23,11 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
     accMap: { [address: string]: T }
   ): Promise<void>;
 
-  getAccount(
-    filter: Omit<AccountFilterData<T>, 'publicKey'> & { publicKey?: Buffer }
-  ): Promise<T>;
+  getAccount(filter: AccountFilterData<T>): Promise<T>;
 
   getAccounts(filter: AccountFilterData<T>): Promise<T[]>;
 
-  /**
-   * Assign public key to the account
-   */
-  assignPublicKeyToAccount(opts: {
-    address?: string;
-    publicKey: Buffer;
-  }): Promise<T>;
-
   mergeAccountAndGetOPs(diff: AccountDiffType<T>): Array<DBOp<any>>;
 
-  generateAddressByPublicKey(pk: Buffer): string;
+  generateAddressByPubData(pd: Buffer): string;
 }

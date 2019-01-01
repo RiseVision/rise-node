@@ -55,13 +55,18 @@ export class AccountsAPI {
       const { delegates } = await this.delegatesModule.getDelegates({
         orderBy: 'rank:desc',
       });
+
+      // FIXME: In case of a voted delegate is not included in the top ranking delegates, it wont appear in the result
+      // A solution would be to check excluded delegates by querying AccountsModel by
+      // 'forgingPK': { [Op.in] account.delegates}
+      // And add those in the array without the rank informations.
       return {
         delegates: delegates
           .filter(
             (d) =>
               account.delegates
                 .map((pk) => pk.toString('hex'))
-                .indexOf(d.delegate.hexPublicKey) !== -1
+                .indexOf(d.delegate.forgingPK.toString('hex')) !== -1
           )
           .map((d) => ({
             address: d.delegate.address,
@@ -69,7 +74,7 @@ export class AccountsAPI {
             missedblocks: d.delegate.missedblocks,
             producedblocks: d.delegate.producedblocks,
             productivity: d.info.productivity,
-            publicKey: d.delegate.hexPublicKey,
+            publicKey: d.delegate.forgingPK.toString('hex'),
             rank: d.info.rank,
             rate: d.info.rank,
             username: d.delegate.username,
@@ -77,7 +82,7 @@ export class AccountsAPI {
           })),
       };
     }
-    return { publicKey: account.publicKey };
+    return { delegates: [] };
   }
 
   @Get('/delegates/fee')

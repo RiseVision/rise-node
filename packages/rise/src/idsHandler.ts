@@ -7,14 +7,13 @@ const maxAddress = 18446744073709551615n;
 
 @injectable()
 export class RiseIdsHandler implements IIdsHandler {
-  public addressBytes: number = 8;
-  public blockIdByteSize: number = 8;
+  public maxBlockIdBytesUsage = 8;
 
   public addressFromBytes(bytes: Buffer): string {
     return `${toBigIntBE(bytes)}R`;
   }
 
-  public addressFromPubKey(pubKey: Buffer): string {
+  public addressFromPubData(pubKey: Buffer): string {
     return `${this.toBigInt(pubKey)}R`;
   }
 

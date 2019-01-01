@@ -9,6 +9,7 @@ import {
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable } from 'inversify';
+import * as varuint from 'varuint-bitcoin';
 
 @injectable()
 export class BlockBytes {
@@ -22,11 +23,11 @@ export class BlockBytes {
   @inject(TXSymbols.txBytes)
   private txBytes: TXBytes;
 
-  get headerSize() {
+  get maxHeaderSize() {
     return (
       4 +
       4 +
-      this.idsHandler.blockIdByteSize +
+      this.idsHandler.maxBlockIdBytesUsage +
       4 +
       this.constants.amountBytes * 3 +
       4 +
@@ -45,19 +46,25 @@ export class BlockBytes {
     block: BlockHeader<Buffer, bigint>,
     includeSignature: boolean
   ): Buffer {
-    const bb = new ByteBuffer(this.headerSize, true /* little endian */);
+    function encodeVarUint(buf: Buffer) {
+      return Buffer.concat([varuint.encode(buf.length), buf]);
+    }
+
+    const bb = new ByteBuffer(this.maxHeaderSize, true /* little endian */);
 
     bb.writeUint32(block.version);
     bb.writeUint32(block.timestamp);
 
-    bb.append(this.idsHandler.blockIdToBytes(block.previousBlock));
+    bb.append(
+      encodeVarUint(this.idsHandler.blockIdToBytes(block.previousBlock))
+    );
 
     bb.writeUint32(block.numberOfTransactions);
     bb.append(toBufferLE(block.totalAmount, this.constants.amountBytes));
     bb.append(toBufferLE(block.totalFee, this.constants.amountBytes));
     bb.append(toBufferLE(block.reward, this.constants.amountBytes));
-    bb.writeUint32(block.payloadLength);
-    bb.append(block.payloadHash);
+
+    bb.append(encodeVarUint(block.payloadHash));
     bb.append(block.generatorPublicKey);
 
     if (block.blockSignature && includeSignature) {
@@ -70,40 +77,47 @@ export class BlockBytes {
 
   public fromSignableBytes<T>(buff: Buffer): BlockHeader<Buffer, bigint> {
     let offset = 0;
-    const version = buff.readUInt32LE(0);
-    offset += 4;
-    const timestamp = buff.readUInt32LE(offset);
-    offset += 4;
-    const previousBlock = this.idsHandler.blockIdFromBytes(
-      buff.slice(offset, offset + this.idsHandler.blockIdByteSize)
-    );
-    offset += this.idsHandler.blockIdByteSize;
-    const numberOfTransactions = buff.readUInt32LE(offset);
-    offset += 4;
+    function readVarUint() {
+      const length = varuint.decode(buff, offset);
+      offset += varuint.decode.bytes;
+      return readSlice(length);
+    }
 
-    const totalAmount = toBigIntLE(
-      buff.slice(offset, offset + this.constants.amountBytes)
-    );
-    offset += this.constants.amountBytes;
-    const totalFee = toBigIntLE(
-      buff.slice(offset, offset + this.constants.amountBytes)
-    );
-    offset += this.constants.amountBytes;
-    const reward = toBigIntLE(
-      buff.slice(offset, offset + this.constants.amountBytes)
-    );
-    offset += this.constants.amountBytes;
+    function readUint8() {
+      const toRet = buff.readUInt8(offset);
+      offset += 1;
+      return toRet;
+    }
+    function readUint32() {
+      const toRet = buff.readUInt32LE(offset);
+      offset += 4;
+      return toRet;
+    }
+    function readSlice(howMuch: number) {
+      const toRet = buff.slice(offset, offset + howMuch);
+      offset += howMuch;
+      return toRet;
+    }
 
-    const payloadLength = buff.readUInt32LE(offset);
-    offset += 4;
-    const payloadHash = buff.slice(offset, offset + 32);
-    offset += 32;
-    const generatorPublicKey = buff.slice(offset, offset + 32);
-    offset += 32;
+    const version = readUint32();
+    const timestamp = readUint32();
+
+    const previousBlock = this.idsHandler.blockIdFromBytes(readVarUint());
+
+    const numberOfTransactions = readUint32();
+
+    const totalAmount = toBigIntLE(readSlice(this.constants.amountBytes));
+    const totalFee = toBigIntLE(readSlice(this.constants.amountBytes));
+    const reward = toBigIntLE(readSlice(this.constants.amountBytes));
+
+    const payloadHash = readVarUint();
+    const payloadLength = payloadHash.length;
+
+    const generatorPublicKey = readSlice(32);
 
     let blockSignature: Buffer = null;
     if (offset !== buff.length) {
-      blockSignature = buff.slice(offset, offset + 64);
+      blockSignature = readSlice(32);
     }
 
     return {

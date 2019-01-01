@@ -2,8 +2,7 @@
  * ID Handler, Produces IDs for several objects.
  */
 export interface IIdsHandler {
-  addressBytes: number;
-  blockIdByteSize: number;
+  maxBlockIdBytesUsage: number;
 
   addressFromPubData(pubData: Buffer): string;
   addressFromBytes(bytes: Buffer): string;

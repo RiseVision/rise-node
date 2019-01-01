@@ -154,7 +154,7 @@ export class DelegatesAPI {
         address: item.delegate.address,
         cmb: item.delegate.cmb,
         username: item.delegate.username,
-        publicKey: item.delegate.hexPublicKey,
+        publicKey: item.delegate.forgingPK.toString('hex'),
         vote: item.delegate.vote ? `${item.delegate.vote}` : '0',
         votesWeight: item.delegate.votesWeight,
         producedblocks: item.delegate.producedblocks,
@@ -269,7 +269,7 @@ export class DelegatesAPI {
     });
     const delegate = delegates.find(
       (d) =>
-        d.delegate.hexPublicKey === params.publicKey ||
+        d.delegate.forgingPK.toString('hex') === params.publicKey ||
         d.delegate.username === params.username
     );
     if (delegate) {
@@ -528,7 +528,7 @@ export class DelegatesAPI {
 
     const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
     const acc = await this.AccountsModel.findOne({
-      where: { isDelegate: 1, publicKey: bufPublicKey },
+      where: { isDelegate: 1, forgingPK: bufPublicKey },
     });
     if (acc === null) {
       throw new Error('Account not found or is not a delegate');

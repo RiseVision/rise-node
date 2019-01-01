@@ -180,7 +180,7 @@ export class RoundsModule {
 
     return originalDelegates
       .filter((pk) => strPKDelegates.indexOf(pk.toString('hex')) === -1)
-      .map((pk) => this.accountsModule.generateAddressByPublicKey(pk));
+      .map((pk) => this.accountsModule.generateAddressByPubData(pk));
   }
 
   // tslint:disable-next-line

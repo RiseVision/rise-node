@@ -186,12 +186,14 @@ export class RoundLogic {
       // merge Account in the direction.
       queries.push(
         ...this.scope.modules.accounts.mergeAccountAndGetOPs({
+          address: this.scope.modules.accounts.generateAddressByPubData(
+            delegate
+          ),
           balance: this.scope.backwards ? -changes.balance : changes.balance,
           blockId: this.scope.block.id,
           cmb: 0,
           fees: this.scope.backwards ? -changes.fees : changes.fees,
           producedblocks: this.scope.backwards ? -1 : 1,
-          publicKey: delegate,
           rewards: this.scope.backwards ? -changes.rewards : changes.rewards,
           round: this.scope.round,
           u_balance: this.scope.backwards ? -changes.balance : changes.balance,
@@ -216,10 +218,12 @@ export class RoundLogic {
 
       queries.push(
         ...this.scope.modules.accounts.mergeAccountAndGetOPs({
+          address: this.scope.modules.accounts.generateAddressByPubData(
+            remainderDelegate
+          ),
           balance: feesRemaining,
           blockId: this.scope.block.id,
           fees: feesRemaining,
-          publicKey: remainderDelegate,
           round: this.scope.round,
           u_balance: feesRemaining,
         })

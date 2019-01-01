@@ -124,14 +124,14 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     // We take 98% of the theoretical value to allow for some overhead
     const maxBytes = maxPayloadSize * 0.98;
     // Best case scenario: we find 1.5MB of empty blocks.
-    const maxHeightDelta = Math.ceil(maxBytes / this.blockBytes.headerSize);
+    const maxHeightDelta = Math.ceil(maxBytes / this.blockBytes.maxHeaderSize);
     // We can also limit the number of transactions, with a very rough estimation of the max number of txs that will fit
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
     // In RISE the value is about 8000 TXs
     const txLimit = Math.ceil(
       (maxBytes * this.blocksConstants.blocks.maxTxsPerBlock) /
         (this.getMinBytesSize() * this.blocksConstants.blocks.maxTxsPerBlock +
-          this.blockBytes.headerSize)
+          this.blockBytes.maxHeaderSize)
     );
 
     // Get only height and type for all the txs in this height range
@@ -171,7 +171,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
         // Add blocks size one by one
         for (let i = 0; i < heightDelta; i++) {
           // First add the empty block's size
-          blocksSize += this.blockBytes.headerSize;
+          blocksSize += this.blockBytes.maxHeaderSize;
           // If it doesn't fit already, don't increase the number of blocks to load.
           if (blocksSize + txsSize > maxBytes) {
             break;
@@ -183,9 +183,9 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
         txsSize += this.getByteSizeByTxType(tx.type);
       }
       // If arrived here we didn't fill the payload enough, add enough empty blocks
-      if (maxBytes - blocksSize - txsSize > this.blockBytes.headerSize) {
+      if (maxBytes - blocksSize - txsSize > this.blockBytes.maxHeaderSize) {
         blocksToLoad += Math.ceil(
-          (maxBytes - blocksSize - txsSize) / this.blockBytes.headerSize
+          (maxBytes - blocksSize - txsSize) / this.blockBytes.maxHeaderSize
         );
       }
     } else {

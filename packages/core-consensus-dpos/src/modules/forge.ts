@@ -235,7 +235,7 @@ export class ForgeModule extends Extendable implements IModule {
           .digest()
       );
       const account = await this.accountsModule.getAccount({
-        publicKey: keypair.publicKey,
+        forgingPK: keypair.publicKey,
       });
       if (!account) {
         throw new Error(
@@ -250,7 +250,7 @@ export class ForgeModule extends Extendable implements IModule {
         this.logger.info(`Forging enabled on account ${account.address}`);
       } else {
         this.logger.warn(
-          `Account with public Key: ${account.publicKey} is not a delegate`
+          `Account with public Key: ${account.address} is not a delegate`
         );
       }
     }

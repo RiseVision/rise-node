@@ -66,19 +66,23 @@ export abstract class BaseTx<T, M extends Model<any>>
   public signableBytes(tx: IBaseTransaction<T>): Buffer {
     const bb = new ByteBuffer(1024, true);
 
+    function encodeVarUint(buf: Buffer) {
+      return Buffer.concat([varuint.encode(buf.length), buf]);
+    }
+
     bb.writeByte(tx.type);
     if (tx.version) {
       bb.writeUint32(2 ** 32 - 128 + tx.version);
     }
     bb.writeUint32(tx.timestamp);
-    bb.append(varuint.encode(tx.senderPubData.length));
-    bb.append(tx.senderPubData);
-    bb.append(this.idsHandler.addressToBytes(tx.recipientId));
+
+    bb.append(encodeVarUint(tx.senderPubData));
+    bb.append(encodeVarUint(this.idsHandler.addressToBytes(tx.recipientId)));
+
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
     bb.append(toBufferLE(tx.fee, this.constants.amountBytes));
-    const assetBytes = this.assetBytes(tx);
-    bb.append(varuint.encode(assetBytes.length));
-    bb.append(assetBytes);
+
+    bb.append(encodeVarUint(this.assetBytes(tx)));
     bb.flip();
     return new Buffer(bb.toBuffer());
   }
@@ -96,6 +100,12 @@ export abstract class BaseTx<T, M extends Model<any>>
    */
   public fromBytes(buff: Buffer): IBaseTransaction<T, bigint> {
     let offset = 0;
+    function readVarUint() {
+      const length = varuint.decode(buff, offset);
+      offset += varuint.decode.bytes;
+      return readSlice(length);
+    }
+
     function readUint8() {
       const toRet = buff.readUInt8(offset);
       offset += 1;
@@ -120,21 +130,14 @@ export abstract class BaseTx<T, M extends Model<any>>
       timestamp = readUint32();
     }
 
-    const pubDataLength = varuint.decode(buff, offset);
-    offset += varuint.decode.bytes;
-    const senderPubData = readSlice(pubDataLength);
-
-    const recipientId = this.idsHandler.addressFromBytes(
-      readSlice(this.idsHandler.addressBytes)
-    );
+    const senderPubData = readVarUint();
+    const recipientId = this.idsHandler.addressFromBytes(readVarUint());
 
     const amount = toBigIntLE(readSlice(this.constants.amountBytes));
 
     const fee = toBigIntLE(readSlice(this.constants.amountBytes));
 
-    const assetLength = varuint.decode(buff, offset);
-    offset += varuint.decode.bytes;
-    const asset = this.readAssetFromBytes(readSlice(assetLength));
+    const asset = this.readAssetFromBytes(readVarUint());
 
     const nSignatures = Math.floor((buff.length - offset) / 64);
     const signatures = new Array(nSignatures)
