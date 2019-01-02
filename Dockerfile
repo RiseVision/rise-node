@@ -27,5 +27,8 @@ USER rise
 
 COPY --chown=rise . /home/rise/rise-node/
 RUN npm run transpile
+RUN rm -rf tests
 
-CMD ["node", "app.js"]
+COPY --chown=rise ./docker/mainnet_config.json /home/rise/config.json
+
+CMD ["node", "dist/app.js", "-n", "mainnet", "-e", "/home/rise/config.json"]
