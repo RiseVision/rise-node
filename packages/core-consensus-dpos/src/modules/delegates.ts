@@ -75,16 +75,18 @@ export class DelegatesModule {
 
   public async checkConfirmedDelegates(
     account: AccountsModelForDPOS,
-    votes: string[]
+    added: string[],
+    removed: string[]
   ) {
-    return this.checkDelegates(account, votes, 'confirmed');
+    return this.checkDelegates(account, added, removed, 'confirmed');
   }
 
   public async checkUnconfirmedDelegates(
     account: AccountsModelForDPOS,
-    votes: string[]
+    added: string[],
+    removed: string[]
   ) {
-    return this.checkDelegates(account, votes, 'unconfirmed');
+    return this.checkDelegates(account, added, removed, 'unconfirmed');
   }
 
   /**
@@ -313,65 +315,49 @@ export class DelegatesModule {
   /**
    * Checks vote integrity for account and controls total votes do not exceed active delegates.
    * @param {AccountsModel} account
-   * @param votes
+   * @param addedVotes
+   * @param removedVotes
    * @param state
    * @return {Promise<void>}
    */
   private async checkDelegates(
     account: AccountsModelForDPOS,
-    votes: string[],
+    addedVotes: string[],
+    removedVotes: string[],
     state: 'confirmed' | 'unconfirmed'
   ) {
     if (!account) {
       throw new Error('Account not found');
     }
 
-    const delegates: publicKey[] = (
-      (state === 'confirmed' ? account.delegates : account.u_delegates) ||
-      ([] as any)
-    ).map((b: Buffer) => b.toString('hex'));
+    const delegates: string[] =
+      (state === 'confirmed' ? account.delegates : account.u_delegates) || [];
     const existingVotes = Array.isArray(delegates) ? delegates.length : 0;
 
-    let additions = 0;
-    let removals = 0;
+    const additions = addedVotes.length;
+    const removals = removedVotes.length;
 
-    for (const vote of votes) {
-      const sign = vote[0];
-      if (sign === '+') {
-        additions++;
-      } else if (sign === '-') {
-        removals++;
-      } else {
-        throw new Error('Invalid math operator');
-      }
-
-      const curPK = vote.substr(1);
-
-      if (
-        !this.schema.validate(curPK, { format: 'publicKey', type: 'string' })
-      ) {
-        throw new Error('Invalid public key');
-      }
-
-      if (sign === '+' && delegates.indexOf(curPK) !== -1) {
+    for (const vote of addedVotes) {
+      if (delegates.indexOf(vote) !== -1) {
         throw new Error(
           'Failed to add vote, account has already voted for this delegate'
         );
       }
-      if (sign === '-' && delegates.indexOf(curPK) === -1) {
-        throw new Error(
-          'Failed to remove vote, account has not voted for this delegate'
-        );
-      }
-
-      // check voted (or unvoted) is actually a delegate.
-      // TODO: This can be optimized as it's only effective when "Adding" a vote.
+      // check voted is actually a delegate.
       const del = await this.accountsModule.getAccount({
-        forgingPK: new Buffer(curPK, 'hex'),
         isDelegate: 1,
+        username: vote,
       });
       if (!del) {
         throw new Error('Delegate not found');
+      }
+    }
+
+    for (const vote of removedVotes) {
+      if (delegates.indexOf(vote) === -1) {
+        throw new Error(
+          'Failed to remove vote, account has not voted for this delegate'
+        );
       }
     }
 

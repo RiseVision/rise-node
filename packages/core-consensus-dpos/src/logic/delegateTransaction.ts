@@ -21,7 +21,11 @@ import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
-import { AccountsModelForDPOS, DelegatesModel } from '../models/';
+import {
+  Accounts2DelegatesModel,
+  AccountsModelForDPOS,
+  DelegatesModel,
+} from '../models/';
 
 // tslint:disable-next-line no-var-requires
 const delegateAssetSchema = require('../../schema/asset.json');
@@ -273,6 +277,8 @@ export class RegisterDelegateTransaction extends BaseTx<
           transactionId: id,
         },
       });
+
+      sender.applyValues({ forgingPK: dm.forgingPK });
       return [
         {
           model: this.AccountsModel,
@@ -408,7 +414,6 @@ export class RegisterDelegateTransaction extends BaseTx<
     let size = super.getMaxBytesSize();
     size += 20; // username
     size += 32; // publicKey
-    size += 8; // address
     return size;
   }
 

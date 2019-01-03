@@ -15,7 +15,8 @@ ALTER TABLE "mem_accounts"
  ADD COLUMN "rewards" BIGINT DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS "votes" (
-  "votes" TEXT,
+  "added" character varying (20)[],
+  "removed" character varying (20)[],
   "transactionId" VARCHAR(250) NOT NULL,
   FOREIGN KEY("transactionId") REFERENCES "trs"("id") ON DELETE CASCADE
 );
@@ -23,13 +24,13 @@ CREATE TABLE IF NOT EXISTS "votes" (
 CREATE TABLE IF NOT EXISTS "delegates" (
   "username" character varying(20) UNIQUE,
   "forgingPK" bytea NOT NULL UNIQUE,
-  "transactionId" character varying(250) NOT NULL,
+  "transactionId" character varying(250) NOT NULL UNIQUE,
   FOREIGN KEY("transactionId") REFERENCES "trs"("id") ON DELETE CASCADE
 );
 
 CREATE TABLE mem_accounts2delegates (
   "address" character varying(250) NOT NULL,
-  "delegatePublicKey" bytea NOT NULL
+  "username" character varying(20) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "rounds_fees"(

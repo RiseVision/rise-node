@@ -8,7 +8,7 @@ import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 const buildArrayArgAttribute = (table: string): any => {
   return [
     sequelize.literal(
-      `(SELECT ARRAY_AGG("delegatePublicKey") FROM mem_accounts2${table} WHERE "address" = "AccountsModel"."address")`
+      `(SELECT ARRAY_AGG("username") FROM mem_accounts2${table} WHERE "address" = "AccountsModel"."address")`
     ),
     table,
   ];
@@ -35,7 +35,7 @@ export class AccountsModelForDPOS extends IAccountsModel {
   @Column
   public isDelegate: 0 | 1;
   @Column(DataType.TEXT)
-  public delegates?: Buffer[];
+  public delegates?: string[];
   @Column(DataType.BIGINT)
   public vote: bigint;
   @Column
@@ -50,7 +50,7 @@ export class AccountsModelForDPOS extends IAccountsModel {
   public u_isDelegate: 0 | 1;
   @Column(DataType.TEXT)
   // tslint:disable-next-line
-  public u_delegates?: Buffer[];
+  public u_delegates?: string[];
 
   @Column
   public producedblocks: number;

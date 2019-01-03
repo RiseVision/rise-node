@@ -16,11 +16,6 @@ import { dPoSSymbols, Slots } from '../../helpers';
 import { AccountsModelForDPOS, DelegatesModel } from '../../models';
 import { DelegatesModule } from '../../modules';
 
-const countDuplicatedDelegatesSQL = fs.readFileSync(
-  `${__dirname}/../../../sql/countDuplicatedDelegates.sql`,
-  { encoding: 'utf8' }
-);
-
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
 
@@ -51,13 +46,6 @@ export class DelegatesHooks extends Extendable {
     });
     if (delegatesCount === 0) {
       throw new Error('No delegates found');
-    }
-    const [duplicatedDelegates] = await this.delegatesModel.sequelize.query(
-      countDuplicatedDelegatesSQL,
-      { type: sequelize.QueryTypes.SELECT }
-    );
-    if (duplicatedDelegates.count > 0) {
-      throw new Error('Delegates table corrupted with duplicated entries');
     }
   }
 
