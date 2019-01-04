@@ -20,8 +20,8 @@ import { SendTxAssetModel } from './models';
 import { TXSymbols } from './txSymbols';
 
 // tslint:disable-next-line
-export type SendTxAsset<T=Buffer> = {
-  data: T
+export type SendTxAsset<T = Buffer> = {
+  data: T;
 };
 
 @injectable()
@@ -51,9 +51,11 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
     sender: IAccountsModel,
     height: number
   ): bigint {
-    return this.systemModule.getFees(height).fees.send +
+    return (
+      this.systemModule.getFees(height).fees.send +
       BigInt(tx.asset && tx.asset.data ? tx.asset.data.length : 0) *
-      this.systemModule.getFees(height).fees.sendDataMultiplier;
+        this.systemModule.getFees(height).fees.sendDataMultiplier
+    );
   }
 
   public async verify(
@@ -117,9 +119,9 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<SendTxAsset<string|Buffer>, bigint>
+    tx: IBaseTransaction<SendTxAsset<string | Buffer>, bigint>
   ): IBaseTransaction<SendTxAsset, bigint> {
-    if (tx.asset.data && typeof(tx.asset.data) === 'string') {
+    if (tx.asset.data && typeof tx.asset.data === 'string') {
       tx.asset.data = Buffer.from(tx.asset.data, 'utf8');
     }
     return tx as IBaseTransaction<SendTxAsset>;
@@ -127,10 +129,10 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
 
   public dbSave(tx: IBaseTransaction<SendTxAsset>) {
     return {
-      model : this.SendTxAssetModel,
-      type  : 'create',
+      model: this.SendTxAssetModel,
+      type: 'create',
       values: {
-        data        : tx.asset && tx.asset.data ? tx.asset.data : null,
+        data: tx.asset && tx.asset.data ? tx.asset.data : null,
         transactionId: tx.id,
       },
     } as DBCreateOp<SendTxAssetModel>;

@@ -2,7 +2,8 @@ import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   BelongsTo,
-  Column, DataType,
+  Column,
+  DataType,
   ForeignKey,
   PrimaryKey,
   Table,
@@ -31,5 +32,4 @@ export class SendTxAssetModel extends BaseModel<SendTxAssetModel> {
     )
   )
   public transaction: ITransactionsModel;
-
 }

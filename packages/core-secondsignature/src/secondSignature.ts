@@ -202,14 +202,17 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<SecondSignatureAsset<string|Buffer>, bigint>
+    tx: IBaseTransaction<SecondSignatureAsset<string | Buffer>, bigint>
   ): IBaseTransaction<SecondSignatureAsset, bigint> {
     const report = this.schema.validate(
       tx.asset.signature,
       secondSignatureSchema
     );
-    if (typeof(tx.asset.signature.publicKey) === 'string') {
-      tx.asset.signature.publicKey = Buffer.from(tx.asset.signature.publicKey, 'hex');
+    if (typeof tx.asset.signature.publicKey === 'string') {
+      tx.asset.signature.publicKey = Buffer.from(
+        tx.asset.signature.publicKey,
+        'hex'
+      );
     }
     if (!report) {
       throw new Error(

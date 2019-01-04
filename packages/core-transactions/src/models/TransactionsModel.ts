@@ -1,3 +1,4 @@
+import { toTransportable } from '@risevision/core-helpers';
 import {
   IBlocksModule,
   ITransactionsModel,
@@ -18,7 +19,6 @@ import {
 } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { toTransportable } from '@risevision/core-helpers';
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length

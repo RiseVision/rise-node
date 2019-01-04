@@ -10,6 +10,7 @@ import { p2pSymbols } from '@risevision/core-p2p';
 import * as z_schema from 'z-schema';
 import { TransactionsAPI } from './api';
 import { TXLoader } from './loader';
+import { SendTxAssetModel, TransactionsModel } from './models';
 import { GetTransactionsRequest, PostTransactionsRequest } from './p2p';
 import { PoolManager } from './PoolManager';
 import { InnerTXQueue } from './poolTXsQueue';
@@ -17,7 +18,6 @@ import { SendTransaction } from './sendTransaction';
 import { TransactionLogic } from './TransactionLogic';
 import { TransactionsModule } from './TransactionModule';
 import { TransactionPool } from './TransactionPool';
-import { SendTxAssetModel, TransactionsModel } from './models';
 import { TXBytes } from './txbytes';
 import { TXSymbols } from './txSymbols';
 
