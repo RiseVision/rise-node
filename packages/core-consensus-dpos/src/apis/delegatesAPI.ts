@@ -1,4 +1,5 @@
 import { DeprecatedAPIError, PrivateApisGuard } from '@risevision/core-apis';
+import { toTransportable } from '@risevision/core-helpers';
 import {
   IAccountsModule,
   IBlocksModel,
@@ -64,7 +65,7 @@ export class DelegatesAPI {
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
         m.username,
         m.address,
-        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m."forgingPK",
         m.vote,
         m.producedblocks,
         m.missedblocks,
@@ -274,26 +275,28 @@ export class DelegatesAPI {
     );
     if (delegate) {
       return {
-        delegate: filterObject(
-          {
-            ...delegate.delegate.toPOJO(),
-            ...delegate.info,
-            ...{ rate: delegate.info.rank },
-          },
-          [
-            'username',
-            'address',
-            'cmb',
-            'publicKey',
-            'vote',
-            'votesWeight',
-            'producedblocks',
-            'missedblocks',
-            'rank',
-            'approval',
-            'productivity',
-            'rate',
-          ]
+        delegate: toTransportable(
+          filterObject(
+            {
+              ...delegate.delegate.toPOJO(),
+              ...delegate.info,
+              ...{ rate: delegate.info.rank },
+            },
+            [
+              'username',
+              'address',
+              'cmb',
+              'forgingPK',
+              'vote',
+              'votesWeight',
+              'producedblocks',
+              'missedblocks',
+              'rank',
+              'approval',
+              'productivity',
+              'rate',
+            ]
+          )
         ),
       };
     }
@@ -320,12 +323,7 @@ export class DelegatesAPI {
 
     return {
       accounts: accounts.map((a) =>
-        filterObject(a.toPOJO(), [
-          'address',
-          'balance',
-          'username',
-          'publicKey',
-        ])
+        filterObject(a.toPOJO(), ['address', 'balance', 'username'])
       ),
     };
   }
@@ -351,9 +349,11 @@ export class DelegatesAPI {
       orderBy[0],
       orderBy[1] as any
     );
-    const delegates = await this.Accounts2DelegatesModel.sequelize.query(
-      delQuery,
-      { raw: true, type: sequelize.QueryTypes.SELECT }
+    const delegates = toTransportable(
+      await this.Accounts2DelegatesModel.sequelize.query(delQuery, {
+        raw: true,
+        type: sequelize.QueryTypes.SELECT,
+      })
     );
     return { delegates };
   }

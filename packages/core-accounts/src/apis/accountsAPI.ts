@@ -1,17 +1,16 @@
 import { CoreSymbols } from '@risevision/core';
 import { DeprecatedAPIError } from '@risevision/core-apis';
+import { toTransportable } from '@risevision/core-helpers';
 import {
   IAccountsModel,
   IAccountsModule,
   ISystemModule,
-  Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
   AppConfig,
   ConstantsType,
   FieldsInModel,
-  publicKey,
 } from '@risevision/core-types';
 import {
   HTTPError,
@@ -77,14 +76,16 @@ export class AccountsAPI {
       throw new HTTPError('Account not found', 200);
     }
     return {
-      account: await this.hookSystem.apply_filters(
-        FilterAPIGetAccount.name,
-        {
-          address: accData.address,
-          balance: `${accData.balance}`,
-          unconfirmedBalance: `${accData.u_balance}`,
-        },
-        accData
+      account: toTransportable(
+        await this.hookSystem.apply_filters(
+          FilterAPIGetAccount.name,
+          {
+            address: accData.address,
+            balance: `${accData.balance}`,
+            unconfirmedBalance: `${accData.u_balance}`,
+          },
+          accData
+        )
       ),
     };
   }
@@ -131,7 +132,7 @@ export class AccountsAPI {
       accounts: accs
         .map((acc) => acc.toPOJO())
         .map((acc) => filterObject(acc, returnFields))
-        .map((acc) => ({ ...acc, balance: `${acc.balance}` })),
+        .map(toTransportable),
     };
   }
 
