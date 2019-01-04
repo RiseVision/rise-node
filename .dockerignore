@@ -1,4 +1,7 @@
-dist
-node_modules
+.devutils
+.git
 Dockerfile
+dist
 docker-compose.yml
+node_modules
+tests

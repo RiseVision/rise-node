@@ -1,6 +1,6 @@
 FROM node:8-alpine
 
-RUN apk add --no-cache --virtual .gyp \
+RUN apk --update add --no-cache --virtual .gyp \
         autoconf \
         automake \
         findutils \
@@ -9,7 +9,7 @@ RUN apk add --no-cache --virtual .gyp \
         make \
         python
 
-RUN apk add postgresql-dev
+RUN apk --update add --no-cache postgresql-dev
 
 RUN adduser -D rise
 USER rise
@@ -26,9 +26,9 @@ RUN apk del .gyp
 USER rise
 
 COPY --chown=rise . /home/rise/rise-node/
-RUN npm run transpile
-RUN rm -rf tests
+RUN npm run transpile && npm prune --production
 
 COPY --chown=rise ./docker/mainnet_config.json /home/rise/config.json
 
+EXPOSE 5555
 CMD ["node", "dist/app.js", "-n", "mainnet", "-e", "/home/rise/config.json"]
