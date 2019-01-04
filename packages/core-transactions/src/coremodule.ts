@@ -17,7 +17,7 @@ import { SendTransaction } from './sendTransaction';
 import { TransactionLogic } from './TransactionLogic';
 import { TransactionsModule } from './TransactionModule';
 import { TransactionPool } from './TransactionPool';
-import { TransactionsModel } from './TransactionsModel';
+import { SendTxAssetModel, TransactionsModel } from './models';
 import { TXBytes } from './txbytes';
 import { TXSymbols } from './txSymbols';
 
@@ -43,7 +43,12 @@ export class CoreModule extends BaseCoreModule {
     this.container
       .bind(ModelSymbols.model)
       .toConstructor(TransactionsModel)
-      .whenTargetNamed(TXSymbols.model);
+      .whenTargetNamed(TXSymbols.models.model);
+
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(SendTxAssetModel)
+      .whenTargetNamed(TXSymbols.models.sendTxAsset);
 
     this.container
       .bind(Symbols.modules.transactions)

@@ -75,7 +75,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     super(TransactionType.VOTE);
   }
 
-  public calculateFee(
+  public calculateMinFee(
     tx: IBaseTransaction<VoteAsset>,
     sender: IAccountsModel,
     height: number

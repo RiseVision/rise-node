@@ -71,7 +71,7 @@ describe('functionalities.multisignature', () => {
 
     TxModel = initializer.appManager.container.getNamed(
       ModelSymbols.model,
-      TXSymbols.model
+      TXSymbols.models.model
     );
     accountsModule = initializer.appManager.container.get(
       AccountsSymbols.module

@@ -72,7 +72,7 @@ export class TransactionLogic implements ITransactionLogic {
   private idsHandler: IIdsHandler;
 
   @inject(ModelSymbols.model)
-  @named(TXSymbols.model)
+  @named(TXSymbols.models.model)
   private TransactionsModel: typeof ITransactionsModel;
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
@@ -217,9 +217,9 @@ export class TransactionLogic implements ITransactionLogic {
     // }
 
     // Check fee
-    const fee = this.types[tx.type].calculateFee(tx, sender, height);
-    if (fee !== tx.fee) {
-      throw new Error('Invalid transaction fee');
+    const fee = this.types[tx.type].calculateMinFee(tx, sender, height);
+    if (fee > tx.fee) {
+      throw new Error(`Invalid transaction fee. Min fee is ${fee}`);
     }
 
     this.assertValidAmounts(tx);

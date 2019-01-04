@@ -10,7 +10,7 @@ import { IAccountsModel } from '../models';
 export interface IBaseTransactionType<T, M extends Model<any>> {
   readonly type: TransactionType;
 
-  calculateFee(
+  calculateMinFee(
     tx: IBaseTransaction<T>,
     sender: IAccountsModel,
     height: number

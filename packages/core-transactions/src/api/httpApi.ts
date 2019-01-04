@@ -73,7 +73,7 @@ export class TransactionsAPI {
   private systemModule: ISystemModule;
 
   @inject(ModelSymbols.model)
-  @named(TXSymbols.model)
+  @named(TXSymbols.models.model)
   private TXModel: typeof ITransactionsModel;
   @inject(ModelSymbols.model)
   @named(ModelSymbols.names.accounts)

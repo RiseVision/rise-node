@@ -54,7 +54,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   @named(BlocksSymbols.model)
   private BlocksModel: typeof IBlocksModel;
   @inject(ModelSymbols.model)
-  @named(TXSymbols.model)
+  @named(TXSymbols.models.model)
   private TransactionsModel: typeof ITransactionsModel;
 
   @inject(Symbols.generic.constants)

@@ -16,6 +16,12 @@ CREATE TABLE IF NOT EXISTS "trs"(
   FOREIGN KEY("blockId") REFERENCES "blocks"("id") ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS "trs_send_asset" (
+  "data" bytea,
+  "transactionId" VARCHAR(250) NOT NULL,
+  FOREIGN KEY("transactionId") REFERENCES "trs"("id") ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS "idx_trs_block_id" ON "trs"("blockId");
 CREATE INDEX IF NOT EXISTS "idx_trs_sender_id" ON "trs"("senderId");
 CREATE INDEX IF NOT EXISTS "idx_trs_recipient_id" ON "trs"("recipientId");

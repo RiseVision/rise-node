@@ -22,9 +22,9 @@ import { SigSymbols } from './symbols';
 const secondSignatureSchema = require('../schema/secondSignature.json');
 
 // tslint:disable-next-line interface-over-type-literal
-export type SecondSignatureAsset = {
+export type SecondSignatureAsset<T = Buffer> = {
   signature: {
-    publicKey: string;
+    publicKey: Buffer;
   };
 };
 
@@ -54,7 +54,7 @@ export class SecondSignatureTransaction extends BaseTx<
     super(TransactionType.SIGNATURE);
   }
 
-  public calculateFee(
+  public calculateMinFee(
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: IAccountsModel,
     height: number
@@ -63,19 +63,16 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public assetBytes(tx: IBaseTransaction<SecondSignatureAsset>): Buffer {
-    return Buffer.from(tx.asset.signature.publicKey, 'hex');
+    return tx.asset.signature.publicKey;
   }
 
   /**
    * Returns asset, given Buffer containing it
    */
   public readAssetFromBytes(bytes: Buffer): SecondSignatureAsset {
-    if (bytes === null) {
-      return null;
-    }
     return {
       signature: {
-        publicKey: bytes.slice(0, 32).toString('hex'),
+        publicKey: bytes,
       },
     };
   }
@@ -99,7 +96,7 @@ export class SecondSignatureTransaction extends BaseTx<
     if (
       !tx.asset.signature.publicKey ||
       !this.schema.validate(tx.asset.signature.publicKey, {
-        format: 'publicKey',
+        format: 'publicKeyBuf',
       })
     ) {
       throw new Error('Invalid public key');
@@ -111,7 +108,7 @@ export class SecondSignatureTransaction extends BaseTx<
     block: SignedBlockType,
     sender: AccountsModelWith2ndSign
   ): Promise<Array<DBOp<any>>> {
-    const secondPublicKey = Buffer.from(tx.asset.signature.publicKey, 'hex');
+    const secondPublicKey = tx.asset.signature.publicKey;
     sender.applyValues({
       secondPublicKey,
       secondSignature: 1,
@@ -205,12 +202,15 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<SecondSignatureAsset, bigint>
+    tx: IBaseTransaction<SecondSignatureAsset<string|Buffer>, bigint>
   ): IBaseTransaction<SecondSignatureAsset, bigint> {
     const report = this.schema.validate(
       tx.asset.signature,
       secondSignatureSchema
     );
+    if (typeof(tx.asset.signature.publicKey) === 'string') {
+      tx.asset.signature.publicKey = Buffer.from(tx.asset.signature.publicKey, 'hex');
+    }
     if (!report) {
       throw new Error(
         `Failed to validate signature schema: ${this.schema
@@ -229,7 +229,7 @@ export class SecondSignatureTransaction extends BaseTx<
       model: this.SignaturesModel,
       type: 'create',
       values: {
-        publicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        publicKey: tx.asset.signature.publicKey,
         transactionId: tx.id,
       },
     };
@@ -252,7 +252,7 @@ export class SecondSignatureTransaction extends BaseTx<
       const info = res[indexes[tx.id]];
       tx.asset = {
         signature: {
-          publicKey: info.publicKey.toString('hex'),
+          publicKey: info.publicKey,
         },
       };
     });

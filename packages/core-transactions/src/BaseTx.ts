@@ -40,7 +40,7 @@ export abstract class BaseTx<T, M extends Model<any>>
     return this.txType;
   }
 
-  public abstract calculateFee(
+  public abstract calculateMinFee(
     tx: IBaseTransaction<T>,
     sender: IAccountsModel,
     height: number

@@ -92,7 +92,7 @@ describe('highlevel checks', function() {
     txPoolManager = initializer.appManager.container.get(TXSymbols.poolManager);
     txModel = initializer.appManager.container.getNamed(
       ModelSymbols.model,
-      TXSymbols.model
+      TXSymbols.models.model
     );
     blocksModel = initializer.appManager.container.getNamed(
       ModelSymbols.model,

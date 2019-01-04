@@ -18,6 +18,7 @@ import {
 } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { toTransportable } from '@risevision/core-helpers';
 
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
@@ -36,21 +37,11 @@ export class TransactionsModel<Asset = any>
     } else {
       obj = { ...t };
     }
-    ['senderPublicKey', 'signature'].forEach((k) => {
-      if (typeof obj[k] !== 'undefined' && obj[k] !== null) {
-        obj[k] = obj[k].toString('hex');
-      }
-    });
+
     if (obj.height) {
       obj.confirmations = 1 + blocksModule.lastBlock.height - obj.height;
     }
-    if (typeof obj.amount === 'bigint') {
-      obj.amount = `${obj.amount}`;
-    }
-    if (typeof obj.fee === 'bigint') {
-      obj.fee = `${obj.fee}`;
-    }
-    return obj as any;
+    return toTransportable(obj);
   }
   @PrimaryKey
   @Column
