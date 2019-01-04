@@ -23,9 +23,12 @@ import { IRoundLogicNewable, RoundLogicScope, RoundsLogic } from '../logic/';
 import { AccountsModelForDPOS } from '../models/';
 import { DelegatesModule } from './delegates';
 
-const sumRoundSQL = fs.readFileSync(`${__dirname}/../../sql/sumRound.sql`, {
-  encoding: 'utf8',
-});
+const sumRoundSQL = fs.readFileSync(
+  `${__dirname}/../../sql/queries/sumRound.sql`,
+  {
+    encoding: 'utf8',
+  }
+);
 
 @injectable()
 export class RoundsModule {

@@ -35,7 +35,6 @@ export const Symbols = {
   models: {
     accounts: Symbol.for('rise.accountsModel'),
     blocks: Symbol.for('rise.blocksModel'),
-    forkStats: Symbol.for('rise.forkStats'),
     info: Symbol.for('rise.infoModel'),
     migrations: Symbol.for('rise.migrations'),
     peers: Symbol.for('rise.peers'),

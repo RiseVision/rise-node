@@ -17,7 +17,7 @@ import { AccountsModelForDPOS, DelegatesModel } from '../../models';
 import { DelegatesModule } from '../../modules';
 
 const countDuplicatedDelegatesSQL = fs.readFileSync(
-  `${__dirname}/../../../sql/countDuplicatedDelegates.sql`,
+  `${__dirname}/../../../sql/queries/countDuplicatedDelegates.sql`,
   { encoding: 'utf8' }
 );
 

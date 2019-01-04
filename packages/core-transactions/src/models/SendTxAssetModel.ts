@@ -9,7 +9,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 
-@Table({ tableName: 'trs_send_asset' })
+@Table({ tableName: 'trsassets_send' })
 export class SendTxAssetModel extends BaseModel<SendTxAssetModel> {
   @PrimaryKey
   @Column(DataType.BLOB)

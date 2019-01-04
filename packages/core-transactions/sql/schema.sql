@@ -1,4 +1,4 @@
-BEGIN
+BEGIN;
 
 CREATE TABLE IF NOT EXISTS "trs"(
   "id" VARCHAR(255) PRIMARY KEY,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS "trs"(
   FOREIGN KEY("blockId") REFERENCES "blocks"("id") ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS "trs_send_asset" (
+CREATE TABLE IF NOT EXISTS "trsassets_send" (
   "data" bytea,
   "transactionId" VARCHAR(250) NOT NULL,
   FOREIGN KEY("transactionId") REFERENCES "trs"("id") ON DELETE CASCADE
@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS "trs_send_asset" (
 CREATE INDEX IF NOT EXISTS "idx_trs_block_id" ON "trs"("blockId");
 CREATE INDEX IF NOT EXISTS "idx_trs_sender_id" ON "trs"("senderId");
 CREATE INDEX IF NOT EXISTS "idx_trs_recipient_id" ON "trs"("recipientId");
-CREATE INDEX IF NOT EXISTS "idx_trs_senderPublicKey" ON "trs"("senderPublicKey");
 CREATE INDEX IF NOT EXISTS "idx_trs_type" ON "trs"("type");
 CREATE INDEX IF NOT EXISTS "idx_trs_timestamp" ON "trs"("timestamp");
 

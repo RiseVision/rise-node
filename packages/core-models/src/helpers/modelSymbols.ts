@@ -11,10 +11,6 @@ export const ModelSymbols = {
   names: {
     accounts: Symbols.models.accounts,
     blocks: Symbols.models.blocks,
-    exceptions: Symbol.for('models.exceptionsModel'),
-    forkStats: Symbols.models.forkStats,
-    info: Symbol.for('models.infoModel'),
-    migrations: Symbol.for('models.migrationsModel'),
     transactions: Symbols.models.transactions,
   },
 };

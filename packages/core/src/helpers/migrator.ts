@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as path from 'path';
 import * as sequelize from 'sequelize';
+import { CoreSymbols } from '../symbols';
 // tslint:disable-next-line interface-name
 interface MigrationEntry {
   id: bigint;
@@ -19,7 +20,7 @@ interface MigrationEntry {
 @injectable()
 export class Migrator {
   @inject(ModelSymbols.model)
-  @named(ModelSymbols.names.migrations)
+  @named(CoreSymbols.models.migrations)
   private MigrationsModel: typeof IMigrationsModel;
 
   @inject(LaunchpadSymbols.coremodules)
@@ -34,7 +35,6 @@ export class Migrator {
     const pending = await this.readPendingMigrations(lastMigration);
     const insertedPending = await this.applyPendingMigrations(pending);
     await this.insertAppliedMigrations(insertedPending);
-    await this.applyRuntimeQueryFile();
   }
 
   private async checkMigrations(): Promise<boolean> {

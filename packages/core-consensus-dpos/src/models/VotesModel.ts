@@ -11,7 +11,7 @@ import {
 } from 'sequelize-typescript';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
-@Table({ tableName: 'votes' })
+@Table({ tableName: 'trsassets_votes' })
 export class VotesModel extends BaseModel<VotesModel> {
   @PrimaryKey
   @Column

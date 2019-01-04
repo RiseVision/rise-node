@@ -23,5 +23,5 @@ export const TXSymbols = {
   poolQueue: Symbol.for('rise.txs.poolQueue'),
   sendTX: Symbol.for('rise.txs.sendTX'),
   transaction: Symbol.for('rise.txs.transaction'),
-  txBytes: Symbol.for('rise.txs.txBytes'),
+  txBytes: Symbols.helpers.txBytes,
 };

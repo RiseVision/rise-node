@@ -9,7 +9,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 
-@Table({ tableName: 'signatures' })
+@Table({ tableName: 'trsassets_secondsignature' })
 export class SignaturesModel extends BaseModel<SignaturesModel> {
   @Column(DataType.BLOB)
   public publicKey: Buffer;

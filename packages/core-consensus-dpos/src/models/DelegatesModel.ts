@@ -1,7 +1,6 @@
-import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
-  BelongsTo,
   Column,
   DataType,
   ForeignKey,
@@ -9,7 +8,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 
-@Table({ tableName: 'delegates' })
+@Table({ tableName: 'trsassets_delegates' })
 export class DelegatesModel extends BaseModel<DelegatesModel> {
   @PrimaryKey
   @Column

@@ -1,17 +1,12 @@
 BEGIN;
-
-
-CREATE TABLE IF NOT EXISTS "info" (
-  "key" VARCHAR(20) PRIMARY KEY,
-  "value" VARCHAR(255) NOT NULL
+CREATE TABLE IF NOT EXISTS mem_accounts (
+    address character varying(250) NOT NULL,
+    balance bigint DEFAULT 0,
+    u_balance bigint DEFAULT 0,
+    virgin smallint DEFAULT 1
 );
 
-CREATE TABLE IF NOT EXISTS "exceptions" (
-  "type" VARCHAR(10) NOT NULL,
-  "key" VARCHAR(255) NOT NULL,
-  "remainingCount" INTEGER NOT NULL,
-  PRIMARY KEY ("type", "key")
-);
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_mem_accounts_address" on "mem_accounts"("address");
 
 CREATE OR REPLACE FUNCTION proc_balance_check() RETURNS TRIGGER AS $$
   BEGIN
@@ -32,5 +27,12 @@ CREATE OR REPLACE FUNCTION proc_balance_check() RETURNS TRIGGER AS $$
   END;
 $$ LANGUAGE plpgsql;
 
-COMMIT;
+-- This file needs to be indepotent. So I delete trigger if it already exists
+DROP TRIGGER IF EXISTS trg_memaccounts_update on mem_accounts;
 
+CREATE TRIGGER trg_memaccounts_update
+  BEFORE UPDATE OF balance,u_balance
+  on mem_accounts
+  FOR EACH ROW EXECUTE PROCEDURE proc_balance_check();
+
+COMMIT;
