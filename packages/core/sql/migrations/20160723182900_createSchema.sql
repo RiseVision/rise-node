@@ -125,20 +125,9 @@ CREATE TABLE IF NOT EXISTS "forks_stat"(
 -- );
 
 /* Unique Indexes */
-CREATE UNIQUE INDEX IF NOT EXISTS "blocks_height" ON "blocks"("height");
-CREATE UNIQUE INDEX IF NOT EXISTS "blocks_previousBlock" ON "blocks"("previousBlock");
-CREATE UNIQUE INDEX IF Not EXISTS "out_transaction_id" ON "outtransfer"("outTransactionId");
-CREATE UNIQUE INDEX IF NOT EXISTS "peers_unique" ON "peers"("ip", "port");
-CREATE UNIQUE INDEX IF NOT EXISTS "peers_dapp_unique" ON "peers_dapp"("peerId", "dappid");
+
 
 /* Indexes */
-CREATE INDEX IF NOT EXISTS "blocks_rowId" ON "blocks"("rowId");
-CREATE INDEX IF NOT EXISTS "blocks_generator_public_key" ON "blocks"("generatorPublicKey");
-CREATE INDEX IF NOT EXISTS "blocks_reward" ON "blocks"("reward");
-CREATE INDEX IF NOT EXISTS "blocks_totalFee" ON "blocks"("totalFee");
-CREATE INDEX IF NOT EXISTS "blocks_totalAmount" ON "blocks"("totalAmount");
-CREATE INDEX IF NOT EXISTS "blocks_numberOfTransactions" ON "blocks"("numberOfTransactions");
-CREATE INDEX IF NOT EXISTS "blocks_timestamp" ON "blocks"("timestamp");
 -- CREATE INDEX IF NOT EXISTS "trs_rowId" ON "trs"("rowId");
 -- CREATE INDEX IF NOT EXISTS "trs_block_id" ON "trs"("blockId");
 -- CREATE INDEX IF NOT EXISTS "trs_sender_id" ON "trs"("senderId");
@@ -147,8 +136,6 @@ CREATE INDEX IF NOT EXISTS "blocks_timestamp" ON "blocks"("timestamp");
 -- CREATE INDEX IF NOT EXISTS "trs_type" ON "trs"("type");
 -- CREATE INDEX IF NOT EXISTS "trs_timestamp" ON "trs"("timestamp");
 -- CREATE INDEX IF NOT EXISTS "signatures_trs_id" ON "signatures"("transactionId");
-CREATE INDEX IF NOT EXISTS "votes_trs_id" ON "votes"("transactionId");
-CREATE INDEX IF NOT EXISTS "delegates_trs_id" ON "delegates"("transactionId");
 -- CREATE INDEX IF NOT EXISTS "multisignatures_trs_id" ON "multisignatures"("transactionId");
 CREATE INDEX IF NOT EXISTS "dapps_trs_id" ON "dapps"("transactionId");
 CREATE INDEX IF NOT EXISTS "dapps_name" ON "dapps"("name");

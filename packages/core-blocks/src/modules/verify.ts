@@ -11,10 +11,10 @@ import {
   ITransactionLogic,
   ITransactionPool,
   ITransactionsModule,
+  ITXBytes,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import {
   ConstantsType,
   ForkType,
@@ -55,7 +55,7 @@ export class BlocksModuleVerify {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
-  @inject(TXSymbols.logic)
+  @inject(Symbols.logic.transaction)
   private transactionLogic: ITransactionLogic;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
@@ -63,8 +63,8 @@ export class BlocksModuleVerify {
   private idsHandler: IIdsHandler;
   @inject(BlocksSymbols.logic.blockBytes)
   private blockBytes: BlockBytes;
-  @inject(TXSymbols.txBytes)
-  private txBytes: TXBytes;
+  @inject(Symbols.helpers.txBytes)
+  private txBytes: ITXBytes;
 
   // Models
   @inject(ModelSymbols.model)

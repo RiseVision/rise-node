@@ -28,6 +28,8 @@ const emptyBuffer = new Buffer(0);
 @injectable()
 export abstract class BaseTx<T, M extends Model<any>>
   implements IBaseTransactionType<T, M> {
+  // Should be set externally
+  public type: number;
   @inject(LaunchpadSymbols.hookSystem)
   protected hookSystem: WordPressHookSystem;
   @inject(Symbols.helpers.idsHandler)
@@ -35,10 +37,6 @@ export abstract class BaseTx<T, M extends Model<any>>
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
   constructor(@unmanaged() private txType: TransactionType) {}
-
-  public get type(): TransactionType {
-    return this.txType;
-  }
 
   public abstract calculateMinFee(
     tx: IBaseTransaction<T>,

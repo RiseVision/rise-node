@@ -1,6 +1,7 @@
 import {
   IAccountLogic,
   IAccountsModel,
+  IBaseTransactionType,
   ICrypto,
   IIdsHandler,
   ILogger,
@@ -26,7 +27,6 @@ import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import { BaseTx } from './BaseTx';
 import { TxLogicStaticCheck, TxLogicVerify } from './hooks/actions';
 import {
   TxApplyFilter,
@@ -77,17 +77,8 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-  private types: { [k: number]: BaseTx<any, any> } = {};
-
-  public attachAssetType<K, M extends Model<any>>(
-    instance: BaseTx<K, M>
-  ): BaseTx<K, M> {
-    if (!(instance instanceof BaseTx)) {
-      throw new Error('Invalid instance interface');
-    }
-    this.types[instance.type] = instance;
-    return instance;
-  }
+  @inject(Symbols.generic.txtypes)
+  private types: { [type: number]: IBaseTransactionType<any, any> };
 
   /**
    * Hash for the transaction

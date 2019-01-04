@@ -8,7 +8,7 @@ import { Model } from 'sequelize-typescript';
 import { IAccountsModel } from '../models';
 
 export interface IBaseTransactionType<T, M extends Model<any>> {
-  readonly type: TransactionType;
+  type: number;
 
   calculateMinFee(
     tx: IBaseTransaction<T>,
@@ -66,4 +66,9 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
   ready(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<boolean>;
 
   attachAssets(txs: Array<IBaseTransaction<T>>): Promise<void>;
+
+  /**
+   * Returns static value of maximum bytes size this tx will occupy when serialized.
+   */
+  getMaxBytesSize(): number;
 }

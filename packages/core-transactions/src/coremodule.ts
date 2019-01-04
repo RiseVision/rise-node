@@ -7,7 +7,6 @@ import {
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
-import * as z_schema from 'z-schema';
 import { TransactionsAPI } from './api';
 import { TXLoader } from './loader';
 import { SendTxAssetModel, TransactionsModel } from './models';
@@ -93,25 +92,8 @@ export class CoreModule extends BaseCoreModule {
   }
 
   public async initAppElements() {
-    const TXTypes = this.container.getAll<IBaseTransactionType<any, any>>(
-      TXSymbols.transaction
-    );
-    const txLogic = this.container.get<ITransactionLogic>(
-      Symbols.logic.transaction
-    );
-
-    const txBytes = this.container.get<TXBytes>(TXSymbols.txBytes);
-
-    for (const txType of TXTypes) {
-      txLogic.attachAssetType(txType);
-      txBytes.attachAssetType(txType);
-    }
-
     // initializes pool manager through postConstruct
     this.container.get<PoolManager>(TXSymbols.poolManager);
-    z_schema.registerFormat('txId', (value: string) => {
-      return /^[0-9]+$/.test(value);
-    });
 
     await this.container.get<TXLoader>(TXSymbols.loader).hookMethods();
   }

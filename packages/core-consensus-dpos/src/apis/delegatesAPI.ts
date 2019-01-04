@@ -219,7 +219,7 @@ export class DelegatesAPI {
   // tslint:disable-next-line max-line-length
   @QueryParams()
   params: {
-    generatorPublicKey: publicKey;
+    username: string;
     start?: number;
     end?: number;
   }) {
@@ -229,8 +229,8 @@ export class DelegatesAPI {
     ) {
       const reward = await this.aggregateBlockReward({
         end: params.end,
-        generatorPublicKey: params.generatorPublicKey,
         start: params.start,
+        username: params.username,
       });
       return {
         count: reward.count,
@@ -240,7 +240,7 @@ export class DelegatesAPI {
       };
     } else {
       const account = await this.accounts.getAccount({
-        publicKey: Buffer.from(params.generatorPublicKey, 'hex'),
+        username: params.username,
       });
 
       if (!account) {
@@ -274,6 +274,7 @@ export class DelegatesAPI {
         d.delegate.username === params.username
     );
     if (delegate) {
+      // TODO: Add old forgingPK list.
       return {
         delegate: toTransportable(
           filterObject(
@@ -500,13 +501,14 @@ export class DelegatesAPI {
    */
   // tslint:disable-next-line max-line-length
   public async aggregateBlockReward(filter: {
-    generatorPublicKey: publicKey;
+    username: string;
     start?: number;
     end?: number;
   }): Promise<{ fees: bigint; rewards: bigint; count: number }> {
-    const params: any = {};
-    params.generatorPublicKey = filter.generatorPublicKey;
-    params.delegates = this.dposConstants.activeDelegates;
+    const params = {
+      delegates: this.dposConstants.activeDelegates,
+      username: filter.username,
+    };
     const timestampClausole: { timestamp?: any } = { timestamp: {} };
 
     if (typeof filter.start !== 'undefined') {
@@ -526,14 +528,15 @@ export class DelegatesAPI {
       delete timestampClausole.timestamp;
     }
 
-    const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
     const acc = await this.AccountsModel.findOne({
-      where: { isDelegate: 1, forgingPK: bufPublicKey },
+      where: { isDelegate: 1, username: params.username },
     });
     if (acc === null) {
       throw new Error('Account not found or is not a delegate');
     }
 
+    // FIXME: In case a delegate changes its forging Public Key, rewards wont show properly
+    // in this API. The only possible solution is fetching all forgingPK and use an "in" clause
     const res: {
       count: string;
       rewards: string;
@@ -545,7 +548,7 @@ export class DelegatesAPI {
       raw: true,
       where: {
         ...timestampClausole,
-        generatorPublicKey: bufPublicKey,
+        generatorPublicKey: acc.forgingPK,
       },
     })) as any;
 

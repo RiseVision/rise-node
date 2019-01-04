@@ -136,9 +136,9 @@
     "id": "delegates.getForgedByAccount",
     "type": "object",
     "properties": {
-      "generatorPublicKey": {
+      "username": {
         "type": "string",
-        "format": "publicKey"
+        "format": "username"
       },
       "start": {
         "type": "integer"
@@ -147,7 +147,7 @@
         "type": "integer"
       }
     },
-    "required": ["generatorPublicKey"]
+    "required": ["username"]
   },
   "addDelegate": {
     "id": "delegates.addDelegate",

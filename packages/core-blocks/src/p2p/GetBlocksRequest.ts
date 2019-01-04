@@ -1,6 +1,5 @@
 import {
   IBaseTransactionType,
-  IBlockLogic,
   IBlocksModel,
   ITransactionsModel,
   Symbols,
@@ -13,11 +12,9 @@ import {
   Peer,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { BaseTx, TXSymbols } from '@risevision/core-transactions';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
-import { Model } from 'sequelize-typescript';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlockBytes } from '../logic/blockBytes';
@@ -54,7 +51,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   @named(BlocksSymbols.model)
   private BlocksModel: typeof IBlocksModel;
   @inject(ModelSymbols.model)
-  @named(TXSymbols.models.model)
+  @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
   @inject(Symbols.generic.constants)
@@ -63,17 +60,8 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   @inject(BlocksSymbols.logic.blockBytes)
   private blockBytes: BlockBytes;
 
-  private types: { [k: number]: BaseTx<any, any> } = {};
-
-  public attachTXType<K, M extends Model<any>>(
-    instance: IBaseTransactionType<K, M>
-  ): IBaseTransactionType<K, M> {
-    if (!(instance instanceof BaseTx)) {
-      throw new Error('Invalid instance interface');
-    }
-    this.types[instance.type] = instance;
-    return instance;
-  }
+  @inject(Symbols.generic.txtypes)
+  private types: { [type: number]: IBaseTransactionType<any, any> };
 
   protected async produceResponse(
     request: SingleTransportPayload<null, { lastBlockId: string }>

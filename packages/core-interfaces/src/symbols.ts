@@ -8,6 +8,7 @@ export const Symbols = {
     hookSystem: Symbol.for('rise.hookSystem'),
     nonce: Symbol.for('rise.nonce'),
     socketIO: Symbol.for('rise.socketIO'),
+    txtypes: Symbol.for('rise.txtypes'),
     versionBuild: Symbol.for('rise.versionBuild'),
     zschema: Symbol.for('rise.zschema'),
   },
@@ -18,6 +19,7 @@ export const Symbols = {
     logger: Symbol.for('rise.logger'),
     sequence: Symbol.for('rise.sequence'),
     timeToEpoch: Symbol.for('rise.timeToEpoch'),
+    txBytes: Symbol.for('rise.helpers.txBytes'),
   },
   logic: {
     account: Symbol.for('rise.account'),

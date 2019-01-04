@@ -41,5 +41,7 @@ CREATE TABLE IF NOT EXISTS "rounds_fees"(
 
 
 CREATE INDEX "idx_mem_accounts2delegates_accountId" ON public.mem_accounts2delegates USING btree ("accountId");
+CREATE INDEX IF NOT EXISTS "idx_votes_trs_id" ON "votes"("transactionId");
+CREATE INDEX IF NOT EXISTS "idx_delegates_trs_id" ON "delegates"("transactionId");
 
 COMMIT;

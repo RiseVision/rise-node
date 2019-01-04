@@ -10,4 +10,7 @@ CREATE TABLE IF NOT EXISTS "peers" (
   "clock" BIGINT
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_peers_unique" ON "peers"("ip", "port");
+
+
 COMMIT;
