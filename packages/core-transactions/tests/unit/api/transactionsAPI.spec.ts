@@ -205,7 +205,7 @@ describe('apis/transactionsAPI', () => {
       const tx = toNativeTx(t);
       const TxModel = container.getNamed<typeof TransactionsModel>(
         ModelSymbols.model,
-        TXSymbols.model
+        TXSymbols.models.model
       );
       const findStub = sandbox
         .stub(TxModel, 'findById')

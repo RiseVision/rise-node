@@ -72,7 +72,7 @@ export class RoundsHooks extends Extendable {
     }
 
     await this.Accounts2DelegatesModel.sequelize.query(
-      fs.readFileSync(`${__dirname}/../../../sql/memoryTables.sql`, {
+      fs.readFileSync(`${__dirname}/../../../sql/queries/memoryTables.sql`, {
         encoding: 'utf8',
       })
     );

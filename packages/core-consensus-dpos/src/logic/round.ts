@@ -17,15 +17,15 @@ import { RoundChanges, Slots } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 
 const performVotesSnapshotSQL = fs.readFileSync(
-  `${__dirname}/../../sql/performVotesSnapshot.sql`,
+  `${__dirname}/../../sql/queries/performVotesSnapshot.sql`,
   { encoding: 'utf8' }
 );
 const restoreVotesSnasphotSQL = fs.readFileSync(
-  `${__dirname}/../../sql/restoreVotesSnapshot.sql`,
+  `${__dirname}/../../sql/queries/restoreVotesSnapshot.sql`,
   { encoding: 'utf8' }
 );
 const recalcVotesSQL = fs.readFileSync(
-  `${__dirname}/../../sql/recalcVotes.sql`,
+  `${__dirname}/../../sql/queries/recalcVotes.sql`,
   { encoding: 'utf8' }
 );
 

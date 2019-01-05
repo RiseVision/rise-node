@@ -1,0 +1,14 @@
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS "info" (
+  "key" VARCHAR(20) PRIMARY KEY,
+  "value" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "migrations"(
+  "id" VARCHAR(22) NOT NULL,
+  "name" TEXT NOT NULL,
+  PRIMARY KEY(id, name)
+);
+
+COMMIT;

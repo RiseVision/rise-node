@@ -1,6 +1,7 @@
 import {
   IAccountLogic,
   IAccountsModel,
+  IBaseTransactionType,
   ICrypto,
   IIdsHandler,
   ILogger,
@@ -26,7 +27,6 @@ import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import { BaseTx } from './BaseTx';
 import { TxLogicStaticCheck, TxLogicVerify } from './hooks/actions';
 import {
   TxApplyFilter,
@@ -72,22 +72,13 @@ export class TransactionLogic implements ITransactionLogic {
   private idsHandler: IIdsHandler;
 
   @inject(ModelSymbols.model)
-  @named(TXSymbols.model)
+  @named(TXSymbols.models.model)
   private TransactionsModel: typeof ITransactionsModel;
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-  private types: { [k: number]: BaseTx<any, any> } = {};
-
-  public attachAssetType<K, M extends Model<any>>(
-    instance: BaseTx<K, M>
-  ): BaseTx<K, M> {
-    if (!(instance instanceof BaseTx)) {
-      throw new Error('Invalid instance interface');
-    }
-    this.types[instance.type] = instance;
-    return instance;
-  }
+  @inject(Symbols.generic.txtypes)
+  private types: { [type: number]: IBaseTransactionType<any, any> };
 
   /**
    * Hash for the transaction
@@ -217,9 +208,9 @@ export class TransactionLogic implements ITransactionLogic {
     // }
 
     // Check fee
-    const fee = this.types[tx.type].calculateFee(tx, sender, height);
-    if (fee !== tx.fee) {
-      throw new Error('Invalid transaction fee');
+    const fee = this.types[tx.type].calculateMinFee(tx, sender, height);
+    if (fee > tx.fee) {
+      throw new Error(`Invalid transaction fee. Min fee is ${fee}`);
     }
 
     this.assertValidAmounts(tx);

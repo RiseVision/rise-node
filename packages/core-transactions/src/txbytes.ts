@@ -43,12 +43,13 @@ export class TXBytes {
   private idsHandler: IIdsHandler;
 
   public attachAssetType<K, M extends Model<any>>(
-    instance: IBaseTransactionType<K, M>
+    instance: IBaseTransactionType<K, M>,
+    type: number
   ): IBaseTransactionType<K, M> {
     if (!(instance instanceof BaseTx)) {
       throw new Error('Invalid instance interface');
     }
-    this.types[instance.type] = instance;
+    this.types[type] = instance;
     return instance;
   }
 

@@ -1,4 +1,5 @@
 import { DeprecatedAPIError, PrivateApisGuard } from '@risevision/core-apis';
+import { toTransportable } from '@risevision/core-helpers';
 import {
   IAccountsModule,
   IBlocksModel,
@@ -64,7 +65,7 @@ export class DelegatesAPI {
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
         m.username,
         m.address,
-        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m."forgingPK",
         m.vote,
         m.producedblocks,
         m.missedblocks,
@@ -218,7 +219,7 @@ export class DelegatesAPI {
   // tslint:disable-next-line max-line-length
   @QueryParams()
   params: {
-    generatorPublicKey: publicKey;
+    username: string;
     start?: number;
     end?: number;
   }) {
@@ -228,8 +229,8 @@ export class DelegatesAPI {
     ) {
       const reward = await this.aggregateBlockReward({
         end: params.end,
-        generatorPublicKey: params.generatorPublicKey,
         start: params.start,
+        username: params.username,
       });
       return {
         count: reward.count,
@@ -239,7 +240,7 @@ export class DelegatesAPI {
       };
     } else {
       const account = await this.accounts.getAccount({
-        publicKey: Buffer.from(params.generatorPublicKey, 'hex'),
+        username: params.username,
       });
 
       if (!account) {
@@ -273,27 +274,30 @@ export class DelegatesAPI {
         d.delegate.username === params.username
     );
     if (delegate) {
+      // TODO: Add old forgingPK list.
       return {
-        delegate: filterObject(
-          {
-            ...delegate.delegate.toPOJO(),
-            ...delegate.info,
-            ...{ rate: delegate.info.rank },
-          },
-          [
-            'username',
-            'address',
-            'cmb',
-            'publicKey',
-            'vote',
-            'votesWeight',
-            'producedblocks',
-            'missedblocks',
-            'rank',
-            'approval',
-            'productivity',
-            'rate',
-          ]
+        delegate: toTransportable(
+          filterObject(
+            {
+              ...delegate.delegate.toPOJO(),
+              ...delegate.info,
+              ...{ rate: delegate.info.rank },
+            },
+            [
+              'username',
+              'address',
+              'cmb',
+              'forgingPK',
+              'vote',
+              'votesWeight',
+              'producedblocks',
+              'missedblocks',
+              'rank',
+              'approval',
+              'productivity',
+              'rate',
+            ]
+          )
         ),
       };
     }
@@ -320,12 +324,7 @@ export class DelegatesAPI {
 
     return {
       accounts: accounts.map((a) =>
-        filterObject(a.toPOJO(), [
-          'address',
-          'balance',
-          'username',
-          'publicKey',
-        ])
+        filterObject(a.toPOJO(), ['address', 'balance', 'username'])
       ),
     };
   }
@@ -351,9 +350,11 @@ export class DelegatesAPI {
       orderBy[0],
       orderBy[1] as any
     );
-    const delegates = await this.Accounts2DelegatesModel.sequelize.query(
-      delQuery,
-      { raw: true, type: sequelize.QueryTypes.SELECT }
+    const delegates = toTransportable(
+      await this.Accounts2DelegatesModel.sequelize.query(delQuery, {
+        raw: true,
+        type: sequelize.QueryTypes.SELECT,
+      })
     );
     return { delegates };
   }
@@ -500,13 +501,14 @@ export class DelegatesAPI {
    */
   // tslint:disable-next-line max-line-length
   public async aggregateBlockReward(filter: {
-    generatorPublicKey: publicKey;
+    username: string;
     start?: number;
     end?: number;
   }): Promise<{ fees: bigint; rewards: bigint; count: number }> {
-    const params: any = {};
-    params.generatorPublicKey = filter.generatorPublicKey;
-    params.delegates = this.dposConstants.activeDelegates;
+    const params = {
+      delegates: this.dposConstants.activeDelegates,
+      username: filter.username,
+    };
     const timestampClausole: { timestamp?: any } = { timestamp: {} };
 
     if (typeof filter.start !== 'undefined') {
@@ -526,14 +528,15 @@ export class DelegatesAPI {
       delete timestampClausole.timestamp;
     }
 
-    const bufPublicKey = Buffer.from(params.generatorPublicKey, 'hex');
     const acc = await this.AccountsModel.findOne({
-      where: { isDelegate: 1, forgingPK: bufPublicKey },
+      where: { isDelegate: 1, username: params.username },
     });
     if (acc === null) {
       throw new Error('Account not found or is not a delegate');
     }
 
+    // FIXME: In case a delegate changes its forging Public Key, rewards wont show properly
+    // in this API. The only possible solution is fetching all forgingPK and use an "in" clause
     const res: {
       count: string;
       rewards: string;
@@ -545,7 +548,7 @@ export class DelegatesAPI {
       raw: true,
       where: {
         ...timestampClausole,
-        generatorPublicKey: bufPublicKey,
+        generatorPublicKey: acc.forgingPK,
       },
     })) as any;
 

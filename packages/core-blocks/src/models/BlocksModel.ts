@@ -1,3 +1,4 @@
+import { toTransportable } from '@risevision/core-helpers';
 import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import { SignedBlockType } from '@risevision/core-types';
@@ -25,24 +26,11 @@ export class BlocksModel extends BaseModel<BlocksModel> {
     const txs = (btmp.transactions || []).map((t) =>
       TxModel.toTransportTransaction(t)
     );
-    if (
-      !Buffer.isBuffer(b.blockSignature) ||
-      !Buffer.isBuffer(b.generatorPublicKey) ||
-      !Buffer.isBuffer(b.payloadHash)
-    ) {
-      throw new Error('toStringBlockType used with non Buffer block type');
-    }
-    const toRet = {
-      ...(b instanceof BlocksModel ? b.toJSON() : b),
-      blockSignature: b.blockSignature.toString('hex'),
-      generatorPublicKey: b.generatorPublicKey.toString('hex'),
-      payloadHash: b.payloadHash.toString('hex'),
-      reward: b.reward.toString(),
-      totalAmount: b.totalAmount.toString(),
-      totalFee: b.totalFee.toString(),
-      transactions: txs as any,
-    };
-    delete toRet.TransactionsModel;
+
+    delete b.transactions;
+    delete b.TransactionsModel;
+    const toRet = toTransportable(b);
+    toRet.transactions = txs;
     return toRet;
   }
 

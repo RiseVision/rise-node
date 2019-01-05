@@ -7,7 +7,7 @@ export * from './PoolManager';
 export * from './TransactionPool';
 export * from './TransactionLogic';
 export * from './TransactionModule';
-export * from './TransactionsModel';
+export * from './models';
 export * from './txbytes';
 export * from './txSymbols';
 export * from './p2p';

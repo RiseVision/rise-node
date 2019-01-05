@@ -1,6 +1,5 @@
-import { IIdsHandler, Symbols } from '@risevision/core-interfaces';
+import { IIdsHandler, ITXBytes, Symbols } from '@risevision/core-interfaces';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
-import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import {
   BlockHeader,
   ConstantsType,
@@ -20,8 +19,8 @@ export class BlockBytes {
 
   @inject(Symbols.helpers.idsHandler)
   private idsHandler: IIdsHandler;
-  @inject(TXSymbols.txBytes)
-  private txBytes: TXBytes;
+  @inject(Symbols.helpers.txBytes)
+  private txBytes: ITXBytes;
 
   get maxHeaderSize() {
     return (

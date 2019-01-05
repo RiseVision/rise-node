@@ -40,15 +40,6 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
   }
 
   public async initAppElements() {
-    z_schema.registerFormat('address', (str: string) => {
-      // tslint:disable-next-line
-      return new RegExp(
-        `^[0-9]{1,20}${
-          this.container.get<ConstantsType>(Symbols.generic.constants)
-            .addressSuffix
-        }$`
-      ).test(str);
-    });
     await this.container
       .get<AccountsLoaderSubscriber>(AccountsSymbols.__internal.loaderHooks)
       .hookMethods();

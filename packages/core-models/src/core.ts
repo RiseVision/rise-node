@@ -1,13 +1,10 @@
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import * as cls from 'cls-hooked';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Sequelize } from 'sequelize-typescript';
 import { DbAppConfig, DBHelper, ModelSymbols } from './helpers/';
-import {
-  BaseModel,
-  ForksStatsModel,
-  InfoModel,
-  MigrationsModel,
-} from './models';
+import { BaseModel } from './models';
 
 export class CoreModule extends BaseCoreModule<DbAppConfig> {
   public configSchema = require('../schema/config.json');
@@ -41,22 +38,17 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
       .bind(ModelSymbols.helpers.db)
       .to(DBHelper)
       .inSingletonScope();
-
-    this.container
-      .bind(ModelSymbols.model)
-      .toConstructor(ForksStatsModel)
-      .whenTargetNamed(ModelSymbols.names.forkStats);
-    this.container
-      .bind(ModelSymbols.model)
-      .toConstructor(InfoModel)
-      .whenTargetNamed(ModelSymbols.names.info);
-    this.container
-      .bind(ModelSymbols.model)
-      .toConstructor(MigrationsModel)
-      .whenTargetNamed(ModelSymbols.names.migrations);
   }
 
   public async initAppElements() {
+    // Run indepotent schema files to initialize tables
+    for (const module of this.sortedModules) {
+      const schemaFile = path.join(module.directory, 'sql', 'schema.sql');
+      if (fs.existsSync(schemaFile)) {
+        await this.sequelize.query(fs.readFileSync(schemaFile, 'utf8'));
+      }
+    }
+
     for (const m of this.sortedModules) {
       // tslint:disable-next-line
       if (typeof m['onPreInitModels'] === 'function') {

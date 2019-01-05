@@ -1,9 +1,8 @@
 import { APISymbols } from '@risevision/core-apis';
-import { IBaseTransactionType, Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
-import { TXSymbols } from '@risevision/core-transactions';
 import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
 import { BlocksConstantsType } from './blocksConstants';
@@ -131,17 +130,6 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     await this.container
       .get<BlockLoader>(BlocksSymbols.__internals.loader)
       .hookMethods();
-
-    const gbr = this.container.getNamed<GetBlocksRequest>(
-      p2pSymbols.transportMethod,
-      BlocksSymbols.p2p.getBlocks
-    );
-    const TXTypes = this.container.getAll<IBaseTransactionType<any, any>>(
-      TXSymbols.transaction
-    );
-    for (const txType of TXTypes) {
-      gbr.attachTXType(txType);
-    }
   }
 
   public async teardown(): Promise<void> {

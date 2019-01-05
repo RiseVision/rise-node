@@ -5,11 +5,11 @@ import {
   ICrypto,
   IIdsHandler,
   ITransactionLogic,
+  ITXBytes,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
-import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import {
   BlockType,
   ConstantsType,
@@ -19,7 +19,6 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { toBigIntBE } from 'bigint-buffer';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named } from 'inversify';
@@ -71,8 +70,8 @@ export class BlockLogic implements IBlockLogic {
 
   @inject(BlocksSymbols.logic.blockBytes)
   private blockBytes: BlockBytes;
-  @inject(TXSymbols.txBytes)
-  private txBytes: TXBytes;
+  @inject(Symbols.helpers.txBytes)
+  private txBytes: ITXBytes;
   @inject(Symbols.helpers.idsHandler)
   private idsHandler: IIdsHandler;
 

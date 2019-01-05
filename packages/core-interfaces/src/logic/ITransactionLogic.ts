@@ -9,10 +9,6 @@ import { IAccountsModel } from '../models';
 import { IBaseTransactionType } from './IBaseTransactionType';
 
 export interface ITransactionLogic {
-  attachAssetType<K, M extends Model<any>>(
-    instance: IBaseTransactionType<K, M>
-  ): IBaseTransactionType<K, M>;
-
   /**
    * Hash for the transaction
    */

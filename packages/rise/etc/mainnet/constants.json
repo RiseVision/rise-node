@@ -73,6 +73,7 @@
       "height": 1,
       "fees": {
         "send": 10000000,
+        "sendDataMultiplier": 1000000,
         "vote": 100000000,
         "secondsignature": 500000000,
         "delegate": 2500000000,

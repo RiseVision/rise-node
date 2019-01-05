@@ -60,14 +60,14 @@ export class RegisterDelegateTransaction extends BaseTx<
   @named(dPoSSymbols.models.delegates)
   private DelegatesModel: typeof DelegatesModel;
   @inject(ModelSymbols.model)
-  @named(TXSymbols.model)
+  @named(TXSymbols.models.model)
   private TransactionsModel: typeof TransactionsModel;
 
   constructor() {
     super(TransactionType.DELEGATE);
   }
 
-  public calculateFee(
+  public calculateMinFee(
     tx: IBaseTransaction<DelegateAsset>,
     sender: AccountsModelForDPOS,
     height: number

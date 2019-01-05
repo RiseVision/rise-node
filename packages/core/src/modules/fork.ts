@@ -15,10 +15,10 @@ export class ForkModule implements IForkModule {
   private io: SocketIO.Server;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-
-  @inject(ModelSymbols.model)
-  @named(Symbols.models.forkStats)
-  private ForksStatsModel: typeof IForkStatsModel;
+  //
+  // @inject(ModelSymbols.model)
+  // @named(Symbols.models.forkStats)
+  // private ForksStatsModel: typeof IForkStatsModel;
 
   /**
    * Inserts a fork into fork_stats table and emits a socket signal with the fork data
@@ -46,9 +46,9 @@ export class ForkModule implements IForkModule {
       generatorPublicKey: block.generatorPublicKey,
       previousBlock: block.previousBlock,
     };
+    //
+    // await this.ForksStatsModel.create(fork);
 
-    await this.ForksStatsModel.create(fork);
-
-    this.io.sockets.emit('delegates/fork', fork);
+    this.io.sockets.emit('fork', fork);
   }
 }
