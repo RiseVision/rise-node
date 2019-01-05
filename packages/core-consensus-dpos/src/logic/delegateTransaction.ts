@@ -15,17 +15,12 @@ import {
   DBOp,
   IBaseTransaction,
   SignedBlockType,
-  TransactionType,
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
-import {
-  Accounts2DelegatesModel,
-  AccountsModelForDPOS,
-  DelegatesModel,
-} from '../models/';
+import { AccountsModelForDPOS, DelegatesModel } from '../models/';
 
 // tslint:disable-next-line no-var-requires
 const delegateAssetSchema = require('../../schema/asset.json');
@@ -62,10 +57,6 @@ export class RegisterDelegateTransaction extends BaseTx<
   @inject(ModelSymbols.model)
   @named(TXSymbols.models.model)
   private TransactionsModel: typeof TransactionsModel;
-
-  constructor() {
-    super(TransactionType.DELEGATE);
-  }
 
   public calculateMinFee(
     tx: IBaseTransaction<DelegateAsset>,

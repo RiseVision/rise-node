@@ -10,7 +10,6 @@ import {
   DBOp,
   IBaseTransaction,
   SignedBlockType,
-  TransactionType,
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as z_schema from 'z-schema';
@@ -49,10 +48,6 @@ export class SecondSignatureTransaction extends BaseTx<
   @inject(ModelSymbols.model)
   @named(SigSymbols.model)
   private SignaturesModel: typeof SignaturesModel;
-
-  constructor() {
-    super(TransactionType.SIGNATURE);
-  }
 
   public calculateMinFee(
     tx: IBaseTransaction<SecondSignatureAsset>,

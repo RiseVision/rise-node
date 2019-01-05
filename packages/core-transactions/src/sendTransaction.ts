@@ -11,7 +11,6 @@ import {
   DBOp,
   IBaseTransaction,
   SignedBlockType,
-  TransactionType,
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { BaseTx } from './BaseTx';
@@ -41,10 +40,6 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
   @inject(ModelSymbols.model)
   @named(TXSymbols.models.sendTxAsset)
   private SendTxAssetModel: typeof SendTxAssetModel;
-
-  constructor() {
-    super(TransactionType.SEND);
-  }
 
   public calculateMinFee(
     tx: IBaseTransaction<SendTxAsset, bigint>,
@@ -121,7 +116,7 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
   public objectNormalize(
     tx: IBaseTransaction<SendTxAsset<string | Buffer>, bigint>
   ): IBaseTransaction<SendTxAsset, bigint> {
-    if (tx.asset.data && typeof tx.asset.data === 'string') {
+    if (tx.asset && typeof tx.asset.data === 'string') {
       tx.asset.data = Buffer.from(tx.asset.data, 'utf8');
     }
     return tx as IBaseTransaction<SendTxAsset>;

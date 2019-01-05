@@ -62,12 +62,7 @@ export class AccountsAPI {
       // And add those in the array without the rank informations.
       return {
         delegates: delegates
-          .filter(
-            (d) =>
-              account.delegates
-                .map((pk) => pk.toString('hex'))
-                .indexOf(d.delegate.forgingPK.toString('hex')) !== -1
-          )
+          .filter((d) => account.delegates.indexOf(d.delegate.username) !== -1)
           .map((d) => ({
             address: d.delegate.address,
             approval: d.info.approval,

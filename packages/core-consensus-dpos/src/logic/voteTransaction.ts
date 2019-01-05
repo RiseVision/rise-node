@@ -10,7 +10,6 @@ import {
   DBOp,
   IBaseTransaction,
   SignedBlockType,
-  TransactionType,
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
@@ -72,10 +71,6 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   @inject(ModelSymbols.model)
   @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
-
-  constructor() {
-    super(TransactionType.VOTE);
-  }
 
   public calculateMinFee(
     tx: IBaseTransaction<VoteAsset>,

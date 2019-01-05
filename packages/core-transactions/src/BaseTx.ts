@@ -36,7 +36,6 @@ export abstract class BaseTx<T, M extends Model<any>>
   private idsHandler: IIdsHandler;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
-  constructor(@unmanaged() private txType: TransactionType) {}
 
   public abstract calculateMinFee(
     tx: IBaseTransaction<T>,

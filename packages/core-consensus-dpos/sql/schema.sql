@@ -17,7 +17,8 @@ ALTER TABLE "mem_accounts"
 
 
 CREATE TABLE IF NOT EXISTS "trsassets_votes" (
-  "votes" TEXT,
+  "added" character varying (20)[],
+  "removed" character varying (20)[],
   "transactionId" VARCHAR(250) NOT NULL,
   FOREIGN KEY("transactionId") REFERENCES "trs"("id") ON DELETE CASCADE
 );
