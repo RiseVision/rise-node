@@ -97,6 +97,7 @@ export const Delegate = {
   properties: {
     address,
     approval: floatnum,
+    cmb: wholeNum,
     missedblocks: wholeNum,
     producedBlocks: wholeNum,
     productivity: floatnum,
@@ -104,7 +105,8 @@ export const Delegate = {
     rank: countingNum,
     rate: countingNum,
     username,
-    vote: stringnum
+    vote: stringnum,
+    votesWeight: wholeNum
   }
 };
 
