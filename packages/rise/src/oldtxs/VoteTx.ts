@@ -1,11 +1,19 @@
 import {
+  Accounts2DelegatesModel,
+  Accounts2U_DelegatesModel,
+  AccountsModelForDPOS,
+  DelegatesModule,
+  DposConstantsType,
+  dPoSSymbols,
+  RoundsLogic,
+} from '@risevision/core-consensus-dpos';
+import {
   IAccountLogic,
   IAccountsModel,
-  ISystemModule,
+  IAccountsModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { BaseTx } from '@risevision/core-transactions';
 import {
   DBOp,
   IBaseTransaction,
@@ -15,29 +23,19 @@ import { Diff } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import { Model } from 'sequelize-typescript';
-import * as varuint from 'varuint-bitcoin';
 import * as z_schema from 'z-schema';
-import { DposConstantsType, dPoSSymbols } from '../helpers/';
-import {
-  Accounts2DelegatesModel,
-  Accounts2U_DelegatesModel,
-  AccountsModelForDPOS,
-  VotesModel,
-} from '../models/';
-import { DelegatesModule } from '../modules/';
-import { RoundsLogic } from './rounds';
+import { OldVoteTxModel } from '../models';
+import { RISESymbols } from '../symbols';
+import { OldBaseTx } from './BaseOldTx';
+// tslint:disable-next-line
+const voteSchema = require('../../schema/vote.asset.json');
 
 // tslint:disable-next-line
-const voteSchema = require('../../schema/vote.json');
-
-// tslint:disable-next-line interface-over-type-literal
 export type VoteAsset = {
-  added: string[];
-  removed: string[];
+  votes: string[];
 };
-
 @injectable()
-export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
+export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -52,15 +50,15 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   private accountLogic: IAccountLogic;
 
   // Module
+  @inject(Symbols.modules.accounts)
+  private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
-  @inject(Symbols.modules.system)
-  private systemModule: ISystemModule;
 
   // models
   @inject(ModelSymbols.model)
-  @named(dPoSSymbols.models.votes)
-  private VotesModel: typeof VotesModel;
+  @named(RISESymbols.models.oldVotesModel)
+  private OldVoteTxModel: typeof OldVoteTxModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.accounts2UDelegates)
   // tslint:disable-next-line
@@ -88,20 +86,22 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
       throw new Error('Missing recipient');
     }
 
-    if (!tx.asset || !tx.asset.added || !tx.asset.removed) {
+    if (!tx.asset || !tx.asset.votes) {
       throw new Error('Invalid transaction asset');
     }
 
-    if (!Array.isArray(tx.asset.added) || !Array.isArray(tx.asset.removed)) {
+    if (!Array.isArray(tx.asset.votes)) {
       throw new Error('Invalid votes. Must be an array');
     }
 
-    const totalVotes = tx.asset.added.concat(tx.asset.removed);
-    if (!totalVotes.length) {
+    if (!tx.asset.votes.length) {
       throw new Error('Invalid votes. Must not be empty');
     }
 
-    if (totalVotes.length > this.dposConstants.maxVotesPerTransaction) {
+    if (
+      tx.asset.votes &&
+      tx.asset.votes.length > this.dposConstants.maxVotesPerTransaction
+    ) {
       throw new Error(
         `Voting limit exceeded. Maximum is ${
           this.dposConstants.maxVotesPerTransaction
@@ -110,23 +110,15 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     }
 
     // Assert vote is valid
-    tx.asset.added.forEach((v) => this.assertValidVote(v));
-    tx.asset.removed.forEach((v) => this.assertValidVote(v));
+    tx.asset.votes.forEach((v) => this.assertValidVote(v));
 
     // Check duplicates
-    const dups = totalVotes.filter((v, i, a) => a.indexOf(v) !== i);
+    const dups = tx.asset.votes.filter((v, i, a) => a.indexOf(v) !== i);
 
     if (dups.length > 0) {
       throw new Error('Multiple votes for same delegate are not allowed');
     }
 
-    if (totalVotes.length > this.dposConstants.maxVotesPerTransaction) {
-      throw new Error(
-        `Max votes per transaction exceeded ${totalVotes.length} casted - ${
-          this.dposConstants.maxVotesPerTransaction
-        } allowed`
-      );
-    }
     return this.checkConfirmedDelegates(tx, sender);
   }
 
@@ -150,37 +142,25 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   }
 
   public assetBytes(tx: IBaseTransaction<VoteAsset>): Buffer {
-    function encodeVote(username: string) {
-      const usernameBuf = Buffer.from(username, 'utf8');
-      return Buffer.concat([varuint.encode(usernameBuf.length), usernameBuf]);
-    }
-    return Buffer.concat([
-      varuint.encode(tx.asset.added.length),
-      ...tx.asset.added.map(encodeVote),
-      varuint.encode(tx.asset.removed.length),
-      ...tx.asset.removed.map(encodeVote),
-    ]);
+    return Buffer.from((tx.asset.votes || []).join(''), 'utf8');
   }
 
-  public readAssetFromBytes(bytes: Buffer): VoteAsset {
-    let offset = 0;
-    function decodeVotesArr() {
-      const totalEntries = varuint.decode(bytes, offset);
-      offset += varuint.decode.bytes;
-      const toRet = [];
-      for (let i = 0; i < totalEntries; i++) {
-        const usernameLength = varuint.decode(bytes, offset);
-        offset += varuint.decode.bytes;
-        toRet.push(
-          bytes.slice(offset, offset + usernameLength).toString('utf8')
-        );
-        offset += usernameLength;
-      }
-      return toRet;
+  public readAsset(bytes: Buffer): { consumedBytes: number; asset: VoteAsset } {
+    let totalKeys = 0;
+    for (
+      ;
+      ['-', '+'].indexOf(bytes.slice(totalKeys * 65, 1).toString('utf8')) !==
+      -1;
+      totalKeys++
+    ) {
+      // Noop
     }
-    const added = decodeVotesArr();
-    const removed = decodeVotesArr();
-    return { added, removed };
+    const votes: string[] = [];
+
+    for (let i = 0; i < totalKeys; i++) {
+      votes.push(bytes.slice(i * 65, (i + 1) * 65).toString('utf8'));
+    }
+    return { consumedBytes: totalKeys * 65, asset: { votes } };
   }
 
   // tslint:disable-next-line max-line-length
@@ -190,12 +170,11 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     await this.checkConfirmedDelegates(tx, sender);
-    sender.applyDiffArray('delegates', this.buildDiffArray(tx));
+    sender.applyDiffArray('delegates', tx.asset.votes);
     return this.calculateOPs(
       this.Accounts2DelegatesModel,
       block.id,
-      tx.asset.added,
-      tx.asset.removed,
+      tx.asset.votes,
       sender.address
     );
   }
@@ -207,12 +186,12 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
-    sender.applyDiffArray('delegates', Diff.reverse(this.buildDiffArray(tx)));
+    const invertedVotes = Diff.reverse(tx.asset.votes);
+    sender.applyDiffArray('delegates', invertedVotes);
     return this.calculateOPs(
       this.Accounts2DelegatesModel,
       block.id,
-      tx.asset.removed,
-      tx.asset.added,
+      invertedVotes,
       sender.address
     );
   }
@@ -222,12 +201,11 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     await this.checkUnconfirmedDelegates(tx, sender);
-    sender.applyDiffArray('u_delegates', this.buildDiffArray(tx));
+    sender.applyDiffArray('u_delegates', tx.asset.votes);
     return this.calculateOPs(
       this.Accounts2U_DelegatesModel,
       null,
-      tx.asset.added,
-      tx.asset.removed,
+      tx.asset.votes,
       sender.address
     );
   }
@@ -237,12 +215,12 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     sender: AccountsModelForDPOS
   ): Promise<Array<DBOp<any>>> {
     this.objectNormalize(tx);
-    sender.applyDiffArray('u_delegates', Diff.reverse(this.buildDiffArray(tx)));
+    const reversedVotes = Diff.reverse(tx.asset.votes);
+    sender.applyDiffArray('u_delegates', reversedVotes);
     return this.calculateOPs(
       this.Accounts2U_DelegatesModel,
       null,
-      tx.asset.removed,
-      tx.asset.added,
+      reversedVotes,
       sender.address
     );
   }
@@ -250,29 +228,27 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
   /**
    * Checks vote integrity of tx sender
    */
-  public checkUnconfirmedDelegates(
+  public async checkUnconfirmedDelegates(
     tx: IBaseTransaction<VoteAsset>,
     sender: AccountsModelForDPOS
   ): Promise<any> {
+    const { added, removed } = await this.computeAddedRemoved(tx.asset);
     return this.delegatesModule.checkUnconfirmedDelegates(
       sender,
-      tx.asset.added,
-      tx.asset.removed
+      added,
+      removed
     );
   }
 
   /**
    * Checks vote integrity of sender
    */
-  public checkConfirmedDelegates(
+  public async checkConfirmedDelegates(
     tx: IBaseTransaction<VoteAsset>,
     sender: AccountsModelForDPOS
   ): Promise<any> {
-    return this.delegatesModule.checkConfirmedDelegates(
-      sender,
-      tx.asset.added,
-      tx.asset.removed
-    );
+    const { added, removed } = await this.computeAddedRemoved(tx.asset);
+    return this.delegatesModule.checkConfirmedDelegates(sender, added, removed);
   }
 
   public objectNormalize(
@@ -291,23 +267,29 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     return tx;
   }
 
+  public dbRead(raw: any): VoteAsset {
+    if (!raw.v_votes) {
+      return null;
+    }
+    return { votes: raw.v_votes.split(',') };
+  }
+
   // tslint:disable-next-line max-line-length
   public dbSave(
     tx: IBaseTransaction<VoteAsset> & { senderId: string }
   ): DBOp<any> {
     return {
-      model: this.VotesModel,
+      model: this.OldVoteTxModel,
       type: 'create',
       values: {
-        added: tx.asset.added,
-        removed: tx.asset.removed,
         transactionId: tx.id,
+        votes: Array.isArray(tx.asset.votes) ? tx.asset.votes.join(',') : null,
       },
     };
   }
 
   public async attachAssets(txs: Array<IBaseTransaction<VoteAsset>>) {
-    const res = await this.VotesModel.findAll({
+    const res = await this.OldVoteTxModel.findAll({
       where: { transactionId: txs.map((tx) => tx.id) },
     });
 
@@ -320,8 +302,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
       }
       const info = res[indexes[tx.id]];
       tx.asset = {
-        added: info.added || [],
-        removed: info.removed || [],
+        votes: info.votes.split(','),
       };
     });
   }
@@ -332,47 +313,91 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     return size;
   }
 
+  @postConstruct()
+  private postConstruct() {
+    voteSchema.properties.votes.maxItems = this.dposConstants.maxVotesPerTransaction;
+  }
+
+  private async computeAddedRemoved(
+    voteAsset: VoteAsset
+  ): Promise<{ added: string[]; removed: string[] }> {
+    const added: string[] = [];
+    const removed: string[] = [];
+
+    for (const vote of voteAsset.votes) {
+      const add = vote.slice(0, 1) === '+';
+      const pubKey = Buffer.from(vote.slice(1), 'hex');
+      const del = await this.accountsModule.getAccount({
+        forgingPK: pubKey,
+        isDelegate: 1,
+      });
+      if (!del) {
+        throw new Error(
+          `Cannot find delegate matching pk: ${pubKey.toString('hex')}`
+        );
+      }
+      if (add) {
+        added.push(del.username);
+      } else {
+        removed.push(del.username);
+      }
+    }
+
+    return { added, removed };
+  }
+
   private assertValidVote(vote: string) {
     if (typeof vote !== 'string') {
       throw new Error('Invalid vote type');
     }
-    const username = vote;
-    if (!this.schema.validate(username, { format: 'username' })) {
-      throw new Error('Invalid vote username');
+
+    if (['-', '+'].indexOf(vote[0]) === -1) {
+      throw new Error('Invalid vote format');
+    }
+
+    const pkey = vote.substring(1);
+    if (!this.schema.validate(pkey, { format: 'publicKey' })) {
+      throw new Error('Invalid vote publicKey');
     }
   }
 
   private calculateOPs(
     model: typeof Model & (new () => any),
     blockId: string,
-    added: string[],
-    removed: string[],
+    votesArray: string[],
     senderAddress: string
   ) {
     const ops: Array<DBOp<any>> = [];
 
-    // Remove unvoted usernames.
-    if (removed.length > 0) {
+    const removedPks = votesArray
+      .filter((v) => v.startsWith('-'))
+      .map((v) => v.substr(1));
+    const addedPks = votesArray
+      .filter((v) => v.startsWith('+'))
+      .map((v) => v.substr(1));
+
+    // Remove unvoted publickeys.
+    if (removedPks.length > 0) {
       ops.push({
         model,
         options: {
-          limit: removed.length,
+          limit: removedPks.length,
           where: {
             address: senderAddress,
-            username: removed,
+            username: removedPks,
           },
         },
         type: 'remove',
       });
     }
     // create new elements for each added pk.
-    if (added.length > 0) {
+    if (addedPks.length > 0) {
       ops.push({
         model,
         type: 'bulkCreate',
-        values: added.map((username) => ({
+        values: addedPks.map((pk) => ({
           address: senderAddress,
-          username,
+          username: pk,
         })),
       });
     }
@@ -386,11 +411,5 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
       });
     }
     return ops;
-  }
-
-  private buildDiffArray(tx: IBaseTransaction<VoteAsset>) {
-    return tx.asset.added
-      .map((a) => `+${a}`)
-      .concat(tx.asset.removed.map((a) => `-${a}`));
   }
 }

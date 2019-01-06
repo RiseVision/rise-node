@@ -3,21 +3,25 @@ import {
   ExceptionsManager,
   ExceptionSymbols,
 } from '@risevision/core-exceptions';
-import {
-  IBaseTransactionType,
-  IIdsHandler,
-  ITransactionLogic,
-  Symbols,
-} from '@risevision/core-interfaces';
+import { IBaseTransactionType, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
-import { TXBytes, TXSymbols } from '@risevision/core-transactions';
+import { TXSymbols } from '@risevision/core-transactions';
 import { ConstantsType } from '@risevision/core-types';
 import * as requireJSON5 from 'require-json5';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
 import { RiseIdsHandler } from './idsHandler';
+import { OldVoteTxModel } from './models';
+import {
+  OldRegDelegateTx,
+  OldSecondSignatureTx,
+  OldSendTx,
+  OldVoteTx,
+} from './oldtxs';
+import { RISESymbols } from './symbols';
 
 const oldEscape = SqlString.escape;
 SqlString.escape = (val, timeZone, dialect, format) => {
@@ -48,6 +52,29 @@ export class CoreModule extends BaseCoreModule<any> {
       .bind(Symbols.helpers.idsHandler)
       .to(RiseIdsHandler)
       .inSingletonScope();
+
+    // Register old tx type.
+    this.container
+      .bind(TXSymbols.transaction)
+      .to(OldSendTx)
+      .inSingletonScope()
+      .whenTargetNamed(RISESymbols.oldtxs.send);
+    this.container
+      .bind(TXSymbols.transaction)
+      .to(OldRegDelegateTx)
+      .inSingletonScope()
+      .whenTargetNamed(RISESymbols.oldtxs.delegate);
+    this.container
+      .bind(TXSymbols.transaction)
+      .to(OldVoteTx)
+      .inSingletonScope()
+      .whenTargetNamed(RISESymbols.oldtxs.vote);
+    this.container
+      .bind(TXSymbols.transaction)
+      .to(OldSecondSignatureTx)
+      .inSingletonScope()
+      .whenTargetNamed(RISESymbols.oldtxs.secondSign);
+
     // Register transaction types.
     this.container.bind(Symbols.generic.txtypes).toConstantValue({});
   }
@@ -57,11 +84,23 @@ export class CoreModule extends BaseCoreModule<any> {
       ExceptionSymbols.manager
     );
     await registerExceptions(manager, this.container);
+
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(OldVoteTxModel)
+      .whenTargetNamed(RISESymbols.models.oldVotesModel);
+
     const types = [
-      { name: TXSymbols.sendTX, type: 0 },
-      { name: SigSymbols.transaction, type: 1 },
-      { name: dPoSSymbols.logic.delegateTransaction, type: 2 },
-      { name: dPoSSymbols.logic.voteTransaction, type: 3 },
+      // OLD
+      { name: RISESymbols.oldtxs.send, type: 0 },
+      { name: RISESymbols.oldtxs.secondSign, type: 1 },
+      { name: RISESymbols.oldtxs.delegate, type: 2 },
+      { name: RISESymbols.oldtxs.vote, type: 3 },
+      // NEW
+      { name: TXSymbols.sendTX, type: 10 },
+      { name: SigSymbols.transaction, type: 11 },
+      { name: dPoSSymbols.logic.delegateTransaction, type: 12 },
+      { name: dPoSSymbols.logic.voteTransaction, type: 13 },
     ];
     const toSet = this.container.get(Symbols.generic.txtypes);
     for (const { name, type } of types) {

@@ -34,22 +34,17 @@ export class SignHooksListener extends ExtendableClass {
 
   @TxLogicStaticCheck()
   public async txStaticCheck(
-    tx: IBaseTransaction<any> & { signSignature?: Buffer },
+    tx: IBaseTransaction<any>,
     sender: AccountsModelWith2ndSign
   ) {
-    if (sender.secondSignature && !tx.signSignature) {
+    if (sender.secondSignature && tx.signatures.length < 2) {
       throw new Error('Missing second signature');
-    }
-    if (!sender.secondSignature && tx.signSignature) {
-      throw new Error(
-        'Second Signature provided but account does not have one registered'
-      );
     }
   }
 
   @TxLogicVerify()
   public async txLogicVerify(
-    tx: IBaseTransaction<any, bigint> & { signSignature?: Buffer },
+    tx: IBaseTransaction<any, bigint>,
     sender: AccountsModelWith2ndSign
   ) {
     if (sender.secondSignature) {
@@ -59,7 +54,7 @@ export class SignHooksListener extends ExtendableClass {
         .digest();
       const verified = this.crypto.verify(
         hash,
-        tx.signSignature,
+        tx.signatures[1],
         sender.secondPublicKey
       );
       if (!verified) {

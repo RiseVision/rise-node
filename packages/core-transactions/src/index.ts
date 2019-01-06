@@ -4,6 +4,7 @@ export * from './hooks/actions';
 export * from './hooks/filters';
 export * from './coremodule';
 export * from './PoolManager';
+export * from './sendTransaction';
 export * from './TransactionPool';
 export * from './TransactionLogic';
 export * from './TransactionModule';

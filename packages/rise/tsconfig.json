@@ -18,7 +18,9 @@
       "@risevision/core-types": ["../core-types/*"],
       "@risevision/core-helpers": ["../core-helpers/*"],
       "@risevision/core-models": ["../core-models/*"],
-      "@risevision/core-consensus-dpos": ["../core-consensus-dpos/*"]
+      "@risevision/core-consensus-dpos": ["../core-consensus-dpos/*"],
+      "@risevision/core-secondsignature": ["../core-secondsignature/*"],
+      "@risevision/core-transactions": ["../core-transactions/*"]
     }
   },
   "include": ["./src/**/*"],

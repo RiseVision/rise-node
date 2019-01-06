@@ -12,6 +12,7 @@ import {
   SignedBlockType,
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
+import * as _ from 'lodash';
 import * as z_schema from 'z-schema';
 import { AccountsModelWith2ndSign } from './AccountsModelWith2ndSign';
 import { SignaturesModel } from './SignaturesModel';
@@ -96,6 +97,26 @@ export class SecondSignatureTransaction extends BaseTx<
     ) {
       throw new Error('Invalid public key');
     }
+  }
+
+  public async findConflicts(
+    txs: Array<IBaseTransaction<SecondSignatureAsset>>
+  ): Promise<Array<IBaseTransaction<SecondSignatureAsset>>> {
+    // This piece of logic does find conflicting transactions from same sender
+    // this will ensure no conflicting 2nd sign txs from same sender that are casted wont get included in the block.
+
+    const grouped = _.groupBy(txs, (a) => a.senderId);
+    const conflictingTransactions: Array<
+      IBaseTransaction<SecondSignatureAsset>
+    > = [];
+    // tslint:disable-next-line
+    for (const senderId in grouped) {
+      const groupedTXsBySender = grouped[senderId];
+      if (groupedTXsBySender.length > 1) {
+        conflictingTransactions.push(...groupedTXsBySender.slice(1));
+      }
+    }
+    return conflictingTransactions;
   }
 
   public async apply(

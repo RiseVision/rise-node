@@ -20,7 +20,7 @@ export class CoreModule extends BaseCoreModule<DbAppConfig> {
       database: this.config.db.database,
       dialect: 'postgres',
       host: this.config.db.host,
-      logging: false,
+      logging: true,
       password: this.config.db.password,
       pool: {
         idle: this.config.db.poolIdleTimeout,

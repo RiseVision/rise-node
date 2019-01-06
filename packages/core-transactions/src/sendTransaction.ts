@@ -123,6 +123,9 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
   }
 
   public dbSave(tx: IBaseTransaction<SendTxAsset>) {
+    if (!tx.asset || !tx.asset.data) {
+      return null;
+    }
     return {
       model: this.SendTxAssetModel,
       type: 'create',

@@ -10,11 +10,10 @@ import {
   DBOp,
   IBaseTransaction,
   SignedBlockType,
-  TransactionType,
 } from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
-import { inject, injectable, unmanaged } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import * as varuint from 'varuint-bitcoin';
@@ -33,9 +32,9 @@ export abstract class BaseTx<T, M extends Model<any>>
   @inject(LaunchpadSymbols.hookSystem)
   protected hookSystem: WordPressHookSystem;
   @inject(Symbols.helpers.idsHandler)
-  private idsHandler: IIdsHandler;
+  protected idsHandler: IIdsHandler;
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  protected constants: ConstantsType;
 
   public abstract calculateMinFee(
     tx: IBaseTransaction<T>,
@@ -68,9 +67,8 @@ export abstract class BaseTx<T, M extends Model<any>>
     }
 
     bb.writeByte(tx.type);
-    if (tx.version) {
-      bb.writeUint32(2 ** 32 - 128 + tx.version);
-    }
+
+    bb.writeUint32(tx.version);
     bb.writeUint32(tx.timestamp);
 
     bb.append(encodeVarUint(tx.senderPubData));
@@ -119,40 +117,29 @@ export abstract class BaseTx<T, M extends Model<any>>
       return toRet;
     }
 
-    const type = readUint8();
-    let timestamp = readUint32();
-    let version = 0;
-    if (timestamp >= 2 ** 32 - 128) {
-      version = timestamp - 2 ** 32 - 128;
-      timestamp = readUint32();
-    }
-
-    const senderPubData = readVarUint();
-    const recipientId = this.idsHandler.addressFromBytes(readVarUint());
-
-    const amount = toBigIntLE(readSlice(this.constants.amountBytes));
-
-    const fee = toBigIntLE(readSlice(this.constants.amountBytes));
-
-    const asset = this.readAssetFromBytes(readVarUint());
-
-    const nSignatures = Math.floor((buff.length - offset) / 64);
-    const signatures = new Array(nSignatures)
-      .fill(null)
-      .map(() => readSlice(64));
-
     return {
-      amount,
-      asset,
-      fee,
+      // tslint:disable object-literal-sort-keys
       id: this.idsHandler.calcTxIdFromBytes(buff),
-      recipientId,
-      senderId: this.idsHandler.addressFromPubData(senderPubData),
-      senderPubData,
-      signatures,
-      timestamp,
-      type,
-      version,
+      type: readUint8(),
+      version: readUint32(),
+      timestamp: readUint32(),
+      ...(() => {
+        const senderPubData = readVarUint();
+        return {
+          senderId: this.idsHandler.addressFromPubData(senderPubData),
+          senderPubData,
+        };
+      })(),
+      senderPubData: readVarUint(),
+      recipientId: this.idsHandler.addressFromBytes(readVarUint()),
+      amount: toBigIntLE(readSlice(this.constants.amountBytes)),
+      fee: toBigIntLE(readSlice(this.constants.amountBytes)),
+      asset: this.readAssetFromBytes(readVarUint()),
+      signatures: (() =>
+        new Array(Math.floor(buff.length - offset))
+          .fill(null)
+          .map(() => readSlice(64)))(),
+      // tslint:enable object-literal-sort-keys
     };
   }
 
