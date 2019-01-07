@@ -15,7 +15,6 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
   }
   public address: string;
   public balance: bigint;
-  public blockId: string;
   public virgin: 0 | 1;
   // tslint:disable-next-line
   public u_balance: bigint;

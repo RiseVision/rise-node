@@ -190,7 +190,6 @@ export class RoundLogic {
             delegate
           ),
           balance: this.scope.backwards ? -changes.balance : changes.balance,
-          blockId: this.scope.block.id,
           cmb: 0,
           fees: this.scope.backwards ? -changes.fees : changes.fees,
           producedblocks: this.scope.backwards ? -1 : 1,
@@ -222,7 +221,6 @@ export class RoundLogic {
             remainderDelegate
           ),
           balance: feesRemaining,
-          blockId: this.scope.block.id,
           fees: feesRemaining,
           round: this.scope.round,
           u_balance: feesRemaining,

@@ -1,6 +1,6 @@
 BEGIN;
 CREATE TABLE IF NOT EXISTS mem_accounts (
-    address character varying(250) NOT NULL,
+    address character varying(250) NOT NULL PRIMARY KEY,
     balance bigint DEFAULT 0,
     u_balance bigint DEFAULT 0,
     virgin smallint DEFAULT 1

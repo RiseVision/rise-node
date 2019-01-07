@@ -52,14 +52,6 @@ describe('accounts/hooks/loaderSubscriber', () => {
 
     expect(dropStub.calledOnce).is.true;
     expect(queryStub.calledOnce).is.true;
-    expect(
-      queryStub.calledWith(
-        fs.readFileSync(
-          path.join(__dirname, '..', '..', '..', 'sql', 'memoryTables.sql'),
-          { encoding: 'utf8' }
-        )
-      )
-    );
   });
   describe('integrity hook', () => {
     let accountsCountStub: SinonStub;

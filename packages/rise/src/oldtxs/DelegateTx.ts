@@ -280,6 +280,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
       model: this.DelegatesModel,
       type: 'create',
       values: {
+        forgingPK: tx.senderPubData,
         transactionId: tx.id,
         username: tx.asset.delegate.username,
       },

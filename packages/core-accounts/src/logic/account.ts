@@ -104,30 +104,23 @@ export class AccountLogic implements IAccountLogic {
   public getAll(filter: AccountFilterData): Promise<IAccountsModel[]> {
     const sort: any = filter.sort ? filter.sort : {};
 
-    const condition: any = filterObject(filter, [
-      'isDelegate',
-      'username',
-      'address',
-      'publicKey',
-    ]);
-    if (typeof filter.address === 'string') {
-      condition.address = filter.address.toUpperCase();
-    } else if (typeof filter.address !== 'undefined') {
-      condition.address = {
-        [Op.in]: filter.address.$in.map((add) => add.toUpperCase()),
-      };
-    }
+    const { limit, offset } = filter;
+
+    delete filter.sort;
+    delete filter.limit;
+    delete filter.offset;
+
     // Remove fields = undefined (such as limit, offset and sort)
-    Object.keys(condition).forEach((k) => {
-      if (typeof condition[k] === 'undefined') {
-        delete condition[k];
+    Object.keys(filter).forEach((k) => {
+      if (typeof filter[k] === 'undefined') {
+        delete filter[k];
       }
     });
 
     return Promise.resolve(
       this.AccountsModel.findAll({
-        limit: filter.limit > 0 ? filter.limit : undefined,
-        offset: filter.offset > 0 ? filter.offset : undefined,
+        limit: limit > 0 ? limit : undefined,
+        offset: offset > 0 ? offset : undefined,
         order:
           typeof sort === 'string'
             ? [[sort, 'ASC']]
@@ -135,7 +128,7 @@ export class AccountLogic implements IAccountLogic {
                 col,
                 sort[col] === -1 ? 'DESC' : 'ASC',
               ]),
-        where: condition,
+        where: filter,
       })
     );
   }

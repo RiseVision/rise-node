@@ -19,7 +19,7 @@ squelPostgres.registerValueHandler(Buffer, (buffer) => {
   return {
     formatted: true,
     rawNesting: true,
-    value: "E'\\\\x" + buffer.toString('hex') + "'",
+    value: "E'\\\\x" + buffer.toString('hex') + "'::bytea",
   } as any;
 });
 squelPostgres.registerValueHandler('bigint', (bi: bigint) => {
@@ -28,6 +28,11 @@ squelPostgres.registerValueHandler('bigint', (bi: bigint) => {
     rawNesting: true,
     value: bi.toString(),
   } as any;
+});
+squelPostgres.registerValueHandler(Array, (array) => {
+  const ins = squelPostgres.insert();
+  const values = array.map((a) => ins._buildString('?', [a], {}).text);
+  return `ARRAY[ ${values.join(', ')} ]`;
 });
 
 @injectable()

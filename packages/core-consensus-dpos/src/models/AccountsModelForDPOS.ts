@@ -25,6 +25,7 @@ const buildArrayArgAttribute = (table: string): any => {
     'missedblocks',
     'fees',
     'rewards',
+    'forgingPK',
     buildArrayArgAttribute('delegates'),
     buildArrayArgAttribute('u_delegates'),
   ],

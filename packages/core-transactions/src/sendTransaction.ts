@@ -80,7 +80,6 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
       [
         ...this.accountLogic.merge(tx.recipientId, {
           balance: BigInt(tx.amount),
-          blockId: block.id,
           // round    : this.roundsLogic.calcRound(block.height),
           u_balance: BigInt(tx.amount),
         }),
@@ -102,7 +101,6 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
       [
         ...this.accountLogic.merge(tx.recipientId, {
           balance: -BigInt(tx.amount),
-          blockId: block.id,
           // round    : this.roundsLogic.calcRound(block.height),
           u_balance: -BigInt(tx.amount),
         }),

@@ -15,7 +15,7 @@ import { Container } from 'inversify';
 import { BaseModel } from '@risevision/core-models';
 
 @DefaultScope({
-  attributes: ['address', 'balance', 'blockId', 'virgin', 'u_balance'].sort(),
+  attributes: ['address', 'balance', 'virgin', 'u_balance'].sort(),
 })
 @Table({ tableName: 'mem_accounts' })
 export class AccountsModel extends BaseModel<AccountsModel>
@@ -26,9 +26,6 @@ export class AccountsModel extends BaseModel<AccountsModel>
 
   @Column(DataType.BIGINT)
   public balance: bigint;
-
-  @Column
-  public blockId: string;
 
   @Column
   public virgin: 0 | 1;

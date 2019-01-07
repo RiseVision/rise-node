@@ -65,17 +65,11 @@ export class RoundsHooks extends Extendable {
     ];
     for (const model of models) {
       await model
-        .drop({ cascade: true })
+        .truncate({ cascade: true })
         .catch(
           catchToLoggerAndRemapError('Account#removeTables error', this.logger)
         );
     }
-
-    await this.Accounts2DelegatesModel.sequelize.query(
-      fs.readFileSync(`${__dirname}/../../../sql/queries/memoryTables.sql`, {
-        encoding: 'utf8',
-      })
-    );
   }
 
   @ApplyBlockDBOps()

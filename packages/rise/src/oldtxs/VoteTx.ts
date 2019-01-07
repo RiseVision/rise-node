@@ -173,8 +173,7 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
     sender.applyDiffArray('delegates', tx.asset.votes);
     return this.calculateOPs(
       this.Accounts2DelegatesModel,
-      block.id,
-      tx.asset.votes,
+      tx.asset,
       sender.address
     );
   }
@@ -190,8 +189,7 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
     sender.applyDiffArray('delegates', invertedVotes);
     return this.calculateOPs(
       this.Accounts2DelegatesModel,
-      block.id,
-      invertedVotes,
+      { votes: invertedVotes },
       sender.address
     );
   }
@@ -204,8 +202,7 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
     sender.applyDiffArray('u_delegates', tx.asset.votes);
     return this.calculateOPs(
       this.Accounts2U_DelegatesModel,
-      null,
-      tx.asset.votes,
+      tx.asset,
       sender.address
     );
   }
@@ -219,8 +216,7 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
     sender.applyDiffArray('u_delegates', reversedVotes);
     return this.calculateOPs(
       this.Accounts2U_DelegatesModel,
-      null,
-      reversedVotes,
+      { votes: reversedVotes },
       sender.address
     );
   }
@@ -327,10 +323,12 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
     for (const vote of voteAsset.votes) {
       const add = vote.slice(0, 1) === '+';
       const pubKey = Buffer.from(vote.slice(1), 'hex');
+
       const del = await this.accountsModule.getAccount({
         forgingPK: pubKey,
         isDelegate: 1,
       });
+
       if (!del) {
         throw new Error(
           `Cannot find delegate matching pk: ${pubKey.toString('hex')}`
@@ -361,55 +359,40 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
     }
   }
 
-  private calculateOPs(
+  private async calculateOPs(
     model: typeof Model & (new () => any),
-    blockId: string,
-    votesArray: string[],
+    asset: VoteAsset,
     senderAddress: string
   ) {
     const ops: Array<DBOp<any>> = [];
 
-    const removedPks = votesArray
-      .filter((v) => v.startsWith('-'))
-      .map((v) => v.substr(1));
-    const addedPks = votesArray
-      .filter((v) => v.startsWith('+'))
-      .map((v) => v.substr(1));
+    const { added, removed } = await this.computeAddedRemoved(asset);
 
-    // Remove unvoted publickeys.
-    if (removedPks.length > 0) {
+    if (removed.length > 0) {
       ops.push({
         model,
         options: {
-          limit: removedPks.length,
+          limit: removed.length,
           where: {
             address: senderAddress,
-            username: removedPks,
+            username: removed,
           },
         },
         type: 'remove',
       });
     }
     // create new elements for each added pk.
-    if (addedPks.length > 0) {
+    if (added.length > 0) {
       ops.push({
         model,
         type: 'bulkCreate',
-        values: addedPks.map((pk) => ({
+        values: added.map((username) => ({
           address: senderAddress,
-          username: pk,
+          username,
         })),
       });
     }
 
-    if (blockId) {
-      ops.push({
-        model: this.AccountsModel,
-        options: { where: { address: senderAddress } },
-        type: 'update',
-        values: { blockId },
-      });
-    }
     return ops;
   }
 }

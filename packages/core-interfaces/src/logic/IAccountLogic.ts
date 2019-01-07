@@ -10,7 +10,6 @@ export type AccountFilterData<T extends IAccountsModel = IAccountsModel> = Omit<
   'address'
 > & {
   address?: string | { $in: string[] };
-  publicKey?: Buffer | sequelize.WhereLogic;
   limit?: number;
   offset?: number;
   sort?: { [k in keyof T]?: -1 | 1 };

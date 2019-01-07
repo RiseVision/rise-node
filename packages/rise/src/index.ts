@@ -75,6 +75,11 @@ export class CoreModule extends BaseCoreModule<any> {
       .inSingletonScope()
       .whenTargetNamed(RISESymbols.oldtxs.secondSign);
 
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(OldVoteTxModel)
+      .whenTargetNamed(RISESymbols.models.oldVotesModel);
+
     // Register transaction types.
     this.container.bind(Symbols.generic.txtypes).toConstantValue({});
   }
@@ -84,11 +89,6 @@ export class CoreModule extends BaseCoreModule<any> {
       ExceptionSymbols.manager
     );
     await registerExceptions(manager, this.container);
-
-    this.container
-      .bind(ModelSymbols.model)
-      .toConstructor(OldVoteTxModel)
-      .whenTargetNamed(RISESymbols.models.oldVotesModel);
 
     const types = [
       // OLD

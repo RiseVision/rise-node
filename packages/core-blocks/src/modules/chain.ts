@@ -71,8 +71,6 @@ export class BlocksModuleChain {
   private blocksModule: IBlocksModule;
   @inject(BlocksSymbols.modules.utils)
   private blocksModuleUtils: BlocksModuleUtils;
-  // @inject(Symbols.modules.rounds)
-  // private roundsModule: IRoundsModule;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
 
@@ -174,6 +172,18 @@ export class BlocksModuleChain {
     );
 
     try {
+      const senders = await this.accountsModule.unfoldSenders(
+        block.transactions
+      );
+      await this.dbHelper.performOps([
+        {
+          model: this.AccountsModel,
+          query: this.AccountsModel.createBulkAccountsSQL(
+            senders.map((a) => a.address)
+          ),
+          type: 'custom',
+        },
+      ]);
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
         const sender = await this.accountsModule.getAccount({

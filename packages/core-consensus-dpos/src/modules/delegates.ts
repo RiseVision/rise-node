@@ -295,7 +295,7 @@ export class DelegatesModule {
       filter.sort = { vote: -1, forgingPK: 1 };
     } else {
       filter.sort = { votesWeight: -1, forgingPK: 1 };
-      filter.publicKey = { [Op.notIn]: exclusionList || [] };
+      filter.forgingPK = { [Op.notIn]: exclusionList || [] };
       filter.cmb = {
         [Op.lte]: this.dposConstants.dposv2.maxContinuousMissedBlocks,
       };

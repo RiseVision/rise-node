@@ -118,9 +118,8 @@ export class TransactionLogic implements ITransactionLogic {
     tx: IBaseTransaction<any>,
     sender: IAccountsModel
   ) {
-    const exceededBalance = sender[balanceKey] < amount;
     // tslint:disable-next-line
-    if (tx['blockId'] !== this.genesisBlock.id && exceededBalance) {
+    if (tx['blockId'] !== this.genesisBlock.id && sender[balanceKey] < amount) {
       throw new Error(
         `\`Account does not have enough currency: ${sender.address} balance: ${
           sender[balanceKey]
@@ -262,14 +261,11 @@ export class TransactionLogic implements ITransactionLogic {
     sender.balance -= amount;
     this.logger.trace('Logic/Transaction->apply', {
       balance: -amount,
-      blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
       sender: sender.address,
     });
     const ops = this.accountLogic.merge(sender.address, {
       balance: -amount,
-      blockId: block.id,
-      // round  : this.roundsLogic.calcRound(block.height),
     });
     ops.push(...(await this.types[tx.type].apply(tx, block, sender)));
     return await this.hookSystem.apply_filters(
@@ -295,13 +291,11 @@ export class TransactionLogic implements ITransactionLogic {
     sender.balance += amount;
     this.logger.trace('Logic/Transaction->undo', {
       balance: amount,
-      blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
       sender: sender.address,
     });
     const ops = this.accountLogic.merge(sender.address, {
       balance: amount,
-      blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
     });
     ops.push(...(await this.types[tx.type].undo(tx, block, sender)));
@@ -422,15 +416,14 @@ export class TransactionLogic implements ITransactionLogic {
       }
     }
     // Convert hex encoded fields to Buffers (if they're not already buffers)
-    [
-      'senderPublicKey',
-      'requesterPublicKey',
-      'signature',
-      'signSignature',
-    ].forEach((k) => {
-      if (typeof tx[k] === 'string') {
-        tx[k] = Buffer.from(tx[k], 'hex');
+    if (typeof tx.senderPubData === 'string') {
+      tx.senderPubData = Buffer.from(tx.senderPubData, 'hex');
+    }
+    tx.signatures = (tx.signatures as any[]).map<Buffer>((s) => {
+      if (typeof s === 'string') {
+        return Buffer.from(s, 'hex');
       }
+      return s;
     });
 
     tx.amount = BigInt(tx.amount);

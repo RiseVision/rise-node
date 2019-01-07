@@ -6,7 +6,7 @@
       "type": "string",
       "format": "id",
       "minLength": 1,
-      "maxLength": 20
+      "maxLength": 250
     },
     "height": {
       "type": "integer"
@@ -15,7 +15,7 @@
       "type": "string",
       "format": "id",
       "minLength": 1,
-      "maxLength": 20
+      "maxLength": 250
     },
     "type": {
       "type": "integer"
@@ -24,33 +24,27 @@
       "type": "integer",
       "minimum": 0
     },
-    "senderPublicKey": {
-      "type": "object",
-      "format": "publicKeyBuf"
-    },
-    "requesterPublicKey": {
-      "type": "object",
-      "format": "publicKeyBuf"
+    "senderPubData": {
+      "type": "object"
     },
     "senderId": {
       "type": "string",
       "format": "address",
       "minLength": 1,
-      "maxLength": 22
+      "maxLength": 250
     },
     "recipientId": {
       "type": "string",
       "format": "address",
       "minLength": 1,
-      "maxLength": 22
+      "maxLength": 250
     },
-    "signature": {
-      "type": "object",
-      "format": "signatureBuf"
-    },
-    "signSignature": {
-      "type": "object",
-      "format": "signatureBuf"
+    "signatures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "format": "signatureBuf"
+      }
     },
     "asset": {
       "type": "object"
@@ -61,8 +55,8 @@
     "type",
     "timestamp",
     "senderId",
-    "senderPublicKey",
-    "signature",
+    "senderPubData",
+    "signatures",
     "fee",
     "amount"
   ]

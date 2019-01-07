@@ -143,7 +143,7 @@ export class TransactionsModule implements ITransactionsModule {
    */
   public async undoUnconfirmed(transaction): Promise<void> {
     const sender = await this.accountsModule.getAccount({
-      publicKey: transaction.senderPublicKey,
+      address: transaction.senderId,
     });
     // tslint:disable-next-line max-line-length
     this.logger.debug(

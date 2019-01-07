@@ -449,7 +449,7 @@ export class DelegatesAPI {
       throw new HTTPError('Forging is already enabled', 200);
     }
 
-    const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
+    const account = await this.accounts.getAccount({ forgingPK: kp.publicKey });
     if (!account) {
       throw new HTTPError('Account not found', 200);
     }
@@ -485,7 +485,7 @@ export class DelegatesAPI {
       throw new HTTPError('Forging is already disabled', 200);
     }
 
-    const account = await this.accounts.getAccount({ publicKey: kp.publicKey });
+    const account = await this.accounts.getAccount({ forgingPK: kp.publicKey });
     if (!account) {
       throw new HTTPError('Account not found', 200);
     }

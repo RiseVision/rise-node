@@ -7,7 +7,9 @@ CREATE TABLE IF NOT EXISTS "peers" (
   "state" SMALLINT NOT NULL,
   "os" VARCHAR(64),
   "version" VARCHAR(11),
-  "clock" BIGINT
+  "clock" BIGINT,
+  "height" INTEGER,
+  "broadhash" BYTEA
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_peers_unique" ON "peers"("ip", "port");

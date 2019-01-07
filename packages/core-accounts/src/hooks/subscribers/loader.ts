@@ -27,14 +27,8 @@ export class AccountsLoaderSubscriber extends DecoratedSubscriber {
 
   @RecreateAccountsTables()
   public async recreateTables(): Promise<void> {
-    await this.AccountsModel.drop({ cascade: true }).catch(
+    await this.AccountsModel.truncate({ cascade: true }).catch(
       catchToLoggerAndRemapError('Account#removeTables error', this.logger)
-    );
-    await this.AccountsModel.sequelize.query(
-      fs.readFileSync(
-        path.join(__dirname, '..', '..', '..', 'sql', 'memoryTables.sql'),
-        { encoding: 'utf8' }
-      )
     );
   }
 
