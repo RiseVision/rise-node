@@ -130,7 +130,7 @@
   //      "reward": 100000000
   //    }
   //  ],
-  "totalAmount": 10999999991000000,
+  "totalAmount": "10999999991000000",
   "unconfirmedTransactionTimeOut": 10800,
   "multisigConstraints": {
     "min": {

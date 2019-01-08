@@ -55,7 +55,8 @@ export class BlockBytes {
     bb.writeUint32(block.timestamp);
 
     bb.append(
-      encodeVarUint(this.idsHandler.blockIdToBytes(block.previousBlock))
+      this.idsHandler.blockIdToBytes(block.previousBlock)
+      // encodeVarUint()
     );
 
     bb.writeUint32(block.numberOfTransactions);
@@ -63,7 +64,8 @@ export class BlockBytes {
     bb.append(toBufferLE(block.totalFee, this.constants.amountBytes));
     bb.append(toBufferLE(block.reward, this.constants.amountBytes));
 
-    bb.append(encodeVarUint(block.payloadHash));
+    bb.writeUint32(block.payloadLength);
+    bb.append(block.payloadHash);
     bb.append(block.generatorPublicKey);
 
     if (block.blockSignature && includeSignature) {
@@ -71,7 +73,7 @@ export class BlockBytes {
     }
 
     bb.flip();
-    return bb.toBuffer() as any;
+    return new Buffer(bb.toBuffer());
   }
 
   public fromSignableBytes<T>(buff: Buffer): BlockHeader<Buffer, bigint> {
@@ -109,8 +111,8 @@ export class BlockBytes {
     const totalFee = toBigIntLE(readSlice(this.constants.amountBytes));
     const reward = toBigIntLE(readSlice(this.constants.amountBytes));
 
+    const payloadLength = readUint32();
     const payloadHash = readVarUint();
-    const payloadLength = payloadHash.length;
 
     const generatorPublicKey = readSlice(32);
 

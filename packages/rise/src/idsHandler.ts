@@ -33,14 +33,14 @@ export class RiseIdsHandler implements IIdsHandler {
   }
 
   public blockIdFromBytes(bytes: Buffer): string {
-    return toBigIntLE(bytes).toString();
+    return toBigIntBE(bytes).toString();
   }
 
   public blockIdToBytes(id: string): Buffer {
     if (id === null) {
       return Buffer.alloc(0);
     }
-    return toBufferLE(BigInt(id), 8);
+    return toBufferBE(BigInt(id), 8);
   }
 
   public calcTxIdFromBytes(bytes: Buffer): string {

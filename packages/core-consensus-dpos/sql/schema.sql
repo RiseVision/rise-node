@@ -60,4 +60,9 @@ DELETE FROM mem_accounts2u_delegates;
 INSERT INTO mem_accounts2u_delegates ("address", "username")
   SELECT "address", "username" FROM mem_accounts2delegates;
 
+
+
+
+
+
 COMMIT;
