@@ -1,7 +1,9 @@
 .devutils
 .git
 Dockerfile
+Dockerfile.arm
 dist
+docker-compose.arm.yml
 docker-compose.yml
 node_modules
 tests

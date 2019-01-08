@@ -2,7 +2,7 @@ version: "3"
 services:
 
   rise:
-    image: jpopesculian/rise-node:latest
+    image: jpopesculian/rise-node:arm-latest
     depends_on:
       - redis
       - postgres
@@ -13,13 +13,13 @@ services:
     restart: on-failure
 
   redis:
-    image: redis:5-alpine
+    image: arm32v6/redis:5-alpine
     networks:
       - overlay
     restart: on-failure
 
   postgres:
-    image: postgres:11-alpine
+    image: arm32v6/postgres:11-alpine
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: rise
