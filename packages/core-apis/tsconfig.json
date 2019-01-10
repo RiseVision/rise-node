@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "esnext",
     "module": "commonjs",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -12,7 +12,7 @@
     "allowSyntheticDefaultImports": true,
     "inlineSourceMap": true,
     "inlineSources": true,
-    "lib": ["dom", "es7", "es2015"],
+    "lib": ["dom", "es7", "es2015", "esnext.bigint"],
     "paths": {
       "@risevision/core-models": ["../core-models/*"],
       "@risevision/core-interfaces": ["../core-interfaces/*"],

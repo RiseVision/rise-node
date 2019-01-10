@@ -39,6 +39,7 @@ describe('apis/utils/errorHandler', () => {
       'core-accounts',
       'core-helpers',
       'core-crypto',
+      'core-transactions',
     ]);
     instance = container.getNamed(APISymbols.class, APISymbols.errorHandler);
 

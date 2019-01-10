@@ -28,6 +28,7 @@ describe('apis/utils/privateApisWatchGuard', () => {
       'core-accounts',
       'core-helpers',
       'core-crypto',
+      'core-transactions',
     ]);
     instance = container.getNamed(APISymbols.class, APISymbols.privateApiGuard);
     next = sinon.stub();

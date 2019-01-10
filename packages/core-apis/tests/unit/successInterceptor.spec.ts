@@ -24,6 +24,7 @@ describe('apis/utils/attachPeerHeaders', () => {
       'core-helpers',
       'core-crypto',
       'core-accounts',
+      'core-transactions',
     ]);
     container.bind(APISymbols.successInterceptor).to(APISuccessInterceptor);
     instance = container.get(APISymbols.successInterceptor);
