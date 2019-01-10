@@ -1,5 +1,7 @@
 .devutils
 .git
+docker/Dockerfile.postgres
+docker/Dockerfile.postgres.arm
 Dockerfile
 Dockerfile.arm
 dist

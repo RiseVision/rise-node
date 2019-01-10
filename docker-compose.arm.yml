@@ -19,7 +19,7 @@ services:
     restart: on-failure
 
   postgres:
-    image: arm32v6/postgres:11-alpine
+    image: jpopesculian/rise-node_postgres:arm-latest
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: rise
