@@ -7,7 +7,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import { DBOp, IBaseTransaction } from '@risevision/core-types';
+import { Address, DBOp, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { AccountLogic } from '../logic';
 import { AccountsSymbols } from '../symbols';
@@ -35,17 +35,12 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.getAll(filter);
   }
 
-  public unfoldSenders(
-    txs: Array<IBaseTransaction<any>>
-  ): Array<{ pubData: Buffer; address: string }> {
-    const allSenders: Array<{ pubData: Buffer; address: string }> = [];
+  public unfoldSenders(txs: Array<IBaseTransaction<any>>): Address[] {
+    const allSenders: Address[] = [];
     txs.forEach((tx) => {
       const senderId = this.idsHandler.addressFromPubData(tx.senderPubData);
-      if (!allSenders.find((item) => item.address === senderId)) {
-        allSenders.push({
-          address: senderId,
-          pubData: tx.senderPubData,
-        });
+      if (!allSenders.find((item) => item === senderId)) {
+        allSenders.push(senderId);
       }
     });
     return allSenders;
@@ -60,7 +55,7 @@ export class AccountsModule implements IAccountsModule {
     const allSenders = this.unfoldSenders(txs);
 
     const senderAccounts = await this.AccountsModel.findAll({
-      where: { address: allSenders.map((s) => s.address) },
+      where: { address: allSenders },
     });
 
     const sendersMap: { [address: string]: IAccountsModel } = {};
@@ -78,7 +73,7 @@ export class AccountsModule implements IAccountsModule {
     const allSenders = this.unfoldSenders(txs);
 
     await Promise.all(
-      allSenders.map(async ({ address, pubData }) => {
+      allSenders.map(async (address) => {
         if (!accMap[address]) {
           throw new Error(`Account ${address} not found in db.`);
         }
@@ -101,17 +96,15 @@ export class AccountsModule implements IAccountsModule {
   }
 
   private fixAndCheckInputParams<
-    T extends { address?: string; publicKey?: Buffer } = any
+    T extends { address?: string; pubData?: Buffer } = any
   >(what: T): T & { address: string } {
-    if (!what.address && !what.publicKey) {
+    if (!what.address && !what.pubData) {
       throw new Error('Missing address and public key');
     }
     // We calculate address in the case it was not provided or
     // in case publicKey was provided (even if address was provided for security reasons)
-    if (what.publicKey || !what.address) {
-      what.address = this.accountLogic.generateAddressFromPubData(
-        what.publicKey
-      );
+    if (what.pubData || !what.address) {
+      what.address = this.accountLogic.generateAddressFromPubData(what.pubData);
     }
     return what as any;
   }

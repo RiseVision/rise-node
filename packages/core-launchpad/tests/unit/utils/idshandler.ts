@@ -1,4 +1,5 @@
 import { IIdsHandler } from '@risevision/core-interfaces';
+import { Address } from '@risevision/core-types';
 import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
 import { injectable } from 'inversify';
 import * as supersha from 'supersha';
@@ -8,12 +9,12 @@ const maxAddress = 18446744073709551615n;
 @injectable()
 export class TestIdsHandler implements IIdsHandler {
   public maxBlockIdBytesUsage = 8;
-  public addressFromBytes(bytes: Buffer): string {
-    return `${toBigIntBE(bytes)}R`;
+  public addressFromBytes(bytes: Buffer): Address {
+    return `${toBigIntBE(bytes)}R` as Address;
   }
 
-  public addressFromPubData(pubKey: Buffer): string {
-    return `${this.toBigInt(pubKey)}R`;
+  public addressFromPubData(pubKey: Buffer): Address {
+    return `${this.toBigInt(pubKey)}R` as Address;
   }
 
   public addressToBytes(address: string): Buffer {

@@ -10,7 +10,12 @@ import {
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, DBOp, ModelAttributes } from '@risevision/core-types';
+import {
+  Address,
+  ConstantsType,
+  DBOp,
+  ModelAttributes,
+} from '@risevision/core-types';
 import * as filterObject from 'filter-object';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import * as sequelize from 'sequelize';
@@ -151,7 +156,6 @@ export class AccountLogic implements IAccountLogic {
   // tslint:disable-next-line cognitive-complexity
   public merge(address: string, diff: AccountDiffType): Array<DBOp<any>> {
     const update: any = {};
-    address = address.toUpperCase();
     const dbOps: Array<DBOp<any>> = [];
 
     for (const fieldName of this.editable) {
@@ -220,7 +224,7 @@ export class AccountLogic implements IAccountLogic {
     });
   }
 
-  public generateAddressFromPubData(pubData: Buffer): string {
+  public generateAddressFromPubData(pubData: Buffer): Address {
     return this.idsHandler.addressFromPubData(pubData);
   }
 }

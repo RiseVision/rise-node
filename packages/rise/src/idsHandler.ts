@@ -1,5 +1,6 @@
 import { IIdsHandler } from '@risevision/core-interfaces';
-import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
+import { Address } from '@risevision/core-types';
+import { toBigIntBE, toBufferBE } from 'bigint-buffer';
 import { injectable } from 'inversify';
 import * as supersha from 'supersha';
 
@@ -9,12 +10,12 @@ const maxAddress = 18446744073709551615n;
 export class RiseIdsHandler implements IIdsHandler {
   public maxBlockIdBytesUsage = 8;
 
-  public addressFromBytes(bytes: Buffer): string {
-    return `${toBigIntBE(bytes)}R`;
+  public addressFromBytes(bytes: Buffer): Address {
+    return `${toBigIntBE(bytes)}R` as Address;
   }
 
-  public addressFromPubData(pubKey: Buffer): string {
-    return `${this.toBigInt(pubKey)}R`;
+  public addressFromPubData(pubKey: Buffer): Address {
+    return `${this.toBigInt(pubKey)}R` as Address;
   }
 
   public addressToBytes(address: string): Buffer {

@@ -5,7 +5,7 @@ import {
   ILogger,
 } from '@risevision/core-interfaces';
 import {
-  address,
+  Address,
   DBCustomOp,
   DBOp,
   SignedBlockType,
@@ -34,7 +34,7 @@ export interface RoundLogicScope {
   backwards: boolean;
   round: number;
   // List of address which missed a block in this round
-  roundOutsiders: address[];
+  roundOutsiders: Address[];
   roundDelegates: Buffer[];
   roundFees: bigint;
   roundRewards: Array<bigint>;

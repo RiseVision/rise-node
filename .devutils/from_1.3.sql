@@ -125,6 +125,7 @@ ALTER TABLE mem_accounts
 	DROP column "u_delegates",
 	DROP column "multisignatures",
 	DROP column "u_multisignatures",
+	DROP column "rank",
 
 	DROP column "multimin",
 	DROP column "u_multimin",

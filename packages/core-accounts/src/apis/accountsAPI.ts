@@ -132,7 +132,7 @@ export class AccountsAPI {
       accounts: accs
         .map((acc) => acc.toPOJO())
         .map((acc) => filterObject(acc, returnFields))
-        .map(toTransportable),
+        .map((acc) => toTransportable(acc)),
     };
   }
 

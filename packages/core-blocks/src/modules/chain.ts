@@ -178,9 +178,7 @@ export class BlocksModuleChain {
       await this.dbHelper.performOps([
         {
           model: this.AccountsModel,
-          query: this.AccountsModel.createBulkAccountsSQL(
-            senders.map((a) => a.address)
-          ),
+          query: this.AccountsModel.createBulkAccountsSQL(senders),
           type: 'custom',
         },
       ]);

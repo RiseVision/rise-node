@@ -1,18 +1,12 @@
-import {
-  DBOp,
-  FieldsInModel,
-  IBaseTransaction,
-  publicKey,
-} from '@risevision/core-types';
-import { Omit } from 'utility-types';
+import { DBOp, IBaseTransaction } from '@risevision/core-types';
+import { As } from 'type-tagger';
 import { AccountDiffType, AccountFilterData } from '../logic';
 import { IAccountsModel } from '../models';
-import { IModule } from './IModule';
 
 export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
   unfoldSenders(
     txs: Array<IBaseTransaction<any>>
-  ): Array<{ address: string; pubData: Buffer }>;
+  ): Array<string & As<'address'>>;
 
   txAccounts(
     txs: Array<IBaseTransaction<any>>
@@ -29,5 +23,5 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
 
   mergeAccountAndGetOPs(diff: AccountDiffType<T>): Array<DBOp<any>>;
 
-  generateAddressByPubData(pd: Buffer): string;
+  generateAddressByPubData(pd: Buffer): string & As<'address'>;
 }

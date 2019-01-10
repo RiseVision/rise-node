@@ -1,6 +1,6 @@
 import { DBOp } from '@risevision/core-types';
 import { WhereLogic } from 'sequelize';
-import * as sequelize from 'sequelize';
+import { As } from 'type-tagger';
 import { Omit } from 'utility-types';
 import { IAccountsModel } from '../models';
 
@@ -30,5 +30,5 @@ export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
    */
   merge(address: string, diff: AccountDiffType): Array<DBOp<any>>;
 
-  generateAddressFromPubData(pubData: Buffer): string;
+  generateAddressFromPubData(pubData: Buffer): string & As<'address'>;
 }

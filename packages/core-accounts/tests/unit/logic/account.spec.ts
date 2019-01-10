@@ -31,6 +31,7 @@ describe('logic/account', () => {
       'core',
       'core-helpers',
       'core-crypto',
+      'core-transactions',
     ]);
   });
   beforeEach(async () => {
@@ -95,28 +96,6 @@ describe('logic/account', () => {
   //   });
   // });
 
-  describe('account.assertPublicKey', () => {
-    it('public key is not a string error', () => {
-      const error = 'Invalid public key, must be a string';
-      expect(() => instance.assertPublicKey(null)).to.throw(error);
-    });
-
-    it('public key is too short error', () => {
-      const error = 'Invalid public key, must be 64 characters long';
-      expect(() => instance.assertPublicKey('short string')).to.throw(error);
-    });
-
-    it('publicKey is undefined & allowUndefined is false', () => {
-      const error = 'Public Key is undefined';
-      expect(() => instance.assertPublicKey(undefined, false)).to.throw(error);
-    });
-
-    it('publicKey is 64byte long but not hex', () => {
-      expect(() =>
-        instance.assertPublicKey(new Array(64).fill('g').join(''))
-      ).to.throw('Invalid public key, must be a hex string');
-    });
-  });
   //
   describe('account.get', () => {
     const filter = {};
@@ -201,36 +180,8 @@ describe('logic/account', () => {
     });
 
     describe('queries', () => {
-      it('should filter out non existing fields', async () => {
-        await instance.getAll({
-          address: '1',
-          brother: 'thers a place to rediscovar',
-          isDelegate: 1,
-          publicKey: new Buffer('1'),
-          username: 'user',
-        } as any);
-
-        expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
-          address: '1',
-          isDelegate: 1,
-          publicKey: new Buffer('1'),
-          username: 'user',
-        });
-      });
-      it('should uppercase address', async () => {
-        await instance.getAll({ address: 'hey' });
-        expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
-          address: 'HEY',
-        });
-      });
-      it('should uppercase addresses', async () => {
-        await instance.getAll({ address: { $in: ['hey', 'brother'] } });
-        expect(
-          findAllStub.firstCall.args[0].where.address[Op.in]
-        ).to.be.deep.eq(['HEY', 'BROTHER']);
-      });
       it('should filter out undefined filter fields', async () => {
-        await instance.getAll({ address: '1', publicKey: undefined });
+        await instance.getAll({ address: '1', balance: undefined });
 
         expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
           address: '1',
@@ -254,13 +205,6 @@ describe('logic/account', () => {
         expect(findAllStub.secondCall.args[0].offset).to.be.undefined;
       });
 
-      it('should allow string sort param', async () => {
-        await instance.getAll({ address: '1', sort: 'username' });
-        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([
-          ['username', 'ASC'],
-        ]);
-      });
-
       it('should allow array sort param', async () => {
         await instance.getAll({
           address: '1',
@@ -280,25 +224,16 @@ describe('logic/account', () => {
       upsertStub = sandbox.stub(accModel, 'upsert').resolves();
     });
 
-    it('should call AccountsModel upsert with upperccasedAddress', async () => {
+    it('should call AccountsModel upsert with proper data', async () => {
       await instance.set('address', { balance: 10n });
       expect(upsertStub.firstCall.args[0]).to.be.deep.eq({
-        address: 'ADDRESS',
+        address: 'address',
         balance: 10n,
       });
-    });
-    it('should throw if publicKey is defined but invalid', async () => {
-      await expect(instance.set('address', { publicKey: new Buffer('a') })).to
-        .be.rejected;
     });
   });
 
   describe('account.merge', () => {
-    it('should throw if not valid publicKey', () => {
-      expect(() =>
-        instance.merge('1R', { publicKey: new Buffer(1) })
-      ).to.throw();
-    });
     it('should return empty array if no ops to be performed', () => {
       const ops: any = instance.merge('1R', {});
       expect(ops.length).to.be.eq(1);
@@ -347,12 +282,10 @@ describe('logic/account', () => {
     it('should handle balance', () => {
       const ops: any = instance.merge('1R', {
         balance: 10n,
-        blockId: '1',
         round: 1,
       });
       expect((ops[0] as DBUpdateOp<any>).values).to.be.deep.eq({
         balance: { val: 'balance + 10' },
-        blockId: '1',
       });
     });
 
@@ -386,10 +319,10 @@ describe('logic/account', () => {
     });
   });
 
-  describe('generateAddressByPublicKey', () => {
+  describe('generateAddressFromPubData', () => {
     it('should return the address', () => {
       // tslint:disable max-line-length
-      const address = instance.generateAddressByPublicKey(
+      const address = instance.generateAddressFromPubData(
         Buffer.from(
           '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
           'hex'

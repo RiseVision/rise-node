@@ -8,7 +8,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { address, DBOp, SignedBlockType } from '@risevision/core-types';
+import { Address, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as sequelize from 'sequelize';
@@ -173,7 +173,7 @@ export class RoundsModule {
   private async getOutsiders(
     round: number,
     roundDelegates: Buffer[]
-  ): Promise<address[]> {
+  ): Promise<Address[]> {
     const strPKDelegates = roundDelegates.map((r) => r.toString('hex'));
 
     const height = this.roundsLogic.lastInRound(round);

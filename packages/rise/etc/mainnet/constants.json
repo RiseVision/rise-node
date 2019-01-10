@@ -147,8 +147,8 @@
     }
   },
   "dposv2": {
-    "delegatesPoolSize": 202,
-    "firstBlock": 123456789,
+    "delegatesPoolSize": 199,
+    "firstBlock": 1536312,
     "maxContinuousMissedBlocks": 84,
     "minForged": 200
   }

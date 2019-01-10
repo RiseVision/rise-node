@@ -1,10 +1,11 @@
+import { As } from 'type-tagger';
 /**
  * ID Handler, Produces IDs for several objects.
  */
 export interface IIdsHandler {
   maxBlockIdBytesUsage: number;
 
-  addressFromPubData(pubData: Buffer): string;
+  addressFromPubData(pubData: Buffer): string & As<'address'>;
   addressFromBytes(bytes: Buffer): string;
   addressToBytes(address: string): Buffer;
 
