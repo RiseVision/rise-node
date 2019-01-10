@@ -28,7 +28,8 @@ interface P2PTxCodec<K = {}> {
 
 @injectable()
 export class TXBytes {
-  private types: { [k: number]: BaseTx<any, any> } = {};
+  @inject(Symbols.generic.txtypes)
+  private types: { [type: number]: IBaseTransactionType<any, any> };
 
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;

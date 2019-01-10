@@ -166,7 +166,7 @@ function tx10425551571020716913(excManager: ExceptionsManager) {
       tx: IBaseTransaction<void>
     ) {
       return (
-        tx.id === 'senderPubData' &&
+        tx.id === '10425551571020716913' &&
         tx.senderPubData.toString('hex') ===
           'bcbdeb90a958880088465bc0614d8b877214a33284d460a917208730399f4140' &&
         tx.signatures[0].toString('hex') ===

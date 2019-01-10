@@ -329,8 +329,8 @@ export class BlocksModuleVerify {
       }
 
       appliedTransactions[tx.id] = tx;
-      totalAmount += BigInt(tx.amount);
-      totalFee += BigInt(tx.fee);
+      totalAmount += tx.amount;
+      totalFee += tx.fee;
     }
 
     if (!payloadHash.digest().equals(block.payloadHash)) {

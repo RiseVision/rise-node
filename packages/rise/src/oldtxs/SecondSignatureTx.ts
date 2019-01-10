@@ -24,6 +24,10 @@ export class OldSecondSignatureTx extends OldBaseTx<
   @named(SigSymbols.transaction)
   private secondSignTX: SecondSignatureTransaction;
 
+  public assetBytes(tx: IBaseTransaction<SecondSignatureAsset>): Buffer {
+    return this.secondSignTX.assetBytes(tx);
+  }
+
   public calculateMinFee(
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: AccountsModelWith2ndSign,
@@ -71,5 +75,11 @@ export class OldSecondSignatureTx extends OldBaseTx<
     tx: IBaseTransaction<SecondSignatureAsset> & { senderId: string }
   ): DBOp<SignaturesModel> {
     return this.secondSignTX.dbSave(tx);
+  }
+
+  public attachAssets(
+    txs: Array<IBaseTransaction<SecondSignatureAsset>>
+  ): Promise<void> {
+    return this.secondSignTX.attachAssets(txs);
   }
 }
