@@ -279,6 +279,7 @@ describe('api/delegates', () => {
             producedblocks: 1,
             missedblocks: 1,
             rank: 82,
+            rate: 82,
             approval: 1.09,
             productivity: 50,
             register_timestamp: 0,

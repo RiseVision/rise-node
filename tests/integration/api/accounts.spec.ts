@@ -186,6 +186,8 @@ describe('api/accounts', () => {
             rank: 73,
             approval: 0.99,
             productivity: 0,
+            cmb: 0,
+            votesWeight: 108910891000000,
           });
         });
     });
