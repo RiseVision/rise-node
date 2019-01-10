@@ -83,7 +83,7 @@ describe('apis/delegatesAPI', () => {
     let data;
     let d;
 
-    // helper to set a returned object with delegates from elegatesModule.getDelegates method
+    // helper to set a returned object with delegates from delegatesModule.getDelegates method
     const setReturnedDelegates = (sortField, sortMethod, areNumberValues = true, limit = 3, offset = 0) => {
       let field;
       if (sortField) {
@@ -96,21 +96,21 @@ describe('apis/delegatesAPI', () => {
         {
           delegate: new AccountsModel({
             publicKey: Buffer.from('aa', 'hex'),
-            cmb: 0,
+            cmb: 1,
             [field]  : areNumberValues ? 1 : 'a'
           }), info: { rank: 1, [field]: areNumberValues ? 1 : 'a' }
         },
         {
           delegate: new AccountsModel({
             publicKey: Buffer.from('bb', 'hex'),
-            cmb: 0,
+            cmb: 2,
             [field]  : areNumberValues ? 3 : 'bb'
           }), info: { rank: 2, [field]: areNumberValues ? 3 : 'bb' }
         },
         {
           delegate: new AccountsModel({
             publicKey: Buffer.from('cc', 'hex'),
-            cmb: 0,
+            cmb: 3,
             [field]  : areNumberValues ? 2 : 'ccc'
           }), info: { rank: 3, [field]: areNumberValues ? 2 : 'ccc' }
         },
@@ -154,9 +154,9 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { ...extraAccountData, approval: 1, cmb: 0, rank: 1, rate: 1, publicKey: 'aa' },
-            { ...extraAccountData, approval: 2, cmb: 0, rank: 3, rate: 3, publicKey: 'cc' },
-            { ...extraAccountData, approval: 3, cmb: 0, rank: 2, rate: 2, publicKey: 'bb' },
+            { ...extraAccountData, approval: 1, cmb: 1, rank: 1, rate: 1, publicKey: 'aa' },
+            { ...extraAccountData, approval: 2, cmb: 3, rank: 3, rate: 3, publicKey: 'cc' },
+            { ...extraAccountData, approval: 3, cmb: 2, rank: 2, rate: 2, publicKey: 'bb' },
           ]);
       });
 
@@ -166,9 +166,9 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { ...extraAccountData, approval: 3, cmb: 0, rank: 2, rate: 2, publicKey: 'bb' },
-            { ...extraAccountData, approval: 2, cmb: 0, rank: 3, rate: 3, publicKey: 'cc' },
-            { ...extraAccountData, approval: 1, cmb: 0, rank: 1, rate: 1, publicKey: 'aa' },
+            { ...extraAccountData, approval: 3, cmb: 2, rank: 2, rate: 2, publicKey: 'bb' },
+            { ...extraAccountData, approval: 2, cmb: 3, rank: 3, rate: 3, publicKey: 'cc' },
+            { ...extraAccountData, approval: 1, cmb: 1, rank: 1, rate: 1, publicKey: 'aa' },
           ]);
       });
 
@@ -178,9 +178,9 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { ...extraAccountData, cmb: 0, username: 'a', rank: 1, rate: 1, publicKey: 'aa' },
-            { ...extraAccountData, cmb: 0, username: 'bb', rank: 2, rate: 2, publicKey: 'bb' },
-            { ...extraAccountData, cmb: 0, username: 'ccc', rank: 3, rate: 3, publicKey: 'cc' },
+            { ...extraAccountData, cmb: 1, username: 'a', rank: 1, rate: 1, publicKey: 'aa' },
+            { ...extraAccountData, cmb: 2, username: 'bb', rank: 2, rate: 2, publicKey: 'bb' },
+            { ...extraAccountData, cmb: 3, username: 'ccc', rank: 3, rate: 3, publicKey: 'cc' },
           ]);
       });
 
@@ -190,9 +190,33 @@ describe('apis/delegatesAPI', () => {
 
         expect(ret.delegates).to.be.deep.equal(
           [
-            { ...extraAccountData, cmb: 0, username: 'ccc', rank: 3, rate: 3, publicKey: 'cc' },
-            { ...extraAccountData, cmb: 0, username: 'bb', rank: 2, rate: 2, publicKey: 'bb'  },
-            { ...extraAccountData, cmb: 0, username: 'a', rank: 1, rate: 1, publicKey: 'aa' },
+            { ...extraAccountData, cmb: 3, username: 'ccc', rank: 3, rate: 3, publicKey: 'cc' },
+            { ...extraAccountData, cmb: 2, username: 'bb', rank: 2, rate: 2, publicKey: 'bb'  },
+            { ...extraAccountData, cmb: 1, username: 'a', rank: 1, rate: 1, publicKey: 'aa' },
+          ]);
+      });
+
+      it('sortField === cmb, sortMethod !== ASC', async () => {
+        setReturnedDelegates('cmb', 'DESC', true);
+        const ret = await instance.getDelegates( {...data, orderBy: 'cmb:desc'});
+
+        expect(ret.delegates).to.be.deep.equal(
+          [
+            { ...extraAccountData, cmb: 3, rank: 2, rate: 2, publicKey: 'bb' },
+            { ...extraAccountData, cmb: 2, rank: 3, rate: 3, publicKey: 'cc'  },
+            { ...extraAccountData, cmb: 1, rank: 1, rate: 1, publicKey: 'aa' },
+          ]);
+      });
+
+      it('sortField === cmb, sortMethod == ASC', async () => {
+        setReturnedDelegates('cmb', 'ASC', true);
+        const ret = await instance.getDelegates( {...data, orderBy: 'cmb:asc'});
+
+        expect(ret.delegates).to.be.deep.equal(
+          [
+            { ...extraAccountData, cmb: 1, rank: 1, rate: 1, publicKey: 'aa' },
+            { ...extraAccountData, cmb: 2, rank: 3, rate: 3, publicKey: 'cc'  },
+            { ...extraAccountData, cmb: 3, rank: 2, rate: 2, publicKey: 'bb' },
           ]);
       });
 
@@ -201,9 +225,9 @@ describe('apis/delegatesAPI', () => {
         const ret = await instance.getDelegates(data);
 
         expect(ret.delegates).to.be.deep.equal([
-          { ...extraAccountData, cmb: 0, rank: 1, rate: 1, publicKey: 'aa' },
-          { ...extraAccountData, cmb: 0, rank: 2, rate: 2, publicKey: 'bb' },
-          { ...extraAccountData, cmb: 0, rank: 3, rate: 3, publicKey: 'cc' }
+          { ...extraAccountData, cmb: 1, rank: 1, rate: 1, publicKey: 'aa' },
+          { ...extraAccountData, cmb: 2, rank: 2, rate: 2, publicKey: 'bb' },
+          { ...extraAccountData, cmb: 3, rank: 3, rate: 3, publicKey: 'cc' }
           ]);
       });
 
@@ -212,9 +236,9 @@ describe('apis/delegatesAPI', () => {
         const ret = await instance.getDelegates(data);
 
         expect(ret.delegates).to.be.deep.equal([
-          { ...extraAccountData, cmb: 0, rank: 1, rate: 1, publicKey: 'aa' },
-          { ...extraAccountData, cmb: 0, rank: 2, rate: 2, publicKey: 'bb' },
-          { ...extraAccountData, cmb: 0, rank: 3, rate: 3, publicKey: 'cc' }
+          { ...extraAccountData, cmb: 1, rank: 1, rate: 1, publicKey: 'aa' },
+          { ...extraAccountData, cmb: 2, rank: 2, rate: 2, publicKey: 'bb' },
+          { ...extraAccountData, cmb: 3, rank: 3, rate: 3, publicKey: 'cc' }
         ]);
       });
     });

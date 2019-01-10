@@ -68,7 +68,7 @@ describe('api/delegates', () => {
         });
     });
 
-    ['approval', 'productivity', 'rank', 'vote', 'username', 'address', 'publicKey'].forEach((sortKey: string) => {
+    ['approval', 'productivity', 'rank', 'vote', 'username', 'address', 'publicKey', 'cmb'].forEach((sortKey: string) => {
       it('should honor orderBy ' + sortKey + ' asc param', async () => {
         return supertest(initializer.appManager.expressApp)
           .get('/api/delegates/?orderBy=' + sortKey + ':asc')
