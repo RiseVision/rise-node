@@ -6,6 +6,7 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
+import { valid } from 'semver';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import { AccountLogic, AccountsSymbols } from '../../../src';
@@ -77,52 +78,28 @@ describe('modules/accounts', () => {
 
   describe('checkTXsAccountsMap', () => {
     let accountsModel: typeof IAccountsModel;
-    let findAllStub: SinonStub;
+    let unfoldSenderStub: SinonStub;
     beforeEach(() => {
       accountsModel = container.getNamed(
         ModelSymbols.model,
         AccountsSymbols.model
       );
-      findAllStub = sandbox.stub(accountsModel, 'findAll').resolves([]);
+      unfoldSenderStub = sandbox
+        .stub(accountModule, 'unfoldSenders')
+        .resolves([]);
     });
     it('should throw if account is not found in db', async () => {
-      await expect(
-        accountModule.checkTXsAccountsMap(
-          [
-            {
-              senderId: 'add11',
-            },
-          ],
-          {}
-        )
-      ).rejectedWith('Account add11 not found in db');
+      unfoldSenderStub.returns(['add11']);
+      await expect(accountModule.checkTXsAccountsMap([], {})).rejectedWith(
+        'Account add11 not found in db'
+      );
     });
     it('should throw if account has diff publicKey in db', async () => {
+      unfoldSenderStub.returns(['add11']);
       await expect(
-        accountModule.checkTXsAccountsMap(
-          [
-            {
-              senderId: 'add11',
-              senderPublicKey: Buffer.from('11', 'hex'),
-            } as any,
-          ],
-          {
-            add11: { address: 'add11', publicKey: Buffer.from('22', 'hex') },
-          } as any
-        )
-      ).rejectedWith('Stealing attempt type.2 for add11');
-    });
-    it('should setAccountAndGet if nopublickey set in db and throw if address does not match', async () => {
-      await expect(
-        accountModule.checkTXsAccountsMap(
-          [
-            {
-              senderId: 'add11',
-              senderPublicKey: Buffer.from('22', 'hex'),
-            } as any,
-          ],
-          { add11: { address: 'add11' } } as any
-        )
+        accountModule.checkTXsAccountsMap([], {
+          add11: { address: 'add12' },
+        } as any)
       ).rejectedWith('Stealing attempt type.1 for add11');
     });
   });
@@ -146,7 +123,7 @@ describe('modules/accounts', () => {
     });
     it('should return empty object if account not in db', async () => {
       const r = await accountModule.txAccounts([
-        { senderId: 'add11', senderPublicKey: Buffer.from('11', 'hex') } as any,
+        { senderId: 'add11', senderPubData: Buffer.from('11', 'hex') } as any,
       ]);
       expect(r).deep.eq({});
     });
@@ -170,13 +147,9 @@ describe('modules/accounts', () => {
         address: 'meow',
         balance: 10n,
       });
+
       expect(mergeStub.called).true;
-      expect(
-        mergeStub.calledWith(validAddress, {
-          publicKey: validPubKey,
-          balance: 10n,
-        })
-      ).true;
+      expect(mergeStub.calledWith('meow', { balance: 10n })).true;
       expect(res).deep.eq(['one', 'two']);
     });
   });
