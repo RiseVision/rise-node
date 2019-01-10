@@ -425,7 +425,6 @@ describe('modules/blocks/process', () => {
           Promise.resolve(
             new AccountsModel({
               ...what,
-              address: RiseV2.calcAddress(what.publicKey as any),
               u_balance: 0n,
               balance: 0n,
             } as any)

@@ -68,17 +68,20 @@ describe('logic/block', () => {
         id: '8139741256612355994',
         recipientId: '15256762582730568272R',
         senderId: '14709573872795067383R',
-        senderPublicKey: Buffer.from(
+        senderPubData: Buffer.from(
           '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
           'hex'
         ),
-        signature: Buffer.from(
-          'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9fa56ace' +
-            '902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
-          'hex'
-        ),
+        signatures: [
+          Buffer.from(
+            'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9fa56ace' +
+              '902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
+            'hex'
+          ),
+        ],
         timestamp: 0,
         type: 0,
+        version: 0,
       },
       {
         amount: 108910891000000n,
@@ -86,17 +89,20 @@ describe('logic/block', () => {
         id: '16622990339377112127',
         recipientId: '6781920633453960895R',
         senderId: '14709573872795067383R',
-        senderPublicKey: Buffer.from(
+        senderPubData: Buffer.from(
           '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
           'hex'
         ),
-        signature: Buffer.from(
-          'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
-            '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
-          'hex'
-        ),
+        signatures: [
+          Buffer.from(
+            'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
+              '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
+            'hex'
+          ),
+        ],
         timestamp: 0,
         type: 0,
+        version: 0,
       },
       {
         amount: 108910891000000n,
@@ -104,17 +110,20 @@ describe('logic/block', () => {
         id: '16622990339377114578',
         recipientId: '6781920633453960895R',
         senderId: '14709573872795067383R',
-        senderPublicKey: Buffer.from(
+        senderPubData: Buffer.from(
           '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
           'hex'
         ),
-        signature: Buffer.from(
-          'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
-            '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
-          'hex'
-        ),
+        signatures: [
+          Buffer.from(
+            'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
+              '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
+            'hex'
+          ),
+        ],
         timestamp: 0,
         type: 0,
+        version: 0,
       },
     ];
 
@@ -166,14 +175,14 @@ describe('logic/block', () => {
       expect(newBlock.totalFee).to.equal(11n);
       expect(newBlock.numberOfTransactions).to.equal(3);
       expect(newBlock.transactions).to.have.lengthOf(3);
-      expect(newBlock.payloadLength).eq(378);
+      expect(newBlock.payloadLength).eq(396);
       expect(newBlock.previousBlock).eq('1');
       expect(newBlock.reward).eq(30000000n);
       expect(newBlock.totalAmount).eq(326732673000000n);
 
       expect(newBlock.payloadHash).deep.eq(
         Buffer.from(
-          'dbdb611f7ece0794e5273993124834f7acdec2a3f2a753d97a33965df14c211c',
+          '72b2b7ef9dc9f44c4e1716cc10005f9a9b50157314c5a6376a49285c593d11ae',
           'hex'
         )
       );
@@ -218,7 +227,7 @@ describe('logic/block', () => {
       expect(hash).to.be.an.instanceof(Buffer);
       expect(hash).to.be.ofSize(32);
       expect(hash.toString('hex')).to.be.eq(
-        '990d5054f3e1421274f6b9d4e60e31896483c495c17b373b4170736fb74d3b5f'
+        '861efb7163c6f4f27944262395233fd80f5bbe863e535c25ca37c303062a6640'
       );
     });
 

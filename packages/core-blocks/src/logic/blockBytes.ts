@@ -45,6 +45,7 @@ export class BlockBytes {
     block: BlockHeader<Buffer, bigint>,
     includeSignature: boolean
   ): Buffer {
+    // TODO: Re-store.
     function encodeVarUint(buf: Buffer) {
       return Buffer.concat([varuint.encode(buf.length), buf]);
     }
@@ -55,8 +56,7 @@ export class BlockBytes {
     bb.writeUint32(block.timestamp);
 
     bb.append(
-      this.idsHandler.blockIdToBytes(block.previousBlock)
-      // encodeVarUint()
+      encodeVarUint(this.idsHandler.blockIdToBytes(block.previousBlock))
     );
 
     bb.writeUint32(block.numberOfTransactions);
@@ -65,7 +65,7 @@ export class BlockBytes {
     bb.append(toBufferLE(block.reward, this.constants.amountBytes));
 
     bb.writeUint32(block.payloadLength);
-    bb.append(block.payloadHash);
+    bb.append(encodeVarUint(block.payloadHash));
     bb.append(block.generatorPublicKey);
 
     if (block.blockSignature && includeSignature) {

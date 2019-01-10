@@ -8,13 +8,17 @@ import {
 import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
 import { TXSymbols } from '@risevision/core-transactions';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  ConstantsType,
+  SignedAndChainedBlockType,
+} from '@risevision/core-types';
 import * as activeHandles from 'active-handles';
 import * as fs from 'fs';
 import { Container, interfaces } from 'inversify';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as path from 'path';
 import { Sequelize } from 'sequelize';
+import * as z_schema from 'z-schema';
 import { LoggerStub } from '../../../../core-utils/tests/unit/stubs';
 import { ICoreModule, LaunchpadSymbols } from '../../../src';
 import {
@@ -107,21 +111,21 @@ export async function createContainer(
 
   const types = [];
 
-  if (modules.indexOf('@risevision/core-transactions') !== -1) {
-    types.push({ name: TXSymbols.sendTX, type: 10 });
+  if (modules.indexOf('core-transactions') !== -1) {
+    types.push({ name: TXSymbols.sendTX, type: 0 });
   }
   const toSet = {};
   container.bind(Symbols.generic.txtypes).toConstantValue(toSet);
-  if (modules.indexOf('@risevision/core-consensus-dpos') !== -1) {
+  if (modules.indexOf('core-consensus-dpos') !== -1) {
     types.push(
       ...[
-        { name: dPoSSymbols.logic.delegateTransaction, type: 12 },
-        { name: dPoSSymbols.logic.voteTransaction, type: 13 },
+        { name: dPoSSymbols.logic.delegateTransaction, type: 2 },
+        { name: dPoSSymbols.logic.voteTransaction, type: 3 },
       ]
     );
   }
-  if (modules.indexOf('@risevision/core-secondsignature') !== -1) {
-    types.push({ name: SigSymbols.transaction, type: 11 });
+  if (modules.indexOf('core-secondsignature') !== -1) {
+    types.push({ name: SigSymbols.transaction, type: 1 });
   }
   for (const { name, type } of types) {
     const tx = container.getNamed<IBaseTransactionType<any, any>>(
@@ -135,6 +139,11 @@ export async function createContainer(
   for (const sortedModule of sortedModules) {
     await sortedModule.initAppElements();
   }
+
+  z_schema.registerFormat('address', (str: string) => {
+    // tslint:disable-next-line
+    return new RegExp('^[0-9]{1,20}R').test(str);
+  });
 
   if (sortedModules.some((m) => m.name.indexOf('core-blocks') !== -1)) {
     block.previousBlock = '1'; // exception for genesisblock
