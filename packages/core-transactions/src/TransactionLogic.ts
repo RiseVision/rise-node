@@ -13,7 +13,6 @@ import {
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
-  ConstantsType,
   DBBulkCreateOp,
   DBOp,
   IBaseTransaction,
@@ -42,9 +41,6 @@ const txSchema = require('../schema/transaction.json');
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & { blocks: { maxTxsPerBlock: number } };
-
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
 
@@ -476,7 +472,7 @@ export class TransactionLogic implements ITransactionLogic {
       if (typeof v !== 'bigint') {
         throw new Error(`${k} is not a bigint`);
       }
-      if (v < 0 || v > BigInt(this.constants.totalAmount)) {
+      if (v < 0n) {
         throw new Error(
           `tx.${k} is either negative or greater than totalAmount`
         );

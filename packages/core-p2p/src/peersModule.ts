@@ -7,17 +7,12 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import {
-  AppConfig,
-  ConstantsType,
-  PeerState,
-  PeerType,
-} from '@risevision/core-types';
+import { AppConfig, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as shuffle from 'shuffle-array';
-import { p2pSymbols } from './helpers';
+import { P2PConstantsType, p2pSymbols } from './helpers';
 import { IPeersModule, PeerFilter } from './interfaces';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
@@ -29,11 +24,10 @@ export class PeersModule implements IPeersModule {
   private appConfig: AppConfig;
 
   // Helpers
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-
+  @inject(p2pSymbols.constants)
+  private p2pConstants: P2PConstantsType;
   // Logic
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
@@ -56,7 +50,7 @@ export class PeersModule implements IPeersModule {
   }
 
   public async updateConsensus() {
-    await this.getPeers({ limit: this.constants.maxPeers });
+    await this.getPeers({ limit: this.p2pConstants.maxPeers });
     return this.appState.get('node.consensus');
   }
 
@@ -124,7 +118,7 @@ export class PeersModule implements IPeersModule {
     limit?: number;
     broadhash?: string;
   }): Promise<Peer[]> {
-    params.limit = params.limit || this.constants.maxPeers;
+    params.limit = params.limit || this.p2pConstants.maxPeers;
     params.broadhash = params.broadhash || null;
 
     const originalLimit = params.limit;
@@ -133,7 +127,7 @@ export class PeersModule implements IPeersModule {
     const peers = peersList.peers;
     const consensus = peersList.consensus;
 
-    if (originalLimit === this.constants.maxPeers) {
+    if (originalLimit === this.p2pConstants.maxPeers) {
       this.appState.set('node.consensus', consensus);
     }
     return peers;
@@ -233,7 +227,7 @@ export class PeersModule implements IPeersModule {
     broadhash?: string;
     allowedStates?: PeerState[];
   }): Promise<{ consensus: number; peers: Peer[] }> {
-    options.limit = options.limit || this.constants.maxPeers;
+    options.limit = options.limit || this.p2pConstants.maxPeers;
     options.broadhash = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 

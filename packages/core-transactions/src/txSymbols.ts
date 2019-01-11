@@ -5,6 +5,7 @@ export const TXSymbols = {
     api: Symbol.for('rise.txs.api.transactionsAPI'),
     transport: Symbol.for('rise.txs.api.transportAPI'),
   },
+  constants: Symbol.for('rise.txs.constants'),
   loader: Symbol.for('rise.txs.loader'),
   logic: Symbols.logic.transaction,
   // model: Symbols.models.transactions,

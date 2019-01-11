@@ -4,9 +4,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
-import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
-import { toBigIntLE, toBufferLE } from 'bigint-buffer';
-import * as ByteBuffer from 'bytebuffer';
+import { IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, multiInject, optional } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import { BaseTx } from './BaseTx';
@@ -31,8 +29,6 @@ export class TXBytes {
   @inject(Symbols.generic.txtypes)
   private types: { [type: number]: IBaseTransactionType<any, any> };
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
   @inject(p2pSymbols.helpers.protoBuf)
   private protoBufHelper: ProtoBufHelper;
 

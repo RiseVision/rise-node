@@ -1,12 +1,12 @@
-import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
+import { TxConstantsType } from '../helpers';
 import { TransactionPool } from '../TransactionPool';
 import { TXBytes } from '../txbytes';
 import { TXSymbols } from '../txSymbols';
@@ -46,13 +46,13 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
   @inject(TXSymbols.pool)
   private pool: TransactionPool;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  @inject(TXSymbols.constants)
+  private txConstants: TxConstantsType;
 
   protected async produceResponse(
     request: SingleTransportPayload<null, null>
   ): Promise<GetTransactionsRequestDataType> {
-    let limit = this.constants.maxSharedTxs;
+    let limit = this.txConstants.maxSharedTxs;
 
     const unconfirmed = this.pool.unconfirmed.list({ limit }).map((t) => t.tx);
     limit -= unconfirmed.length;

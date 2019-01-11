@@ -7,11 +7,11 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { BroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
-import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction } from '@risevision/core-types';
 import { logOnly, WrapInBalanceSequence } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
-import { TXAppConfig } from './helpers/appconfig';
+import { TXAppConfig, TxConstantsType } from './helpers/';
 import { OnNewUnconfirmedTransation } from './hooks/actions';
 import { TxExpireTimeout } from './hooks/filters';
 import { PostTransactionsRequest } from './p2p';
@@ -29,8 +29,8 @@ export class PoolManager {
   public balancesSequence: ISequence;
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & { blocks: { maxTxsPerBlock: number } };
+  @inject(TXSymbols.constants)
+  private constants: TxConstantsType;
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -83,7 +83,7 @@ export class PoolManager {
       const now = Math.floor(Date.now() / 1000);
       const timeOut = await this.hookSystem.apply_filters(
         TxExpireTimeout.name,
-        this.constants.unconfirmedTransactionTimeOut,
+        this.constants.txTimeout,
         tx
       );
       const seconds = now - Math.floor(payload.receivedAt.getTime() / 1000);
@@ -136,7 +136,7 @@ export class PoolManager {
   protected async applyUnconfirmed() {
     // Unconfirm some txs.
     const missingUnconfirmed =
-      this.constants.blocks.maxTxsPerBlock - this.pool.unconfirmed.count;
+      this.constants.unconfirmedInPool - this.pool.unconfirmed.count;
     const readyTxs = this.pool.ready
       .list({
         limit: missingUnconfirmed,

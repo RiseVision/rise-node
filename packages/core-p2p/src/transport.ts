@@ -13,7 +13,6 @@ import { ModelSymbols } from '@risevision/core-models';
 import {
   AppConfig,
   BasePeerType,
-  ConstantsType,
   PeerHeaders,
   PeerRequestOptions,
   PeerState,
@@ -26,15 +25,13 @@ import * as popsicle from 'popsicle';
 import * as Throttle from 'promise-parallel-throttle';
 import * as promiseRetry from 'promise-retry';
 import * as z_schema from 'z-schema';
-import { BroadcasterLogic } from './broadcaster';
-import { p2pSymbols } from './helpers';
+import { P2PConstantsType, p2pSymbols } from './helpers';
 import { OnPeersReady } from './hooks/actions';
 import { PeersLogic } from './peersLogic';
 import { PeersModule } from './peersModule';
 import {
   ITransportMethod,
   PeersListResponse,
-  PingRequest,
   SingleTransportPayload,
 } from './requests/';
 
@@ -64,8 +61,8 @@ export class TransportModule extends Extendable {
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.balancesSequence)
   public balancesSequence: ISequence;
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  @inject(p2pSymbols.constants)
+  private p2pConstants: P2PConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -109,7 +106,7 @@ export class TransportModule extends Extendable {
       if (typeof a.get('node.consensus') === 'undefined') {
         return false;
       }
-      return a.get('node.consensus') < this.constants.minBroadhashConsensus;
+      return a.get('node.consensus') < this.p2pConstants.minBroadhashConsensus;
     });
   }
 

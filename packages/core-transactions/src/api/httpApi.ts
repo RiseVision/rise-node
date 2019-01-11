@@ -12,7 +12,6 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
-  ConstantsType,
   IBaseTransaction,
   ITransportTransaction,
 } from '@risevision/core-types';
@@ -54,8 +53,6 @@ const schema = require('../../schema/api.json');
 export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.generic.constants)
-  public constants: ConstantsType;
 
   @inject(Symbols.helpers.timeToEpoch)
   public timeToEpoch: ITimeToEpoch;

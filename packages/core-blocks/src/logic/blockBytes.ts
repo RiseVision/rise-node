@@ -55,9 +55,7 @@ export class BlockBytes {
     bb.writeUint32(block.version);
     bb.writeUint32(block.timestamp);
 
-    bb.append(
-      encodeVarUint(this.idsHandler.blockIdToBytes(block.previousBlock))
-    );
+    bb.append(this.idsHandler.blockIdToBytes(block.previousBlock));
 
     bb.writeUint32(block.numberOfTransactions);
     bb.append(toBufferLE(block.totalAmount, this.constants.amountBytes));
@@ -65,7 +63,7 @@ export class BlockBytes {
     bb.append(toBufferLE(block.reward, this.constants.amountBytes));
 
     bb.writeUint32(block.payloadLength);
-    bb.append(encodeVarUint(block.payloadHash));
+    bb.append(block.payloadHash);
     bb.append(block.generatorPublicKey);
 
     if (block.blockSignature && includeSignature) {

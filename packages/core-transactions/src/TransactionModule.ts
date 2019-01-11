@@ -11,7 +11,6 @@ import {
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { PeersModule } from '@risevision/core-p2p';
 import {
-  ConstantsType,
   IBaseTransaction,
   PeerType,
   SignedAndChainedBlockType,
@@ -33,8 +32,6 @@ export class TransactionsModule implements ITransactionsModule {
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
 
   @inject(Symbols.helpers.db)
   private dbHelper: DBHelper;
