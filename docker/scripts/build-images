@@ -1,0 +1,45 @@
+#!/bin/bash
+
+REPOSITORY="jpopesculian"
+
+DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+ROOT=$(dirname $(dirname $DIR))
+
+pushd $ROOT > /dev/null
+
+VERSION=$(node -e "console.log(require('./package.json').version)")
+
+construct_version() {
+    result=""
+    for field in $(seq 1 $1)
+    do
+        result="$result.$(cut -d '.' -f$field <<< $VERSION)"
+    done
+    echo ${result:1}
+}
+
+build_and_push_image() {
+    name=$1
+    file=$2
+    prefix=$3
+    latest_tag="$REPOSITORY/$name:${prefix}latest"
+
+    docker build -t $latest_tag  -f $file .
+    docker push $latest_tag
+
+    for num_field in $(seq 1 3)
+    do
+        version=$(construct_version $num_field)
+        version_tag="$REPOSITORY/$name:${prefix}v$version"
+        docker tag $latest_tag $version_tag
+        docker push $version_tag
+    done
+}
+
+build_and_push_image rise-node Dockerfile
+build_and_push_image rise-node Dockerfile.arm arm-
+
+build_and_push_image rise-node_postgres docker/Dockerfile.postgres
+build_and_push_image rise-node_postgres docker/Dockerfile.postgres.arm arm-
+
+popd > /dev/null

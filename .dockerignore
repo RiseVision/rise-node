@@ -2,6 +2,7 @@
 .git
 docker/Dockerfile.postgres
 docker/Dockerfile.postgres.arm
+docker/scripts
 Dockerfile
 Dockerfile.arm
 dist
