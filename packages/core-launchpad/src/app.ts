@@ -82,9 +82,6 @@ if (!fs.existsSync(genesis)) {
 
 const genesisBlock = require(genesis);
 
-// tslint:disable-next-line
-// const genesisBlock = require(`../etc/${program.net}/genesisBlock.json`);
-
 let extraConfig = {};
 if (program.extraConfig) {
   // tslint:disable-next-line no-var-requires
