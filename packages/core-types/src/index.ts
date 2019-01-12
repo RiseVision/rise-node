@@ -1,4 +1,5 @@
 export * from './block';
+export * from './constantsType';
 export * from './crypto';
 export * from './dbops';
 export * from './genericTypes';

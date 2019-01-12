@@ -1,4 +1,8 @@
-import { BlocksConstantsType, BlocksModule } from '@risevision/core-blocks';
+import {
+  BlocksConstantsType,
+  BlocksModule,
+  BlocksSymbols,
+} from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
@@ -9,8 +13,11 @@ import { dPoSSymbols } from './symbols';
 @injectable()
 export class Slots {
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType & DposConstantsType;
-
+  private constants: ConstantsType;
+  @inject(dPoSSymbols.constants)
+  private dposConstants: DposConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
   @inject(Symbols.modules.blocks)
   private blocksModule: BlocksModule;
   @inject(dPoSSymbols.helpers.dposV2)
@@ -23,22 +30,22 @@ export class Slots {
     height: number = this.blocksModule.lastBlock.height
   ): number {
     return this.dposV2Helper.isV2(height)
-      ? this.constants.dposv2.delegatesPoolSize
-      : this.constants.activeDelegates;
+      ? this.dposConstants.dposv2.delegatesPoolSize
+      : this.dposConstants.activeDelegates;
   }
 
   /**
    * Active delegates
    */
   public get delegates() {
-    return this.constants.activeDelegates;
+    return this.dposConstants.activeDelegates;
   }
 
   /**
    * Slot interval in seconds
    */
   private get interval() {
-    return this.constants.blocks.targetTime;
+    return this.blocksConstants.targetTime;
   }
 
   /**

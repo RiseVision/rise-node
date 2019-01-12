@@ -6,6 +6,7 @@ import {
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
+  ConstantsType,
   DBOp,
   IBaseTransaction,
   SignedBlockType,
@@ -16,9 +17,7 @@ import { inject, injectable } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
 import { Model } from 'sequelize-typescript';
 import * as varuint from 'varuint-bitcoin';
-import { TxConstantsType } from './helpers';
 import { TxReadyFilter } from './hooks/filters';
-import { TXSymbols } from './txSymbols';
 
 const emptyBuffer = new Buffer(0);
 
@@ -35,8 +34,8 @@ export abstract class BaseTx<T, M extends Model<any>>
   @inject(Symbols.helpers.idsHandler)
   protected idsHandler: IIdsHandler;
 
-  @inject(TXSymbols.constants)
-  protected txConstants: TxConstantsType;
+  @inject(Symbols.generic.constants)
+  protected constants: ConstantsType;
 
   public abstract calculateMinFee(
     tx: IBaseTransaction<T>,
@@ -76,8 +75,8 @@ export abstract class BaseTx<T, M extends Model<any>>
     bb.append(encodeVarUint(tx.senderPubData));
     bb.append(encodeVarUint(this.idsHandler.addressToBytes(tx.recipientId)));
 
-    bb.append(toBufferLE(tx.amount, this.txConstants.amountBytes));
-    bb.append(toBufferLE(tx.fee, this.txConstants.amountBytes));
+    bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
+    bb.append(toBufferLE(tx.fee, this.constants.amountBytes));
 
     bb.append(encodeVarUint(this.assetBytes(tx)));
     bb.flip();
@@ -134,8 +133,8 @@ export abstract class BaseTx<T, M extends Model<any>>
       })(),
       senderPubData: readVarUint(),
       recipientId: this.idsHandler.addressFromBytes(readVarUint()),
-      amount: toBigIntLE(readSlice(this.txConstants.amountBytes)),
-      fee: toBigIntLE(readSlice(this.txConstants.amountBytes)),
+      amount: toBigIntLE(readSlice(this.constants.amountBytes)),
+      fee: toBigIntLE(readSlice(this.constants.amountBytes)),
       asset: this.readAssetFromBytes(readVarUint()),
       signatures: (() =>
         new Array(Math.floor(buff.length - offset))

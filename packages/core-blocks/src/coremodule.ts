@@ -5,7 +5,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
-import { BlocksConstantsType } from './blocksConstants';
+import { BlocksConstantsType, constants } from './blocksConstants';
 import { BlocksSymbols } from './blocksSymbols';
 import { BlockLoader } from './hooks/';
 import { BlockLogic, BlockRewardLogic } from './logic/';
@@ -28,22 +28,7 @@ import { BlocksP2P } from './p2p/';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
-  public constants: BlocksConstantsType = {
-    blocks: {
-      maxAmount: 100000000,
-      maxPayloadLength: 1024 * 1024,
-      maxTxsPerBlock: 25,
-      receiptTimeOut: 60,
-      rewards: [
-        {
-          fromHeight: 1,
-          reward: '0',
-        },
-      ],
-      slotWindow: 5,
-      targetTime: 30,
-    },
-  };
+  public constants: BlocksConstantsType = constants;
 
   public addElementsToContainer(): void {
     this.container
@@ -121,6 +106,10 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .bind(BlocksSymbols.__internals.loader)
       .to(BlockLoader)
       .inSingletonScope();
+
+    this.container
+      .bind(BlocksSymbols.constants)
+      .toConstantValue(this.constants);
   }
 
   public async initAppElements(): Promise<void> {

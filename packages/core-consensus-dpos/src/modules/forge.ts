@@ -44,8 +44,6 @@ export class ForgeModule extends Extendable implements IModule {
   @inject(Symbols.generic.appConfig)
   private config: DposAppConfig;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & DposConstantsType;
   // helpers
   @inject(Symbols.generic.crypto)
   private crypto: ICrypto;

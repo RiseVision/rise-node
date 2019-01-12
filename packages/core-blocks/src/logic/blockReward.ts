@@ -1,18 +1,22 @@
 import { IBlockReward, Symbols } from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import { BlocksConstantsType } from '../blocksConstants';
+import { BlocksSymbols } from '../blocksSymbols';
 
 @injectable()
 export class BlockRewardLogic implements IBlockReward {
-  @inject(Symbols.generic.constants)
-  private blocksConstants: BlocksConstantsType & ConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
+
+  @inject(Symbols.generic.genesisBlock)
+  private genesisBlock: SignedAndChainedBlockType;
 
   private rewards: Array<{ fromHeight: number; reward: bigint }>;
 
   @postConstruct()
   public initRewards() {
-    this.rewards = this.blocksConstants.blocks.rewards.map((r) => ({
+    this.rewards = this.blocksConstants.rewards.map((r) => ({
       ...r,
       reward: BigInt(r.reward),
     }));
@@ -36,7 +40,7 @@ export class BlockRewardLogic implements IBlockReward {
     height = this.parseHeight(height);
 
     const milestone = this.calcMilestone(height);
-    let supply = BigInt(this.blocksConstants.totalAmount);
+    let supply = this.genesisBlock.totalAmount;
     let amountAccounted = 0n;
 
     for (let i = 0; i < milestone; i++) {

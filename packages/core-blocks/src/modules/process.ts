@@ -17,7 +17,6 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
 import {
   BasePeerType,
-  ConstantsType,
   ForkType,
   IBaseTransaction,
   IKeypair,
@@ -50,7 +49,7 @@ export class BlocksModuleProcess {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
-  @inject(Symbols.generic.constants)
+  @inject(BlocksSymbols.constants)
   private blocksConstants: BlocksConstantsType;
 
   // Helpers
@@ -318,7 +317,7 @@ export class BlocksModuleProcess {
   ): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
     const txs = this.txPool.unconfirmed.txList({
-      limit: this.blocksConstants.blocks.maxTxsPerBlock,
+      limit: this.blocksConstants.maxTxsPerBlock,
     });
 
     const ready: Array<IBaseTransaction<any, bigint>> = [];

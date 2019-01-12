@@ -1,4 +1,8 @@
-import { OnPostApplyBlock } from '@risevision/core-blocks';
+import {
+  BlocksConstantsType,
+  BlocksSymbols,
+  OnPostApplyBlock,
+} from '@risevision/core-blocks';
 import {
   IBlocksModel,
   IBlocksModule,
@@ -42,6 +46,8 @@ export class SystemModule extends Extendable implements ISystemModule {
   private appConfig: AppConfig;
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
   @inject(Symbols.generic.nonce)
   private nonce: string;
 

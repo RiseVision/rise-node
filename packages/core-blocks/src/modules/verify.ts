@@ -15,11 +15,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import {
-  ConstantsType,
-  ForkType,
-  SignedBlockType,
-} from '@risevision/core-types';
+import { ForkType, SignedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -32,8 +28,8 @@ import { BlocksModuleChain } from './chain';
 @injectable()
 export class BlocksModuleVerify {
   // Helpers
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
   @inject(Symbols.generic.hookSystem)
@@ -147,7 +143,7 @@ export class BlocksModuleVerify {
   public async onBlockchainReady() {
     const blocks = await this.BlocksModel.findAll({
       attributes: ['id'],
-      limit: this.constants.blocks.slotWindow,
+      limit: this.blocksConstants.slotWindow,
       order: [['height', 'desc']],
       raw: true,
     });
@@ -156,7 +152,7 @@ export class BlocksModuleVerify {
 
   public async onNewBlock(block: SignedBlockType) {
     this.lastNBlockIds.push(block.id);
-    if (this.lastNBlockIds.length > this.constants.blocks.slotWindow) {
+    if (this.lastNBlockIds.length > this.blocksConstants.slotWindow) {
       this.lastNBlockIds.shift();
     }
   }
@@ -294,7 +290,7 @@ export class BlocksModuleVerify {
    */
   private verifyPayload(block: SignedBlockType): string[] {
     const errors: string[] = [];
-    if (block.payloadLength > this.constants.blocks.maxPayloadLength) {
+    if (block.payloadLength > this.blocksConstants.maxPayloadLength) {
       errors.push('Payload length is too long');
     }
 
@@ -304,7 +300,7 @@ export class BlocksModuleVerify {
       );
     }
 
-    if (block.transactions.length > this.constants.blocks.maxTxsPerBlock) {
+    if (block.transactions.length > this.blocksConstants.maxTxsPerBlock) {
       errors.push('Number of transactions exceeds maximum per block');
     }
 

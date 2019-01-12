@@ -20,11 +20,7 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
-import {
-  AppConfig,
-  ConstantsType,
-  SignedAndChainedBlockType,
-} from '@risevision/core-types';
+import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { logOnly } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -63,8 +59,8 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  @inject(BlocksSymbols.constants)
+  private constants: BlocksConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -290,7 +286,7 @@ export class LoaderModule implements ILoaderModule {
         await this.doSync().catch(logOnly(this.logger));
         this.appState.set('loader.isSyncing', false);
       },
-      Math.max(1000, this.constants.blocks.targetTime * (1000 / 50))
+      Math.max(1000, this.constants.targetTime * (1000 / 50))
     );
   }
 }

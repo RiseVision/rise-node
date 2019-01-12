@@ -1,12 +1,11 @@
 import { APISymbols } from '@risevision/core-apis';
-import { HelpersSymbols } from '@risevision/core-helpers';
 import { IInfoModel, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
 import * as _ from 'lodash';
+import { sort } from 'semver';
 import * as uuid from 'uuid';
 import { LoaderAPI } from './apis';
-import { constants } from './constants';
 import { Migrator, TimeToEpoch } from './helpers';
 import { InfoModel, MigrationsModel } from './models';
 import { ForkModule, LoaderModule, SystemModule } from './modules';
@@ -15,7 +14,7 @@ import { CoreSymbols } from './symbols';
 export class CoreModule extends BaseCoreModule<void>
   implements ICoreModuleWithModels {
   public configSchema = {};
-  public constants = constants;
+  public constants = {};
 
   public async addElementsToContainer() {
     this.container
@@ -40,11 +39,16 @@ export class CoreModule extends BaseCoreModule<void>
       .toConstructor(LoaderAPI)
       .whenTargetNamed(CoreSymbols.api.loader);
 
-    let c = this.constants;
+    // Set constants
     for (const sortedModule of this.sortedModules) {
-      c = _.merge(c, sortedModule.constants || {});
+      let b = sortedModule.constants || {};
+      for (const iM of this.sortedModules) {
+        if (iM.constants && iM.constants[sortedModule.name]) {
+          b = _.merge(b, iM.constants[sortedModule.name]);
+        }
+      }
     }
-    this.container.bind(CoreSymbols.constants).toConstantValue(c);
+    this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
 
     // add info and migrations model
     this.container

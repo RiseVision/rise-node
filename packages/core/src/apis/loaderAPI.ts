@@ -1,4 +1,4 @@
-import { BlocksConstantsType } from '@risevision/core-blocks';
+import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
 import {
   IAppState,
   IBlocksModule,
@@ -19,7 +19,9 @@ export class LoaderAPI {
   @inject(Symbols.logic.appState)
   private appState: IAppState;
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  private constants: ConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
   @inject(CoreSymbols.modules.loader)
@@ -53,7 +55,7 @@ export class LoaderAPI {
         Math.floor(Date.now() / 1000) -
         (Math.floor(this.constants.epochTime.getTime() / 1000) +
           this.blocksModule.lastBlock.timestamp);
-      status = secondsAgo < this.constants.blocks.receiptTimeOut;
+      status = secondsAgo < this.blocksConstants.receiptTimeOut;
     }
 
     return { success: status };

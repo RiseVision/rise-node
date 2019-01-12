@@ -225,16 +225,4 @@ export class BlocksAPI {
       supply: this.blockRewardLogic.calcSupply(lastBlock.height).toString(),
     };
   }
-
-  @postConstruct()
-  private postConstruct() {
-    blocksSchema.getBlocks.properties.totalAmount.maximum = parseInt(
-      this.constants.totalAmount,
-      10
-    );
-    blocksSchema.getBlocks.properties.totalFee.maximum = parseInt(
-      this.constants.totalAmount,
-      10
-    );
-  }
 }

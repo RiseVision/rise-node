@@ -2,16 +2,15 @@ import { OnCheckIntegrity } from '@risevision/core';
 import { AccountsSymbols } from '@risevision/core-accounts';
 import {
   BlocksConstantsType,
+  BlocksSymbols,
   VerifyBlock,
   VerifyReceipt,
 } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, SignedBlockType } from '@risevision/core-types';
-import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import * as sequelize from 'sequelize';
 import { dPoSSymbols, Slots } from '../../helpers';
 import { AccountsModelForDPOS, DelegatesModel } from '../../models';
 import { DelegatesModule } from '../../modules';
@@ -33,8 +32,8 @@ export class DelegatesHooks extends Extendable {
   @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
 
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
@@ -112,7 +111,7 @@ export class DelegatesHooks extends Extendable {
     const curSlot = this.slots.getSlotNumber();
     const blockSlot = this.slots.getSlotNumber(block.timestamp);
     const errors = [];
-    if (curSlot - blockSlot > this.constants.blocks.slotWindow) {
+    if (curSlot - blockSlot > this.blocksConstants.slotWindow) {
       errors.push('Block slot is too old');
     }
     if (curSlot < blockSlot) {

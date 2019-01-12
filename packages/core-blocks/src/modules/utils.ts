@@ -10,10 +10,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import {
-  ConstantsType,
-  SignedAndChainedBlockType,
-} from '@risevision/core-types';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import {
   BlockProgressLogger,
   catchToLoggerAndRemapError,
@@ -33,8 +30,6 @@ export class BlocksModuleUtils {
   private hookSystem: WordPressHookSystem;
 
   // Helpers
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.dbSequence)
   private dbSequence: ISequence;

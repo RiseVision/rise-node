@@ -1,6 +1,5 @@
 import { CommanderStatic } from 'commander';
 import { Container } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
 
 export interface ICoreModule<ConfigType> {
   configSchema: any;

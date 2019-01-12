@@ -51,8 +51,8 @@ export class RoundsHooks extends Extendable {
   // tslint:disable-next-line
   private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
 
-  @inject(Symbols.generic.constants)
-  private constants: DposConstantsType;
+  @inject(dPoSSymbols.constants)
+  private dposConstants: DposConstantsType;
 
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
@@ -104,7 +104,9 @@ export class RoundsHooks extends Extendable {
     );
     const heightsToQuery: number[] = [];
     for (let i = 0; i < 5; i++) {
-      heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
+      heightsToQuery.push(
+        firstInRound - this.dposConstants.activeDelegates * i
+      );
     }
     return heightsToQuery;
   }
@@ -118,7 +120,7 @@ export class RoundsHooks extends Extendable {
     }
     if (this.appConfig.loading.snapshot >= round) {
       this.appConfig.loading.snapshot = round;
-      if (blocksCount % this.constants.activeDelegates > 0) {
+      if (blocksCount % this.dposConstants.activeDelegates > 0) {
         // Normalize to previous round if we
         this.appConfig.loading.snapshot = round > 1 ? round - 1 : 1;
       }

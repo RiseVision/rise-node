@@ -36,8 +36,8 @@ export class RoundsModule {
   private RoundChanges: typeof RoundChanges;
 
   // Helpers and generics
-  @inject(Symbols.generic.constants)
-  private constants: DposConstantsType;
+  @inject(dPoSSymbols.constants)
+  private dposConstants: DposConstantsType;
   @inject(Symbols.helpers.db)
   private dbHelper: IDBHelper;
   @inject(Symbols.generic.socketIO)
@@ -135,8 +135,8 @@ export class RoundsModule {
         backwards,
         block,
         dposV2:
-          block.height >= this.constants.dposv2.firstBlock &&
-          this.constants.dposv2.firstBlock > 0,
+          block.height >= this.dposConstants.dposv2.firstBlock &&
+          this.dposConstants.dposv2.firstBlock > 0,
         finishRound,
         library: {
           RoundChanges: this.RoundChanges,
@@ -207,7 +207,7 @@ export class RoundsModule {
       {
         plain: true, // Returns single row.
         replacements: {
-          activeDelegates: this.constants.activeDelegates,
+          activeDelegates: this.dposConstants.activeDelegates,
           round,
         },
         type: sequelize.QueryTypes.SELECT,
@@ -220,7 +220,7 @@ export class RoundsModule {
     let roundFees = res.fees;
     const roundDelegates = res.delegates;
 
-    if (roundDelegates.length === this.constants.activeDelegates - 1) {
+    if (roundDelegates.length === this.dposConstants.activeDelegates - 1) {
       // cur block is not in the database yet. So lets patch the results manually
       roundRewards.push(BigInt(block.reward));
       roundFees += BigInt(block.totalFee);

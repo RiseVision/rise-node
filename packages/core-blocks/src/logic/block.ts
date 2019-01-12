@@ -12,7 +12,6 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
   BlockType,
-  ConstantsType,
   DBOp,
   IBaseTransaction,
   IKeypair,
@@ -53,8 +52,8 @@ export class BlockLogic implements IBlockLogic {
   @inject(Symbols.generic.zschema)
   public zschema: z_schema;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blockConstants: BlocksConstantsType;
 
   @inject(p2pSymbols.helpers.protoBuf)
   private protobufHelper: ProtoBufHelper;
@@ -100,7 +99,7 @@ export class BlockLogic implements IBlockLogic {
     for (const transaction of transactions) {
       const bytes: Buffer = this.txBytes.fullBytes(transaction);
 
-      if (size + bytes.length > this.constants.blocks.maxPayloadLength) {
+      if (size + bytes.length > this.blockConstants.maxPayloadLength) {
         break;
       }
 

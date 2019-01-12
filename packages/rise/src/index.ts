@@ -22,6 +22,7 @@ import {
   OldVoteTx,
 } from './oldtxs';
 import { RISESymbols } from './symbols';
+const util = require('util');
 
 const oldEscape = SqlString.escape;
 SqlString.escape = (val, timeZone, dialect, format) => {
@@ -39,12 +40,15 @@ export class CoreModule extends BaseCoreModule<any> {
 
   public get constants() {
     if (!this._constants) {
-      this._constants = requireJSON5(
-        `${__dirname}/../etc/${process.env.NETWORK}/constants.json`,
-        'utf8'
-      );
+      this._constants = require(`${__dirname}/../etc/${
+        process.env.NETWORK
+      }/constants.js`);
     }
     return this._constants;
+  }
+
+  public set constants(a: any) {
+    this._constants = a;
   }
 
   public addElementsToContainer() {
@@ -82,6 +86,10 @@ export class CoreModule extends BaseCoreModule<any> {
 
     // Register transaction types.
     this.container.bind(Symbols.generic.txtypes).toConstantValue({});
+    //
+    // this.sortedModules
+    //   .map((m) => ({name: m.name, constants: m.constants}))
+    //   .forEach(a => console.log(require('util').inspect(a, false, null, true)));
   }
 
   public async initAppElements(): Promise<void> {
@@ -119,12 +127,7 @@ export class CoreModule extends BaseCoreModule<any> {
 
     z_schema.registerFormat('address', (str: string) => {
       // tslint:disable-next-line
-      return new RegExp(
-        `^[0-9]{1,20}${
-          this.container.get<ConstantsType>(Symbols.generic.constants)
-            .addressSuffix
-        }$`
-      ).test(str);
+      return /^[0-9]{1,20}R/.test(str);
     });
   }
 }

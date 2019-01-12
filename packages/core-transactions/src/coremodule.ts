@@ -1,9 +1,5 @@
 import { APISymbols } from '@risevision/core-apis';
-import {
-  IBaseTransactionType,
-  ITransactionLogic,
-  Symbols,
-} from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
@@ -89,6 +85,8 @@ export class CoreModule extends BaseCoreModule {
       .bind(TXSymbols.txBytes)
       .to(TXBytes)
       .inSingletonScope();
+
+    this.container.bind(TXSymbols.constants).toConstantValue(this.constants);
   }
 
   public async initAppElements() {

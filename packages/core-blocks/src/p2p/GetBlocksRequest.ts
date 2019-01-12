@@ -54,7 +54,7 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
 
-  @inject(Symbols.generic.constants)
+  @inject(BlocksSymbols.constants)
   private blocksConstants: BlocksConstantsType;
 
   @inject(BlocksSymbols.logic.blockBytes)
@@ -117,8 +117,8 @@ export class GetBlocksRequest extends BaseProtobufTransportMethod<
     // in maxPayloadSize. We assume a stream blocks completely full of the smallest transactions.
     // In RISE the value is about 8000 TXs
     const txLimit = Math.ceil(
-      (maxBytes * this.blocksConstants.blocks.maxTxsPerBlock) /
-        (this.getMinBytesSize() * this.blocksConstants.blocks.maxTxsPerBlock +
+      (maxBytes * this.blocksConstants.maxTxsPerBlock) /
+        (this.getMinBytesSize() * this.blocksConstants.maxTxsPerBlock +
           this.blockBytes.maxHeaderSize)
     );
 
