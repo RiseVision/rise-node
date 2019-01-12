@@ -23,9 +23,14 @@ import { createContainer } from '../../utils/containerCreator';
 import { TransactionsModel } from '../../../src/models';
 import { VerificationType } from '../../../src/ioc/interfaces/logic';
 import { DBBulkCreateOp } from '../../../src/types/genericTypes';
-import { createRandomTransactions, toBufferedTransaction } from '../../utils/txCrafter';
+import {
+  create2ndSigTX,
+  createRandomTransactions, createRegDelegateTX, createSendTransaction, createVoteTransaction,
+  toBufferedTransaction
+} from '../../utils/txCrafter';
 import { z_schema } from '../../../src/helpers/z_schema';
 import {createRandomWallet} from '../../integration/common/utils';
+import { generateAccount } from '../../utils/accountsUtils';
 
 chai.use(chaiAsPromised);
 
@@ -1407,6 +1412,74 @@ describe('logic/transaction', () => {
         relays: 0,
       })).deep.eq(expected);
     });
+
+    it('should support a recipientId of all zeroes for SEND TX', () => {
+      const t = createSendTransaction(generateAccount(), '0R', 1, { amount: 1000 });
+      t.signSignature = t.signature.split('').reverse().join('');
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, asset: null};
+
+      expect(instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: true,
+        fee: t.fee,
+        relays: 0,
+      })).deep.eq(expected);
+    });
+
+    it('should consider as null a recipientId of all zeroes for VOTE TX', () => {
+      const t = createVoteTransaction(
+        generateAccount(), 1, { recipientId: '0R', asset: { votes: [`+${generateAccount().publicKey}`] } });
+      t.signSignature = t.signature.split('').reverse().join('');
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, recipientId: null};
+      const result = instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: true,
+        fee: t.fee,
+        relays: 0,
+      });
+      expect(result).to.be.deep.eq(expected);
+    });
+
+    it('should consider as null a recipientId of all zeroes for SIGNATURE TX', () => {
+      const t = create2ndSigTX(generateAccount(),
+        1, { recipientId: '0R', asset: { signature: { publicKey: generateAccount().publicKey } } });
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, recipientId: null};
+      delete expected.signSignature;
+      const result = instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: false,
+        fee: t.fee,
+        relays: 0,
+      });
+      expect(result).to.be.deep.eq(expected);
+    });
+
+    it('should consider as null a recipientId of all zeroes for DELEGATE TX', () => {
+      const t = createRegDelegateTX(generateAccount(), 1,
+        { asset: { delegate: { username: `delegateee_${generateAccount().publicKey.substr(0, 4) }` } } })
+      t.id = instance.getId(toBufferedTransaction(t));
+      const b = instance.getBytes(toBufferedTransaction(t));
+      const expected = {... toBufferedTransaction(t), relays: 0, recipientId: null};
+      delete expected.signSignature;
+      const result = instance.fromBytes({
+        bytes: b,
+        hasRequesterPublicKey: false,
+        hasSignSignature: false,
+        fee: t.fee,
+        relays: 0,
+      });
+      expect(result).to.be.deep.eq(expected);
+    });
+
     it('should work for vote tx and signSignature', () => {
       const [t] = createRandomTransactions({vote: 1});
       t.signSignature = t.signature.split('').reverse().join('');
