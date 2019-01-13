@@ -12,20 +12,6 @@ export const SnapshotBlocksCountFilter = createFilter<
 /**
  * Called when verifying a block a submodule could either add its error or bypass other errors.
  */
-export const VerifyBlockFilter = createFilter<
-  (
-    p: { errors: string[]; verified: boolean },
-    block: SignedBlockType,
-    lastBlock?: SignedBlockType
-  ) => Promise<{ errors: string[]; verified: boolean }>
->('core/blocks/verify/verifyBlock');
-export const VerifyBlockReceipt = createFilter<
-  (
-    p: { errors: string[]; verified: boolean },
-    block: SignedBlockType,
-    lastBlock?: SignedBlockType
-  ) => Promise<{ errors: string[]; verified: boolean }>
->('core/blocks/verify/verifyReceipt');
 
 /**
  * Called when there is a need to calculate the idSequence for block comparison against another peer
