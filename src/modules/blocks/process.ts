@@ -6,7 +6,7 @@ import { CommonBlockRequest } from '../../apis/requests/CommonBlockRequest';
 import { GetBlocksRequest } from '../../apis/requests/GetBlocksRequest';
 import { RequestFactoryType } from '../../apis/requests/requestFactoryType';
 import { requestSymbols } from '../../apis/requests/requestSymbols';
-import { constants, ForkType, IKeypair, ILogger, Sequence } from '../../helpers/';
+import { constants, ForkType, IKeypair, ILogger, Sequence, TransactionType } from '../../helpers/';
 import { WrapInDBSequence, WrapInDefaultSequence } from '../../helpers/decorators/wrapInSequence';
 import { ISlots } from '../../ioc/interfaces/helpers';
 import {
@@ -291,6 +291,13 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
 
     const ready: Array<IBaseTransaction<any>> = [];
     const confirmedTxs = await this.transactionsModule.filterConfirmedIds(txs.map((tx) => tx.id));
+    const txLimits = {
+      [TransactionType.SEND] : { allowed: constants.maxTxsPerBlock, verified: 0},
+      [TransactionType.DELEGATE] : { allowed: 1, verified: 0},
+      [TransactionType.VOTE] : { allowed: 1, verified: 0},
+      [TransactionType.SIGNATURE] : { allowed: 1, verified: 0},
+      [TransactionType.MULTI] : { allowed: 0, verified: 0},
+    };
     for (const tx of txs) {
       const sender = await this.accountsModule.getAccount({ publicKey: tx.senderPublicKey });
       if (!sender) {
@@ -310,8 +317,16 @@ export class BlocksModuleProcess implements IBlocksModuleProcess {
         continue;
       }
 
+      // Allow only a maximum of tx per type in a single block
+      // Number of verified transactions should never be greater than number of allowed, but using >= is safer anyway.
+      if (txLimits[tx.type].verified >= txLimits[tx.type].allowed) {
+        // Skip this tx, leave it for the next block
+        continue;
+      }
+
       try {
         await this.transactionLogic.verify(tx, sender, null, previousBlock.height);
+        txLimits[tx.type].verified++;
         ready.push(tx);
       } catch (err) {
         // TODO: why is error swallowed here? shouldn't we better handle this error?

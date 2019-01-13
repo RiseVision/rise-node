@@ -446,7 +446,7 @@ describe('modules/blocks/process', () => {
     let txs: Array<IBaseTransaction<any>>;
     beforeEach(() => {
       blocksModule.lastBlock = {id: '1', height: 10} as any;
-      txs                    = createRandomTransactions({send: 3, vote: 2})
+      txs                    = createRandomTransactions({send: 3, vote: 1})
         .map((t) => toBufferedTransaction(t));
       accountsModule.stubs.getAccount.resolves({account: 'account'});
       txModule.stubs.getUnconfirmedTransactionList.callsFake(() => txs);
