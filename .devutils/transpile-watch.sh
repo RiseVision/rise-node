@@ -21,6 +21,11 @@ pkgs=($(yarn -s lerna --sort exec "echo \$LERNA_PACKAGE_NAME"))
 
         # Wait for the compilation to succeed before continuing
         while [ ! -f $root/packages/$pkg/dist/index.js ]; do sleep 0.2; done
+
+        # Make sure that the rise-launchpad command is executable
+        if [ "$pkg" = "core-launchpad" ]; then
+            chmod +x $root/packages/$pkg/dist/binary.js
+        fi
     done
 
     echo "[$(timestamp)] All packages transpiled"
