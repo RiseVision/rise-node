@@ -18,8 +18,6 @@
     "test-all": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts' './tests/integration/**/*.spec.ts'",
     "transpile": "lerna run transpile",
     "single-transpile": "f(){ cd packages/$1; npm run transpile; }; f",
-    "watch-single-transpile": "f(){ cd packages/$1; tsc -w ; }; f;",
-    "watch-all-transpile": "for i in $(ls packages); do echo \"npm run watch-single-transpile $i &\"; done | bash",
     "test-cover-unit": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-unit && cat ./coverage/lcov.info | coveralls",
     "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls",
     "static-analysis": "tslint --force --project ./tsconfig.json 'src/**/*.ts'",
