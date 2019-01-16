@@ -8,8 +8,6 @@ import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
 import { TXSymbols } from '@risevision/core-transactions';
-import { ConstantsType } from '@risevision/core-types';
-import * as requireJSON5 from 'require-json5';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
@@ -22,7 +20,6 @@ import {
   OldVoteTx,
 } from './oldtxs';
 import { RISESymbols } from './symbols';
-const util = require('util');
 
 const oldEscape = SqlString.escape;
 SqlString.escape = (val, timeZone, dialect, format) => {

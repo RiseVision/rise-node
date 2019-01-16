@@ -74,7 +74,6 @@ INSERT INTO trsassets_delegates
 
 DROP table delegates;
 
-
 CREATE TABLE IF NOT EXISTS "trsassets_votes_old" (
   "votes" TEXT,
   "transactionId" VARCHAR(250) NOT NULL,
@@ -120,7 +119,6 @@ DROP TABLE "trs_old";
 
 ALTER TABLE mem_accounts
 	DROP column "blockId",
-	DROP column "publicKey",
 	DROP column "delegates",
 	DROP column "u_delegates",
 	DROP column "multisignatures",
@@ -135,6 +133,13 @@ ALTER TABLE mem_accounts
 	DROP column "u_nameexist",
 	ALTER column "address" type VARCHAR(255);
 
+alter table mem_accounts
+	RENAME column "publicKey" to "forgingPK";
 
+UPDATE mem_accounts ma
+  SET "forgingPK" = NULL
+  WHERE ma."isDelegate" = 0;
 
 COMMIT;
+
+rollback;

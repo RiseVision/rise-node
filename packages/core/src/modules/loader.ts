@@ -196,20 +196,29 @@ export class LoaderModule implements ILoaderModule {
     count: number,
     limitPerIteration: number,
     message?: string,
-    emitBlockchainReady = false
+    emitBlockchainReady = false,
+    offset: number = 0
   ) {
-    let offset = 0;
     if (message) {
       this.logger.warn(message);
       this.logger.warn('Recreating memory tables');
     }
 
-    await this.hookSystem.do_action(RecreateAccountsTables.name);
-
+    if (offset > 0) {
+      this.blocksModule.lastBlock = await this.BlocksModel.findOne({
+        where: {
+          height: offset,
+        },
+      });
+      offset += 1;
+    } else {
+      await this.hookSystem.do_action(RecreateAccountsTables.name);
+    }
     while (count >= offset) {
       if (count > 1) {
         this.logger.info(
-          'Rebuilding blockchain, current block height: ' + (offset + 1)
+          'Rebuilding blockchain, current block height: ' +
+            this.blocksModule.lastBlock.height
         );
       }
       await this.blocksProcessModule.loadBlocksOffset(
@@ -242,7 +251,13 @@ export class LoaderModule implements ILoaderModule {
       blocksCount
     );
 
-    await this.load(blocksCount, limit, 'Blocks Verification enabled', false);
+    await this.load(
+      blocksCount,
+      limit,
+      'Blocks Verification enabled',
+      false,
+      process.env.OFFSET ? parseInt(process.env.OFFSET, 10) : 0
+    );
 
     if (this.blocksModule.lastBlock.height !== blocksCount) {
       // tslint:disable-next-line max-line-length

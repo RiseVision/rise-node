@@ -434,6 +434,7 @@ export class DelegatesModule {
                 height -
                 this.slots.delegates *
                   this.dposConstants.dposv2.delegatesPoolSize,
+              [Op.lt]: height,
             },
           },
           sequelize.literal(`height % ${this.slots.delegates} = 0`),
