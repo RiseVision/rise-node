@@ -24,8 +24,6 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: rise
       POSTGRES_DB: rise_db
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
     networks:
       - overlay
     restart: on-failure
