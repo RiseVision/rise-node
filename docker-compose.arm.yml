@@ -10,6 +10,8 @@ services:
       - "127.0.0.1:5555:5555"
     networks:
       - overlay
+    environment:
+      NETWORK: mainnet
     restart: on-failure
 
   redis:
@@ -19,7 +21,7 @@ services:
     restart: on-failure
 
   postgres:
-    image: jpopesculian/rise-node_postgres:arm-latest
+    image: jpopesculian/rise-node_postgres:arm-mainnet-latest
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: rise

@@ -32,5 +32,6 @@ USER root
 RUN apk del .gyp && rm /usr/bin/qemu-arm-static
 USER rise
 
+ENV NETWORK="mainnet"
 EXPOSE 5555
-CMD ["node", "dist/app.js", "-n", "mainnet", "-e", "/home/rise/config.json"]
+CMD ["node", "dist/app.js", "-n", "$NETWORK", "-e", "/home/rise/config.json"]
