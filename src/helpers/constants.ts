@@ -127,4 +127,8 @@ export default {
     maxContinuousMissedBlocks: 28 * 3, // Maximum number of missed blocks in a row before banning delegate. A good value might be 3 days,
     minForged: 200,                  // Enable productivity-based vote weight after a delegate has forged  at least # blocks
   },
+  timeDriftCorrection: {
+    activationTime: 89881200, // March 31, 2019 0:00:00 UTC
+    maxDrift: 2, // 2 Seconds
+  },
 };

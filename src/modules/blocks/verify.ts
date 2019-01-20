@@ -338,8 +338,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private async verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
     const slotNumber = this.slots.getSlotNumber(block.timestamp);
     const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
+    const curTime = this.slots.getTime();
+    const maxDrift = this.getAllowedTimeDrift(curTime);
 
-    if (slotNumber > this.slots.getSlotNumber(this.slots.getTime()) || slotNumber <= lastSlot) {
+    if (slotNumber > this.slots.getSlotNumber(curTime + maxDrift) || slotNumber <= lastSlot) {
       // if in future or in the past => error
       return ['Invalid block timestamp'];
     }
@@ -385,4 +387,10 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     );
   }
 
+  private getAllowedTimeDrift(timeFromEpoch: number): number {
+    if (timeFromEpoch > this.constants.timeDriftCorrection.activationTime) {
+      return this.constants.timeDriftCorrection.maxDrift;
+    }
+    return 0;
+  }
 }

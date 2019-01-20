@@ -5,7 +5,7 @@ import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { Ed, ForkType, Slots } from '../../../../src/helpers';
+import { constants, Ed, ForkType, Slots } from '../../../../src/helpers';
 import { IBlocksModuleVerify } from '../../../../src/ioc/interfaces/modules';
 import { Symbols } from '../../../../src/ioc/symbols';
 import { BlockLogic, BlockRewardLogic, SignedBlockType } from '../../../../src/logic';
@@ -454,6 +454,40 @@ describe('modules/blocks/verify', () => {
         false, // saveblock
         {'a': 'b'}
       ]);
+    });
+  });
+
+  describe('verifyBlockSlot', () => {
+    let realSlots: Slots;
+    let blk: any;
+    let lastBlk: any;
+
+    beforeEach(() => {
+      container.rebind(Symbols.helpers.slots).to(Slots);
+      realSlots = container.get(Symbols.helpers.slots);
+      (inst as any).slots = {
+        getSlotNumber: realSlots.getSlotNumber,
+        getTime: () => (constants.blockTime * 2) - constants.timeDriftCorrection.maxDrift,
+        interval: (realSlots as any).interval,
+      };
+      lastBlk = { timestamp: constants.blockTime };
+      blk = { timestamp: constants.blockTime * 2 };
+    });
+
+    it('should NOT verify a block with future timestamp when time drift correction is disabled', async () => {
+      const oldActivationTime = constants.timeDriftCorrection.activationTime;
+      constants.timeDriftCorrection.activationTime = Number.MAX_SAFE_INTEGER; // Basically never activates
+      const retVal = await (inst as any).verifyBlockSlot(blk, lastBlk);
+      expect(retVal).to.be.deep.eq( ['Invalid block timestamp'] );
+      constants.timeDriftCorrection.activationTime = oldActivationTime; // Revert to original
+    });
+
+    it('should verify a block with future timestamp when time drift correction is disabled', async () => {
+      const oldActivationTime = constants.timeDriftCorrection.activationTime;
+      constants.timeDriftCorrection.activationTime = 0; // Always active
+      const retVal = await (inst as any).verifyBlockSlot(blk, lastBlk);
+      expect(retVal).to.be.deep.eq( [] );
+      constants.timeDriftCorrection.activationTime = oldActivationTime; // Revert to original
     });
   });
 
