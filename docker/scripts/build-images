@@ -26,7 +26,9 @@ build_and_push_image() {
     extra_flags=$5
     latest_tag="$REPOSITORY/$name:${prefix}latest"
 
-    docker build -t $latest_tag -f $file $extra_flags .
+    pushd $(dirname $file) > /dev/null
+
+    docker build -t $latest_tag -f $(basename $file) $extra_flags .
     docker push $latest_tag
 
     if [ "$versions" = true ] ; then
@@ -38,19 +40,21 @@ build_and_push_image() {
             docker push $version_tag
         done
     fi
+
+    popd > /dev/null
 }
 
-build_and_push_image rise-node Dockerfile "" true
-build_and_push_image rise-node Dockerfile.arm arm- true
+build_and_push_image rise-node ./Dockerfile "" true
+build_and_push_image rise-node ./Dockerfile.arm arm- true
 
-build_and_push_image rise-node_postgres docker/Dockerfile.postgres \
+build_and_push_image rise-node_postgres ./docker/Dockerfile.postgres \
     "mainnet-" false "--no-cache --build-arg NETWORK=mainnet"
-build_and_push_image rise-node_postgres docker/Dockerfile.postgres.arm \
+build_and_push_image rise-node_postgres ./docker/Dockerfile.postgres.arm \
     "arm-mainnet-" false "--no-cache --build-arg NETWORK=mainnet"
 
-build_and_push_image rise-node_postgres docker/Dockerfile.postgres \
+build_and_push_image rise-node_postgres ./docker/Dockerfile.postgres \
     "testnet-" false "--no-cache --build-arg NETWORK=testnet"
-build_and_push_image rise-node_postgres docker/Dockerfile.postgres.arm \
+build_and_push_image rise-node_postgres ./docker/Dockerfile.postgres.arm \
     "arm-testnet-" false "--no-cache --build-arg NETWORK=testnet"
 
 popd > /dev/null
