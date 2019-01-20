@@ -1,0 +1,21 @@
+{
+    "db": {
+        "host": "postgres",
+        "port": 5432,
+        "database": "rise_db",
+        "user": "rise",
+        "password": "password",
+        "poolSize": 95,
+        "poolIdleTimeout": 30000,
+        "reapIntervalMillis": 1000,
+        "logEvents": [
+            "error"
+        ]
+    },
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6380,
+        "db": 0,
+        "password": null
+    }
+}
