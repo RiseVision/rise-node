@@ -32,4 +32,4 @@ COPY --chown=rise ./docker/mainnet_config.json /home/rise/config.json
 
 ENV NETWORK="mainnet"
 EXPOSE 5555
-CMD ["node", "dist/app.js", "-n", "$NETWORK", "-e", "/home/rise/config.json"]
+CMD node dist/app.js -n $NETWORK -e /home/rise/config.json
