@@ -1,8 +1,10 @@
+// tslint:disable object-literal-sort-keys
+// tslint:disable trailing-comma
 export const respProps = (props = {}) =>
   Object.assign(
     {
-      success: { type: "boolean" },
-      error: { type: "string" }
+      success: { type: 'boolean' },
+      error: { type: 'string' }
     },
     props
   );

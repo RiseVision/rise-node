@@ -1,13 +1,15 @@
 import {
   height,
-  username,
-  publicKey,
-  vote,
-  multisigMin,
+  multisigKeysgroup,
   multisigLifetime,
-  multisigKeysgroup
-} from "./scalars";
+  multisigMin,
+  publicKey,
+  username,
+  vote,
+} from './scalars';
 
+// tslint:disable object-literal-sort-keys
+// tslint:disable trailing-comma
 export const feeHeight = {
   fromHeight: height,
   toHeight: height,
@@ -15,10 +17,10 @@ export const feeHeight = {
 };
 
 export const delegateAsset = {
-  type: "object",
+  type: 'object',
   properties: {
     delegate: {
-      type: "object",
+      type: 'object',
       properties: {
         username
       }
@@ -27,20 +29,20 @@ export const delegateAsset = {
 };
 
 export const votesAsset = {
-  type: "object",
+  type: 'object',
   properties: {
     votes: {
-      type: "array",
+      type: 'array',
       items: vote
     }
   }
 };
 
 export const signatureAsset = {
-  type: "object",
+  type: 'object',
   properties: {
     signature: {
-      type: "object",
+      type: 'object',
       properties: {
         publicKey
       }
@@ -49,10 +51,10 @@ export const signatureAsset = {
 };
 
 export const multisigAsset = {
-  type: "object",
+  type: 'object',
   properties: {
     multisignature: {
-      type: "object",
+      type: 'object',
       properties: {
         min: multisigMin,
         lifetime: multisigLifetime,
@@ -63,7 +65,7 @@ export const multisigAsset = {
 };
 
 export const allAssets = {
-  type: "object",
+  type: 'object',
   properties: {
     ...multisigAsset.properties,
     ...signatureAsset.properties,

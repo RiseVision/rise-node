@@ -1,42 +1,44 @@
-import { respProps, successResp } from '../utils/responses'
-import { scope } from "../../helpers/strings";
+import { scope } from '../../helpers/strings';
+import { respProps } from '../utils/responses';
 
-const s = scope('responses.general')
+const s = scope('responses.general');
 
+// tslint:disable object-literal-sort-keys
+// tslint:disable trailing-comma
 export default {
-  deprecated: {
-    id: s`deprecated`,
-    type: "object",
+  deprecated  : {
+    id        : s`deprecated`,
+    type      : 'object',
     properties: respProps(),
-    example: {
+    example   : {
       success: false,
-      error: "Method is deprecated"
+      error  : 'Method is deprecated'
     }
   },
-  success: {
-    id: s`success`,
-    type: "object",
+  success     : {
+    id        : s`success`,
+    type      : 'object',
     properties: respProps(),
-    example: {
+    example   : {
       success: true
     }
   },
-  error: {
-    id: s`error`,
-    type: "object",
+  error       : {
+    id        : s`error`,
+    type      : 'object',
     properties: respProps(),
-    example: {
+    example   : {
       success: false,
-      error: "An error has occured"
+      error  : 'An error has occured'
     }
   },
   accessDenied: {
-    id: s`accessDenied`,
-    type: "object",
+    id        : s`accessDenied`,
+    type      : 'object',
     properties: respProps(),
-    example: {
+    example   : {
       success: false,
-      error: "Secure API Access Denied"
+      error  : 'Secure API Access Denied'
     }
   }
 };

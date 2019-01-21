@@ -1,9 +1,8 @@
-// tslint:disable-next-line interface-name
+import { DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
 import { Model } from 'sequelize-typescript';
-import { ModelAttributes, Partial } from './utils';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-import { CreateOptions, DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
 
+// tslint:disable-next-line interface-name
 export interface AppConfigDatabase {
   host: string;
   port: number;
