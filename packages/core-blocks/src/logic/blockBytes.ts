@@ -13,14 +13,14 @@ import * as varuint from 'varuint-bitcoin';
 @injectable()
 export class BlockBytes {
   @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  protected constants: ConstantsType;
   @inject(p2pSymbols.helpers.protoBuf)
-  private protoBufHelper: ProtoBufHelper;
+  protected protoBufHelper: ProtoBufHelper;
 
   @inject(Symbols.helpers.idsHandler)
-  private idsHandler: IIdsHandler;
+  protected idsHandler: IIdsHandler;
   @inject(Symbols.helpers.txBytes)
-  private txBytes: ITXBytes;
+  protected txBytes: ITXBytes;
 
   get maxHeaderSize() {
     return (
@@ -55,7 +55,9 @@ export class BlockBytes {
     bb.writeUint32(block.version);
     bb.writeUint32(block.timestamp);
 
-    bb.append(this.idsHandler.blockIdToBytes(block.previousBlock));
+    bb.append(
+      encodeVarUint(this.idsHandler.blockIdToBytes(block.previousBlock))
+    );
 
     bb.writeUint32(block.numberOfTransactions);
     bb.append(toBufferLE(block.totalAmount, this.constants.amountBytes));
@@ -63,7 +65,7 @@ export class BlockBytes {
     bb.append(toBufferLE(block.reward, this.constants.amountBytes));
 
     bb.writeUint32(block.payloadLength);
-    bb.append(block.payloadHash);
+    bb.append(encodeVarUint(block.payloadHash));
     bb.append(block.generatorPublicKey);
 
     if (block.blockSignature && includeSignature) {
@@ -116,7 +118,7 @@ export class BlockBytes {
 
     let blockSignature: Buffer = null;
     if (offset !== buff.length) {
-      blockSignature = readSlice(32);
+      blockSignature = readSlice(64);
     }
 
     return {

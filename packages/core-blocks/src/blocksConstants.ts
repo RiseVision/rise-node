@@ -24,6 +24,10 @@ export type BlocksConstantsType = {
    * Rewards schedule
    */
   rewards: Array<{ fromHeight: number; reward: string }>;
+  /**
+   * Valid versions number
+   */
+  validVersions: number[];
 };
 
 export const constants: BlocksConstantsType = {
@@ -38,4 +42,5 @@ export const constants: BlocksConstantsType = {
   ],
   slotWindow: 5,
   targetTime: 30,
+  validVersions: [0],
 };

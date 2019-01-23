@@ -217,8 +217,7 @@ export class LoaderModule implements ILoaderModule {
     while (count >= offset) {
       if (count > 1) {
         this.logger.info(
-          'Rebuilding blockchain, current block height: ' +
-            this.blocksModule.lastBlock.height
+          'Rebuilding blockchain, current block height: ' + offset
         );
       }
       await this.blocksProcessModule.loadBlocksOffset(

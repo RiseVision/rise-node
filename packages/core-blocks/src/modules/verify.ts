@@ -259,7 +259,7 @@ export class BlocksModuleVerify {
    * Verifies that block has a valid version
    */
   private verifyVersion(block: SignedBlockType): string[] {
-    if (block.version > 0) {
+    if (this.blocksConstants.validVersions.indexOf(block.version) === -1) {
       return ['Invalid block version'];
     }
     return [];

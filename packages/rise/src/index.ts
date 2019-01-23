@@ -1,3 +1,4 @@
+import { BlocksSymbols } from '@risevision/core-blocks';
 import { dPoSSymbols } from '@risevision/core-consensus-dpos';
 import {
   ExceptionsManager,
@@ -12,6 +13,7 @@ import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
 import { RiseIdsHandler } from './idsHandler';
+import { RiseBlockBytes } from './logic';
 import { OldVoteTxModel } from './models';
 import {
   OldRegDelegateTx,
@@ -83,6 +85,12 @@ export class CoreModule extends BaseCoreModule<any> {
 
     // Register transaction types.
     this.container.bind(Symbols.generic.txtypes).toConstantValue({});
+
+    // Replace blockbytes with our own implementation
+    this.container
+      .rebind(BlocksSymbols.logic.blockBytes)
+      .to(RiseBlockBytes)
+      .inSingletonScope();
     //
     // this.sortedModules
     //   .map((m) => ({name: m.name, constants: m.constants}))
