@@ -14,7 +14,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { BlocksModule, BlocksSymbols } from '../../../src';
+import { BlocksConstantsType, BlocksModule, BlocksSymbols } from '../../../src';
 import { BlocksAPI } from '../../../src/apis/blocksAPI';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 
@@ -39,6 +39,21 @@ describe('apis/blocksAPI', () => {
       'core-apis',
       'core-transactions',
     ]);
+    const constants = container.get<BlocksConstantsType>(
+      BlocksSymbols.constants
+    );
+    constants.rewards = [
+      { fromHeight: 1, reward: '0' },
+      { fromHeight: 10, reward: '1500000000' },
+      { fromHeight: 11, reward: '30000000' },
+      { fromHeight: 12, reward: '20000000' },
+      { fromHeight: 13, reward: '1500000000' },
+      { fromHeight: 1054080, reward: '1200000000' },
+      { fromHeight: 1054080 * 2, reward: '900000000' },
+      { fromHeight: 1054080 * 3, reward: '600000000' },
+      { fromHeight: 1054080 * 4, reward: '300000000' },
+      { fromHeight: 1054080 * 5, reward: '100000000' },
+    ];
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
@@ -47,18 +62,6 @@ describe('apis/blocksAPI', () => {
     blocksModule = container.get(BlocksSymbols.modules.blocks);
     blocksModel = container.getNamed(ModelSymbols.model, BlocksSymbols.model);
     fakeBlock = createFakeBlock(container);
-    // (instance as any).constants.blocks.rewards = [
-    //   { fromHeight: 1, reward: '0' },
-    //   { fromHeight: 10, reward: '1500000000' },
-    //   { fromHeight: 11, reward: '30000000' },
-    //   { fromHeight: 12, reward: '20000000' },
-    //   { fromHeight: 13, reward: '1500000000' },
-    //   { fromHeight: 1054080, reward: '1200000000' },
-    //   { fromHeight: 1054080 * 2, reward: '900000000' },
-    //   { fromHeight: 1054080 * 3, reward: '600000000' },
-    //   { fromHeight: 1054080 * 4, reward: '300000000' },
-    //   { fromHeight: 1054080 * 5, reward: '100000000' }
-    //   ];
   });
 
   afterEach(() => {

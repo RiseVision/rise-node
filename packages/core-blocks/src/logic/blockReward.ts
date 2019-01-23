@@ -12,14 +12,17 @@ export class BlockRewardLogic implements IBlockReward {
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
 
-  private rewards: Array<{ fromHeight: number; reward: bigint }>;
+  // tslint:disable-next-line variable-name
+  private _rewards: Array<{ fromHeight: number; reward: bigint }>;
 
-  @postConstruct()
-  public initRewards() {
-    this.rewards = this.blocksConstants.rewards.map((r) => ({
-      ...r,
-      reward: BigInt(r.reward),
-    }));
+  protected get rewards() {
+    if (!this._rewards) {
+      this._rewards = this.blocksConstants.rewards.map((r) => ({
+        ...r,
+        reward: BigInt(r.reward),
+      }));
+    }
+    return this._rewards;
   }
 
   public calcMilestone(height: number) {

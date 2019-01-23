@@ -144,7 +144,7 @@ export class DelegatesModule {
           return a.weight > b.weight ? -1 : 1;
         });
         delegates = pool.slice(0, this.dposConstants.activeDelegates);
-        currentSeed = new Buffer(roundSeed.buffer);
+        currentSeed = Buffer.from(roundSeed.buffer);
       } else {
         const scrambleSeed = this.roundsLogic.calcRound(height).toString();
         currentSeed = supersha.sha256(Buffer.from(scrambleSeed, 'utf8'));

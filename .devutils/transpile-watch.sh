@@ -20,7 +20,7 @@ pkgs=($(yarn -s lerna --sort exec "echo \$LERNA_PACKAGE_NAME"))
         yarn -s tsc -w -p $root/packages/$pkg &
 
         # Wait for the compilation to succeed before continuing
-        while [ ! -f $root/packages/$pkg/dist/index.js ]; do sleep 0.2; done
+        while [ ! -f $root/packages/$pkg/dist/index.js ]; do sleep 0.3; echo "[$(timestamp)] $pkg"; done
 
         # Make sure that the rise-launchpad command is executable
         if [ "$pkg" = "core-launchpad" ]; then

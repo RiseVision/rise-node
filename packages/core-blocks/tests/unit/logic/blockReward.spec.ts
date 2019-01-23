@@ -4,7 +4,11 @@ import * as chai from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { BlockRewardLogic, BlocksSymbols } from '../../../src/';
+import {
+  BlockRewardLogic,
+  BlocksConstantsType,
+  BlocksSymbols,
+} from '../../../src/';
 
 const expect = chai.expect;
 
@@ -13,7 +17,7 @@ describe('logic/blockReward', () => {
   let instance: BlockRewardLogic;
   let sandbox: SinonSandbox;
   let container: Container;
-  let constants: any;
+  let constants: BlocksConstantsType;
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
     container = await createContainer([
@@ -25,15 +29,27 @@ describe('logic/blockReward', () => {
       'core-transactions',
     ]);
     instance = container.get(BlocksSymbols.logic.blockReward);
-    constants = container.get(Symbols.generic.constants);
+    constants = container.get(BlocksSymbols.constants);
+    constants.rewards = [
+      { fromHeight: 1, reward: '0' },
+      { fromHeight: 10, reward: '1500000000' },
+      { fromHeight: 11, reward: '30000000' },
+      { fromHeight: 12, reward: '20000000' },
+      { fromHeight: 13, reward: '1500000000' },
+      { fromHeight: 1054080, reward: '1200000000' },
+      { fromHeight: 1054080 * 2, reward: '900000000' },
+      { fromHeight: 1054080 * 3, reward: '600000000' },
+      { fromHeight: 1054080 * 4, reward: '300000000' },
+      { fromHeight: 1054080 * 5, reward: '100000000' },
+    ];
   });
 
   afterEach(() => {
     sandbox.restore();
   });
 
-  describe('constructor', () => {
-    it('should initialize rewards to the constant', () => {
+  describe('[protected] rewards', () => {
+    it('should get rewards from constants', () => {
       expect((instance as any).rewards).to.be.deep.equal([
         { fromHeight: 1, reward: 0n },
         { fromHeight: 10, reward: 1500000000n },
@@ -97,20 +113,6 @@ describe('logic/blockReward', () => {
   });
 
   describe('calcSupply', () => {
-    beforeEach(() => {
-      (instance as any).rewards = [
-        { fromHeight: 1, reward: 0n },
-        { fromHeight: 10, reward: 1500000000n },
-        { fromHeight: 11, reward: 30000000n },
-        { fromHeight: 12, reward: 20000000n },
-        { fromHeight: 13, reward: 1500000000n },
-        { fromHeight: 1054080, reward: 1200000000n },
-        { fromHeight: 1054080 * 2, reward: 900000000n },
-        { fromHeight: 1054080 * 3, reward: 600000000n },
-        { fromHeight: 1054080 * 4, reward: 300000000n },
-        { fromHeight: 1054080 * 5, reward: 100000000n },
-      ];
-    });
     it('should call parseHeight', () => {
       const parseHeightStub = sandbox
         .stub(instance as any, 'parseHeight')

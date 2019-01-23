@@ -262,7 +262,7 @@ describe('logic/account', () => {
         username: 'meow',
         u_username: 'meow',
         address: '2R',
-        secondPublicKey: new Buffer('aa'),
+        secondPublicKey: Buffer.from('aa', 'hex'),
       } as any);
 
       const updateOp = ops[0] as DBUpdateOp<any>;

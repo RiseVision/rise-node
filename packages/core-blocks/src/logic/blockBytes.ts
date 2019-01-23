@@ -73,7 +73,7 @@ export class BlockBytes {
     }
 
     bb.flip();
-    return new Buffer(bb.toBuffer());
+    return Buffer.from(bb.toBuffer());
   }
 
   public fromSignableBytes<T>(buff: Buffer): BlockHeader<Buffer, bigint> {

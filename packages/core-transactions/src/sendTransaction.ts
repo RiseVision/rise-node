@@ -46,10 +46,11 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
     sender: IAccountsModel,
     height: number
   ): bigint {
+    const fees = this.systemModule.getFees(height).fees;
     return (
-      this.systemModule.getFees(height).fees.send +
+      fees.send +
       BigInt(tx.asset && tx.asset.data ? tx.asset.data.length : 0) *
-        this.systemModule.getFees(height).fees.sendDataMultiplier
+        fees.sendDataMultiplier
     );
   }
 

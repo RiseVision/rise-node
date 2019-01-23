@@ -8,7 +8,6 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "transpile": "shx rm -rf dist; tsc",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
   },

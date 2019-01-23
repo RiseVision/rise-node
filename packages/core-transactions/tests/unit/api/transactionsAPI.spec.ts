@@ -40,16 +40,21 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
 function toTransportTx(t: RiseTransaction<any>) {
+  const tmp = { ...t };
+  const { senderPublicKey, signature } = tmp;
+  delete tmp.senderPublicKey;
+  delete tmp.signature;
+
   const toRet = {
     version: 0,
-    ...t,
-    senderPublicKey: t.senderPublicKey.toString('hex'),
-    signature: t.signature.toString('hex'),
-    signatures: t.signatures
-      ? t.signatures.map((s) => s.toString('hex'))
-      : null,
+    ...tmp,
+    senderPubData: senderPublicKey.toString('hex'),
+    signatures: [
+      signature.toString('hex'),
+      ...(tmp.signatures ? tmp.signatures.map((s) => s.toString('hex')) : []),
+    ],
   };
-  if (!t.signatures) {
+  if (!toRet.signatures) {
     delete toRet.signatures;
   }
   return toRet;
@@ -111,9 +116,6 @@ describe('apis/transactionsAPI', () => {
         recipientIds: accounts
           .map((acc) => RiseV2.calcAddress(acc.publicKey))
           .join(','),
-        senderPublicKeys: accounts
-          .map((acc) => acc.publicKey.toString('hex'))
-          .join(','),
       };
       // body['and:senderIds'] = 'a,b,c';
       result = await instance.getTransactions(body);
@@ -131,13 +133,6 @@ describe('apis/transactionsAPI', () => {
       expect(
         findAndCountAllStub.firstCall.args[0].where[Op.or].recipientId[Op.in]
       ).deep.eq(accounts.map((acc) => RiseV2.calcAddress(acc.publicKey)));
-
-      // publickeys parsed to buffer.
-      expect(
-        findAndCountAllStub.firstCall.args[0].where[Op.or].senderPublicKey[
-          Op.in
-        ]
-      ).deep.eq(accounts.map((acc) => acc.publicKey));
     });
 
     it('Schema error', async () => {
@@ -239,7 +234,7 @@ describe('apis/transactionsAPI', () => {
       result = await instance.getTX({ id: '123' });
       expect(result).to.deep.equal({
         transaction: {
-          ...t,
+          ...tx,
           amount: `${t.amount}`,
           // asset
           asset: {
@@ -247,9 +242,8 @@ describe('apis/transactionsAPI', () => {
           },
           cat: 'meows',
           fee: `${t.fee}`,
-          senderPublicKey: t.senderPublicKey.toString('hex'),
-          signature: t.signature.toString('hex'),
-          signatures: [],
+          senderPubData: tx.senderPubData.toString('hex'),
+          signatures: tx.signatures.map((s) => s.toString('hex')),
           version: 0,
         },
       });
@@ -374,37 +368,20 @@ describe('apis/transactionsAPI', () => {
     it('filtering by senderPublicKey & address', async () => {
       result = await instance.getQueuedTxs({
         address: transportTxs[0].recipientId,
-        senderPublicKey: transportTxs[0].senderPublicKey.toString('hex'),
       });
+
       const expected = {
         ...toTransportTx(transportTxs[0]),
         amount: `${transportTxs[0].amount}`,
         fee: `${transportTxs[0].fee}`,
       };
-      delete expected.signatures;
       expect(result).to.deep.equal({
         count: 5,
         transactions: [expected],
       });
     });
 
-    it('filtering by senderPublicKey', async () => {
-      result = await instance.getQueuedTxs({
-        senderPublicKey: transportTxs[1].senderPublicKey.toString('hex'),
-      });
-      const expected = {
-        ...toTransportTx(transportTxs[1]),
-        amount: `${transportTxs[1].amount}`,
-        fee: `${transportTxs[1].fee}`,
-      };
-      delete expected.signatures;
-
-      expect(result).to.deep.equal({
-        count: 5,
-        transactions: [expected],
-      });
-    });
-
+    // tslint:disable-next-line no-identical-functions
     it('filtering by recipientId', async () => {
       result = await instance.getQueuedTxs({
         address: transportTxs[2].recipientId,
@@ -414,7 +391,6 @@ describe('apis/transactionsAPI', () => {
         amount: `${transportTxs[2].amount}`,
         fee: `${transportTxs[2].fee}`,
       };
-      delete expected.signatures;
       expect(result).to.deep.equal({
         count: 5,
         transactions: [expected],
@@ -444,19 +420,13 @@ describe('apis/transactionsAPI', () => {
         })
       );
     });
-    it('filtering by senderPublicKey &  address', async () => {
+    it('filtering by address', async () => {
       result = await instance.getUnconfirmedTxs({
         address: transportTXS[0].recipientId,
-        senderPublicKey: transportTXS[1].senderPublicKey.toString('hex'),
       });
       expect(result).to.deep.equal({
         count: 5,
         transactions: [
-          {
-            ...toTransportTx(transportTXS[1]),
-            amount: `${transportTXS[1].amount}`,
-            fee: `${transportTXS[1].fee}`,
-          },
           {
             ...toTransportTx(transportTXS[0]),
             amount: `${transportTXS[0].amount}`,

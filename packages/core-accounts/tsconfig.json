@@ -1,26 +1,7 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowJs": false,
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "baseUrl": ".",
-    "declaration": true,
-    "allowSyntheticDefaultImports": true,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "lib": ["dom", "es7", "esnext.bigint"],
-    "paths": {
-      "@risevision/core": ["../core/*"],
-      "@risevision/core-apis": ["../core-apis/*"],
-      "@risevision/core-models": ["../core-models/*"],
-      "@risevision/core-interfaces": ["../core-interfaces/*"],
-      "@risevision/core-types": ["../core-types/*"],
-      "@risevision/core-utils": ["../core-utils/*"]
-    }
+    "outDir": "./dist"
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["tests", "public", "dist", "coverage", "node_modules"]

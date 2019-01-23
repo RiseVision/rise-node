@@ -1,4 +1,3 @@
-import { IBlockLogic, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   Peer,

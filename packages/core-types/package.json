@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
+    "test-unit": "echo",
     "transpile": "tsc"
   },
   "types": "dist/index.d.ts",

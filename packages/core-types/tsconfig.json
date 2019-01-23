@@ -1,25 +1,8 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowJs": false,
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "declaration": true,
-    "allowSyntheticDefaultImports": true,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "lib": ["dom", "es7"]
+    "outDir": "./dist"
   },
-  "include": ["./src/**/*"],
-  "exclude": [
-    "tests",
-    "public",
-    "dist",
-    "coverage",
-    "node_modules",
-    "../../node_modules"
-  ]
+  "include": ["./src/**/*.ts"],
+  "exclude": ["tests", "public", "dist", "coverage", "node_modules"]
 }

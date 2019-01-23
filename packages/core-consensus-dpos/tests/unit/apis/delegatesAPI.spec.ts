@@ -771,9 +771,9 @@ describe('apis/delegatesAPI', () => {
         reward: 0n,
         totalAmount: 0n,
         totalFee: 0n,
-        generatorPublicKey: new Buffer('aa'),
-        payloadHash: new Buffer('aa'),
-        blockSignature: new Buffer('aa'),
+        generatorPublicKey: Buffer.from('aa', 'utf8'),
+        payloadHash: Buffer.from('aa', 'utf8'),
+        blockSignature: Buffer.from('aa', 'utf8'),
       });
 
       generateDelegateListStub = sandbox

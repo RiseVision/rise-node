@@ -43,17 +43,17 @@ describe('helpers/crypto(sodium)', () => {
     });
 
     it('should return object', () => {
-      const retval = proxiedInst.makeKeyPair(new Buffer('aaaa'));
+      const retval = proxiedInst.makeKeyPair(Buffer.from('aaaa', 'utf8'));
       expect(retval).to.be.an('object');
     });
 
     it('should call sodium.crypto_sign_seed_keypair', () => {
-      proxiedInst.makeKeyPair(new Buffer('aaaa'));
+      proxiedInst.makeKeyPair(Buffer.from('aaaa', 'utf8'));
       expect(stub.called).is.true;
     });
 
     it('should pass hash to sodium.crypto_sign_seed_keypair', () => {
-      const hash = new Buffer('aaaa');
+      const hash = Buffer.from('aaaa', 'utf8');
       proxiedInst.makeKeyPair(hash);
       expect(stub.firstCall.args[0]).to.be.deep.eq(hash);
     });
@@ -61,17 +61,17 @@ describe('helpers/crypto(sodium)', () => {
     it('should use sodium output to build return value', () => {
       stub.returns({ secretKey: 'privASD', publicKey: 'pubASD' });
       const expectedReturn = { privateKey: 'privASD', publicKey: 'pubASD' };
-      const retval = proxiedInst.makeKeyPair(new Buffer('aaaa'));
+      const retval = proxiedInst.makeKeyPair(Buffer.from('aaaa', 'utf8'));
       expect(retval).to.be.deep.eq(expectedReturn);
     });
   });
 
   describe('sign', () => {
     let stub: SinonStub;
-    const hashBuf = new Buffer('hash');
-    const outBuf = new Buffer('output');
+    const hashBuf = Buffer.from('hash', 'utf8');
+    const outBuf = Buffer.from('output', 'utf8');
     const keyPair = realCrypto.makeKeyPair(
-      new Buffer('12345678901234567890123456789012')
+      Buffer.from('12345678901234567890123456789012', 'utf8')
     );
     const oldImplementation = sodium.api.crypto_sign_detached;
 
@@ -103,9 +103,9 @@ describe('helpers/crypto(sodium)', () => {
   describe('verify', () => {
     let stub: SinonStub;
     const args = [
-      new Buffer('hash'),
-      new Buffer('signature'),
-      new Buffer('publicKey'),
+      Buffer.from('hash', 'utf8'),
+      Buffer.from('signature', 'utf8'),
+      Buffer.from('publicKey', 'utf8'),
     ];
     const oldImplementation = sodium.api.crypto_sign_verify_detached;
 

@@ -175,6 +175,10 @@ export class TransactionLogic implements ITransactionLogic {
       );
     }
 
+    const calcAddress = this.idsHandler.addressFromPubData(tx.senderPubData);
+    if (calcAddress !== sender.address || tx.senderId !== calcAddress) {
+      throw new Error('Invalid sender address');
+    }
     // // Check sender public key
     // if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
     //   // tslint:disable-next-line
@@ -192,10 +196,6 @@ export class TransactionLogic implements ITransactionLogic {
     // ) {
     //   throw new Error('Invalid sender. Can not send from genesis account');
     // }
-
-    if (tx.senderId !== sender.address) {
-      throw new Error('Invalid sender address');
-    }
 
     // FIXME:
     // if (!this.verifySignature(tx, tx.senderPubData, tx.signature)) {

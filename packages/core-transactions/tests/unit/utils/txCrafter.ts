@@ -48,7 +48,7 @@ export const createSendTransaction = (
 export const toNativeTx = <T = any>(
   tx: RiseTransaction<any>
 ): IBaseTransaction<T, bigint> & { senderId: string } => {
-  return {
+  const toRet = {
     ...tx,
     amount: BigInt(tx.amount),
     fee: BigInt(tx.fee),
@@ -56,4 +56,7 @@ export const toNativeTx = <T = any>(
     signatures: [tx.signature],
     version: (tx as any).version || 0,
   };
+  delete toRet.signature;
+  delete toRet.senderPublicKey;
+  return toRet;
 };

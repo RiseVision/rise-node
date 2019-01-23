@@ -9,7 +9,12 @@ import * as crypto from 'crypto';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
-import { BlockLogic, BlocksModel, BlocksSymbols } from '../../../src';
+import {
+  BlockLogic,
+  BlocksConstantsType,
+  BlocksModel,
+  BlocksSymbols,
+} from '../../../src';
 import { createFakeBlock } from '../utils/createFakeBlocks';
 
 // tslint:disable-next-line no-var-requires
@@ -48,6 +53,20 @@ describe('logic/block', () => {
       'core-accounts',
       'core-transactions',
     ]);
+
+    const bc = container.get<BlocksConstantsType>(BlocksSymbols.constants);
+    bc.rewards = [
+      { fromHeight: 1, reward: '0' },
+      { fromHeight: 10, reward: '1500000000' },
+      { fromHeight: 11, reward: '30000000' },
+      { fromHeight: 12, reward: '20000000' },
+      { fromHeight: 13, reward: '1500000000' },
+      { fromHeight: 1054080, reward: '1200000000' },
+      { fromHeight: 1054080 * 2, reward: '900000000' },
+      { fromHeight: 1054080 * 3, reward: '600000000' },
+      { fromHeight: 1054080 * 4, reward: '300000000' },
+      { fromHeight: 1054080 * 5, reward: '100000000' },
+    ];
   });
   beforeEach(async () => {
     sandbox = sinon.createSandbox();

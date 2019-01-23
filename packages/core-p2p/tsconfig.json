@@ -1,28 +1,7 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "es2017",
-    "module": "commonjs",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowJs": false,
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "baseUrl": ".",
-    "declaration": true,
-    "allowSyntheticDefaultImports": true,
-    "inlineSourceMap": true,
-    "resolveJsonModule": true,
-    "inlineSources": true,
-    "lib": ["dom", "es7"],
-    "paths": {
-      "@risevision/core-apis": ["../core-apis/*"],
-      "@risevision/core-models": ["../core-models/*"],
-      "@risevision/core-interfaces": ["../core-interfaces/*"],
-      "@risevision/core-types": ["../core-types/*"],
-      "@risevision/core-helpers": ["../core-helpers/*"],
-      "@risevision/core-transactions": ["../core-transactions/*"],
-      "@risevision/core-utils": ["../core-utils/*"]
-    }
+    "outDir": "./dist"
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["tests", "public", "dist", "coverage", "node_modules"]

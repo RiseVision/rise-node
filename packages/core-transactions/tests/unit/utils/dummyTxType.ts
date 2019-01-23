@@ -3,7 +3,7 @@ import { DBOp, IBaseTransaction } from '../../../../core-types/src';
 import { BaseTx } from '../../../src';
 
 export class DummyTxType extends BaseTx<void, any> {
-  public calculateFee(
+  public calculateMinFee(
     tx: IBaseTransaction<void>,
     sender: IAccountsModel,
     height: number

@@ -21,7 +21,7 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
     bb.append(this.assetBytes(tx));
     bb.flip();
-    return new Buffer(bb.toBuffer());
+    return Buffer.from(bb.toBuffer());
   }
 
   public fromBytes(buff: Buffer): IBaseTransaction<T, bigint> {

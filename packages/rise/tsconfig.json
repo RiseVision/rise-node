@@ -1,29 +1,8 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowJs": false,
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "declaration": true,
-    "allowSyntheticDefaultImports": true,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "baseUrl": ".",
-    "lib": ["dom", "es7", "esnext.bigint"],
-    "paths": {
-      "@risevision/core-accounts": ["../core-accounts/*"],
-      "@risevision/core-types": ["../core-types/*"],
-      "@risevision/core-blocks": ["../core-blocks/*"],
-      "@risevision/core-helpers": ["../core-helpers/*"],
-      "@risevision/core-models": ["../core-models/*"],
-      "@risevision/core-consensus-dpos": ["../core-consensus-dpos/*"],
-      "@risevision/core-secondsignature": ["../core-secondsignature/*"],
-      "@risevision/core-transactions": ["../core-transactions/*"]
-    }
+    "outDir": "./dist"
   },
-  "include": ["./src/**/*"],
+  "include": ["./src/**/*.ts"],
   "exclude": ["tests", "public", "dist", "coverage", "node_modules"]
 }

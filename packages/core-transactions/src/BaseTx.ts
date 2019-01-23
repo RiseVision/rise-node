@@ -19,7 +19,7 @@ import { Model } from 'sequelize-typescript';
 import * as varuint from 'varuint-bitcoin';
 import { TxReadyFilter } from './hooks/filters';
 
-const emptyBuffer = new Buffer(0);
+const emptyBuffer = Buffer.alloc(0);
 
 /**
  * Describes a Base Transaction Object
@@ -67,7 +67,7 @@ export abstract class BaseTx<T, M extends Model<any>>
       return Buffer.concat([varuint.encode(buf.length), buf]);
     }
 
-    bb.writeByte(tx.type);
+    bb.writeUint8(tx.type);
 
     bb.writeUint32(tx.version);
     bb.writeUint32(tx.timestamp);
@@ -80,7 +80,7 @@ export abstract class BaseTx<T, M extends Model<any>>
 
     bb.append(encodeVarUint(this.assetBytes(tx)));
     bb.flip();
-    return new Buffer(bb.toBuffer());
+    return Buffer.from(bb.toBuffer());
   }
 
   public assetBytes(tx: IBaseTransaction<T>): Buffer {
@@ -131,15 +131,15 @@ export abstract class BaseTx<T, M extends Model<any>>
           senderPubData,
         };
       })(),
-      senderPubData: readVarUint(),
       recipientId: this.idsHandler.addressFromBytes(readVarUint()),
       amount: toBigIntLE(readSlice(this.constants.amountBytes)),
       fee: toBigIntLE(readSlice(this.constants.amountBytes)),
       asset: this.readAssetFromBytes(readVarUint()),
-      signatures: (() =>
-        new Array(Math.floor(buff.length - offset))
+      signatures: (() => {
+        return new Array(Math.floor((buff.length - offset) / 64))
           .fill(null)
-          .map(() => readSlice(64)))(),
+          .map(() => readSlice(64));
+      })(),
       // tslint:enable object-literal-sort-keys
     };
   }

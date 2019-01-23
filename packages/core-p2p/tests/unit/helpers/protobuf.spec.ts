@@ -16,10 +16,11 @@ describe('helpers/protobuf', () => {
   let container: Container;
   before(async () => {
     container = await createContainer([
-      'core-p2p',
       'core-helpers',
+      'core-p2p',
       'core-crypto',
       'core-blocks',
+      'core-transactions',
       'core',
       'core-accounts',
     ]);
@@ -89,9 +90,9 @@ describe('helpers/protobuf', () => {
       expect(decoded.success).deep.eq(p.success);
     });
     it('decode should fail if msg is indecifrable', () => {
-      expect(() => instance.decode(new Buffer('hey'), 'test')).to.throw(
-        'ProtoBuf Wire format invalid'
-      );
+      expect(() =>
+        instance.decode(Buffer.from('hey', 'utf8'), 'test')
+      ).to.throw('ProtoBuf Wire format invalid');
     });
   });
 

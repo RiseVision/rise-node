@@ -100,6 +100,6 @@ export class RiseBlockBytes extends BlockBytes {
     }
 
     bb.flip();
-    return new Buffer(bb.toBuffer());
+    return Buffer.from(bb.toBuffer());
   }
 }
