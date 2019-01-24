@@ -16,12 +16,15 @@ add_qemu_deps() {
 
     if [ ! -f "$DOCKER_DEP_LOC" ]; then
         if [ ! -f "$DEP_LOC" ]; then
+            echo "Installing $(basename "$DEP_LOC")..."
             docker run --rm --privileged multiarch/qemu-user-static:register 2&> /dev/null
+            echo "Done!"
         fi
         if [ ! -f "$DEP_LOC" ]; then
             echo "Failed to install 'qemu-user-static' bins! Necessary for ARM builds."
             exit 1
         fi
+        echo "Copying $DEP_LOC -> $DOCKER_DEP_LOC"
         cp "$DEP_LOC" "$DOCKER_DEP_LOC"
     fi
 
