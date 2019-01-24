@@ -6,8 +6,30 @@ DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
 ROOT=$(dirname $(dirname $DIR))
 
 pushd $ROOT > /dev/null
+trap "popd > /dev/null" EXIT
 
 VERSION=$(node -e "console.log(require('./package.json').version)")
+
+add_qemu_deps() {
+    DEP_LOC=/usr/bin/qemu-arm-static
+    DOCKER_DEP_LOC=$ROOT/docker/qemu-arm-static
+
+    if [ ! -f "$DOCKER_DEP_LOC" ]; then
+        if [ ! -f "$DEP_LOC" ]; then
+            docker run --rm --privileged multiarch/qemu-user-static:register 2&> /dev/null
+        fi
+        if [ ! -f "$DEP_LOC" ]; then
+            echo "Failed to install 'qemu-user-static' bins! Necessary for ARM builds."
+            exit 1
+        fi
+        cp "$DEP_LOC" "$DOCKER_DEP_LOC"
+    fi
+
+    if [[ ! -x "$DOCKER_DEP_LOC" ]]; then
+        echo "$(basename $DOCKER_DEP_LOC) not executable! Please grant permissions:"
+        (set -x; sudo chmod +x "$DOCKER_DEP_LOC")
+    fi
+}
 
 construct_version() {
     result=""
@@ -44,6 +66,8 @@ build_and_push_image() {
     popd > /dev/null
 }
 
+add_qemu_deps
+
 build_and_push_image rise-node ./Dockerfile "" true
 build_and_push_image rise-node ./Dockerfile.arm arm- true
 
@@ -56,5 +80,3 @@ build_and_push_image rise-node_postgres ./docker/Dockerfile.postgres \
     "testnet-" false "--no-cache --build-arg NETWORK=testnet"
 build_and_push_image rise-node_postgres ./docker/Dockerfile.postgres.arm \
     "arm-testnet-" false "--no-cache --build-arg NETWORK=testnet"
-
-popd > /dev/null
