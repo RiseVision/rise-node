@@ -338,8 +338,11 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
   private async verifyBlockSlot(block: SignedBlockType, lastBlock: SignedBlockType): Promise<string[]> {
     const slotNumber = this.slots.getSlotNumber(block.timestamp);
     const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
+    const curTime = this.slots.getTime();
+    // Allow blocks that seem to be forged slightly in the future, because of clock drift on generating node
+    const maxDrift = this.constants.timeDriftCorrection;
 
-    if (slotNumber > this.slots.getSlotNumber(this.slots.getTime()) || slotNumber <= lastSlot) {
+    if (slotNumber > this.slots.getSlotNumber(curTime + maxDrift) || slotNumber <= lastSlot) {
       // if in future or in the past => error
       return ['Invalid block timestamp'];
     }
@@ -384,5 +387,4 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
       )
     );
   }
-
 }
