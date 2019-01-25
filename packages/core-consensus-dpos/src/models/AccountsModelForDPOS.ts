@@ -21,6 +21,7 @@ const buildArrayArgAttribute = (table: string): any => {
     'u_username',
     'u_isDelegate',
     'vote',
+    'cmb',
     'votesWeight',
     'producedblocks',
     'missedblocks',
