@@ -467,27 +467,46 @@ describe('modules/blocks/verify', () => {
       realSlots = container.get(Symbols.helpers.slots);
       (inst as any).slots = {
         getSlotNumber: realSlots.getSlotNumber,
-        getTime: () => (constants.blockTime * 2) - constants.timeDriftCorrection.maxDrift,
         interval: (realSlots as any).interval,
       };
       lastBlk = { timestamp: constants.blockTime };
       blk = { timestamp: constants.blockTime * 2 };
     });
 
-    it('should NOT verify a block with future timestamp when time drift correction is disabled', async () => {
-      const oldActivationTime = constants.timeDriftCorrection.activationTime;
-      constants.timeDriftCorrection.activationTime = Number.MAX_SAFE_INTEGER; // Basically never activates
+    it('should NOT verify a block with timestamp in the future, if time drift exceeds the limit', async () => {
+      // Block arrives one second too soon than the allowed time drift! (-3s)
+      (inst as any).slots.getTime = () => (constants.blockTime * 2) - constants.timeDriftCorrection - 1;
       const retVal = await (inst as any).verifyBlockSlot(blk, lastBlk);
       expect(retVal).to.be.deep.eq( ['Invalid block timestamp'] );
-      constants.timeDriftCorrection.activationTime = oldActivationTime; // Revert to original
     });
 
     it('should verify a block with future timestamp when time drift correction is disabled', async () => {
-      const oldActivationTime = constants.timeDriftCorrection.activationTime;
-      constants.timeDriftCorrection.activationTime = 0; // Always active
+      // Block arrives exactly at limit time (-2s)
+      (inst as any).slots.getTime = () => (constants.blockTime * 2) - constants.timeDriftCorrection;
       const retVal = await (inst as any).verifyBlockSlot(blk, lastBlk);
       expect(retVal).to.be.deep.eq( [] );
-      constants.timeDriftCorrection.activationTime = oldActivationTime; // Revert to original
+    });
+
+    it('should verify a block arriving exactly at block time', async () => {
+      // Block arrives exactly at block time slot
+      (inst as any).slots.getTime = () => (constants.blockTime * 2);
+      const retVal = await (inst as any).verifyBlockSlot(blk, lastBlk);
+      expect(retVal).to.be.deep.eq( [] );
+    });
+
+    it('should verify a block arriving in the middle of the slot', async () => {
+      // Block arrives at +15s
+      (inst as any).slots.getTime = () => (constants.blockTime * 2) + (constants.blockTime / 2);
+      const retVal = await (inst as any).verifyBlockSlot(blk, lastBlk);
+      expect(retVal).to.be.deep.eq( [] );
+    });
+
+    it('should NOT verify a block with lower timestamp than the last block', async () => {
+      // Block arrives exactly at block time slot
+      (inst as any).slots.getTime = () => (constants.blockTime * 2);
+      blk.timestamp = lastBlk.timestamp - constants.blockTime;
+      const retVal = await (inst as any).verifyBlockSlot(blk, lastBlk);
+      expect(retVal).to.be.deep.eq( ['Invalid block timestamp'] );
     });
   });
 

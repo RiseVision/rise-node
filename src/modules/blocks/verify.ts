@@ -339,7 +339,8 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
     const slotNumber = this.slots.getSlotNumber(block.timestamp);
     const lastSlot   = this.slots.getSlotNumber(lastBlock.timestamp);
     const curTime = this.slots.getTime();
-    const maxDrift = this.getAllowedTimeDrift(curTime);
+    // Allow blocks that seem to be forged slightly in the future, because of clock drift on generating node
+    const maxDrift = this.constants.timeDriftCorrection;
 
     if (slotNumber > this.slots.getSlotNumber(curTime + maxDrift) || slotNumber <= lastSlot) {
       // if in future or in the past => error
@@ -385,12 +386,5 @@ export class BlocksModuleVerify implements IBlocksModuleVerify {
         .checkTransaction(tx, accountsMap, block.height)
       )
     );
-  }
-
-  private getAllowedTimeDrift(timeFromEpoch: number): number {
-    if (timeFromEpoch > this.constants.timeDriftCorrection.activationTime) {
-      return this.constants.timeDriftCorrection.maxDrift;
-    }
-    return 0;
   }
 }
