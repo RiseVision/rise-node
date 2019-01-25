@@ -84,8 +84,9 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     tx: IBaseTransaction<VoteAsset> & { senderId: string },
     sender: AccountsModelForDPOS
   ): Promise<void> {
-    if (tx.recipientId !== tx.senderId) {
-      throw new Error('Missing recipient');
+    // TODO: test this case.
+    if (tx.recipientId) {
+      throw new Error('Invalid recipient');
     }
 
     if (!tx.asset || !tx.asset.added || !tx.asset.removed) {

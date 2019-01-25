@@ -138,6 +138,8 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
       );
     }
 
+    // TODO: Verify fee matches minFee. for this and all old txs types.
+
     const account = await this.accountsModule.getAccount({ username });
     if (account) {
       throw new Error(`Username already exists: ${username}`);

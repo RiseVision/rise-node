@@ -41,6 +41,13 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
   @named(TXSymbols.models.sendTxAsset)
   private SendTxAssetModel: typeof SendTxAssetModel;
 
+  public assetBytes(tx: IBaseTransaction<SendTxAsset>): Buffer {
+    if (!tx.asset || !tx.asset.data) {
+      return Buffer.alloc(0);
+    }
+    return tx.asset.data;
+  }
+
   public calculateMinFee(
     tx: IBaseTransaction<SendTxAsset, bigint>,
     sender: IAccountsModel,
