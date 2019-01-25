@@ -13,6 +13,7 @@ import {
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
 import * as activeHandles from 'active-handles';
+import * as bech32 from 'bech32-buffer';
 import * as fs from 'fs';
 import { Container, interfaces } from 'inversify';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
@@ -112,7 +113,7 @@ export async function createContainer(
   const types = [];
 
   if (modules.indexOf('core-transactions') !== -1) {
-    types.push({ name: TXSymbols.sendTX, type: 0 });
+    types.push({ name: TXSymbols.sendTX, type: 10 });
   }
   const toSet = {};
   container.bind(Symbols.generic.txtypes).toConstantValue(toSet);
@@ -142,7 +143,7 @@ export async function createContainer(
 
   z_schema.registerFormat('address', (str: string) => {
     // tslint:disable-next-line
-    return new RegExp('^[0-9]{1,20}R').test(str);
+    return /^[0-9]{1,20}R$/.test(str) || /^rise1[a-z0-9]+$/.test(str);
   });
 
   if (sortedModules.some((m) => m.name.indexOf('core-blocks') !== -1)) {

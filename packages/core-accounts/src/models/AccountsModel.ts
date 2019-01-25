@@ -1,5 +1,5 @@
 // tslint:disable
-import { publicKey } from '@risevision/core-types';
+import { publicKey, Address } from '@risevision/core-types';
 import { IAccountsModel } from '@risevision/core-interfaces';
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
@@ -11,7 +11,6 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Container } from 'inversify';
 import { BaseModel } from '@risevision/core-models';
 
 @DefaultScope({
@@ -22,7 +21,7 @@ export class AccountsModel extends BaseModel<AccountsModel>
   implements IAccountsModel {
   @PrimaryKey
   @Column
-  public address: string;
+  public address: Address;
 
   @Column(DataType.BIGINT)
   public balance: bigint;

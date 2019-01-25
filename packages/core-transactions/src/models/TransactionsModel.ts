@@ -6,6 +6,7 @@ import {
 } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
+  Address,
   IBaseTransaction,
   ITransportTransaction,
   TransactionType,
@@ -72,10 +73,10 @@ export class TransactionsModel<Asset = any>
   public senderPubData: Buffer;
 
   @Column
-  public senderId: string;
+  public senderId: Address;
 
   @Column
-  public recipientId: string;
+  public recipientId: Address;
 
   @Column(DataType.BIGINT)
   public amount: bigint;

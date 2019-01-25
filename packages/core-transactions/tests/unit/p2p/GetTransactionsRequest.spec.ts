@@ -1,4 +1,3 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { createFakePeer } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
@@ -6,10 +5,10 @@ import { expect } from 'chai';
 import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { generateAccount } from '../../../../core-accounts/tests/unit/utils/accountsUtils';
-import { ConstantsType } from '../../../../core-types/src';
 import {
   GetTransactionsRequest,
   TransactionPool,
+  TxConstantsType,
   TXSymbols,
 } from '../../../src/';
 import { createRandomTransaction, toNativeTx } from '../utils/txCrafter';
@@ -91,7 +90,7 @@ describe('apis/requests/GetTransactionsRequest', () => {
     );
   });
   it('should honor limit', async () => {
-    const constants = container.get<ConstantsType>(Symbols.generic.constants);
+    const constants = container.get<TxConstantsType>(TXSymbols.constants);
     constants.maxSharedTxs = 10;
     new Array(10)
       .fill(null)

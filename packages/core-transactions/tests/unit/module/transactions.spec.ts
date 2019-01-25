@@ -112,13 +112,11 @@ describe('modules/transactions', () => {
         address: acc.address,
         balance: BigInt(tx.amount * 2n + tx.fee),
         u_balance: BigInt(tx.amount * 2n + tx.fee),
-        publicKey: acc.publicKey,
       });
 
       const req = generateAccount();
       requester = new AccountsModel({
         address: req.address,
-        publicKey: req.publicKey,
       });
       getAccountStub = sandbox
         .stub(accountsModule, 'getAccount')
@@ -156,7 +154,6 @@ describe('modules/transactions', () => {
         address: acc.address,
         balance: BigInt(tx.amount * 2 + tx.fee),
         u_balance: BigInt(tx.amount * 2 + tx.fee),
-        publicKey: acc.publicKey,
       });
       getAccountStub = sandbox
         .stub(accountsModule, 'getAccount')
@@ -247,15 +244,15 @@ describe('modules/transactions', () => {
   describe('checkTransaction', () => {
     let tx: IBaseTransaction<any, bigint>;
     let readyStub: SinonStub;
-    let genAddressStub: SinonStub;
+    // let genAddressStub: SinonStub;
     let verifyStub: SinonStub;
     beforeEach(() => {
       tx = toNativeTx(createRandomTransaction());
       readyStub = sandbox.stub(txLogic, 'ready').resolves(true);
       verifyStub = sandbox.stub(txLogic, 'verify').resolves();
-      genAddressStub = sandbox
-        .stub(accountsModule, 'generateAddressByPublicKey')
-        .returns('1R');
+      // genAddressStub = sandbox
+      //   .stub(accountsModule, 'generateAddressByPublicKey')
+      //   .returns('1R');
     });
     it('should throw if account is not found in map', async () => {
       await expect(instance.checkTransaction(tx, {}, 1)).to.rejectedWith(
@@ -276,7 +273,7 @@ describe('modules/transactions', () => {
     //     .to.rejectedWith(`Transaction ${tx.id} is not ready`);
     // });
     it('should query txLogic.verify with proper data', async () => {
-      genAddressStub.returns('1111R');
+      // genAddressStub.returns('1111R');
       readyStub.returns(true);
       verifyStub.resolves();
 

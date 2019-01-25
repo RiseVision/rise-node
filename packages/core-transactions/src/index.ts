@@ -1,5 +1,6 @@
 export * from './api';
 export * from './BaseTx';
+export * from './helpers';
 export * from './hooks/actions';
 export * from './hooks/filters';
 export * from './coremodule';

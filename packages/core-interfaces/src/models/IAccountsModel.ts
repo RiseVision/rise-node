@@ -1,3 +1,4 @@
+import { Address } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
 
 export class IAccountsModel extends IBaseModel<IAccountsModel> {
@@ -11,7 +12,7 @@ export class IAccountsModel extends IBaseModel<IAccountsModel> {
   public static restoreUnconfirmedEntries(): Promise<void> {
     throw new Error('NotImplementedException');
   }
-  public address: string;
+  public address: Address;
   public balance: bigint;
   public virgin: 0 | 1;
   // tslint:disable-next-line

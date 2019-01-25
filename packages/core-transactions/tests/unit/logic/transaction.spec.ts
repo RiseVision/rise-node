@@ -133,7 +133,7 @@ describe('logic/transaction', () => {
 
       expect(retVal).deep.eq(
         Buffer.from(
-          'f4de386cec900ff1aec2bd8138b7bb614f8dd3c0278984b612622d69eff50683',
+          'e7ce23fd72bc7be9618443b7d0d4742f472736068898f79b98d0b264ca7ec43c',
           'hex'
         )
       );
@@ -454,15 +454,15 @@ describe('logic/transaction', () => {
     // });
 
     it('should throw if senderId mismatch', async () => {
-      tx.senderId = sender.address + 'ABC';
+      tx.senderId = (sender.address + 'ABC') as Address;
       await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
         'Invalid sender address'
       );
     });
 
-    it('should call txType.calculateFee and throw if fee mismatch', async () => {
+    it('should call txType.calculateFee and throw if fee is lower', async () => {
       // Returned value different from fee in tx (tx.fee is 10)
-      calculateMinFeeStub.returns(9);
+      calculateMinFeeStub.returns(11);
       await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
         'Invalid transaction fee'
       );
@@ -480,19 +480,12 @@ describe('logic/transaction', () => {
       );
     });
 
-    it('should throw if amount is > totalAmout', async () => {
-      (tx as any).amount = BigInt('10999999991000001');
-      tx.id = idsHandler.calcTxIdFromBytes(txBytes.fullBytes(tx));
-      await expect(instance.verify(tx, sender, 1)).to.be.rejectedWith(
-        'tx.amount is either negative or greater than totalAmount'
-      );
-    });
-
-    it('should reject tx if verifySignature throws (for whatever reason', async () => {
-      verifySignatureStub.throws(new Error('whatever'));
-
-      await expect(instance.verify(tx, sender, 1)).to.rejectedWith('whatever');
-    });
+    // TODO: verifySignature
+    // it('should reject tx if verifySignature throws (for whatever reason', async () => {
+    //   verifySignatureStub.throws(new Error('whatever'));
+    //
+    //   await expect(instance.verify(tx, sender, 1)).to.rejectedWith('whatever');
+    // });
 
     it('should call checkBalance and throw if checkBalance returns an error', async () => {
       checkBalanceStub.throws(new Error('checkBalance error'));
@@ -676,7 +669,6 @@ describe('logic/transaction', () => {
       expect(mergeStub.firstCall.args[0]).to.be.equal(sender.address);
       expect(mergeStub.firstCall.args[1]).to.be.deep.equal({
         balance: -108910891000010n,
-        blockId: block.id,
       });
     });
 
@@ -736,7 +728,6 @@ describe('logic/transaction', () => {
       expect(alstub.firstCall.args[0]).to.be.equal(sender.address);
       expect(alstub.firstCall.args[1]).to.be.deep.equal({
         balance: 108910891000010n,
-        blockId: block.id,
       });
     });
     // TODO:
@@ -800,7 +791,7 @@ describe('logic/transaction', () => {
       // tslint:disable-next-line
       tx.amount = 1000000n - 1n;
       await expect(instance.applyUnconfirmed(tx as any, sender)).rejectedWith(
-        'Account does not have enough currency: 12135315034565240595R balance: 1000000 - 1000009'
+        'Account does not have enough currency: rise1qx0h9eama8m0v9kak8gjply3fy8mx00dqj65f9zjs30m2eq5sp6s7zaszq4 balance: 1000000 - 1000009'
       );
     });
 
@@ -998,7 +989,6 @@ describe('logic/transaction', () => {
           fee: BigInt(txs[i].fee),
           blockId: '11',
           height: 100,
-          signatures: null,
         };
         delete expectedValue.asset;
         expect(op.values[i]).deep.eq(expectedValue);
@@ -1090,21 +1080,21 @@ describe('logic/transaction', () => {
       ['signatures'].forEach((sig) => {
         it(`should validate ${sig}`, () => {
           // wrong length or buf string
-          tx[sig] = Buffer.alloc(32);
+          tx[sig] = [Buffer.alloc(32)];
           expect(() => instance.objectNormalize(tx)).to.throw(
             'format signatureBuf'
           );
-          tx[sig] = Buffer.alloc(32).toString('hex') as any;
+          tx[sig] = [Buffer.alloc(32).toString('hex') as any];
           expect(() => instance.objectNormalize(tx)).to.throw(
             'format signatureBuf'
           );
-          tx[sig] = 'hey' as any;
+          tx[sig] = ['hey' as any];
           expect(() => instance.objectNormalize(tx)).to.throw(
             'format signatureBuf'
           );
 
           // valid as string
-          tx[sig] = Buffer.alloc(64).toString('hex') as any;
+          tx[sig] = [Buffer.alloc(64).toString('hex') as any];
           instance.objectNormalize(tx);
         });
       });

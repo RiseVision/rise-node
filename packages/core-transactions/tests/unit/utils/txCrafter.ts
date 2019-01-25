@@ -1,11 +1,10 @@
 import { IBaseTransaction } from '@risevision/core-types';
-import { Address, IKeypair, RiseTransaction, RiseV2 } from 'dpos-offline';
+import { Address, IKeypair, RiseV2, RiseV2Transaction } from 'dpos-offline';
 import * as uuid from 'uuid';
-// import { generateAccount } from './accountsUtils';
 
 export const createRandomTransaction = (
   wallet = RiseV2.deriveKeypair(uuid.v4())
-): RiseTransaction<any> => {
+): RiseV2Transaction<any> => {
   return createSendTransaction(
     wallet,
     RiseV2.calcAddress(RiseV2.deriveKeypair(uuid.v4()).publicKey),
@@ -15,7 +14,7 @@ export const createRandomTransaction = (
 };
 export const createRandomTransactions = (
   howMany: number
-): Array<RiseTransaction<any>> => {
+): Array<RiseV2Transaction<any>> => {
   return new Array(howMany).fill(null).map(() => createRandomTransaction());
 };
 
@@ -24,39 +23,28 @@ export const createSendTransaction = (
   recipient: Address,
   fee: number | bigint,
   obj: any = {}
-): RiseTransaction<null> => {
-  const t: RiseTransaction<any> = {
+): RiseV2Transaction<null> => {
+  const t: RiseV2Transaction<any> = {
     asset: null,
     fee: parseInt(`${fee}`, 10),
     recipientId: recipient,
     senderId: RiseV2.calcAddress(from.publicKey),
-    senderPublicKey: from.publicKey,
     timestamp: 0,
-    type: 0,
+    type: 10,
+    version: 0,
     ...obj,
   };
 
-  t.signature = RiseV2.txs.calcSignature(t, from);
-  t.id = RiseV2.txs.identifier(t);
-  return t;
+  return RiseV2.txs.sign(t, from);
 };
 
 //
-
-//
-
 export const toNativeTx = <T = any>(
-  tx: RiseTransaction<any>
+  tx: RiseV2Transaction<any>
 ): IBaseTransaction<T, bigint> & { senderId: string } => {
-  const toRet = {
+  return {
     ...tx,
     amount: BigInt(tx.amount),
     fee: BigInt(tx.fee),
-    senderPubData: tx.senderPublicKey,
-    signatures: [tx.signature],
-    version: (tx as any).version || 0,
   };
-  delete toRet.signature;
-  delete toRet.senderPublicKey;
-  return toRet;
 };

@@ -1,7 +1,7 @@
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { RiseTransaction, RiseV2 } from 'dpos-offline';
+import { RiseTransaction, RiseV2, RiseV2Transaction } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Op } from 'sequelize';
@@ -39,25 +39,8 @@ const assertArrays = require('chai-arrays');
 const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(assertArrays);
-function toTransportTx(t: RiseTransaction<any>) {
-  const tmp = { ...t };
-  const { senderPublicKey, signature } = tmp;
-  delete tmp.senderPublicKey;
-  delete tmp.signature;
-
-  const toRet = {
-    version: 0,
-    ...tmp,
-    senderPubData: senderPublicKey.toString('hex'),
-    signatures: [
-      signature.toString('hex'),
-      ...(tmp.signatures ? tmp.signatures.map((s) => s.toString('hex')) : []),
-    ],
-  };
-  if (!toRet.signatures) {
-    delete toRet.signatures;
-  }
-  return toRet;
+function toTransportTx(t: RiseV2Transaction<any>) {
+  return RiseV2.txs.toPostable(t);
 }
 // tslint:disable no-unused-expression no-big-function
 describe('apis/transactionsAPI', () => {
@@ -354,7 +337,7 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getQueuedTxs()', () => {
-    let transportTxs: Array<RiseTransaction<any>>;
+    let transportTxs: Array<RiseV2Transaction<any>>;
     let txs: Array<IBaseTransaction<any, bigint>>;
     beforeEach(() => {
       transportTxs = new Array(5)
@@ -363,7 +346,6 @@ describe('apis/transactionsAPI', () => {
       txs = transportTxs.map((t) => toNativeTx(t));
 
       txs.forEach((tx) => txPool.queued.add(tx, { receivedAt: new Date() }));
-      transportTxs.forEach((tx) => (tx.signatures = undefined));
     });
     it('filtering by senderPublicKey & address', async () => {
       result = await instance.getQueuedTxs({
@@ -411,7 +393,7 @@ describe('apis/transactionsAPI', () => {
   });
 
   describe('getUnconfirmedTxs()', () => {
-    let transportTXS: Array<RiseTransaction<any>>;
+    let transportTXS: Array<RiseV2Transaction<any>>;
     beforeEach(() => {
       transportTXS = createRandomTransactions(5);
       transportTXS.forEach((t) =>

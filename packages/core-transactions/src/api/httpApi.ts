@@ -305,7 +305,7 @@ export class TransactionsAPI {
     );
 
     if (skp) {
-      transaction.signSignature = RiseV2.txs.calcSignature(transaction, skp);
+      transaction.signatures.push(RiseV2.txs.calcSignature(transaction, skp));
     }
 
     const postableTx = RiseV2.txs.toPostable(transaction);
@@ -455,19 +455,19 @@ export class TransactionsAPI {
 
     if (Array.isArray(body.senderIds)) {
       whereClause.senderId = {
-        [Op.in]: body.senderIds.map((item) => item.toUpperCase()),
+        [Op.in]: body.senderIds,
       };
       if (body.senderId) {
-        whereClause.senderId[Op.in].push(body.senderId.toUpperCase());
+        whereClause.senderId[Op.in].push(body.senderId);
       }
     }
 
     if (Array.isArray(body.recipientIds)) {
       whereClause.recipientId = {
-        [Op.in]: body.recipientIds.map((item) => item.toUpperCase()),
+        [Op.in]: body.recipientIds,
       };
       if (body.recipientId) {
-        whereClause.recipientId[Op.in].push(body.recipientId.toUpperCase());
+        whereClause.recipientId[Op.in].push(body.recipientId);
       }
     }
 

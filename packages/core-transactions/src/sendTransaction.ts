@@ -128,6 +128,25 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
     return tx as IBaseTransaction<SendTxAsset>;
   }
 
+  public async attachAssets(
+    txs: Array<IBaseTransaction<SendTxAsset>>
+  ): Promise<void> {
+    const r = await this.SendTxAssetModel.findAll({
+      raw: true,
+      where: {
+        transactionId: txs.map((t) => t.id),
+      },
+    });
+    const byId: { [id: string]: IBaseTransaction<SendTxAsset> } = {};
+    txs.forEach((t) => (byId[t.id] = t));
+
+    for (const m of r) {
+      byId[m.transactionId].asset = {
+        data: m.data,
+      };
+    }
+  }
+
   public dbSave(tx: IBaseTransaction<SendTxAsset>) {
     if (!tx.asset || !tx.asset.data) {
       return null;

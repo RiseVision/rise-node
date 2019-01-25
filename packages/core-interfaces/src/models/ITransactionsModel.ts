@@ -1,4 +1,5 @@
 import {
+  Address,
   ITransportTransaction,
   publicKey,
   TransactionType,
@@ -29,9 +30,9 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<
 
   public senderPubData: Buffer;
 
-  public senderId: string;
+  public senderId: Address;
 
-  public recipientId: string;
+  public recipientId: Address;
 
   public amount: bigint;
 

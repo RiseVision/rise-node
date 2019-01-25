@@ -1,8 +1,10 @@
 import { IIdsHandler } from '@risevision/core-interfaces';
 import { Address } from '@risevision/core-types';
 import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
+import { RiseV2 } from 'dpos-offline';
 import { injectable } from 'inversify';
 import * as supersha from 'supersha';
+import { As } from 'type-tagger';
 
 const maxAddress = 18446744073709551615n;
 
@@ -14,18 +16,18 @@ export class TestIdsHandler implements IIdsHandler {
   }
 
   public addressFromPubData(pubKey: Buffer): Address {
-    return `${this.toBigInt(pubKey)}R` as Address;
+    if (pubKey[0] === 1 && pubKey.length === 33) {
+      return RiseV2.calcAddress(
+        pubKey.slice(1) as Buffer & As<'publicKey'>,
+        'main',
+        'v1'
+      );
+    }
+    return RiseV2.calcAddress(pubKey as Buffer & As<'publicKey'>, 'main', 'v0');
   }
 
-  public addressToBytes(address: string): Buffer {
-    if (!address) {
-      return toBufferBE(0n, 8);
-    }
-    const num = BigInt(address.slice(0, -1));
-    if (num > maxAddress) {
-      return toBufferBE(num, 16).slice(0, 8);
-    }
-    return toBufferBE(num, 8);
+  public addressToBytes(address: Address): Buffer {
+    return RiseV2.txs.getAddressBytes(address);
   }
 
   public calcBlockIdFromBytes(bytes: Buffer): string {
