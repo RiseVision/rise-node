@@ -1,125 +1,126 @@
-import { respProps, successResp } from "../utils/responses";
+import { scope } from '../../helpers/strings';
+import { Delegate } from '../common/models';
 import {
-  username,
   address,
   balance,
-  signature,
-  publicKey,
   boolInt,
+  publicKey,
+  signature,
   wholeNum
-} from "../common/scalars";
-import { Delegate } from "../common/models";
-import { scope } from "../../helpers/strings";
+} from '../common/scalars';
+import { respProps, successResp } from '../utils/responses';
 
-const s = scope("responses.accounts");
+const s = scope('responses.accounts');
 
+// tslint:disable object-literal-sort-keys
+// tslint:disable trailing-comma
 export default {
-  getAccount: {
-    id: s`getAccount`,
-    type: "object",
+  getAccount     : {
+    id        : s`getAccount`,
+    type      : 'object',
     properties: respProps({
       account: {
-        type: "object",
+        type      : 'object',
         properties: {
           address,
           balance,
-          multisignatures: {
-            type: "array",
+          multisignatures     : {
+            type : 'array',
             items: signature
           },
           publicKey,
-          secondPublicKey: publicKey,
-          secondSignature: boolInt,
-          u_multisignatures: {
-            type: "array",
+          secondPublicKey     : publicKey,
+          secondSignature     : boolInt,
+          u_multisignatures   : {
+            type : 'array',
             items: signature
           },
-          unconfirmedBalance: balance,
+          unconfirmedBalance  : balance,
           unconfirmedSignature: boolInt
         }
       }
     }),
-    example: successResp({
+    example   : successResp({
       account: {
-        address: "8093718274007724701R",
-        balance: "2973803650603",
-        multisignatures: [],
-        publicKey: "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0",
-        secondPublicKey: "e26988a52c519c9766d6f32ec32202b1ab16e77f6e404134222552fb3df23565",
-        unconfirmedBalance: "2973803650603",
+        address             : '8093718274007724701R',
+        balance             : '2973803650603',
+        multisignatures     : [],
+        publicKey           : '7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0',
+        secondPublicKey     : 'e26988a52c519c9766d6f32ec32202b1ab16e77f6e404134222552fb3df23565',
+        unconfirmedBalance  : '2973803650603',
         unconfirmedSignature: 1,
-        secondSignature: 1,
-        u_multisignatures: []
+        secondSignature     : 1,
+        u_multisignatures   : []
       }
     })
   },
-  getBalance: {
-    id: s`getBalance`,
-    type: "object",
+  getBalance     : {
+    id        : s`getBalance`,
+    type      : 'object',
     properties: respProps({
       balance,
       unconfirmedBalance: balance
     }),
-    example: successResp({
-      balance: "2973803650603",
-      unconfirmedBalance: "2973803650603"
+    example   : successResp({
+      balance           : '2973803650603',
+      unconfirmedBalance: '2973803650603'
     })
   },
-  getPublickey: {
-    id: s`getPublickey`,
-    type: "object",
+  getPublickey   : {
+    id        : s`getPublickey`,
+    type      : 'object',
     properties: respProps({
       publicKey
     }),
-    example: successResp({
-      publicKey: "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+    example   : successResp({
+      publicKey: '7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0'
     })
   },
-  delegates: {
-    id: s`getDelegates`,
-    type: "object",
+  delegates      : {
+    id        : s`getDelegates`,
+    type      : 'object',
     properties: respProps({
       publicKey,
       delegates: {
-        type: "array",
+        type : 'array',
         items: Delegate
       }
     }),
-    example: successResp({
+    example   : successResp({
       delegates: [
         {
-          username: "therisepool",
-          address: "14056190751918729107R",
-          publicKey: "5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde",
-          vote: 97064376561139,
+          username      : 'therisepool',
+          address       : '14056190751918729107R',
+          publicKey     : '5d3c3c5cdead64d9fe7bc1bf1404ae1378912d77b0243143edf8aff5dda1dbde',
+          vote          : 97064376561139,
           producedblocks: 11939,
-          missedblocks: 409,
-          rate: 19,
-          rank: 19,
-          approval: 0.75,
-          productivity: 96.69
+          missedblocks  : 409,
+          rate          : 19,
+          rank          : 19,
+          approval      : 0.75,
+          productivity  : 96.69
         }
       ]
     })
   },
   getDelegatesFee: {
-    id: s`getDelegatesFee`,
-    type: "object",
+    id        : s`getDelegatesFee`,
+    type      : 'object',
     properties: respProps({
       fee: wholeNum
     }),
-    example: successResp({
+    example   : successResp({
       fee: 2500000000
     })
   },
-  top: {
-    id: s`top`,
-    type: "object",
+  top            : {
+    id        : s`top`,
+    type      : 'object',
     properties: respProps({
       accounts: {
-        type: "array",
+        type : 'array',
         items: {
-          type: "object",
+          type      : 'object',
           properties: {
             address,
             balance,
@@ -128,17 +129,17 @@ export default {
         }
       }
     }),
-    example: successResp({
+    example   : successResp({
       accounts: [
         {
-          address: "3262489507414775391R",
-          balance: "1991694.49514931",
-          publicKey: "e433144892f40c838d0ea865dde0915e4fdaecf3521efef585ff306e6513c8fc"
+          address  : '3262489507414775391R',
+          balance  : '1991694.49514931',
+          publicKey: 'e433144892f40c838d0ea865dde0915e4fdaecf3521efef585ff306e6513c8fc'
         },
         {
-          address: "8093718274007724701R",
-          balance: "29762.04739711",
-          publicKey: "7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0"
+          address  : '8093718274007724701R',
+          balance  : '29762.04739711',
+          publicKey: '7067a911f3a4e13facbae9006b52a0c3ac9824bdd9f37168303152ae49dcb1c0'
         }
       ]
     })

@@ -103,6 +103,7 @@ export default {
           'address:desc', 'address:asc',
           'username:desc', 'username:asc',
           'publicKey:desc', 'publicKey:asc',
+          'cmb:desc', 'cmb:asc',
         ],
       },
       includeBanned: {

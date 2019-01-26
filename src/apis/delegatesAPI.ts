@@ -92,7 +92,7 @@ export class DelegatesAPI {
       // tslint:enable object-literal-sort-keys
     });
     if (d.sortField) {
-      if (['approval', 'productivity', 'rank', 'vote', 'votesWeight'].indexOf(d.sortField) > -1) {
+      if (['approval', 'productivity', 'rank', 'vote', 'votesWeight', 'cmb'].indexOf(d.sortField) > -1) {
         delegates.sort((a, b) => {
           if (d.sortMethod === 'ASC') {
             return a[d.sortField] - b[d.sortField];
