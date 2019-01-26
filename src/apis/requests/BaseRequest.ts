@@ -109,8 +109,19 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
 
   protected decodeProtoBufResponse(res: {body: Buffer, peer: IPeerLogic}, pbNamespace: string, pbMessageType?: string): Out {
     let error: { success: false, error: string };
+    if (!Buffer.isBuffer(res.body)) {
+      throw new Error('res.body must be a Buffer');
+    }
+    if (res.body.length === 0) {
+      return this.getEmptyResponse(pbNamespace, pbMessageType, res.peer);
+    }
+
     try {
       error = this.protoBufHelper.decode(res.body, 'APIError');
+      const errChunk = error.error.substr(0, 5);
+      if (errChunk.length > 0 && !errChunk.match(/^[ -~]+$/)) {
+        error = undefined;
+      }
     } catch (e) {
       // NOOP;
     }
@@ -119,6 +130,24 @@ export abstract class BaseRequest<Out, In> implements IAPIRequest<Out, In> {
     } else {
       return this.protoBufHelper
         .decodeToObj(res.body, pbNamespace, pbMessageType, this.getConversionOptions());
+    }
+  }
+
+  private getEmptyResponse(pbNamespace: string, pbMessageType: string, pl: IPeerLogic): any {
+    const key = pbNamespace + (pbMessageType || '');
+    const emptyResponses = {
+      transportBlocks: {blocks: []},
+      transportBlockscommonBlock: {common: null},
+      transportBlockstransportBlockResponse: {success: false, blockId: null},
+      transportPeers: {peers: []},
+      transportSignaturesgetSignaturesResponse: {signatures: []},
+      transportTransactions: {transactions: []},
+    };
+    if (typeof emptyResponses[key] !== 'undefined') {
+      return emptyResponses[key];
+    } else {
+      const peer = JSON.stringify(pl.object());
+      throw new Error(`[${pbNamespace} ${pbMessageType ? pbMessageType : ''}] Unexpected empty res from peer ${peer}`);
     }
   }
 }
