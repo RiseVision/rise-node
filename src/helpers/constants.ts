@@ -48,7 +48,7 @@ export default {
   blockHeaderLength            : 248,
   blockSlotWindow              : 5, // window of which a slot could be accepted.
   blockTime                    : 30,
-  blockReceiptTimeOut          : 30 * 2, // 2 blocks
+  blockReceiptTimeOut          : 30 + 15, // 1.5 blocks
   confirmationLength           : 77,
   addressSuffix                : 'R',
   epochTime                    : new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
@@ -76,7 +76,7 @@ export default {
   maxAmount                    : 100000000,
   maxConfirmations             : 77 * 100,
   maxPayloadLength             : 1024 * 1024,
-  maxPeers                     : 100,
+  maxPeers                     : 200,
   maxProtoBufPayloadLength     : 100 * 1024, // (100KB) Maximum number of bytes for a Protocol Buffer Request/Response Body
   maxRequests                  : 10000 * 12,
   maxSharedTxs                 : 100,

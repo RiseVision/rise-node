@@ -75,11 +75,12 @@ export class BlocksAPI {
       limit  : filters.limit || 100,
       offset : filters.offset || 0,
       order  : orderBy,
+      raw    : true,
       where  : whereClause,
     });
     // attach transactions and assets with it.
     await Promise.all(blocks
-      .map((b) => this.TransactionsModel.findAll({ where: { blockId: b.id }, order: [['rowId', 'asc']] })
+      .map((b) => this.TransactionsModel.findAll({ where: { blockId: b.id }, raw: true, order: [['rowId', 'asc']] })
         .then((txs) => {
           b.transactions = txs;
           return this.transactionLogic.attachAssets(b.transactions);
