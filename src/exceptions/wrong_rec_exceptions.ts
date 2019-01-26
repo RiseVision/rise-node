@@ -22,9 +22,9 @@ export default function wrongRecExceptions(excManager: ExceptionsManager) {
         );
     },
     handle(obj: ITransactionLogic, tx: IBaseTransaction<void>) {
-      const valid = (tx.id === '17611172093035974263' && tx.recipientId === '97269111055079944786R')
+      const valid = (tx.id === '17611172093035974263' && tx.recipientId === '5R')
       ||
-        (tx.id === '6132221392997475140' && tx.recipientId === '910097905859080079914R');
+        (tx.id === '6132221392997475140' && tx.recipientId === '49R');
       if (!valid) {
         return Promise.reject(new Error(`Invalid exception transaction ${tx.id}`));
       }
