@@ -120,13 +120,13 @@ export async function createContainer(
   if (modules.indexOf('core-consensus-dpos') !== -1) {
     types.push(
       ...[
-        { name: dPoSSymbols.logic.delegateTransaction, type: 2 },
-        { name: dPoSSymbols.logic.voteTransaction, type: 3 },
+        { name: dPoSSymbols.logic.delegateTransaction, type: 12 },
+        { name: dPoSSymbols.logic.voteTransaction, type: 13 },
       ]
     );
   }
   if (modules.indexOf('core-secondsignature') !== -1) {
-    types.push({ name: SigSymbols.transaction, type: 1 });
+    types.push({ name: SigSymbols.transaction, type: 11 });
   }
   for (const { name, type } of types) {
     const tx = container.getNamed<IBaseTransactionType<any, any>>(

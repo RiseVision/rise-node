@@ -2,7 +2,7 @@
 import { IAccountsModel } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { DBUpdateOp } from '@risevision/core-types';
+import { Address, DBUpdateOp } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -225,7 +225,7 @@ describe('logic/account', () => {
     });
 
     it('should call AccountsModel upsert with proper data', async () => {
-      await instance.set('address', { balance: 10n });
+      await instance.set('address' as Address, { balance: 10n });
       expect(upsertStub.firstCall.args[0]).to.be.deep.eq({
         address: 'address',
         balance: 10n,
@@ -235,35 +235,38 @@ describe('logic/account', () => {
 
   describe('account.merge', () => {
     it('should return empty array if no ops to be performed', () => {
-      const ops: any = instance.merge('1R', {});
+      const ops: any = instance.merge('1R' as Address, {});
       expect(ops.length).to.be.eq(1);
       const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({});
     });
     it('should allow only editable fields and discard the others', () => {
-      const ops = instance.merge('1R', {
-        balance: 11,
-        u_balance: 12,
-        rate: 13,
-        virgin: 14,
-        rewards: 15,
-        fees: 16,
-        producedblocks: 17,
-        publicKey: Buffer.alloc(32).fill('a'),
-        secondSignature: 19,
-        u_secondSignature: 20,
-        isDelegate: 21,
-        u_isDelegate: 22,
-        missedblocks: 18,
-        blockId: '1',
-        round: 10,
-        vote: 10,
-        username: 'meow',
-        u_username: 'meow',
-        address: '2R',
-        secondPublicKey: Buffer.from('aa', 'hex'),
-      } as any);
+      const ops = instance.merge(
+        '1R' as Address,
+        {
+          balance: 11,
+          u_balance: 12,
+          rate: 13,
+          virgin: 14,
+          rewards: 15,
+          fees: 16,
+          producedblocks: 17,
+          publicKey: Buffer.alloc(32).fill('a'),
+          secondSignature: 19,
+          u_secondSignature: 20,
+          isDelegate: 21,
+          u_isDelegate: 22,
+          missedblocks: 18,
+          blockId: '1',
+          round: 10,
+          vote: 10,
+          username: 'meow',
+          u_username: 'meow',
+          address: '2R',
+          secondPublicKey: Buffer.from('aa', 'hex'),
+        } as any
+      );
 
       const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
@@ -280,7 +283,7 @@ describe('logic/account', () => {
       });
     });
     it('should handle balance', () => {
-      const ops: any = instance.merge('1R', {
+      const ops: any = instance.merge('1R' as Address, {
         balance: 10n,
         round: 1,
       });
@@ -290,7 +293,7 @@ describe('logic/account', () => {
     });
 
     it('should remove account virginity on u_balance', () => {
-      const ops: any = instance.merge('1R', { u_balance: -1n });
+      const ops: any = instance.merge('1R' as Address, { u_balance: -1n });
       expect(ops[0].values).to.be.deep.eq({
         u_balance: { val: 'u_balance - 1' },
         virgin: 0,
@@ -308,7 +311,7 @@ describe('logic/account', () => {
       expect(destroyStub.calledOnce).is.true;
       expect(destroyStub.firstCall.args[0]).is.deep.eq({
         where: {
-          address: '1R',
+          address: '1R' as Address,
         },
       });
     });

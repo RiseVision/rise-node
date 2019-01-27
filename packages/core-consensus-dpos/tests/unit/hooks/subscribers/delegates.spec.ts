@@ -51,24 +51,24 @@ describe('hooks/subscribers/delegates', () => {
     sandbox.restore();
   });
 
-  it('should throw in OnCheckIntegrity if there is some unapplied round in db', async () => {
-    const queryStub = sandbox
-      .stub(delegatesModel.sequelize, 'query')
-      .resolves([{ count: 1 }]);
-    const stub = sandbox.stub(accountsModel, 'count').resolves(0);
-    await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
-      'No delegates found'
-    );
-
-    stub.resolves(1);
-    await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
-      'Delegates table corrupted with duplicated entries'
-    );
-
-    // all good
-    queryStub.resolves([{ count: 0 }]);
-    await wphooksystem.do_action(OnCheckIntegrity.name, 1);
-  });
+  // it('should throw in OnCheckIntegrity if there is some unapplied round in db', async () => {
+  //   const queryStub = sandbox
+  //     .stub(delegatesModel.sequelize, 'query')
+  //     .resolves([{ count: 1 }]);
+  //   const stub = sandbox.stub(accountsModel, 'count').resolves(0);
+  //   await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
+  //     'No delegates found'
+  //   );
+  //
+  //   stub.resolves(1);
+  //   await expect(wphooksystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
+  //     'Delegates table corrupted with duplicated entries'
+  //   );
+  //
+  //   // all good
+  //   queryStub.resolves([{ count: 0 }]);
+  //   await wphooksystem.do_action(OnCheckIntegrity.name, 1);
+  // });
 
   describe('verifyReceipt', () => {
     it('should add error if block is too old');

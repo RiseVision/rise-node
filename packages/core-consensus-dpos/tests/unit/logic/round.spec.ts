@@ -16,7 +16,7 @@ const expect = chai.expect;
 const pgpStub = { as: undefined } as any;
 
 const performVoteSnapshotSQL = fs.readFileSync(
-  `${__dirname}/../../../sql/performVotesSnapshot.sql`,
+  `${__dirname}/../../../sql/queries/performVotesSnapshot.sql`,
   'utf8'
 );
 
@@ -62,7 +62,9 @@ describe('logic/round', () => {
       },
       modules: {
         accounts: {
-          generateAddressByPublicKey: sandbox.stub().returns(1),
+          generateAddressByPubData: sandbox
+            .stub()
+            .callsFake((a) => a.toString('hex')),
           mergeAccountAndGetOPs: sandbox.stub().returns([]),
         },
       },
@@ -181,7 +183,7 @@ describe('logic/round', () => {
       expect(ret.type).is.eq('custom');
       expect(ret.model).is.deep.eq(accountsModel);
       expect(ret.query).is.deep.eq(
-        fs.readFileSync(`${__dirname}/../../../sql/recalcVotes.sql`, {
+        fs.readFileSync(`${__dirname}/../../../sql/queries/recalcVotes.sql`, {
           encoding: 'utf8',
         })
       );
@@ -284,12 +286,11 @@ describe('logic/round', () => {
       expect(
         scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]
       ).is.deep.eq({
+        address: 'aa',
         balance: 10n,
-        blockId: '1',
         cmb: 0,
         fees: 5n,
         producedblocks: 1,
-        publicKey: Buffer.from('aa', 'hex'),
         rewards: 4n,
         u_balance: 10n,
         round: 10,
@@ -297,12 +298,11 @@ describe('logic/round', () => {
       expect(
         scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]
       ).is.deep.eq({
+        address: 'bb',
         balance: 10n,
-        blockId: '1',
         cmb: 0,
         fees: 5n,
         producedblocks: 1,
-        publicKey: Buffer.from('bb', 'hex'),
         rewards: 4n,
         u_balance: 10n,
         round: 10,
@@ -311,10 +311,9 @@ describe('logic/round', () => {
       expect(
         scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]
       ).is.deep.eq({
+        address: 'bb',
         balance: 1n,
-        blockId: '1',
         fees: 1n,
-        publicKey: Buffer.from('bb', 'hex'),
         u_balance: 1n,
         round: 10,
       });

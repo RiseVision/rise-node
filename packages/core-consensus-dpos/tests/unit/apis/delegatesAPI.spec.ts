@@ -107,7 +107,7 @@ describe('apis/delegatesAPI', () => {
       const delegates = [
         {
           delegate: new accountsModel({
-            publicKey: Buffer.from('aa', 'hex'),
+            forgingPK: Buffer.from('aa', 'hex'),
             cmb: 0,
             [field]: areNumberValues ? 1 : 'a',
           }),
@@ -115,7 +115,7 @@ describe('apis/delegatesAPI', () => {
         },
         {
           delegate: new accountsModel({
-            publicKey: Buffer.from('bb', 'hex'),
+            forgingPK: Buffer.from('bb', 'hex'),
             cmb: 0,
             [field]: areNumberValues ? 3 : 'bb',
           }),
@@ -123,7 +123,7 @@ describe('apis/delegatesAPI', () => {
         },
         {
           delegate: new accountsModel({
-            publicKey: Buffer.from('cc', 'hex'),
+            forgingPK: Buffer.from('cc', 'hex'),
             cmb: 0,
             [field]: areNumberValues ? 2 : 'ccc',
           }),
@@ -548,7 +548,7 @@ describe('apis/delegatesAPI', () => {
       delegates = [
         {
           delegate: new accountsModel({
-            publicKey: Buffer.from('aaaa', 'hex'),
+            forgingPK: Buffer.from('aaaa', 'hex'),
             username: 'username',
           }),
           info: {
@@ -559,7 +559,7 @@ describe('apis/delegatesAPI', () => {
         },
         {
           delegate: new accountsModel({
-            publicKey: Buffer.from('1111', 'hex'),
+            forgingPK: Buffer.from('1111', 'hex'),
             username: '222',
           }),
           info: {
@@ -635,7 +635,7 @@ describe('apis/delegatesAPI', () => {
         username: 'meow',
       });
       expect(getAccountsStub.firstCall.args[0]).to.be.deep.eq({
-        sort: 'balance',
+        sort: { balance: -1 },
         address: { $in: ['1', '2'] },
       });
     });
@@ -644,19 +644,16 @@ describe('apis/delegatesAPI', () => {
       getAccountsStub.resolves([
         new accountsModel({
           address: '1',
-          publicKey: Buffer.from('aa', 'hex'),
+          forgingPK: Buffer.from('aa', 'hex'),
         }),
         new accountsModel({
           address: '2',
-          publicKey: Buffer.from('bb', 'hex'),
+          forgingPK: Buffer.from('bb', 'hex'),
         }),
       ]);
       const res = await instance.getVoters({ username: 'meow' });
       expect(res).to.be.deep.eq({
-        accounts: [
-          { address: '1', publicKey: 'aa' },
-          { address: '2', publicKey: 'bb' },
-        ],
+        accounts: [{ address: '1' }, { address: '2' }],
       });
     });
   });
@@ -687,7 +684,7 @@ describe('apis/delegatesAPI', () => {
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
         m.username,
         m.address,
-        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m."forgingPK",
         m.vote,
         m.producedblocks,
         m.missedblocks,
@@ -718,7 +715,7 @@ describe('apis/delegatesAPI', () => {
       delegates AS (SELECT row_number() OVER (ORDER BY vote DESC, m."publicKey" ASC)::int AS rank,
         m.username,
         m.address,
-        ENCODE(m."publicKey", 'hex') AS "publicKey",
+        m."forgingPK",
         m.vote,
         m.producedblocks,
         m.missedblocks,
@@ -981,7 +978,7 @@ describe('apis/delegatesAPI', () => {
       expect(getAccountStub.calledOnce).to.be.true;
       expect(getAccountStub.firstCall.args.length).to.be.equal(1);
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
-        publicKey: Buffer.from(publicKey, 'hex'),
+        forgingPK: Buffer.from(publicKey, 'hex'),
       });
     });
 
@@ -1073,7 +1070,7 @@ describe('apis/delegatesAPI', () => {
       expect(getAccountStub.calledOnce).to.be.true;
       expect(getAccountStub.firstCall.args.length).to.be.equal(1);
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
-        publicKey: Buffer.from(publicKey, 'hex'),
+        forgingPK: Buffer.from(publicKey, 'hex'),
       });
     });
 

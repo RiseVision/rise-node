@@ -85,8 +85,8 @@ describe('apis/accountsAPI', function() {
       let del2;
       let getDelegatesStub: SinonStub;
       beforeEach(() => {
-        del1 = { publicKey: '1' };
-        del2 = { publicKey: '3' };
+        del1 = { username: '1', forgingPK: Buffer.alloc(1).fill(1) };
+        del2 = { username: '3', forgingPK: Buffer.alloc(1).fill(2) };
         account.delegates = ['1', '2'];
         delegatesFromQuery = [del1, del2].map((d, idx) => ({
           delegate: new accountsModel(d),
@@ -125,10 +125,10 @@ describe('apis/accountsAPI', function() {
               missedblocks: undefined,
               producedblocks: undefined,
               productivity: 100,
-              publicKey: '1',
+              publicKey: '01',
               rank: 0,
               rate: 0,
-              username: undefined,
+              username: '1',
               vote: undefined,
             },
           ],
@@ -139,7 +139,7 @@ describe('apis/accountsAPI', function() {
     it('should return object with publicKey if account.delegates is null', async () => {
       const ret = await instance.getDelegates(params);
 
-      expect(ret).to.be.deep.equal({ publicKey: '1' });
+      expect(ret).to.be.deep.equal({ delegates: [] });
     });
   });
 

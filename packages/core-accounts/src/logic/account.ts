@@ -143,7 +143,7 @@ export class AccountLogic implements IAccountLogic {
    * @param {string} address
    * @param fields
    */
-  public async set(address: string, fields: ModelAttributes<IAccountsModel>) {
+  public async set(address: Address, fields: ModelAttributes<IAccountsModel>) {
     fields.address = address;
     await this.AccountsModel.upsert(fields);
   }
@@ -154,7 +154,7 @@ export class AccountLogic implements IAccountLogic {
    * @returns {any}
    */
   // tslint:disable-next-line cognitive-complexity
-  public merge(address: string, diff: AccountDiffType): Array<DBOp<any>> {
+  public merge(address: Address, diff: AccountDiffType): Array<DBOp<any>> {
     const update: any = {};
     const dbOps: Array<DBOp<any>> = [];
 

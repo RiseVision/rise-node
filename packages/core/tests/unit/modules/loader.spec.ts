@@ -82,6 +82,7 @@ describe('modules/loader', () => {
       'core-crypto',
       'core-blocks',
       'core-accounts',
+      'core-transactions',
     ]);
 
     container.rebind(Symbols.generic.appConfig).toConstantValue(appConfig);

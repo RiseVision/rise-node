@@ -104,7 +104,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
     const isRegistration = this.isTxFirstRegistration(tx);
     if (!sender.isDelegate && !isRegistration) {
-      throw new Error('Accounts needs to be a delegate to change public key');
+      throw new Error('Account needs to be a delegate to change public key');
     }
 
     if (sender.isDelegate && isRegistration) {

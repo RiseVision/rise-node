@@ -1,18 +1,25 @@
 import { IIdsHandler } from '@risevision/core-interfaces';
 import { Address } from '@risevision/core-types';
+import * as bech32 from 'bech32-buffer';
 import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
 import { RiseV2 } from 'dpos-offline';
 import { injectable } from 'inversify';
 import * as supersha from 'supersha';
 import { As } from 'type-tagger';
-
 const maxAddress = 18446744073709551615n;
 
 @injectable()
 export class TestIdsHandler implements IIdsHandler {
   public maxBlockIdBytesUsage = 8;
   public addressFromBytes(bytes: Buffer): Address {
-    return `${toBigIntBE(bytes)}R` as Address;
+    if (bytes.length === 8) {
+      return `${toBigIntBE(bytes)}R` as Address;
+    } else {
+      return bech32.encode(
+        bytes.slice(0, 4).toString('ascii'),
+        bytes.slice(4)
+      ) as Address;
+    }
   }
 
   public addressFromPubData(pubKey: Buffer): Address {

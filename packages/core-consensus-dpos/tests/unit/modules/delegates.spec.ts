@@ -1,6 +1,6 @@
 // tslint:disable: max-line-length
 import { generateWallets } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
-import { BlocksConstantsType } from '@risevision/core-blocks';
+import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
 import { BlockRewardLogic } from '@risevision/core-blocks';
 import {
   IAccountsModule,
@@ -41,10 +41,12 @@ describe('modules/delegates', () => {
 
   let blocksModel: typeof IBlocksModel;
   let accountsModel: typeof AccountsModelForDPOS;
-  let constants: ConstantsType & BlocksConstantsType;
+  let constants: ConstantsType;
   let dposConstants: DposConstantsType;
+  let blocksConstants: BlocksConstantsType;
   let pubKey: string;
-  let votes: string[];
+  let addedVotes: string[];
+  let removedVotes: string[];
   let testAccounts = generateWallets(101 + Math.ceil(Math.random() * 200));
   // Add delegate-specific fields
   testAccounts = testAccounts.map((el, k) => {
@@ -70,6 +72,7 @@ describe('modules/delegates', () => {
 
     dposConstants = container.get(dPoSSymbols.constants);
     constants = container.get(Symbols.generic.constants);
+    blocksConstants = container.get(BlocksSymbols.constants);
     roundsLogic = container.get(dPoSSymbols.logic.rounds);
     accountsModule = container.get(Symbols.modules.accounts);
     blocksModule = container.get(Symbols.modules.blocks);
@@ -78,9 +81,8 @@ describe('modules/delegates', () => {
 
     // Init frequently used test values
     pubKey = 'e22c25bcd696b94a3f4b017fdc681d714e275427a5112c2873e57c9637af3eed';
-    votes = [
-      '+73e57c9637af3eede22c25bcd696b94a3f4b017fdc681d714e275427a5112c28',
-    ];
+    addedVotes = ['+vekexasia'];
+    removedVotes = ['-meow'];
 
     const lastBlock = {
       blockSignature: Buffer.from('blockSignature'),
@@ -122,12 +124,19 @@ describe('modules/delegates', () => {
         'checkDelegates'
       );
       checkDelegatesStub.resolves('test');
-      const acc = new accountsModel({ publicKey: Buffer.from(pubKey, 'hex') });
-      const retVal = await instance.checkConfirmedDelegates(acc, votes);
+      const acc = new accountsModel({ forgingPK: Buffer.from(pubKey, 'hex') });
+      const retVal = await instance.checkConfirmedDelegates(
+        acc,
+        addedVotes,
+        removedVotes
+      );
       expect(checkDelegatesStub.calledOnce).to.be.true;
       expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(acc);
-      expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
-      expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('confirmed');
+      expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(addedVotes);
+      expect(checkDelegatesStub.firstCall.args[2]).to.be.deep.equal(
+        removedVotes
+      );
+      expect(checkDelegatesStub.firstCall.args[3]).to.be.equal('confirmed');
       expect(retVal).to.be.equal('test');
     });
   });
@@ -139,12 +148,19 @@ describe('modules/delegates', () => {
         'checkDelegates'
       );
       checkDelegatesStub.resolves('test');
-      const acc = new accountsModel({ publicKey: Buffer.from(pubKey, 'hex') });
-      const retVal = await instance.checkUnconfirmedDelegates(acc, votes);
+      const acc = new accountsModel({ forgingPK: Buffer.from(pubKey, 'hex') });
+      const retVal = await instance.checkUnconfirmedDelegates(
+        acc,
+        addedVotes,
+        removedVotes
+      );
       expect(checkDelegatesStub.calledOnce).to.be.true;
       expect(checkDelegatesStub.firstCall.args[0]).to.be.deep.equal(acc);
-      expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(votes);
-      expect(checkDelegatesStub.firstCall.args[2]).to.be.equal('unconfirmed');
+      expect(checkDelegatesStub.firstCall.args[1]).to.be.deep.equal(addedVotes);
+      expect(checkDelegatesStub.firstCall.args[2]).to.be.deep.equal(
+        removedVotes
+      );
+      expect(checkDelegatesStub.firstCall.args[3]).to.be.equal('unconfirmed');
       expect(retVal).to.be.equal('test');
     });
   });
@@ -582,7 +598,7 @@ describe('modules/delegates', () => {
       expect(getAccountsStub.calledOnce).to.be.true;
       expect(getAccountsStub.firstCall.args[0]).to.be.deep.equal({
         isDelegate: 1,
-        sort: { vote: -1, publicKey: 1 },
+        sort: { vote: -1, forgingPK: 1 },
       });
     });
 
@@ -711,7 +727,7 @@ describe('modules/delegates', () => {
       await expect(
         instance.assertValidBlockSlot({
           ...signedBlock,
-          timestamp: signedBlock.timestamp + constants.blocks.targetTime,
+          timestamp: signedBlock.timestamp + blocksConstants.targetTime,
         })
       ).rejectedWith('Failed to verify slot 34');
     });
@@ -777,51 +793,58 @@ describe('modules/delegates', () => {
       ).to.be.rejectedWith('Account not found');
     });
 
-    it('should throw if invalid math operator found in votes', async () => {
-      await expect(
-        (instance as any).checkDelegates(theAccount, ['*123'], 'confirmed')
-      ).to.be.rejectedWith('Invalid math operator');
-    });
-
-    it('should throw if invalid public key in votes', async () => {
-      votes.push('+meow');
-      await expect(
-        (instance as any).checkDelegates(theAccount, votes, 'confirmed')
-      ).to.be.rejectedWith('Invalid public key');
-    });
-
     it('should throw if trying to vote again for the same delegate', async () => {
-      theAccount.delegates.push(votes[0].substr(1));
+      theAccount.delegates.push(addedVotes[0]);
       await expect(
-        (instance as any).checkDelegates(theAccount, votes, 'confirmed')
+        (instance as any).checkDelegates(
+          theAccount,
+          addedVotes,
+          removedVotes,
+          'confirmed'
+        )
       ).to.be.rejectedWith(
         'Failed to add vote, account has already voted for this delegate'
       );
     });
 
     it('should throw if trying to remove vote for a non-voted delegate', async () => {
-      const unvotes = votes.slice();
-      unvotes[0] = unvotes[0].replace('+', '-');
       await expect(
-        (instance as any).checkDelegates(theAccount, unvotes, 'confirmed')
+        (instance as any).checkDelegates(
+          theAccount,
+          addedVotes,
+          addedVotes,
+          'confirmed'
+        )
       ).to.be.rejectedWith(
         'Failed to remove vote, account has not voted for this delegate'
       );
     });
 
     it('should call accountsModule.getAccount on vote publicKey', async () => {
-      await (instance as any).checkDelegates(theAccount, votes, 'confirmed');
+      theAccount.delegates = removedVotes;
+
+      await (instance as any).checkDelegates(
+        theAccount,
+        addedVotes,
+        removedVotes,
+        'confirmed'
+      );
       expect(getAccountStub.callCount).to.be.equal(1);
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
         isDelegate: 1,
-        publicKey: Buffer.from(votes[0].substr(1), 'hex'),
+        username: addedVotes[0],
       });
     });
 
     it('should throw if delegate not found', async () => {
       getAccountStub.onFirstCall().resolves(null);
       await expect(
-        (instance as any).checkDelegates(theAccount, votes, 'confirmed')
+        (instance as any).checkDelegates(
+          theAccount,
+          addedVotes,
+          removedVotes,
+          'confirmed'
+        )
       ).to.be.rejectedWith('Delegate not found');
     });
 
@@ -835,6 +858,7 @@ describe('modules/delegates', () => {
         (instance as any).checkDelegates(
           theAccount.publicKey,
           wrongVotes,
+          [],
           'confirmed'
         )
       ).to.be.rejectedWith('Maximum number of 1 votes exceeded (1 too many)');

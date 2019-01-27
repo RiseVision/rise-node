@@ -34,6 +34,7 @@ describe('modules/system', () => {
       'core-helpers',
       'core-crypto',
       'core-accounts',
+      'core-transactions',
     ]);
     constants = {
       fees: [

@@ -1,14 +1,23 @@
 import { IAccountLogic, ICrypto, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, DBCreateOp, IKeypair } from '@risevision/core-types';
+import {
+  Address,
+  ConstantsType,
+  DBCreateOp,
+  IBaseTransaction,
+  IKeypair,
+} from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';
 import 'chai-arrays';
 import * as crypto from 'crypto';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
-import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy } from 'sinon';
+import * as sinon from 'sinon';
+import { As } from 'type-tagger';
+import { toNativeTx } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import {
   BlockLogic,
   BlocksConstantsType,
@@ -27,11 +36,12 @@ chai.use(assertArrays);
 describe('logic/block', () => {
   const passphrase =
     'oath polypody manumit effector half sigmoid abound osmium jewfish weed sunproof ramose';
+  const account = RiseV2.deriveKeypair(passphrase);
   let keyPair: IKeypair;
   let sandbox: SinonSandbox;
   let container: Container;
   let dummyBlock;
-  let dummyTransactions;
+  let dummyTransactions: Array<IBaseTransaction<any>>;
   let callback;
   let instance: BlockLogic;
   let constants: ConstantsType;
@@ -81,70 +91,51 @@ describe('logic/block', () => {
     constants = container.get(Symbols.generic.constants);
     createHashSpy = sandbox.spy(crypto, 'createHash');
     dummyTransactions = [
-      {
-        amount: 108910891000000n,
-        fee: 5n,
-        id: '8139741256612355994',
-        recipientId: '15256762582730568272R',
-        senderId: '14709573872795067383R',
-        senderPubData: Buffer.from(
-          '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
-          'hex'
-        ),
-        signatures: [
-          Buffer.from(
-            'f8fbf9b8433bf1bbea971dc8b14c6772d33c7dd285d84c5e6c984b10c4141e9fa56ace' +
-              '902b910e05e98b55898d982b3d5b9bf8bd897083a7d1ca1d5028703e03',
-            'hex'
-          ),
-        ],
-        timestamp: 0,
-        type: 0,
-        version: 0,
-      },
-      {
-        amount: 108910891000000n,
-        fee: 3n,
-        id: '16622990339377112127',
-        recipientId: '6781920633453960895R',
-        senderId: '14709573872795067383R',
-        senderPubData: Buffer.from(
-          '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
-          'hex'
-        ),
-        signatures: [
-          Buffer.from(
-            'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
-              '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
-            'hex'
-          ),
-        ],
-        timestamp: 0,
-        type: 0,
-        version: 0,
-      },
-      {
-        amount: 108910891000000n,
-        fee: 3n,
-        id: '16622990339377114578',
-        recipientId: '6781920633453960895R',
-        senderId: '14709573872795067383R',
-        senderPubData: Buffer.from(
-          '35526f8a1e2f482264e5d4982fc07e73f4ab9f4794b110ceefecd8f880d51892',
-          'hex'
-        ),
-        signatures: [
-          Buffer.from(
-            'e26edb739d93bb415af72f1c288b06560c0111c4505f11076ca20e2f6e8903d3b00730' +
-              '9c0e04362bfeb8bf2021d0e67ce3c943bfe0c0193f6c9503eb6dfe750c',
-            'hex'
-          ),
-        ],
-        timestamp: 0,
-        type: 0,
-        version: 0,
-      },
-    ];
+      RiseV2.txs.createAndSign(
+        {
+          kind: 'send',
+          recipient: '15256762582730568272R' as Address,
+          amount: '1',
+          fee: '5',
+          nonce: '0' as string & As<'nonce'>,
+        },
+        account,
+        true
+      ),
+      RiseV2.txs.createAndSign(
+        {
+          kind: 'send',
+          recipient: '15256762582730568272R' as Address,
+          amount: '2',
+          fee: '5',
+          nonce: '1' as string & As<'nonce'>,
+        },
+        account,
+        true
+      ),
+      RiseV2.txs.createAndSign(
+        {
+          kind: 'send',
+          recipient: '15256762582730568272R' as Address,
+          amount: '3',
+          fee: '5',
+          nonce: '2' as string & As<'nonce'>,
+        },
+        account,
+        true
+      ),
+      RiseV2.txs.createAndSign(
+        {
+          kind: 'send',
+          recipient: '15256762582730568272R' as Address,
+          amount: '4',
+          fee: '5',
+          nonce: '3' as string & As<'nonce'>,
+        },
+        account,
+        true
+      ),
+    ].map((t) => toNativeTx(t));
 
     dummyBlock = {
       blockSignature: Buffer.from(
@@ -191,17 +182,17 @@ describe('logic/block', () => {
     it('should return a valid signed block', () => {
       const newBlock = instance.create(data);
       expect(newBlock).to.be.an.instanceof(Object);
-      expect(newBlock.totalFee).to.equal(11n);
-      expect(newBlock.numberOfTransactions).to.equal(3);
-      expect(newBlock.transactions).to.have.lengthOf(3);
-      expect(newBlock.payloadLength).eq(396);
+      expect(newBlock.totalFee).to.equal(20n);
+      expect(newBlock.numberOfTransactions).to.equal(4);
+      expect(newBlock.transactions).to.have.lengthOf(4);
+      expect(newBlock.payloadLength).eq(532);
       expect(newBlock.previousBlock).eq('1');
       expect(newBlock.reward).eq(30000000n);
-      expect(newBlock.totalAmount).eq(326732673000000n);
+      expect(newBlock.totalAmount).eq(10n);
 
       expect(newBlock.payloadHash).deep.eq(
         Buffer.from(
-          '72b2b7ef9dc9f44c4e1716cc10005f9a9b50157314c5a6376a49285c593d11ae',
+          'e13014bba397c427809d9cdda4041f39f792ff2b3ecab6597b2b7cd319e28b5d',
           'hex'
         )
       );
@@ -248,11 +239,6 @@ describe('logic/block', () => {
       expect(hash.toString('hex')).to.be.eq(
         '861efb7163c6f4f27944262395233fd80f5bbe863e535c25ca37c303062a6640'
       );
-    });
-
-    it('should call crypto.createHash', () => {
-      instance.getHash(dummyBlock);
-      expect(createHashSpy.calledOnce).to.be.true;
     });
   });
 

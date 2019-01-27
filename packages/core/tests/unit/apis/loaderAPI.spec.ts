@@ -37,6 +37,8 @@ describe('apis/loaderAPI', () => {
       'core-helpers',
       'core-crypto',
       'core-accounts',
+      'core-transactions',
+      'core-blocks',
     ]);
 
     appState = container.get(Symbols.logic.appState);

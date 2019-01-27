@@ -307,6 +307,7 @@ describe('apis/blocksAPI', () => {
           multisignature: 500000000n,
           secondsignature: 500000000n,
           send: 10000000n,
+          sendDataMultiplier: 1000000n,
           vote: 100000000n,
         },
         fromHeight: 1,

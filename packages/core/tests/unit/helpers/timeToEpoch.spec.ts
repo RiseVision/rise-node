@@ -19,6 +19,7 @@ describe('timeToEpoch', () => {
       'core-helpers',
       'core-crypto',
       'core-accounts',
+      'core-transactions',
     ]);
     constants = container.get(Symbols.generic.constants);
     instance = container.get(Symbols.helpers.timeToEpoch);

@@ -6,7 +6,7 @@ const { expect } = chai;
 describe('helpers/RoundChanges', () => {
   const slots = new Slots();
   // Dependency inj
-  (slots as any).constants = { activeDelegates: 101 };
+  (slots as any).dposConstants = { activeDelegates: 101 };
   const fullFees = BigInt(25 * 101 + 10);
   const fullRewards: Array<bigint> = [];
 

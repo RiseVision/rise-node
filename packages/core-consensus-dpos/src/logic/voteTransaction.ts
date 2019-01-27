@@ -84,7 +84,6 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     tx: IBaseTransaction<VoteAsset> & { senderId: string },
     sender: AccountsModelForDPOS
   ): Promise<void> {
-    // TODO: test this case.
     if (tx.recipientId) {
       throw new Error('Invalid recipient');
     }
@@ -375,15 +374,6 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
           address: senderAddress,
           username,
         })),
-      });
-    }
-
-    if (blockId) {
-      ops.push({
-        model: this.AccountsModel,
-        options: { where: { address: senderAddress } },
-        type: 'update',
-        values: { blockId },
       });
     }
     return ops;

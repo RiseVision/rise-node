@@ -52,7 +52,7 @@ describe('apis/requests/GetTransactionsRequest', () => {
     txPool.unconfirmed.add(tx, { receivedAt: new Date() });
     const finalData = await createRequest();
     expect(finalData).deep.eq({
-      transactions: [{ ...tx, relays: 3, signatures: [], asset: null }],
+      transactions: [{ ...tx, relays: 3, asset: null }],
     });
   });
   it('with some txs from dif pool - order is respected', async () => {
@@ -70,7 +70,6 @@ describe('apis/requests/GetTransactionsRequest', () => {
         ...t,
         asset: null,
         relays: 3,
-        signatures: [],
       })),
     });
   });

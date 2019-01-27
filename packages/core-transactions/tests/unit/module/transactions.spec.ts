@@ -167,7 +167,7 @@ describe('modules/transactions', () => {
       expect(getAccountStub.calledOnce).to.be.true;
       expect(getAccountStub.firstCall.args.length).to.be.equal(1);
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
-        publicKey: tx.senderPublicKey,
+        address: tx.senderId,
       });
     });
 

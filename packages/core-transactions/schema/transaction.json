@@ -25,7 +25,8 @@
       "minimum": 0
     },
     "senderPubData": {
-      "type": "object"
+      "type": "object",
+      "format": "buffer"
     },
     "senderId": {
       "type": "string",

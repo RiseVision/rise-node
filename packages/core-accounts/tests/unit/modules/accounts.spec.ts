@@ -1,14 +1,15 @@
 import { IAccountsModel, IAccountsModule } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
+import { Address } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
-import { valid } from 'semver';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
+import { As } from 'type-tagger';
 import { AccountLogic, AccountsSymbols } from '../../../src';
 
 chai.use(chaiAsPromised);
@@ -144,7 +145,7 @@ describe('modules/accounts', () => {
     });
     it('should derive address from publicKey if not provided', () => {
       const res = accountModule.mergeAccountAndGetOPs({
-        address: 'meow',
+        address: 'meow' as Address,
         balance: 10n,
       });
 
@@ -159,8 +160,14 @@ describe('modules/accounts', () => {
       for (let i = 0; i < 100; i++) {
         const w = RiseV2.deriveKeypair(`a${i}`);
         expect(accountModule.generateAddressByPubData(w.publicKey)).deep.eq(
-          RiseV2.calcAddress(w.publicKey)
+          RiseV2.calcAddress(w.publicKey, 'main', 'v0')
         );
+        expect(
+          accountModule.generateAddressByPubData(Buffer.concat([
+            Buffer.from([1]),
+            w.publicKey,
+          ]) as Buffer & As<'publicKey'>)
+        ).deep.eq(RiseV2.calcAddress(w.publicKey, 'main', 'v1'));
       }
     });
   });
