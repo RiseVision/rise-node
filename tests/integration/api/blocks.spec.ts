@@ -91,7 +91,7 @@ describe('api/blocks', () => {
         const { body } = await supertest(initializer.appManager.expressApp)
           .get('/api/blocks/?limit=1&orderBy=height:desc')
           .expect(200);
-        expect(body.blocks[0].transactions[0].asset).deep.eq(txs[0].asset);
+        expect(body.blocks[0].transactions[0].asset).to.be.undefined;
         expect(body.blocks[0].transactions[1].asset).deep.eq(txs[1].asset);
         expect(body.blocks[0].transactions[2].asset).deep.eq(txs[2].asset);
         expect(body.blocks[0].transactions[3].asset).deep.eq(txs[3].asset);
@@ -133,6 +133,8 @@ describe('api/blocks', () => {
       const { body } = await supertest(initializer.appManager.expressApp)
         .get(`/api/blocks/get?id=${b.id}`)
         .expect(200);
+      console.log(body.block.transactions[0]);
+      console.log(txs[0]);
       expect(body.block.transactions[0].asset).deep.eq(txs[0].asset);
       expect(body.block.transactions[1].asset).deep.eq(txs[1].asset);
       expect(body.block.transactions[2].asset).deep.eq(txs[2].asset);
