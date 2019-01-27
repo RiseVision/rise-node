@@ -133,8 +133,6 @@ describe('api/blocks', () => {
       const { body } = await supertest(initializer.appManager.expressApp)
         .get(`/api/blocks/get?id=${b.id}`)
         .expect(200);
-      console.log(body.block.transactions[0]);
-      console.log(txs[0]);
       expect(body.block.transactions[0].asset).deep.eq(txs[0].asset);
       expect(body.block.transactions[1].asset).deep.eq(txs[1].asset);
       expect(body.block.transactions[2].asset).deep.eq(txs[2].asset);
