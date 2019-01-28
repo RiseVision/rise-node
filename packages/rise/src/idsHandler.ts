@@ -36,10 +36,10 @@ export class RiseIdsHandler implements IIdsHandler {
   }
 
   public addressToBytes(address: Address): Buffer {
-    if (/^[0-9]R$/.test(address)) {
-      if (!address) {
-        return toBufferBE(0n, 8);
-      }
+    if (!address) {
+      return toBufferBE(0n, 8);
+    }
+    if (/^[0-9]+R$/.test(address)) {
       const num = BigInt(address.slice(0, -1));
       if (num > maxAddress) {
         return toBufferBE(num, 16).slice(0, 8);

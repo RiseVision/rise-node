@@ -8,6 +8,7 @@
   "main": "dist/index.js",
   "scripts": {
     "transpile": "shx rm -rf dist; tsc",
+    "test-unit": "echo ''",
     "start:devnet": "rise-launchpad --net devnet",
     "start:mainnet": "rise-launchpad --net mainnet"
   },

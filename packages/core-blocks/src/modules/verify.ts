@@ -316,6 +316,7 @@ export class BlocksModuleVerify {
         bytes = this.txBytes.fullBytes(tx);
         payloadHash.update(bytes);
       } catch (e) {
+        this.logger.warn('TX error while verifying block payload', e);
         errors.push(e.toString());
         continue;
       }
