@@ -1,4 +1,6 @@
-FROM node:11-alpine
+FROM arm32v6/node:11-alpine
+
+COPY ./docker/qemu-arm-static /usr/bin/qemu-arm-static
 
 RUN apk --update add --no-cache --virtual .gyp \
         autoconf \
@@ -42,16 +44,16 @@ RUN yarn install
 
 COPY --chown=rise ./lerna.json ./lerna.json
 
-USER root
-RUN apk del .gyp
-USER rise
-
 COPY --chown=rise . .
 RUN ./node_modules/.bin/lerna run transpile && \
     ./node_modules/.bin/lerna bootstrap
 
 RUN mkdir /home/rise/logs && ln -s /home/rise/logs ./packages/rise/logs
 COPY --chown=rise ./docker/node_config.json /home/rise/config.json
+
+USER root
+RUN apk del .gyp && rm /usr/bin/qemu-arm-static
+USER rise
 
 ENV NETWORK="mainnet"
 EXPOSE 5555
