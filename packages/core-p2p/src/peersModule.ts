@@ -63,9 +63,9 @@ export class PeersModule implements IPeersModule {
   }> {
     broadhash = broadhash || this.systemModule.broadhash;
 
-    let peersList = (await this.getByFilter({}))
-      // only matching states
-      .filter((p) => p.state === PeerState.CONNECTED);
+    let peersList = await this.getByFilter({
+      state: PeerState.CONNECTED,
+    });
     peersList = this.peersLogic.acceptable(peersList);
 
     const totalPeers = peersList.length;
