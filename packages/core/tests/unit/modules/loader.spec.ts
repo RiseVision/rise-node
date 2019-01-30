@@ -130,7 +130,7 @@ describe('modules/loader', () => {
     let peersLogicStub: PeersLogic;
     let loggerStub: LoggerStub;
     let peers: PeerType[];
-    let listPEersStub: SinonStub;
+    let getPeersStub: SinonStub;
     let peersCreateStub: SinonStub;
     beforeEach(() => {
       peers = createFakePeers(2);
@@ -143,7 +143,7 @@ describe('modules/loader', () => {
       peersCreateStub = sandbox
         .stub(peersLogicStub, 'create')
         .callsFake((peer) => peer as any);
-      listPEersStub = sandbox.stub(peersModuleStub, 'list');
+      getPeersStub = sandbox.stub(peersModuleStub, 'getPeers');
     });
 
     afterEach(() => {
@@ -169,15 +169,15 @@ describe('modules/loader', () => {
         height: 1,
         peers: [],
       };
-      listPEersStub.returns({ peers });
+      getPeersStub.returns(peers);
 
       await instance.getNetwork();
 
-      expect(listPEersStub.calledOnce).to.be.true;
+      expect(getPeersStub.calledOnce).to.be.true;
     });
 
     it('should call instance.logger.trace methods', async () => {
-      listPEersStub.returns({ peers });
+      getPeersStub.returns(peers);
 
       await instance.getNetwork();
 
@@ -209,7 +209,7 @@ describe('modules/loader', () => {
     });
 
     it('should call instance.logger.debug methods', async () => {
-      listPEersStub.returns({ peers });
+      getPeersStub.returns(peers);
       loggerStub.stubs.debug.resetHistory();
       await instance.getNetwork();
 
@@ -225,7 +225,7 @@ describe('modules/loader', () => {
     });
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', async () => {
-      listPEersStub.returns({ peers: [null, null] });
+      getPeersStub.returns([null, null]);
 
       const ret = await instance.getNetwork();
 
@@ -238,7 +238,7 @@ describe('modules/loader', () => {
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', async () => {
       blocksModule.lastBlock.height = 5;
-      listPEersStub.returns({ peers });
+      getPeersStub.returns(peers);
 
       const ret = await instance.getNetwork();
 
@@ -246,7 +246,7 @@ describe('modules/loader', () => {
     });
 
     it('should return instance.network with two peers in  peersArray prop', async () => {
-      listPEersStub.returns({ peers });
+      getPeersStub.returns(peers);
 
       const ret = await instance.getNetwork();
 
@@ -255,7 +255,7 @@ describe('modules/loader', () => {
 
     it('should return a sorted peersArray', async () => {
       peers[1].height += 3;
-      listPEersStub.returns({ peers });
+      getPeersStub.returns(peers);
 
       const ret = await instance.getNetwork();
 
@@ -264,7 +264,7 @@ describe('modules/loader', () => {
 
     it('should return instance.network with one item in peersArray(check .findGoodPeers second .filter)', async () => {
       peers[0].height = 10;
-      listPEersStub.returns({ peers });
+      getPeersStub.returns(peers);
 
       const ret = await instance.getNetwork();
 

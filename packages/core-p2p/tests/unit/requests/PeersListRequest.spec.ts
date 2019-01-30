@@ -32,7 +32,7 @@ describe('apis/requests/PeersListRequest', () => {
   describe('round trip', () => {
     it('bau', async () => {
       const peersModule = container.get<PeersModule>(p2pSymbols.modules.peers);
-      const stub = sandbox.stub(peersModule, 'list').resolves({ peers });
+      const stub = sandbox.stub(peersModule, 'getPeers').resolves(peers);
       const buf = await peerRequestFactory.handleRequest({
         body: null,
         query: null,
