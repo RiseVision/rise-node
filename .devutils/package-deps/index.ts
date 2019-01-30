@@ -1,5 +1,6 @@
 import * as yarnLockfile from '@yarnpkg/lockfile';
 import * as childProcess from 'child_process';
+import * as colors from 'colors/safe';
 import * as convert from 'convert-source-map';
 import * as detective from 'detective';
 import * as fs from 'fs';
@@ -46,6 +47,7 @@ interface ITsConfig {
 enum WarningType {
   RequireExpression,
   NotTraversed,
+  NoVersionFound,
 }
 
 interface IWarning {
@@ -62,6 +64,10 @@ interface INotTraversedWarning extends IWarning {
   file: string;
 }
 
+interface INoVersionFoundWarning extends IWarning {
+  packageName: string;
+}
+
 interface IFileScanResult {
   files: string[];
   packages: string[];
@@ -72,6 +78,26 @@ interface IWalkTreeResult {
   packages: string[];
   scanned: string[];
   warnings: IFileScanWarning[];
+}
+
+enum DepsDiffType {
+  Extra,
+  Missing,
+  SameVer,
+  CompatVer,
+  DiffVer,
+}
+
+interface IDepsDiff {
+  type: DepsDiffType;
+  name: string;
+  fromVer?: string;
+  toVer?: string;
+}
+
+interface IDepsDiffResult {
+  depsDiff: IDepsDiff[];
+  warnings: IWarning[];
 }
 
 const root = _.memoize((): string => path.join(__dirname, '../../'));
@@ -318,19 +344,126 @@ const scanPackage = async (packagePath: string) => {
   const { packages, scanned, warnings } = await walkTree(
     getEntryPoints(packagePath)
   );
-  const allWarnings = (warnings as IWarning[]).concat(
-    findNotTraversed(packagePath, scanned).map((file) => ({
-      file,
-      type: WarningType.NotTraversed,
-    }))
-  );
+  return {
+    packages,
+    warnings: (warnings as IWarning[]).concat(
+      findNotTraversed(packagePath, scanned).map((file) => ({
+        file,
+        type: WarningType.NotTraversed,
+      }))
+    ),
+  };
+};
+
+const findDependencies = async (packagePath: string) => {
+  const { packages, warnings } = await scanPackage(packagePath);
   const dependencies = depsMap(packages);
-  return { dependencies, warnings: allWarnings };
+  return {
+    dependencies,
+    warnings: warnings.concat(
+      Object.keys(dependencies)
+        .filter((k) => empty(dependencies[k]))
+        .map((packageName) => ({
+          packageName,
+          type: WarningType.NoVersionFound,
+        }))
+    ),
+  };
+};
+
+const depsDiffPackage = async (
+  packagePath: string
+): Promise<IDepsDiffResult> => {
+  const { dependencies: fromDeps } = parsePackageJson(packagePath);
+  const { dependencies: toDeps, warnings } = await findDependencies(
+    packagePath
+  );
+  const sharedDeps = _.intersection(Object.keys(fromDeps), Object.keys(toDeps));
+  const extraDeps = _.difference(Object.keys(fromDeps), sharedDeps);
+  const missingDeps = _.difference(Object.keys(toDeps), sharedDeps);
+  const versionDiffs = sharedDeps
+    .map((dep) => ({
+      [dep]: [fromDeps[dep], toDeps[dep]],
+    }))
+    .reduce((deps, dep) => ({ ...deps, ...dep }));
+  return {
+    depsDiff: [
+      ...Object.keys(versionDiffs).map((dep) => {
+        const [fromVer, toVer] = versionDiffs[dep];
+        let diffType =
+          fromVer === toVer ? DepsDiffType.SameVer : DepsDiffType.DiffVer;
+        if (
+          diffType === DepsDiffType.DiffVer &&
+          semver.intersects(fromVer, toVer)
+        ) {
+          diffType = DepsDiffType.CompatVer;
+        }
+        return {
+          fromVer,
+          name: dep,
+          toVer,
+          type: diffType,
+        };
+      }),
+      ...extraDeps.map((dep) => ({
+        fromVer: fromDeps[dep],
+        name: dep,
+        type: DepsDiffType.Extra,
+      })),
+      ...missingDeps.map((dep) => ({
+        name: dep,
+        toVer: toDeps[dep],
+        type: DepsDiffType.Missing,
+      })),
+    ],
+    warnings,
+  };
+};
+
+const printDepsDiff = (depsDiff: IDepsDiff[]) => {
+  const missingDeps = depsDiff.filter(
+    (diff) => diff.type === DepsDiffType.Missing
+  );
+  const extraDeps = depsDiff.filter((diff) => diff.type === DepsDiffType.Extra);
+  const mismatchedDeps = depsDiff.filter(
+    (diff) =>
+      diff.type === DepsDiffType.DiffVer || diff.type === DepsDiffType.CompatVer
+  );
+  const warning = colors.yellow('=>');
+  const error = colors.red('=>');
+  if (missingDeps.length > 0) {
+    console.log(colors.bold('Missing Packages:'));
+    missingDeps.forEach((diff) =>
+      console.log(` ${error} ${diff.name}: ${diff.toVer}`)
+    );
+    console.log();
+  }
+  if (extraDeps.length > 0) {
+    console.log(colors.bold('Unnecessary Packages:'));
+    extraDeps.forEach((diff) =>
+      console.log(` ${warning} ${diff.name}: ${diff.fromVer}`)
+    );
+    console.log();
+  }
+  if (missingDeps.length > 0) {
+    console.log(colors.bold('Mismatched Packages:'));
+    mismatchedDeps.forEach((diff) =>
+      console.log(
+        ` ${diff.type === DepsDiffType.DiffVer ? error : warning} ${
+          diff.name
+        }: ${diff.fromVer} -> ${diff.toVer}`
+      )
+    );
+    console.log();
+  }
 };
 
 const main = async () => {
   // await transpilePackage('core-accounts');
-  console.log(await scanPackage('packages/core-accounts'));
+  const { depsDiff, warnings } = await depsDiffPackage(
+    'packages/core-accounts'
+  );
+  printDepsDiff(depsDiff);
 };
 
 main();
