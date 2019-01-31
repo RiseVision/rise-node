@@ -189,10 +189,6 @@ export class ForgeModule extends Extendable implements IModule {
       return;
     }
 
-    // NOTE: This is wrapped in a default sequence because it's called only from delegatesNextForge
-
-    await this.peersModule.updateConsensus();
-
     if (
       this.appState.getComputed('node.poorConsensus') &&
       !this.config.forging.force

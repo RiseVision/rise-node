@@ -8,20 +8,31 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, PeerState, PeerType } from '@risevision/core-types';
-import { inject, injectable, named } from 'inversify';
+import { decorate, inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
+import {
+  OnWPAction,
+  WordPressHookSystem,
+  WPHooksSubscriber,
+} from 'mangiafuoco';
 import * as shuffle from 'shuffle-array';
 import { P2PConstantsType, p2pSymbols } from './helpers';
 import { IPeersModule, PeerFilter } from './interfaces';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
+
 @injectable()
-export class PeersModule implements IPeersModule {
+export class PeersModule extends Extendable implements IPeersModule {
   // Generic
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
+  // tslint:disable-next-line member-ordering
+  @inject(Symbols.generic.hookSystem)
+  public hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.logger)
@@ -49,23 +60,29 @@ export class PeersModule implements IPeersModule {
     return this.dbSave();
   }
 
-  public async updateConsensus() {
-    const result = await this.determineConsensus();
-    this.appState.set('node.consensus', result.consensus);
+  @OnWPAction('core/blocks/chain/applyBlock.post')
+  public async onPostApplyBlock() {
+    this.updateConsensus();
   }
 
-  public async determineConsensus(
-    broadhash?: string
-  ): Promise<{
+  public updateConsensus() {
+    const { consensus } = this.determineConsensus(this.systemModule.broadhash);
+    this.appState.set('node.consensus', consensus);
+  }
+
+  /**
+   * Calculate consensus for given broadhash (defaults to current node broadhash).
+   */
+  public determineConsensus(
+    broadhash: string
+  ): {
     consensus: number;
     matchingPeers: number;
     totalPeers: number;
-  }> {
-    broadhash = broadhash || this.systemModule.broadhash;
-
-    let peersList = await this.getByFilter({
-      state: PeerState.CONNECTED,
-    });
+  } {
+    let peersList = this.peersLogic
+      .list(false)
+      .filter((p) => p.state === PeerState.CONNECTED);
     peersList = this.peersLogic.acceptable(peersList);
 
     const totalPeers = peersList.length;
@@ -147,14 +164,22 @@ export class PeersModule implements IPeersModule {
    */
   public update(peer: Peer) {
     peer.state = PeerState.CONNECTED;
-    return this.peersLogic.upsert(peer, false);
+    const updated = this.peersLogic.upsert(peer, false);
+    if (updated) {
+      this.updateConsensus();
+    }
+    return updated;
   }
 
   /**
    * Remove a peer from the list if its not one from config files
    */
   public remove(peerIP: string, port: number): boolean {
-    return this.peersLogic.remove({ ip: peerIP, port });
+    const removed = this.peersLogic.remove({ ip: peerIP, port });
+    if (removed) {
+      this.updateConsensus();
+    }
+    return removed;
   }
 
   /**

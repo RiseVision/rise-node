@@ -37,19 +37,6 @@ export interface IPeersModule {
     allowedStates?: PeerState[];
   }): Promise<Peer[]>;
 
-  updateConsensus(): Promise<void>;
-
-  /**
-   * Calculate consensus for given broadhash (defaults to current node broadhash).
-   */
-  determineConsensus(
-    broadhash?: string
-  ): Promise<{
-    consensus: number;
-    matchingPeers: number;
-    totalPeers: number;
-  }>;
-
   /**
    * Given a list of peers (with associated blockchain height), we find a list
    * of good peers (likely to sync with), then perform a histogram cut, removing
