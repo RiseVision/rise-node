@@ -217,7 +217,7 @@ describe('modules/peers', () => {
     });
   });
 
-  describe('.list', () => {
+  describe('.getPeers', () => {
     let getByFilterStub: SinonStub;
     let firstPeers: BasePeerType[];
     let secondPeers: BasePeerType[];
@@ -233,32 +233,21 @@ describe('modules/peers', () => {
       getByFilterStub.onSecondCall().callsFake(() => secondPeers);
     });
 
-    it('should return consensus number', async () => {
-      firstPeers = [createFakePeer()];
-      secondPeers = [];
-      acceptableStub.returns(firstPeers);
-      acceptableStub.onSecondCall().returns(secondPeers);
-      const target = await inst.list({});
-      expect(target).to.haveOwnProperty('consensus');
-      expect(target.consensus).to.be.a('number');
-      expect(target.consensus).to.be.deep.eq(100);
-    });
     it('should return peers array', async () => {
       firstPeers = [createFakePeer()];
       secondPeers = [];
       acceptableStub.returns(firstPeers);
       acceptableStub.onSecondCall().returns(secondPeers);
-      const target = await inst.list({});
-      expect(target).to.haveOwnProperty('peers');
-      expect(target.peers).to.be.an('array');
+      const peers = await inst.getPeers({});
+      expect(peers).to.be.an('array');
     });
     it('should not concat unmatchedbroadhash if limit is matching the matching peers length', async () => {
       firstPeers = createFakePeers(10);
       secondPeers = [createFakePeer()];
       acceptableStub.returns(firstPeers);
-      const t = await inst.list({ limit: 10 });
-      expect(t.peers.length).to.be.eq(10);
-      expect(t.peers).to.be.deep.eq(firstPeers);
+      const peers = await inst.getPeers({ limit: 10 });
+      expect(peers.length).to.be.eq(10);
+      expect(peers).to.be.deep.eq(firstPeers);
       expect(acceptableStub.calledOnce).is.true;
     });
     it('should call getByFilter with broadhash filter', async () => {
@@ -268,7 +257,7 @@ describe('modules/peers', () => {
       secondPeers = [];
       acceptableStub.returns(firstPeers);
       acceptableStub.onSecondCall().returns(secondPeers);
-      await inst.list({});
+      await inst.getPeers({});
       expect(getByFilterStub.called).is.true;
       expect(getByFilterStub.firstCall.args[0]).to.haveOwnProperty('broadhash');
       expect(getByFilterStub.firstCall.args[0].broadhash).to.be.eq(
@@ -279,8 +268,8 @@ describe('modules/peers', () => {
       firstPeers = [createFakePeer()];
       secondPeers = [createFakePeer()];
       acceptableStub.returns([]);
-      const res = await inst.list({});
-      expect(res.peers).to.be.empty;
+      const peers = await inst.getPeers({});
+      expect(peers).to.be.empty;
     });
     it('should concat unmatched broadhash peers and truncate with limit.', async () => {
       firstPeers = createFakePeers(5);
@@ -290,39 +279,59 @@ describe('modules/peers', () => {
       });
       acceptableStub.callsFake((w) => w);
 
-      const res = await inst.list({ limit: 10 });
-      expect(res.peers.length).to.be.eq(10);
-      expect(res.peers.slice(5, 10)).to.be.deep.eq(secondPeers.slice(0, 5));
-      expect(res.peers.slice(0, 5)).to.be.deep.eq(firstPeers);
+      const peers = await inst.getPeers({ limit: 10 });
+      expect(peers.length).to.be.eq(10);
+      expect(peers.slice(5, 10)).to.be.deep.eq(secondPeers.slice(0, 5));
+      expect(peers.slice(0, 5)).to.be.deep.eq(firstPeers);
     });
-    describe('consensus', () => {
-      it('should return 0 if no acceptable peers', async () => {
-        firstPeers = secondPeers = createFakePeers(20);
-        acceptableStub.returns([]);
-        const res = await inst.list({ limit: 10 });
-        expect(res.consensus).to.be.eq(0);
-      });
-      it('should return 100 if all matching broadhash', async () => {
-        firstPeers = createFakePeers(20);
-        secondPeers = [];
-        acceptableStub.callsFake((w) => w);
-        const res = await inst.list({});
-        expect(res.consensus).to.be.eq(100);
-      });
-      it('should return 25 if 25 matched and 100 did not on limit 100', async () => {
-        firstPeers = createFakePeers(25);
-        secondPeers = createFakePeers(100);
-        acceptableStub.callsFake((w) => w);
-        const res = await inst.list({ limit: 100 });
-        expect(res.consensus).to.be.eq(25);
-      });
-      it('should return 33.33 if 25 matched and 50 did not on limit 100', async () => {
-        firstPeers = createFakePeers(25);
-        secondPeers = createFakePeers(50);
-        acceptableStub.callsFake((w) => w);
-        const res = await inst.list({ limit: 100 });
-        expect(res.consensus).to.be.eq(33.33);
-      });
+  });
+
+  describe('.determineConsensus', () => {
+    let fakePeers: BasePeerType[];
+    let listStub: SinonStub;
+    let acceptableStub: SinonStub;
+    beforeEach(() => {
+      listStub = sandbox.stub(peersLogicStub, 'list');
+      listStub.onFirstCall().callsFake(() => fakePeers);
+      acceptableStub = sandbox.stub(peersLogicStub, 'acceptable');
+      const blocksModel = container.get<IBlocksModule>(Symbols.modules.blocks);
+      blocksModel.lastBlock = { height: 100 } as any;
+    });
+
+    it('should return consensus number', async () => {
+      fakePeers = [createFakePeer()];
+      acceptableStub.returns(fakePeers);
+      const target = await inst.determineConsensus('aa');
+      expect(target).to.haveOwnProperty('consensus');
+      expect(target.consensus).to.be.a('number');
+      expect(target.consensus).to.be.deep.eq(100);
+    });
+    it('should return 0 if no acceptable peers', async () => {
+      fakePeers = createFakePeers(20);
+      acceptableStub.returns([]);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(0);
+    });
+    it('should return 0 if no connected peers', async () => {
+      fakePeers = createFakePeers(20, { state: PeerState.DISCONNECTED });
+      acceptableStub.callsFake((w) => w);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(0);
+    });
+    it('should return 100 if all matching broadhash', async () => {
+      fakePeers = createFakePeers(20);
+      acceptableStub.callsFake((w) => w);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(100);
+    });
+    it('should return 25 if 100 matched and 300 did not', async () => {
+      fakePeers = [].concat(
+        createFakePeers(100),
+        createFakePeers(300, { broadhash: 'bb' })
+      );
+      acceptableStub.callsFake((w) => w);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(25);
     });
   });
 
