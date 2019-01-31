@@ -100,6 +100,11 @@ export class DelegatesModule {
     direction: 'forward' | 'backward',
     newHeight: number
   ) {
+    if (newHeight === 1) {
+      // Dont do anything for the first block
+      return;
+    }
+
     const oldHeight = direction === 'forward' ? newHeight - 1 : newHeight + 1;
     const oldRound = this.roundsLogic.calcRound(oldHeight);
     const newRound = this.roundsLogic.calcRound(newHeight);

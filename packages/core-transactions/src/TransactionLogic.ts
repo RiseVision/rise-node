@@ -260,7 +260,7 @@ export class TransactionLogic implements ITransactionLogic {
       // round  : this.roundsLogic.calcRound(block.height),
       sender: sender.address,
     });
-    const ops = this.accountLogic.merge(sender.address, {
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
       balance: -amount,
     });
     ops.push(...(await this.types[tx.type].apply(tx, block, sender)));
@@ -290,9 +290,8 @@ export class TransactionLogic implements ITransactionLogic {
       // round  : this.roundsLogic.calcRound(block.height),
       sender: sender.address,
     });
-    const ops = this.accountLogic.merge(sender.address, {
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
       balance: amount,
-      // round  : this.roundsLogic.calcRound(block.height),
     });
     ops.push(...(await this.types[tx.type].undo(tx, block, sender)));
     return await this.hookSystem.apply_filters(
@@ -315,7 +314,7 @@ export class TransactionLogic implements ITransactionLogic {
 
     sender.u_balance -= amount;
 
-    const ops = this.accountLogic.merge(sender.address, {
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
       u_balance: -amount,
     });
     ops.push(...(await this.types[tx.type].applyUnconfirmed(tx, sender)));
@@ -339,7 +338,9 @@ export class TransactionLogic implements ITransactionLogic {
 
     sender.u_balance += amount;
 
-    const ops = this.accountLogic.merge(sender.address, { u_balance: amount });
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
+      u_balance: amount,
+    });
     ops.push(...(await this.types[tx.type].undoUnconfirmed(tx, sender)));
     return await this.hookSystem.apply_filters(
       TxUndoUnconfirmedFilter.name,

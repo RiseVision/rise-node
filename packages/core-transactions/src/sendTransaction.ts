@@ -86,7 +86,7 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
     return await this.hookSystem.apply_filters(
       SendTxApplyFilter.name,
       [
-        ...this.accountLogic.merge(tx.recipientId, {
+        ...this.accountLogic.mergeBalanceDiff(tx.recipientId, {
           balance: BigInt(tx.amount),
           // round    : this.roundsLogic.calcRound(block.height),
           u_balance: BigInt(tx.amount),
@@ -107,7 +107,7 @@ export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
     return await this.hookSystem.apply_filters(
       SendTxUndoFilter.name,
       [
-        ...this.accountLogic.merge(tx.recipientId, {
+        ...this.accountLogic.mergeBalanceDiff(tx.recipientId, {
           balance: -BigInt(tx.amount),
           // round    : this.roundsLogic.calcRound(block.height),
           u_balance: -BigInt(tx.amount),

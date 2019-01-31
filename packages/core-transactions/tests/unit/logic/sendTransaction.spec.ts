@@ -112,7 +112,7 @@ describe('logic/transactions/send', () => {
   describe('apply', () => {
     it('should return an array of objects', async () => {
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns([{ foo: 'bar' }] as any);
       const result = await instance.apply(tx as any, block, sender);
       expect(result).to.be.an('array');
@@ -127,7 +127,9 @@ describe('logic/transactions/send', () => {
     });
 
     it('should to be rejected if accountLogic.merge() throws an error', async () => {
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'mergeBalanceDiff')
+        .returns([]);
 
       const error = new Error('Fake Error!');
       accountMergeStub.throws(error);
@@ -138,7 +140,7 @@ describe('logic/transactions/send', () => {
     it('should go through SendTxUndoFilter', async () => {
       const stub = sandbox.stub();
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns(['a'] as any);
 
       class A extends WPHooksSubscriber(Object) {
@@ -167,7 +169,7 @@ describe('logic/transactions/send', () => {
   describe('undo', () => {
     it('should return an array of objects', async () => {
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns([{ foo: 'bar' }] as any);
 
       const result: DBUpsertOp<any> = (await instance.undo(
@@ -187,7 +189,9 @@ describe('logic/transactions/send', () => {
     });
 
     it('should to be rejected if accountLogic.merge() throws an error', async () => {
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'mergeBalanceDiff')
+        .returns([]);
       const error = new Error('Fake Error!');
       accountMergeStub.throws(error);
       await expect(instance.undo(tx as any, block, sender)).to.be.rejectedWith(
@@ -198,7 +202,7 @@ describe('logic/transactions/send', () => {
     it('should go through SendTxUndoFilter', async () => {
       const stub = sandbox.stub();
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns(['a'] as any);
       // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {

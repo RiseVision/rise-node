@@ -45,34 +45,6 @@ describe('logic/account', () => {
     sandbox.restore();
   });
 
-  describe('fields', () => {
-    it('should correctly fill in editable fields', () => {
-      // @ts-ignore
-      expect(instance.editable).deep.eq([
-        'isDelegate',
-        'u_isDelegate',
-        'secondSignature',
-        'u_secondSignature',
-        'balance',
-        'u_balance',
-        'vote',
-        'rate',
-        'delegates',
-        'u_delegates',
-        'multisignatures',
-        'u_multisignatures',
-        'multimin',
-        'u_multimin',
-        'multilifetime',
-        'u_multilifetime',
-        'blockId',
-        'producedblocks',
-        'missedblocks',
-        'fees',
-        'rewards',
-      ]);
-    });
-  });
   // describe('recreateTables', () => {
   //   let dropStub: SinonStub;
   //   let sequelizeStub: SinonStub;
@@ -217,50 +189,35 @@ describe('logic/account', () => {
       });
     });
   });
-  //
-  describe('account.set', () => {
-    let upsertStub: SinonStub;
-    beforeEach(() => {
-      upsertStub = sandbox.stub(accModel, 'upsert').resolves();
-    });
 
-    it('should call AccountsModel upsert with proper data', async () => {
-      await instance.set('address' as Address, { balance: 10n });
-      expect(upsertStub.firstCall.args[0]).to.be.deep.eq({
-        address: 'address',
-        balance: 10n,
-      });
-    });
-  });
-
-  describe('account.merge', () => {
+  describe('account.mergeBalanceDiff', () => {
     it('should return empty array if no ops to be performed', () => {
-      const ops: any = instance.merge('1R' as Address, {});
+      const ops: any = instance.mergeBalanceDiff('1R' as Address, {});
       expect(ops.length).to.be.eq(1);
       const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({});
     });
-    it('should allow only editable fields and discard the others', () => {
-      const ops = instance.merge(
+    it('should allow only balance fields and discard the others', () => {
+      const ops = instance.mergeBalanceDiff(
         '1R' as Address,
         {
-          balance: 11,
-          u_balance: 12,
-          rate: 13,
-          virgin: 14,
-          rewards: 15,
-          fees: 16,
-          producedblocks: 17,
+          balance: 11n,
+          u_balance: 12n,
+          rate: 13n,
+          virgin: 14n,
+          rewards: 15n,
+          fees: 16n,
+          producedblocks: 17n,
           publicKey: Buffer.alloc(32).fill('a'),
-          secondSignature: 19,
-          u_secondSignature: 20,
-          isDelegate: 21,
-          u_isDelegate: 22,
-          missedblocks: 18,
+          secondSignature: 19n,
+          u_secondSignature: 20n,
+          isDelegate: 21n,
+          u_isDelegate: 22n,
+          missedblocks: 18n,
           blockId: '1',
-          round: 10,
-          vote: 10,
+          round: 10n,
+          vote: 10n,
           username: 'meow',
           u_username: 'meow',
           address: '2R',
@@ -271,21 +228,13 @@ describe('logic/account', () => {
       const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({
-        vote: { val: 'vote + 10' },
         balance: { val: 'balance + 11' },
         u_balance: { val: 'u_balance + 12' },
-        rate: { val: 'rate + 13' },
-        rewards: { val: 'rewards + 15' },
-        fees: { val: 'fees + 16' },
-        producedblocks: { val: 'producedblocks + 17' },
-        missedblocks: { val: 'missedblocks + 18' },
-        blockId: '1',
       });
     });
     it('should handle balance', () => {
-      const ops: any = instance.merge('1R' as Address, {
+      const ops: any = instance.mergeBalanceDiff('1R' as Address, {
         balance: 10n,
-        round: 1,
       });
       expect((ops[0] as DBUpdateOp<any>).values).to.be.deep.eq({
         balance: { val: 'balance + 10' },
@@ -293,32 +242,13 @@ describe('logic/account', () => {
     });
 
     it('should remove account virginity on u_balance', () => {
-      const ops: any = instance.merge('1R' as Address, { u_balance: -1n });
+      const ops: any = instance.mergeBalanceDiff('1R' as Address, {
+        u_balance: -1n,
+      });
       expect(ops[0].values).to.be.deep.eq({
         u_balance: { val: 'u_balance - 1' },
         virgin: 0,
       });
-    });
-  });
-  //
-  describe('account.remove', () => {
-    let destroyStub: SinonStub;
-    beforeEach(() => {
-      destroyStub = sandbox.stub(accModel, 'destroy').resolves();
-    });
-    it('should call accountsmodel.destroy with uppercase account', async () => {
-      await instance.remove('1r');
-      expect(destroyStub.calledOnce).is.true;
-      expect(destroyStub.firstCall.args[0]).is.deep.eq({
-        where: {
-          address: '1R' as Address,
-        },
-      });
-    });
-
-    it('should return whatever detroy returns', async () => {
-      destroyStub.resolves(10);
-      expect(await instance.remove('1r')).to.be.eq(10);
     });
   });
 

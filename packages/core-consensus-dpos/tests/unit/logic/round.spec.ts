@@ -6,6 +6,7 @@ import * as chai from 'chai';
 import * as fs from 'fs';
 import { Container } from 'inversify';
 import { Op } from 'sequelize';
+import * as sequelize from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { dPoSSymbols, RoundChanges } from '../../../src/helpers';
@@ -227,6 +228,9 @@ describe('logic/round', () => {
 
     it('should apply round changes to each delegate, with backwards false and fees > 0', async () => {
       at.returns({
+        balance: 0n,
+        fees: 0n,
+        rewards: 0n,
         feesRemaining: 10n,
       });
 
@@ -243,7 +247,10 @@ describe('logic/round', () => {
       );
       expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
         changes: {
+          balance: 0n,
+          fees: 0n,
           feesRemaining: 10n,
+          rewards: 0n,
         },
         delegate: 'aabbcc',
       });
@@ -259,8 +266,6 @@ describe('logic/round', () => {
       expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
         'Applying round'
       );
-      // TODO: Check this ->
-      expect(retVal).to.deep.equal([]);
     });
 
     it('should behave correctly when backwards false, fees > 0 && feesRemaining > 0', async () => {
@@ -282,43 +287,30 @@ describe('logic/round', () => {
       expect(at.secondCall.args[0]).to.equal(1);
       expect(at.thirdCall.args[0]).to.equal(1);
 
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.calledThrice).is.true;
-      expect(
-        scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]
-      ).is.deep.eq({
-        address: 'aa',
-        balance: 10n,
+      expect(retVal[0].options.where.address).eq('aa');
+      expect(retVal[0].values).deep.eq({
+        balance: sequelize.literal('balance + 10'),
+        fees: sequelize.literal('fees + 5'),
+        u_balance: sequelize.literal('u_balance + 10'),
+        producedblocks: sequelize.literal('producedblocks + 1'),
+        rewards: sequelize.literal('rewards + 4'),
         cmb: 0,
-        fees: 5n,
-        producedblocks: 1,
-        rewards: 4n,
-        u_balance: 10n,
-        round: 10,
       });
-      expect(
-        scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]
-      ).is.deep.eq({
-        address: 'bb',
-        balance: 10n,
+      expect(retVal[1].options.where.address).eq('bb');
+      expect(retVal[1].values).deep.eq({
+        balance: sequelize.literal('balance + 10'),
+        fees: sequelize.literal('fees + 5'),
+        u_balance: sequelize.literal('u_balance + 10'),
+        producedblocks: sequelize.literal('producedblocks + 1'),
+        rewards: sequelize.literal('rewards + 4'),
         cmb: 0,
-        fees: 5n,
-        producedblocks: 1,
-        rewards: 4n,
-        u_balance: 10n,
-        round: 10,
       });
-      // Remainder of 1 feesRemaining
-      expect(
-        scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]
-      ).is.deep.eq({
-        address: 'bb',
-        balance: 1n,
-        fees: 1n,
-        u_balance: 1n,
-        round: 10,
+      expect(retVal[2].options.where.address).eq('bb');
+      expect(retVal[2].values).deep.eq({
+        balance: sequelize.literal('balance + 1'),
+        fees: sequelize.literal('fees + 1'),
+        u_balance: sequelize.literal('u_balance + 1'),
       });
-
-      expect(retVal).to.be.deep.eq([]);
     });
   });
 

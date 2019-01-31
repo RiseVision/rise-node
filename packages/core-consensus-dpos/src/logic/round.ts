@@ -58,6 +58,15 @@ export interface IRoundLogicNewable {
   new (scope: RoundLogicScope, slots: Slots): RoundLogic;
 }
 
+function toDiffLiteral(column, value: number | bigint) {
+  const operand = value > 0 ? '+' : '-';
+  // remove sign when serializing to string as operand will already take care of it.
+  value = value > 0 ? value : -value;
+  if (typeof value !== 'bigint' && typeof value !== 'number') {
+    throw new Error('Invalid diff literal');
+  }
+  return sequelize.literal(`${column} ${operand} ${value}`);
+}
 // This cannot be injected directly as it needs to be created.
 // rounds module.
 export class RoundLogic {
@@ -184,20 +193,41 @@ export class RoundLogic {
       });
 
       // merge Account in the direction.
-      queries.push(
-        ...this.scope.modules.accounts.mergeAccountAndGetOPs({
-          address: this.scope.modules.accounts.generateAddressByPubData(
-            delegate
+      queries.push({
+        model: this.scope.models.AccountsModel,
+        options: {
+          limit: 1,
+          where: {
+            address: this.scope.modules.accounts.generateAddressByPubData(
+              delegate
+            ),
+          },
+        },
+        type: 'update',
+        values: {
+          balance: toDiffLiteral(
+            'balance',
+            this.scope.backwards ? -changes.balance : changes.balance
           ),
-          balance: this.scope.backwards ? -changes.balance : changes.balance,
           cmb: 0,
-          fees: this.scope.backwards ? -changes.fees : changes.fees,
-          producedblocks: this.scope.backwards ? -1 : 1,
-          rewards: this.scope.backwards ? -changes.rewards : changes.rewards,
-          round: this.scope.round,
-          u_balance: this.scope.backwards ? -changes.balance : changes.balance,
-        })
-      );
+          fees: toDiffLiteral(
+            'fees',
+            this.scope.backwards ? -changes.fees : changes.fees
+          ),
+          producedblocks: toDiffLiteral(
+            'producedblocks',
+            this.scope.backwards ? -1 : 1
+          ),
+          rewards: toDiffLiteral(
+            'rewards',
+            this.scope.backwards ? -changes.rewards : changes.rewards
+          ),
+          u_balance: toDiffLiteral(
+            'u_balance',
+            this.scope.backwards ? -changes.balance : changes.balance
+          ),
+        },
+      });
     }
 
     // last delegate will always get the remainder fees.
@@ -214,18 +244,23 @@ export class RoundLogic {
         delegate: remainderDelegate.toString('hex'),
         fees: feesRemaining,
       });
-
-      queries.push(
-        ...this.scope.modules.accounts.mergeAccountAndGetOPs({
-          address: this.scope.modules.accounts.generateAddressByPubData(
-            remainderDelegate
-          ),
-          balance: feesRemaining,
-          fees: feesRemaining,
-          round: this.scope.round,
-          u_balance: feesRemaining,
-        })
-      );
+      queries.push({
+        model: this.scope.models.AccountsModel,
+        options: {
+          limit: 1,
+          where: {
+            address: this.scope.modules.accounts.generateAddressByPubData(
+              remainderDelegate
+            ),
+          },
+        },
+        type: 'update',
+        values: {
+          balance: toDiffLiteral('balance', feesRemaining),
+          fees: toDiffLiteral('fees', feesRemaining),
+          u_balance: toDiffLiteral('u_balance', feesRemaining),
+        },
+      });
     }
 
     this.scope.library.logger.trace('Applying round', queries.length);

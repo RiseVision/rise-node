@@ -662,7 +662,9 @@ describe('logic/transaction', () => {
     });
 
     it('should call accountLogic.merge', async () => {
-      const mergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const mergeStub = sandbox
+        .stub(accountLogic, 'mergeBalanceDiff')
+        .returns([]);
       await instance.apply(tx as any, block, sender);
 
       expect(mergeStub.calledOnce).to.be.true;
@@ -722,7 +724,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call accountLogic.merge', async () => {
-      const alstub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const alstub = sandbox.stub(accountLogic, 'mergeBalanceDiff').returns([]);
       await instance.undo(tx as any, block, sender);
       expect(alstub.calledOnce).to.be.true;
       expect(alstub.firstCall.args[0]).to.be.equal(sender.address);
@@ -796,7 +798,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call accountLogic.merge', async () => {
-      const aMStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const aMStub = sandbox.stub(accountLogic, 'mergeBalanceDiff').returns([]);
       await instance.applyUnconfirmed(tx as any, sender);
       expect(aMStub.calledOnce).to.be.true;
       expect(aMStub.firstCall.args[0]).to.be.equal(sender.address);
@@ -853,7 +855,7 @@ describe('logic/transaction', () => {
     });
 
     it('should call accountLogic.merge', async () => {
-      const aMStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const aMStub = sandbox.stub(accountLogic, 'mergeBalanceDiff').returns([]);
 
       await instance.undoUnconfirmed(tx as any, sender);
       expect(aMStub.calledOnce).to.be.true;

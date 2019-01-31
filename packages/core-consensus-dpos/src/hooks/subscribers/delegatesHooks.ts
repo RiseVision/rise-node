@@ -1,4 +1,4 @@
-import { OnCheckIntegrity } from '@risevision/core';
+import { OnCheckIntegrity, RecreateAccountsTables } from '@risevision/core';
 import { AccountsSymbols } from '@risevision/core-accounts';
 import {
   ApplyBlockDBOps,
@@ -8,7 +8,7 @@ import {
   VerifyBlock,
   VerifyReceipt,
 } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
+import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
@@ -16,10 +16,15 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
+import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { dPoSSymbols, Slots } from '../../helpers';
-import { AccountsModelForDPOS, DelegatesModel } from '../../models';
+import {
+  AccountsModelForDPOS,
+  DelegatesModel,
+  DelegatesRoundModel,
+} from '../../models';
 import { DelegatesModule } from '../../modules';
 
 const Extendable = WPHooksSubscriber(Object);
@@ -35,6 +40,12 @@ export class DelegatesHooks extends Extendable {
   @inject(ModelSymbols.model)
   @named(AccountsSymbols.model)
   private accountsModel: typeof AccountsModelForDPOS;
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.delegatesRound)
+  private delegatesRoundModel: typeof DelegatesRoundModel;
+
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
 
   @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
@@ -146,5 +157,17 @@ export class DelegatesHooks extends Extendable {
   ) {
     await this.delegatesModule.onBlockChanged('backward', prevBlock.height);
     return dbOP;
+  }
+
+  @RecreateAccountsTables()
+  private async recreateTables(): Promise<void> {
+    await this.delegatesRoundModel
+      .truncate({ cascade: true })
+      .catch(
+        catchToLoggerAndRemapError(
+          'DelegatesRoundModel#removeTables error',
+          this.logger
+        )
+      );
   }
 }

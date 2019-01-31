@@ -21,7 +21,5 @@ export interface IAccountsModule<T extends IAccountsModel = IAccountsModel> {
 
   getAccounts(filter: AccountFilterData<T>): Promise<T[]>;
 
-  mergeAccountAndGetOPs(diff: AccountDiffType<T>): Array<DBOp<any>>;
-
   generateAddressByPubData(pd: Buffer): string & As<'address'>;
 }

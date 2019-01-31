@@ -131,30 +131,6 @@ describe('modules/accounts', () => {
   });
 
   //
-  describe('.mergeAccountAndGetOPs', () => {
-    let mergeStub: SinonStub;
-    beforeEach(() => {
-      mergeStub = sandbox
-        .stub(container.get<any>(AccountsSymbols.logic), 'merge')
-        .returns(['one', 'two']);
-    });
-    it('should throw if no publicKey and address is provided', async () => {
-      expect(() => accountModule.mergeAccountAndGetOPs({} as any)).to.be.throw(
-        'Missing address and public key'
-      );
-    });
-    it('should derive address from publicKey if not provided', () => {
-      const res = accountModule.mergeAccountAndGetOPs({
-        address: 'meow' as Address,
-        balance: 10n,
-      });
-
-      expect(mergeStub.called).true;
-      expect(mergeStub.calledWith('meow', { balance: 10n })).true;
-      expect(res).deep.eq(['one', 'two']);
-    });
-  });
-  //
   describe('.generateAddressByPubData', () => {
     it('should resolve pubkey and addresses correctly', () => {
       for (let i = 0; i < 100; i++) {
