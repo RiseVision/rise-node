@@ -1,14 +1,21 @@
 import { OnCheckIntegrity } from '@risevision/core';
 import { AccountsSymbols } from '@risevision/core-accounts';
 import {
+  ApplyBlockDBOps,
   BlocksConstantsType,
   BlocksSymbols,
+  RollbackBlockDBOps,
   VerifyBlock,
   VerifyReceipt,
 } from '@risevision/core-blocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, SignedBlockType } from '@risevision/core-types';
+import {
+  ConstantsType,
+  DBOp,
+  SignedAndChainedBlockType,
+  SignedBlockType,
+} from '@risevision/core-types';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { dPoSSymbols, Slots } from '../../helpers';
@@ -120,5 +127,24 @@ export class DelegatesHooks extends Extendable {
     payload.errors = errors;
     payload.verified = errors.length === 0;
     return payload;
+  }
+
+  @ApplyBlockDBOps()
+  private async onApplyBlockDBOpsFilter(
+    dbOP: Array<DBOp<any>>,
+    block: SignedAndChainedBlockType
+  ) {
+    await this.delegatesModule.onBlockChanged('forward', block.height);
+    return dbOP;
+  }
+
+  @RollbackBlockDBOps()
+  private async onRollbackBlockDBOpsFilter(
+    dbOP: Array<DBOp<any>>,
+    block: SignedAndChainedBlockType,
+    prevBlock: SignedAndChainedBlockType
+  ) {
+    await this.delegatesModule.onBlockChanged('backward', prevBlock.height);
+    return dbOP;
   }
 }
