@@ -36,10 +36,11 @@ export class OldSecondSignatureTx extends OldBaseTx<
     return this.secondSignTX.calculateMinFee(tx, sender, height);
   }
 
-  public verify(
+  public async verify(
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: AccountsModelWith2ndSign
   ): Promise<void> {
+    await super.verify(tx, sender);
     return this.secondSignTX.verify(tx, sender);
   }
 

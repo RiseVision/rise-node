@@ -82,6 +82,8 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
     tx: IBaseTransaction<VoteAsset> & { senderId: string },
     sender: AccountsModelForDPOS
   ): Promise<void> {
+    await super.verify(tx, sender);
+
     if (tx.recipientId !== tx.senderId) {
       throw new Error('Missing recipient');
     }

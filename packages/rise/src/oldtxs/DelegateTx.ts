@@ -78,6 +78,8 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
     tx: IBaseTransaction<DelegateAsset>,
     sender: AccountsModelForDPOS
   ): Promise<void> {
+    await super.verify(tx, sender);
+
     if (tx.recipientId) {
       throw new Error('Invalid recipient');
     }
@@ -137,8 +139,6 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
         'With this transaction type you need to use plain pubKey buffer'
       );
     }
-
-    // TODO: Verify fee matches minFee. for this and all old txs types.
 
     const account = await this.accountsModule.getAccount({ username });
     if (account) {

@@ -22,10 +22,11 @@ export class OldSendTx extends OldBaseTx<void, null> {
     return this.systemModule.getFees(height).fees.send;
   }
 
-  public verify(
+  public async verify(
     tx: IBaseTransaction<void>,
     sender: IAccountsModel
   ): Promise<void> {
+    await super.verify(tx, sender);
     return this.sendTX.verify(tx as any, sender);
   }
 
