@@ -49,23 +49,24 @@ export class PeersModule implements IPeersModule {
     return this.dbSave();
   }
 
-  public async updateConsensus() {
-    const result = await this.determineConsensus();
-    this.appState.set('node.consensus', result.consensus);
+  public updateConsensus() {
+    const { consensus } = this.determineConsensus(this.systemModule.broadhash);
+    this.appState.set('node.consensus', consensus);
   }
 
-  public async determineConsensus(
-    broadhash?: string
-  ): Promise<{
+  /**
+   * Calculate consensus for given broadhash (defaults to current node broadhash).
+   */
+  public determineConsensus(
+    broadhash: string
+  ): {
     consensus: number;
     matchingPeers: number;
     totalPeers: number;
-  }> {
-    broadhash = broadhash || this.systemModule.broadhash;
-
-    let peersList = await this.getByFilter({
-      state: PeerState.CONNECTED,
-    });
+  } {
+    let peersList = this.peersLogic
+      .list(false)
+      .filter((p) => p.state === PeerState.CONNECTED);
     peersList = this.peersLogic.acceptable(peersList);
 
     const totalPeers = peersList.length;
@@ -147,14 +148,22 @@ export class PeersModule implements IPeersModule {
    */
   public update(peer: Peer) {
     peer.state = PeerState.CONNECTED;
-    return this.peersLogic.upsert(peer, false);
+    const updated = this.peersLogic.upsert(peer, false);
+    if (updated) {
+      this.updateConsensus();
+    }
+    return updated;
   }
 
   /**
    * Remove a peer from the list if its not one from config files
    */
   public remove(peerIP: string, port: number): boolean {
-    return this.peersLogic.remove({ ip: peerIP, port });
+    const removed = this.peersLogic.remove({ ip: peerIP, port });
+    if (removed) {
+      this.updateConsensus();
+    }
+    return removed;
   }
 
   /**
