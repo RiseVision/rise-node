@@ -25,6 +25,7 @@ interface IPackageJson {
   name: string;
   version: string;
   main?: string;
+  types?: string;
   bin?: {
     [key: string]: string;
   };
@@ -265,8 +266,10 @@ const transpilePackage = (packagePath: string = '.'): Promise<void> => {
 };
 
 const getEntryPoints = (packagePath: string = '.'): string[] => {
-  const { main: mainEntry, bin } = parsePackageJson(packagePath);
-  let entryPoints = [mainEntry];
+  const { main: mainEntry, types: typeEntry, bin } = parsePackageJson(
+    packagePath
+  );
+  let entryPoints = [mainEntry, typeEntry];
   if (typeof bin === 'object') {
     entryPoints = entryPoints.concat(Object.keys(bin).map((k) => bin[k]));
   }

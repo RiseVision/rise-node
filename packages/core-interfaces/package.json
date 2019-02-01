@@ -14,7 +14,9 @@
     "@risevision/core-types": "^1.0.0",
     "inversify": "5.0.1",
     "sequelize": "4.42.0",
-    "sequelize-typescript": "0.6.6"
+    "sequelize-typescript": "0.6.6",
+    "type-tagger": "^1.0.0",
+    "utility-types": "^2.1.0"
   },
   "devDependencies": {
     "shx": "=0.3.2",

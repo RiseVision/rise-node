@@ -18,7 +18,7 @@
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
-    "@risevision/core-utils": "^1.0.0",
+    "sodium": "3.0.2",
     "sodium-native": "^2.2.3"
   },
   "devDependencies": {

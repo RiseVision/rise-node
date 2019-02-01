@@ -15,11 +15,14 @@
   "author": "Rise Team",
   "license": "GPL-3.0",
   "dependencies": {
+    "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-models": "^1.0.0",
-    "@risevision/core-types": "^1.0.0"
+    "inversify": "5.0.1",
+    "sequelize-typescript": "0.6.6"
   },
   "devDependencies": {
+    "@risevision/core-types": "^1.0.0",
     "@types/node": "^10.12.15",
     "shx": "=0.3.2",
     "ts-node": "7.0.1",
