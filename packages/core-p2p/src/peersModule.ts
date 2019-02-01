@@ -8,31 +8,20 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AppConfig, PeerState, PeerType } from '@risevision/core-types';
-import { decorate, inject, injectable, named } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
-import {
-  OnWPAction,
-  WordPressHookSystem,
-  WPHooksSubscriber,
-} from 'mangiafuoco';
 import * as shuffle from 'shuffle-array';
 import { P2PConstantsType, p2pSymbols } from './helpers';
 import { IPeersModule, PeerFilter } from './interfaces';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
 
-const Extendable = WPHooksSubscriber(Object);
-decorate(injectable(), Extendable);
-
 @injectable()
-export class PeersModule extends Extendable implements IPeersModule {
+export class PeersModule implements IPeersModule {
   // Generic
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
-  // tslint:disable-next-line member-ordering
-  @inject(Symbols.generic.hookSystem)
-  public hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.logger)
@@ -58,11 +47,6 @@ export class PeersModule extends Extendable implements IPeersModule {
   public cleanup() {
     // save on cleanup.
     return this.dbSave();
-  }
-
-  @OnWPAction('core/blocks/chain/applyBlock.post')
-  public async onPostApplyBlock() {
-    this.updateConsensus();
   }
 
   public updateConsensus() {

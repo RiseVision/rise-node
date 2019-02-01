@@ -178,7 +178,6 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     );
     await transportModule.unHook();
     await transportModule.cleanup();
-    await this.container.get<PeersModule>(p2pSymbols.modules.peers).unHook();
     await this.container.get<PeersModule>(p2pSymbols.modules.peers).cleanup();
     await this.container
       .get<PeersLoaderSubscriber>(p2pSymbols.__internals.loadSubscriber)
@@ -189,9 +188,6 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
   public async boot(): Promise<void> {
     await this.container
       .get<TransportModule>(p2pSymbols.modules.transport)
-      .hookMethods();
-    await this.container
-      .get<PeersModule>(p2pSymbols.modules.peers)
       .hookMethods();
     await this.container
       .get<PeersLoaderSubscriber>(p2pSymbols.__internals.loadSubscriber)

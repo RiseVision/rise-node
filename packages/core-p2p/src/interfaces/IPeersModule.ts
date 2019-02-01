@@ -38,6 +38,11 @@ export interface IPeersModule {
   }): Promise<Peer[]>;
 
   /**
+   * Recalculate the consensus. Should be called when new blocks are received.
+   */
+  updateConsensus(): void;
+
+  /**
    * Given a list of peers (with associated blockchain height), we find a list
    * of good peers (likely to sync with), then perform a histogram cut, removing
    * peers far from the most common observed height. This is not as easy as it
