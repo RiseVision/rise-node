@@ -11,6 +11,7 @@ import * as _ from 'lodash/fp';
 import * as path from 'path';
 import * as semver from 'semver';
 import { SourceMapConsumer } from 'source-map';
+import * as ts from 'typescript';
 
 import { isBuiltIn } from './builtin';
 
@@ -46,6 +47,12 @@ interface ITsConfig {
   compilerOptions: {
     outDir: string;
   };
+}
+
+interface IParseImportsResult {
+  strings: string[];
+  expressions: string[];
+  nodes: detective.Node[];
 }
 
 enum WarningType {
@@ -162,7 +169,14 @@ const parsePackageJson = _.memoize(
 
 const parseTsConfig = _.memoize(
   (packagePath: string = '.'): ITsConfig => {
-    return parseJson(packagePath, 'tsconfig.json') as ITsConfig;
+    const file = fs.readFileSync(
+      path.join(root(), packagePath, 'tsconfig.json'),
+      'utf8'
+    );
+    return ts.parseConfigFileTextToJson(
+      path.join(root(), packagePath, 'tsconfig.json'),
+      file.toString()
+    ).config;
   }
 );
 
@@ -261,6 +275,24 @@ const getEntryPoints = (packagePath: string = '.'): string[] => {
     .map((s) => path.join(packagePath, s));
 };
 
+const duplicateImportRefs = (importRefs: string[]): string[] => {
+  return importRefs.reduce((newRefs, ref) => {
+    let newRef;
+    switch (path.extname(ref)) {
+      case '.js':
+        newRef = ref.replace(/\.js$/, '.d.ts');
+        break;
+      case '.ts':
+        newRef = ref.replace(/\.d\.ts$/, '.js');
+        break;
+    }
+    if (fs.existsSync(path.join(root(), newRef))) {
+      newRefs.push(newRef);
+    }
+    return newRefs;
+  }, importRefs);
+};
+
 const parseRequireStrings = (strings, dir): [string[], string[]] => {
   return strings.reduce(
     ([allFiles, allPackages], name) => {
@@ -324,10 +356,53 @@ const parseRequireExpressions = async (
     });
 };
 
+const parseNodeImports = (
+  filePath: string,
+  src: string
+): IParseImportsResult => {
+  return detective.find(src, { nodes: true });
+};
+
+const parseTsImports = (filePath: string, src: string): IParseImportsResult => {
+  const input = path.join(root(), filePath);
+  const nodes = ts.createSourceFile(input, src, ts.ScriptTarget.Latest, true);
+
+  const result = [];
+  const visit = (node: ts.Node) => {
+    if (node.kind === ts.SyntaxKind.ImportKeyword) {
+      node.parent.forEachChild((child) => {
+        if (child.kind === ts.SyntaxKind.StringLiteral) {
+          result.push((child as ts.StringLiteral).text);
+        }
+      });
+    }
+    if (node.kind === ts.SyntaxKind.ImportDeclaration) {
+      const specifier = (node as ts.ImportDeclaration).moduleSpecifier;
+      if (specifier.kind === ts.SyntaxKind.StringLiteral) {
+        result.push((specifier as ts.StringLiteral).text);
+      }
+    }
+    node.forEachChild(visit);
+  };
+
+  visit(nodes);
+  return { strings: result, expressions: [], nodes: [] };
+};
+
+const parseImports = (filePath: string, src: string): IParseImportsResult => {
+  switch (path.extname(filePath)) {
+    case '.js':
+      return parseNodeImports(filePath, src);
+    case '.ts':
+      return parseTsImports(filePath, src);
+  }
+  return { strings: [], expressions: [], nodes: [] };
+};
+
 const scanFile = async (filePath: string): Promise<IFileScanResult> => {
   const dir = path.dirname(filePath);
-  const src = fs.readFileSync(path.join(root(), filePath), 'utf8');
-  const { strings, expressions, nodes } = detective.find(src, { nodes: true });
+  const src = fs.readFileSync(path.join(root(), filePath), 'utf8').toString();
+  const { strings, expressions, nodes } = parseImports(filePath, src);
   const [files, packages] = parseRequireStrings(strings, dir);
   const warnings = empty(expressions)
     ? []
@@ -341,21 +416,21 @@ const scanFile = async (filePath: string): Promise<IFileScanResult> => {
 
 const fileHasDependencies = (filePath): boolean => {
   const src = fs.readFileSync(path.join(root(), filePath), 'utf8');
-  const { nodes } = detective.find(src, { nodes: true });
-  return nodes.length > 0;
+  const { strings, expressions } = parseImports(filePath, src);
+  return strings.length + expressions.length > 0;
 };
 
 const findNotTraversed = (packagePath: string, scanned: string[]): string[] => {
   const traversed = new Set(scanned);
   const dir = parseTsConfig(packagePath).compilerOptions.outDir;
-  const files = glob.sync(path.join(root(), packagePath, dir, '**/*.js'));
+  const files = glob.sync(path.join(root(), packagePath, dir, '**/*.{js,ts}'));
   return files
     .map((f) => f.replace(root(), ''))
     .filter((f) => !traversed.has(f));
 };
 
 const walkTree = async (entryPoints: string[]): Promise<IWalkTreeResult> => {
-  const remaining = new Set(entryPoints);
+  const remaining = new Set(duplicateImportRefs(entryPoints));
   const scanned = new Set();
   const packages = new Set();
   let warnings = [];
@@ -365,7 +440,9 @@ const walkTree = async (entryPoints: string[]): Promise<IWalkTreeResult> => {
     remaining.delete(next);
     scanned.add(next);
     result.packages.forEach((p) => packages.add(p));
-    result.files.forEach((f) => (scanned.has(f) ? null : remaining.add(f)));
+    duplicateImportRefs(result.files).forEach((f) =>
+      scanned.has(f) ? null : remaining.add(f)
+    );
     warnings = warnings.concat(result.warnings);
   }
 
@@ -466,7 +543,7 @@ const suggestedDeps = (
   depsDiff: IDepsDiff[]
 ): IDepsMap => {
   const { dependencies } = parsePackageJson(packageName);
-  return depsDiff.reduce((newDeps, depDiff) => {
+  const unorderedDeps = depsDiff.reduce((newDeps, depDiff) => {
     switch (depDiff.type) {
       case DepsDiffType.CompatVer:
       case DepsDiffType.DiffVer:
@@ -478,6 +555,13 @@ const suggestedDeps = (
     }
     return dependencies;
   }, dependencies);
+  const orderedDeps = {};
+  Object.keys(unorderedDeps)
+    .sort()
+    .forEach((key) => {
+      orderedDeps[key] = unorderedDeps[key];
+    });
+  return orderedDeps;
 };
 
 const warningString = (warning: IWarning): string => {
