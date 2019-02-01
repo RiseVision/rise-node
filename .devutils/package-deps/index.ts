@@ -7,10 +7,14 @@ import * as fs from 'fs';
 import * as glob from 'glob';
 import * as empty from 'is-empty';
 import * as lineColumn from 'line-column';
-import * as _ from 'lodash';
+import * as _ from 'lodash/fp';
 import * as path from 'path';
 import * as semver from 'semver';
 import { SourceMapConsumer } from 'source-map';
+
+import { isBuiltIn } from './builtin';
+
+const IGNORED_PACKAGES = ['packages/core-multisignature'];
 
 interface IDepsMap {
   [key: string]: string;
@@ -62,6 +66,7 @@ interface IFileScanWarning extends IWarning {
 
 interface INotTraversedWarning extends IWarning {
   file: string;
+  hasDeps: boolean;
 }
 
 interface INoVersionFoundWarning extends IWarning {
@@ -100,7 +105,25 @@ interface IDepsDiffResult {
   warnings: IWarning[];
 }
 
+class Logger {
+  public log(...args: any[]) {
+    // tslint:disable-next-line no-console
+    console.log(...args);
+  }
+}
+
+const logger = new Logger();
+
 const root = _.memoize((): string => path.join(__dirname, '../../'));
+
+const allPackageNames = _.memoize(() =>
+  fs
+    .readdirSync('packages')
+    .map((d) => path.join(root(), 'packages', d))
+    .filter((d) => fs.lstatSync(d).isDirectory())
+    .map((d) => path.join('packages', path.basename(d)))
+    .filter((p) => !_.includes(p, IGNORED_PACKAGES))
+);
 
 const parseLockfile = _.memoize(
   (packagePath: string = '.'): ILockfile => {
@@ -145,13 +168,9 @@ const parseTsConfig = _.memoize(
 
 const localDepsMap = _.memoize(
   (): IDepsMap => {
-    return fs
-      .readdirSync(path.join(root(), 'packages'))
-      .filter((p) =>
-        fs.lstatSync(path.join(root(), 'packages', p)).isDirectory()
-      )
-      .map((p) => parsePackageJson(path.join('packages', p)))
-      .map(({ name, version }) => ({ [name]: version }))
+    return allPackageNames()
+      .map((p) => parsePackageJson(p))
+      .map(({ name, version }) => ({ [name]: `^${version}` }))
       .reduce((deps, dep) => ({ ...deps, ...dep }));
   }
 );
@@ -186,6 +205,9 @@ const getVersionInfo = _.memoize((packageName: string) => {
 });
 
 const depsMap = (packages: string[]): IDepsMap => {
+  if (empty(packages)) {
+    return {};
+  }
   return packages
     .map((packageName) => {
       const {
@@ -258,7 +280,15 @@ const parseRequireStrings = (strings, dir): [string[], string[]] => {
         }
         return [allFiles.concat(path.join(dir, `${name}.js`)), allPackages];
       }
-      return [allFiles, allPackages.concat(name)];
+      if (isBuiltIn(name)) {
+        return [allFiles, allPackages];
+      }
+      const packageParts = name.split('/');
+      let packageName = packageParts[0];
+      if (name[0] === '@') {
+        packageName = packageParts.slice(0, 2).join('/');
+      }
+      return [allFiles, allPackages.concat(packageName)];
     },
     [[], []]
   );
@@ -309,6 +339,12 @@ const scanFile = async (filePath: string): Promise<IFileScanResult> => {
   };
 };
 
+const fileHasDependencies = (filePath): boolean => {
+  const src = fs.readFileSync(path.join(root(), filePath), 'utf8');
+  const { nodes } = detective.find(src, { nodes: true });
+  return nodes.length > 0;
+};
+
 const findNotTraversed = (packagePath: string, scanned: string[]): string[] => {
   const traversed = new Set(scanned);
   const dir = parseTsConfig(packagePath).compilerOptions.outDir;
@@ -347,10 +383,13 @@ const scanPackage = async (packagePath: string) => {
   return {
     packages,
     warnings: (warnings as IWarning[]).concat(
-      findNotTraversed(packagePath, scanned).map((file) => ({
-        file,
-        type: WarningType.NotTraversed,
-      }))
+      findNotTraversed(packagePath, scanned)
+        .map((file) => [file, fileHasDependencies(file)])
+        .map(([file, hasDeps]) => ({
+          file,
+          hasDeps,
+          type: WarningType.NotTraversed,
+        }))
     ),
   };
 };
@@ -381,11 +420,13 @@ const depsDiffPackage = async (
   const sharedDeps = _.intersection(Object.keys(fromDeps), Object.keys(toDeps));
   const extraDeps = _.difference(Object.keys(fromDeps), sharedDeps);
   const missingDeps = _.difference(Object.keys(toDeps), sharedDeps);
-  const versionDiffs = sharedDeps
-    .map((dep) => ({
-      [dep]: [fromDeps[dep], toDeps[dep]],
-    }))
-    .reduce((deps, dep) => ({ ...deps, ...dep }));
+  const versionDiffs = empty(sharedDeps)
+    ? {}
+    : sharedDeps
+        .map((dep) => ({
+          [dep]: [fromDeps[dep], toDeps[dep]],
+        }))
+        .reduce((deps, dep) => ({ ...deps, ...dep }));
   return {
     depsDiff: [
       ...Object.keys(versionDiffs).map((dep) => {
@@ -420,7 +461,48 @@ const depsDiffPackage = async (
   };
 };
 
-const printDepsDiff = (depsDiff: IDepsDiff[]) => {
+const suggestedDeps = (
+  packageName: string,
+  depsDiff: IDepsDiff[]
+): IDepsMap => {
+  const { dependencies } = parsePackageJson(packageName);
+  return depsDiff.reduce((newDeps, depDiff) => {
+    switch (depDiff.type) {
+      case DepsDiffType.CompatVer:
+      case DepsDiffType.DiffVer:
+      case DepsDiffType.Missing:
+        dependencies[depDiff.name] = depDiff.toVer;
+        break;
+      case DepsDiffType.Extra:
+        delete dependencies[depDiff.name];
+    }
+    return dependencies;
+  }, dependencies);
+};
+
+const warningString = (warning: IWarning): string => {
+  switch (warning.type) {
+    case WarningType.NoVersionFound:
+      const noVer = warning as INoVersionFoundWarning;
+      return `No version found for package ${noVer.packageName}`;
+    case WarningType.NotTraversed:
+      const notTrav = warning as INotTraversedWarning;
+      return `${notTrav.hasDeps ? '[deps] ' : ''}The file ${
+        notTrav.file
+      } was not traversed in scan from entry points`;
+    case WarningType.RequireExpression:
+      const badReq = warning as IFileScanWarning;
+      return `Required expression '${badReq.name}' could not be parsed in ${
+        badReq.source
+      } on line ${badReq.line}`;
+  }
+};
+
+const printDepsDiff = (
+  packageName: string,
+  depsDiff: IDepsDiff[],
+  warnings: IWarning[]
+) => {
   const missingDeps = depsDiff.filter(
     (diff) => diff.type === DepsDiffType.Missing
   );
@@ -429,41 +511,66 @@ const printDepsDiff = (depsDiff: IDepsDiff[]) => {
     (diff) =>
       diff.type === DepsDiffType.DiffVer || diff.type === DepsDiffType.CompatVer
   );
-  const warning = colors.yellow('=>');
-  const error = colors.red('=>');
+  const hasChanges =
+    missingDeps.length + extraDeps.length + mismatchedDeps.length > 0;
+
+  const warn = colors.yellow('=>');
+  const err = colors.red('=>');
+  const succ = colors.green('=>');
+
+  logger.log(`Audit for ${colors.bold(parsePackageJson(packageName).name)}:`);
+
+  if (warnings.length > 0) {
+    logger.log();
+    warnings.forEach((w) => {
+      logger.log(`  ${warn} ${warningString(w)}`);
+    });
+  }
+
+  if (!hasChanges) {
+    logger.log(`\n${succ} No discrepencies found!`);
+  }
+
   if (missingDeps.length > 0) {
-    console.log(colors.bold('Missing Packages:'));
+    logger.log(colors.bold('\n  Missing Packages:'));
     missingDeps.forEach((diff) =>
-      console.log(` ${error} ${diff.name}: ${diff.toVer}`)
+      logger.log(`  ${err} ${diff.name}: ${diff.toVer}`)
     );
-    console.log();
   }
   if (extraDeps.length > 0) {
-    console.log(colors.bold('Unnecessary Packages:'));
+    logger.log(colors.bold('\n  Unnecessary Packages:'));
     extraDeps.forEach((diff) =>
-      console.log(` ${warning} ${diff.name}: ${diff.fromVer}`)
+      logger.log(`  ${warn} ${diff.name}: ${diff.fromVer}`)
     );
-    console.log();
   }
-  if (missingDeps.length > 0) {
-    console.log(colors.bold('Mismatched Packages:'));
+  if (mismatchedDeps.length > 0) {
+    logger.log(colors.bold('\n  Mismatched Packages:'));
     mismatchedDeps.forEach((diff) =>
-      console.log(
-        ` ${diff.type === DepsDiffType.DiffVer ? error : warning} ${
-          diff.name
-        }: ${diff.fromVer} -> ${diff.toVer}`
+      logger.log(
+        `  ${diff.type === DepsDiffType.DiffVer ? err : warn} ${diff.name}: ${
+          diff.fromVer
+        } -> ${diff.toVer}`
       )
     );
-    console.log();
+  }
+
+  if (hasChanges) {
+    logger.log(colors.bold('\n  Suggested Dependencies:\n'));
+    logger.log(JSON.stringify(suggestedDeps(packageName, depsDiff), null, 2));
   }
 };
 
+const audit = async (packageName: string) => {
+  const { depsDiff, warnings } = await depsDiffPackage(packageName);
+  printDepsDiff(packageName, depsDiff, warnings);
+  return depsDiff;
+};
+
 const main = async () => {
-  // await transpilePackage('core-accounts');
-  const { depsDiff, warnings } = await depsDiffPackage(
-    'packages/core-accounts'
-  );
-  printDepsDiff(depsDiff);
+  for (const packageName of allPackageNames()) {
+    await audit(packageName);
+    logger.log();
+  }
 };
 
 main();
