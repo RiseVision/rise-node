@@ -85,14 +85,7 @@ export class BlockLoader extends Extendable {
   private async sync(peerProvider: () => Promise<Peer>) {
     this.logger.info('Starting block sync');
 
-    // Establish consensus. (internally)
-    this.logger.debug('Establishing broadhash consensus before sync');
-    await this.peersModule.updateConsensus();
-
     await this.loadBlocksFromNetwork(peerProvider);
-
-    this.logger.debug('Establishing broadhash consensus after sync');
-    await this.peersModule.updateConsensus();
   }
 
   /**

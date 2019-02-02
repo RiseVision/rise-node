@@ -17,4 +17,8 @@ export const CoreSymbols = {
     loader: Symbol.for('loaderModule'),
     system: Symbols.modules.system,
   },
+  // tslint:disable-next-line
+  __internals: {
+    blockMonitor: Symbol.for('rise.core.internals.blockMonitor'),
+  },
 };

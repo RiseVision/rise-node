@@ -48,6 +48,11 @@ CREATE TABLE IF NOT EXISTS "rounds_fees" (
 );
 
 
+CREATE TABLE IF NOT EXISTS "delegatesround" (
+	"round" INT NOT NULL PRIMARY KEY,
+  "list" bytea[] NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS "idx_mem_accounts2delegates_username" ON public.mem_accounts2delegates USING btree ("username");
 CREATE INDEX IF NOT EXISTS "idx_trsassets_votes_id" ON "trsassets_votes"("transactionId");
 CREATE INDEX IF NOT EXISTS "idx_trsassets_delegates_id" ON "trsassets_delegates"("transactionId");
@@ -58,10 +63,5 @@ DELETE FROM mem_accounts2u_delegates;
 
 INSERT INTO mem_accounts2u_delegates ("address", "username")
   SELECT "address", "username" FROM mem_accounts2delegates;
-
-
-
-
-
 
 COMMIT;

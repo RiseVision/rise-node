@@ -25,7 +25,11 @@ import {
   Slots,
 } from '../helpers/';
 import { RoundsLogic } from '../logic/';
-import { AccountsModelForDPOS, DelegatesModel } from '../models';
+import {
+  AccountsModelForDPOS,
+  DelegatesModel,
+  DelegatesRoundModel,
+} from '../models';
 
 @injectable()
 export class DelegatesModule {
@@ -70,6 +74,9 @@ export class DelegatesModule {
   @named(dPoSSymbols.models.delegates)
   private delegatesModel: typeof DelegatesModel;
   @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.delegatesRound)
+  private delegatesRoundModel: typeof DelegatesRoundModel;
+  @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegates)
   private accountsModel: typeof AccountsModelForDPOS;
 
@@ -89,6 +96,48 @@ export class DelegatesModule {
     return this.checkDelegates(account, added, removed, 'unconfirmed');
   }
 
+  public async onBlockChanged(
+    direction: 'forward' | 'backward',
+    newHeight: number
+  ) {
+    if (newHeight === 1) {
+      // Dont do anything for the first block
+      return;
+    }
+
+    const oldHeight = direction === 'forward' ? newHeight - 1 : newHeight + 1;
+    const oldRound = this.roundsLogic.calcRound(oldHeight);
+    const newRound = this.roundsLogic.calcRound(newHeight);
+
+    if (oldRound !== newRound) {
+      // Round change!
+      // Remove forward cache.
+      if (direction === 'backward') {
+        delete this.delegatesListCache[oldRound];
+        // remove future cache.
+        await this.delegatesRoundModel.destroy({
+          where: { round: { [Op.gte]: oldRound } },
+        });
+
+        // Restore list cache from round.
+        if (!this.delegatesListCache[newRound]) {
+          const r = await this.delegatesRoundModel.findOne({
+            where: { round: newRound },
+          });
+          this.delegatesListCache[newRound] = r.list;
+        }
+      } else {
+        // Lets remove from cache rounds older than 10 to avoid unnecessary memory leaks.
+        delete this.delegatesListCache[newRound - 10];
+
+        // lets save oldRound in db. for faster recovery.
+        await this.delegatesRoundModel.create({
+          list: this.delegatesListCache[oldRound],
+          round: oldRound,
+        });
+      }
+    }
+  }
   /**
    * Generate a randomized list for the round of which the given height is into.
    * @param {number} height blockheight.

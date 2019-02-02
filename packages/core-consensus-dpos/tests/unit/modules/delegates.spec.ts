@@ -1,7 +1,10 @@
 // tslint:disable: max-line-length
 import { generateWallets } from '@risevision/core-accounts/tests/unit/utils/accountsUtils';
-import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
-import { BlockRewardLogic } from '@risevision/core-blocks';
+import {
+  BlockRewardLogic,
+  BlocksConstantsType,
+  BlocksSymbols,
+} from '@risevision/core-blocks';
 import {
   IAccountsModule,
   IBlocksModel,
@@ -16,12 +19,13 @@ import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
 import { Container } from 'inversify';
+import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as supersha from 'supersha';
 import { DposConstantsType, dPoSSymbols, Slots } from '../../../src/helpers';
 import { RoundsLogic } from '../../../src/logic/rounds';
-import { AccountsModelForDPOS } from '../../../src/models';
+import { AccountsModelForDPOS, DelegatesRoundModel } from '../../../src/models';
 import { DelegatesModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
@@ -862,6 +866,77 @@ describe('modules/delegates', () => {
           'confirmed'
         )
       ).to.be.rejectedWith('Maximum number of 1 votes exceeded (1 too many)');
+    });
+  });
+
+  describe('onBlockChanged', () => {
+    let delegatesRoundModel: typeof DelegatesRoundModel;
+    let stubs: { destroy: SinonStub; findOne: SinonStub; create: SinonStub };
+    beforeEach(() => {
+      delegatesRoundModel = container.getNamed(
+        ModelSymbols.model,
+        dPoSSymbols.models.delegatesRound
+      );
+      stubs = {
+        create: sandbox.stub(delegatesRoundModel, 'create'),
+        destroy: sandbox.stub(delegatesRoundModel, 'destroy'),
+        findOne: sandbox.stub(delegatesRoundModel, 'findOne'),
+      };
+    });
+    it('should do nothing if no round change, backward or forward', async () => {
+      await instance.onBlockChanged('forward', 30);
+      await instance.onBlockChanged('backward', 30);
+      expect(stubs.create.called).false;
+      expect(stubs.destroy.called).false;
+      expect(stubs.findOne.called).false;
+    });
+    it('should delete listCache [-10] if forward', async () => {
+      (instance as any).delegatesListCache[10] = 'aaa';
+      (instance as any).delegatesListCache[11] = 'aaa';
+      (instance as any).delegatesListCache[12] = 'aaa';
+      await instance.onBlockChanged('forward', 101 * 20 + 1);
+      expect((instance as any).delegatesListCache).deep.eq({
+        10: 'aaa',
+        12: 'aaa',
+      });
+    });
+    it('should save curListCache in db if forward', async () => {
+      (instance as any).delegatesListCache[20] = [
+        Buffer.alloc(1).fill(0xa),
+        Buffer.alloc(2).fill(0xb),
+      ];
+      await instance.onBlockChanged('forward', 101 * 20 + 1);
+      expect(
+        stubs.create.calledWith({
+          list: [Buffer.alloc(1).fill(0xa), Buffer.alloc(2).fill(0xb)],
+          round: 20,
+        })
+      );
+    });
+    it('should delete listCache [+1] if backward', async () => {
+      (instance as any).delegatesListCache[20] = 'a';
+      (instance as any).delegatesListCache[21] = 'a';
+      await instance.onBlockChanged('backward', 101 * 20);
+      expect((instance as any).delegatesListCache).deep.eq({ 20: 'a' });
+    });
+    it('should delete listCache in db if backward', async () => {
+      (instance as any).delegatesListCache[20] = 'a';
+      (instance as any).delegatesListCache[21] = 'a';
+      await instance.onBlockChanged('backward', 101 * 20);
+      expect(
+        stubs.destroy.calledWith({
+          where: {
+            round: { [Op.gte]: 21 },
+          },
+        })
+      ).true;
+      // calledWith does not work properly with Symbols manually checking
+      expect(stubs.destroy.firstCall.args[0].where.round[Op.gte]).eq(21);
+    });
+    it('should restore listCache from db if backward and no memory cache', async () => {
+      stubs.findOne.resolves({ list: 'meow' });
+      await instance.onBlockChanged('backward', 101 * 20);
+      expect((instance as any).delegatesListCache).deep.eq({ 20: 'meow' });
     });
   });
 });

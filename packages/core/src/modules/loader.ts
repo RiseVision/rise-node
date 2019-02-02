@@ -113,7 +113,7 @@ export class LoaderModule implements ILoaderModule {
         Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1
       )
     ) {
-      const { peers } = await this.peersModule.list({});
+      const peers = await this.peersModule.getPeers({});
       this.network = this.peersModule.findGoodPeers(peers);
     }
     return this.network;

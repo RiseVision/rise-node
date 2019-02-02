@@ -25,3 +25,4 @@ backup.tar
 blockchain.db.gz
 dist/
 .nyc_output/
+yarn-error.log

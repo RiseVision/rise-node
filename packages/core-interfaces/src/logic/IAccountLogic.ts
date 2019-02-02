@@ -25,10 +25,13 @@ export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
    * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
    * based on field balance or delegates.
    * @param {string} address
-   * @param {MemAccountsData} diff
+   * @param {object} diff
    * @returns {Promise<any>}
    */
-  merge(address: Address, diff: AccountDiffType): Array<DBOp<any>>;
+  mergeBalanceDiff(
+    address: Address,
+    diff: { balance?: bigint; u_balance?: bigint }
+  ): Array<DBOp<any>>;
 
   generateAddressFromPubData(pubData: Buffer): string & As<'address'>;
 }

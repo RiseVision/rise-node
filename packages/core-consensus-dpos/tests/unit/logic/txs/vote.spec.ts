@@ -292,7 +292,7 @@ describe('logic/transactions/vote', () => {
     let mergeStub: SinonStub;
     beforeEach(() => {
       calcRoundStub = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
-      mergeStub = sandbox.stub(accountLogicStub, 'merge').resolves();
+      mergeStub = sandbox.stub(accountLogicStub, 'mergeBalanceDiff').resolves();
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
 
@@ -359,7 +359,7 @@ describe('logic/transactions/vote', () => {
         .stub(instance, 'objectNormalize')
         .resolves();
       calcRoundStub = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
-      mergeStub = sandbox.stub(accountLogicStub, 'merge').resolves();
+      mergeStub = sandbox.stub(accountLogicStub, 'mergeBalanceDiff').resolves();
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
     it('should call applyDiffArray with proper values', async () => {
@@ -451,7 +451,7 @@ describe('logic/transactions/vote', () => {
         .stub(instance, 'checkUnconfirmedDelegates')
         .resolves('yesItIs');
       calcRoundStub = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
-      mergeStub = sandbox.stub(accountLogicStub, 'merge').resolves();
+      mergeStub = sandbox.stub(accountLogicStub, 'mergeBalanceDiff').resolves();
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
 
@@ -521,7 +521,7 @@ describe('logic/transactions/vote', () => {
         .stub(instance, 'objectNormalize')
         .resolves();
       calcRoundStub = sandbox.stub(roundsLogicStub, 'calcRound').returns(111);
-      mergeStub = sandbox.stub(accountLogicStub, 'merge').resolves();
+      mergeStub = sandbox.stub(accountLogicStub, 'mergeBalanceDiff').resolves();
       applyDiffArrayStub = sandbox.stub(sender, 'applyDiffArray');
     });
     it('should call applyDiffArray with proper values', async () => {

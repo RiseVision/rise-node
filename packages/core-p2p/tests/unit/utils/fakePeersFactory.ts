@@ -26,6 +26,9 @@ export const createFakePeer = (item: any = {}): PeerType => {
   };
 };
 
-export const createFakePeers = (howMany: number): PeerType[] => {
-  return Array.apply(null, new Array(howMany)).map(() => createFakePeer());
+export const createFakePeers = (
+  howMany: number,
+  item: any = {}
+): PeerType[] => {
+  return Array.apply(null, new Array(howMany)).map(() => createFakePeer(item));
 };

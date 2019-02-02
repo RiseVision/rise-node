@@ -84,13 +84,6 @@ export class AccountsModule implements IAccountsModule {
     );
   }
 
-  public mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>> {
-    diff = this.fixAndCheckInputParams(diff);
-    const { address } = diff;
-    delete diff.address;
-    return this.accountLogic.merge(address, diff);
-  }
-
   public generateAddressByPubData(pk: Buffer) {
     return this.accountLogic.generateAddressFromPubData(pk);
   }

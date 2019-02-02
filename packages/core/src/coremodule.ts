@@ -7,6 +7,7 @@ import { sort } from 'semver';
 import * as uuid from 'uuid';
 import { LoaderAPI } from './apis';
 import { Migrator, TimeToEpoch } from './helpers';
+import { BlockMonitor } from './hooks';
 import { InfoModel, MigrationsModel } from './models';
 import { ForkModule, LoaderModule, SystemModule } from './modules';
 import { CoreSymbols } from './symbols';
@@ -38,6 +39,11 @@ export class CoreModule extends BaseCoreModule<void>
       .bind(APISymbols.api)
       .toConstructor(LoaderAPI)
       .whenTargetNamed(CoreSymbols.api.loader);
+
+    this.container
+      .bind(CoreSymbols.__internals.blockMonitor)
+      .to(BlockMonitor)
+      .inSingletonScope();
 
     // Set constants
     for (const sortedModule of this.sortedModules) {
@@ -99,6 +105,10 @@ export class CoreModule extends BaseCoreModule<void>
   }
 
   public async boot() {
+    await this.container
+      .get<BlockMonitor>(CoreSymbols.__internals.blockMonitor)
+      .hookMethods();
+
     const loaderModule = this.container.get<LoaderModule>(
       CoreSymbols.modules.loader
     );
@@ -106,6 +116,10 @@ export class CoreModule extends BaseCoreModule<void>
   }
 
   public async teardown(): Promise<void> {
+    await this.container
+      .get<BlockMonitor>(CoreSymbols.__internals.blockMonitor)
+      .unHook();
+
     await this.container
       .get<LoaderModule>(CoreSymbols.modules.loader)
       .cleanup();

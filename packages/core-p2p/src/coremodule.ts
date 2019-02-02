@@ -173,9 +173,12 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     await this.container
       .get<BroadcasterLogic>(p2pSymbols.logic.broadcaster)
       .cleanup();
-    await this.container
-      .get<TransportModule>(p2pSymbols.modules.transport)
-      .cleanup();
+    const transportModule = this.container.get<TransportModule>(
+      p2pSymbols.modules.transport
+    );
+    await transportModule.unHook();
+    await transportModule.cleanup();
+    await this.container.get<PeersModule>(p2pSymbols.modules.peers).cleanup();
     await this.container
       .get<PeersLoaderSubscriber>(p2pSymbols.__internals.loadSubscriber)
       .unHook();
@@ -183,6 +186,9 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
   }
 
   public async boot(): Promise<void> {
+    await this.container
+      .get<TransportModule>(p2pSymbols.modules.transport)
+      .hookMethods();
     await this.container
       .get<PeersLoaderSubscriber>(p2pSymbols.__internals.loadSubscriber)
       .hookMethods();

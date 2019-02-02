@@ -1,4 +1,9 @@
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
+import {
+  IAccountsModel,
+  ISystemModule,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { BaseTx } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
@@ -10,6 +15,26 @@ import { Model } from 'sequelize-typescript';
 export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
   @inject(Symbols.modules.system)
   protected systemModule: ISystemModule;
+  @inject(BlocksSymbols.modules.blocks)
+  protected blocksModule: BlocksModule;
+
+  public async verify(
+    tx: IBaseTransaction<T>,
+    sender: IAccountsModel
+  ): Promise<void> {
+    const calcFee = this.calculateMinFee(
+      tx,
+      sender,
+      this.blocksModule.lastBlock.height
+    );
+    if (tx.fee !== calcFee) {
+      throw new Error(
+        `Invalid fees for tx[type=${tx.type}]. Expected ${calcFee} - Received ${
+          tx.fee
+        }`
+      );
+    }
+  }
 
   public signableBytes(tx: IBaseTransaction<T, bigint>): Buffer {
     const bb = new ByteBuffer(1024, true);
