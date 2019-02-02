@@ -83,6 +83,7 @@ describe('apis/blocksAPI', () => {
         limit: 100,
         offset: 0,
         order: [['height', 'desc']],
+        raw: true,
       };
       findAllStub = sandbox
         .stub(blocksModel, 'findAndCountAll')

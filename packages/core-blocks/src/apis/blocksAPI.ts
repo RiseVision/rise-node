@@ -93,6 +93,7 @@ export class BlocksAPI {
       limit: filters.limit || 100,
       offset: filters.offset || 0,
       order: orderBy,
+      raw: true,
       where: whereClause,
     });
     // attach transactions and assets with it.
@@ -100,6 +101,7 @@ export class BlocksAPI {
       blocks.map((b) =>
         this.TransactionsModel.findAll({
           order: [['rowId', 'asc']],
+          raw: true,
           where: { blockId: b.id },
         })
           .then((txs) => {
