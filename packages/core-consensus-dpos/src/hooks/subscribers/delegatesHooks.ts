@@ -26,7 +26,7 @@ import {
   DelegatesRoundModel,
 } from '../../models';
 import { DelegatesModule } from '../../modules';
-import { DposConstantsType } from '@risevision/core-consensus-dpos';
+import { DposConstantsType } from '../../helpers'
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
