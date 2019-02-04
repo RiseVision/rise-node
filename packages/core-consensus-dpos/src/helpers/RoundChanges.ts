@@ -1,39 +1,26 @@
-import BigNumber from 'bignumber.js';
-import { Slots } from './slots';
-
 export class RoundChanges {
-  private roundFees: bigint;
+  private roundFees: Array<bigint>;
   private roundRewards: Array<bigint>;
 
-  // The fee per delegate.
-  private fees: bigint;
-  // The fees that are excluded by math precision
-  private feesRemaining: bigint;
-
-  constructor(
-    scope: { roundFees?: bigint; roundRewards: Array<bigint> },
-    private slots: Slots
-  ) {
-    this.roundFees = scope.roundFees || 0n;
+  constructor(scope: {
+    roundFees?: Array<bigint>;
+    roundRewards: Array<bigint>;
+  }) {
+    this.roundFees = scope.roundFees || [];
     this.roundRewards = scope.roundRewards || [];
-    this.fees = this.roundFees / BigInt(this.slots.delegates);
-    this.feesRemaining =
-      this.roundFees - this.fees * BigInt(this.slots.delegates);
   }
 
   /**
    * Calculates rewards at round position.
    * Fees and feesRemaining based on slots
    */
-  public at(
-    index: number
-  ): { balance: bigint; fees: bigint; feesRemaining: bigint; rewards: bigint } {
+  public at(index: number): { balance: bigint; fees: bigint; rewards: bigint } {
     const rewards = this.roundRewards[index] || 0n;
+    const fees = this.roundFees[index] || 0n;
 
     return {
-      balance: this.fees + rewards,
-      fees: this.fees,
-      feesRemaining: this.feesRemaining,
+      balance: fees + rewards,
+      fees,
       rewards,
     };
   }

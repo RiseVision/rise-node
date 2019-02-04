@@ -32,14 +32,9 @@ import {
   UseBefore,
 } from 'routing-controllers';
 import * as sequelize from 'sequelize';
-import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
-import {
-  Accounts2DelegatesModel,
-  AccountsModelForDPOS,
-  RoundsFeesModel,
-} from '../models';
+import { Accounts2DelegatesModel, AccountsModelForDPOS } from '../models';
 import { DelegatesModule, ForgeModule } from '../modules';
 // tslint:disable-next-line
 const schema = require('../../schema/delegates.json');
@@ -125,9 +120,6 @@ export class DelegatesAPI {
   @inject(ModelSymbols.model)
   @named(Symbols.models.transactions)
   private TransactionsModel: typeof ITransactionsModel;
-  @inject(ModelSymbols.model)
-  @named(dPoSSymbols.models.roundsFees)
-  private RoundsFeesModel: typeof RoundsFeesModel;
 
   @postConstruct()
   public postConstruct() {
@@ -209,50 +201,6 @@ export class DelegatesAPI {
     const { delegate } = f.fees;
     delete f.fees;
     return { ...f, ...{ fee: delegate } };
-  }
-
-  @Get('/forging/getForgedByAccount')
-  @ValidateSchema()
-  public async getForgedByAccount(@SchemaValid(schema.getForgedByAccount, {
-    castNumbers: true,
-  })
-  // tslint:disable-next-line max-line-length
-  @QueryParams()
-  params: {
-    username: string;
-    start?: number;
-    end?: number;
-  }) {
-    if (
-      typeof params.start !== 'undefined' ||
-      typeof params.end !== 'undefined'
-    ) {
-      const reward = await this.aggregateBlockReward({
-        end: params.end,
-        start: params.start,
-        username: params.username,
-      });
-      return {
-        count: reward.count,
-        fees: reward.fees.toString(),
-        forged: (reward.fees + reward.rewards).toString(),
-        rewards: reward.rewards.toString(),
-      };
-    } else {
-      const account = await this.accounts.getAccount({
-        username: params.username,
-      });
-
-      if (!account) {
-        throw new HTTPError('Account not found', 200);
-      }
-
-      return {
-        fees: account.fees,
-        forged: account.fees + account.rewards,
-        rewards: account.rewards,
-      };
-    }
   }
 
   @Get('/get')
@@ -494,74 +442,5 @@ export class DelegatesAPI {
     }
 
     this.forgeModule.disableForge(pk);
-  }
-
-  /**
-   * Gets block rewards for a delegate for time period
-   */
-  // tslint:disable-next-line max-line-length
-  public async aggregateBlockReward(filter: {
-    username: string;
-    start?: number;
-    end?: number;
-  }): Promise<{ fees: bigint; rewards: bigint; count: number }> {
-    const params = {
-      delegates: this.dposConstants.activeDelegates,
-      username: filter.username,
-    };
-    const timestampClausole: { timestamp?: any } = { timestamp: {} };
-
-    if (typeof filter.start !== 'undefined') {
-      timestampClausole.timestamp[Op.gte] =
-        filter.start - this.constants.epochTime.getTime() / 1000;
-    }
-
-    if (typeof filter.end !== 'undefined') {
-      timestampClausole.timestamp[Op.lte] =
-        filter.end - this.constants.epochTime.getTime() / 1000;
-    }
-
-    if (
-      typeof timestampClausole.timestamp[Op.gte] === 'undefined' &&
-      typeof timestampClausole.timestamp[Op.lte] === 'undefined'
-    ) {
-      delete timestampClausole.timestamp;
-    }
-
-    const acc = await this.AccountsModel.findOne({
-      where: { isDelegate: 1, username: params.username },
-    });
-    if (acc === null) {
-      throw new Error('Account not found or is not a delegate');
-    }
-
-    // FIXME: In case a delegate changes its forging Public Key, rewards wont show properly
-    // in this API. The only possible solution is fetching all forgingPK and use an "in" clause
-    const res: {
-      count: string;
-      rewards: string;
-    } = (await this.BlocksModel.findOne({
-      attributes: [
-        sequelize.literal('COUNT(1)'),
-        sequelize.literal('SUM("reward") as rewards'),
-      ],
-      raw: true,
-      where: {
-        ...timestampClausole,
-        generatorPublicKey: acc.forgingPK,
-      },
-    })) as any;
-
-    const fees = (await this.RoundsFeesModel.aggregate('fees', 'sum', {
-      where: {
-        ...timestampClausole,
-        username: acc.username,
-      },
-    })) as number;
-    return {
-      count: parseInt(res.count, 10),
-      fees: isNaN(fees) ? 0n : BigInt(fees),
-      rewards: BigInt(res.rewards === null ? 0 : res.rewards),
-    };
   }
 }
