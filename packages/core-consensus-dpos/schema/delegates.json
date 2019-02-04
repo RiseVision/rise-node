@@ -132,23 +132,6 @@
       }
     }
   },
-  "getForgedByAccount": {
-    "id": "delegates.getForgedByAccount",
-    "type": "object",
-    "properties": {
-      "username": {
-        "type": "string",
-        "format": "username"
-      },
-      "start": {
-        "type": "integer"
-      },
-      "end": {
-        "type": "integer"
-      }
-    },
-    "required": ["username"]
-  },
   "addDelegate": {
     "id": "delegates.addDelegate",
     "type": "object",
