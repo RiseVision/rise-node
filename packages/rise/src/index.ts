@@ -22,6 +22,7 @@ import {
   OldVoteTx,
 } from './oldtxs';
 import { RISESymbols } from './symbols';
+import { RiseUpgrader } from './helpers';
 
 const oldEscape = SqlString.escape;
 SqlString.escape = (val, timeZone, dialect, format) => {
@@ -52,8 +53,17 @@ export class CoreModule extends BaseCoreModule<any> {
 
   public addElementsToContainer() {
     this.container
+      .bind(RISESymbols.helpers.constants)
+      .toConstantValue(this.constants);
+
+    this.container
       .bind(Symbols.helpers.idsHandler)
       .to(RiseIdsHandler)
+      .inSingletonScope();
+
+    this.container
+      .bind(RISESymbols.helpers.upgrader)
+      .to(RiseUpgrader)
       .inSingletonScope();
 
     // Register old tx type.
@@ -91,10 +101,7 @@ export class CoreModule extends BaseCoreModule<any> {
       .rebind(BlocksSymbols.logic.blockBytes)
       .to(RiseBlockBytes)
       .inSingletonScope();
-    //
-    // this.sortedModules
-    //   .map((m) => ({name: m.name, constants: m.constants}))
-    //   .forEach(a => console.log(require('util').inspect(a, false, null, true)));
+
   }
 
   public async initAppElements(): Promise<void> {
@@ -134,5 +141,16 @@ export class CoreModule extends BaseCoreModule<any> {
       // tslint:disable-next-line
       return /^[0-9]{1,20}R/.test(str);
     });
+  }
+
+  public async preBoot() {
+    const upgrader = this.container.get<RiseUpgrader>(RISESymbols.helpers.upgrader);
+    await upgrader.hookMethods();
+    upgrader.setContainer(this.container);
+  }
+
+  public async postTeardown() {
+    const upgrader = this.container.get<RiseUpgrader>(RISESymbols.helpers.upgrader);
+    return upgrader.unHook();
   }
 }

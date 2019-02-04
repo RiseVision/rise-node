@@ -1,4 +1,8 @@
 module.exports = {
+  '@risevision/rise': {
+    // TODO: changeme
+    dposFeesSwitchHeight: 2000000
+  },
   '@risevision/core': {
     amountBytes: 8,
     epochTime: new Date('2016-05-24T17:00:00.000Z'),
