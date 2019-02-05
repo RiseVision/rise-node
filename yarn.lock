@@ -4679,10 +4679,10 @@ manakin@~0.5.1:
   resolved "https://registry.yarnpkg.com/manakin/-/manakin-0.5.1.tgz#c4a7116f6b00df3d5f1a37ad3ca515d22065a658"
   integrity sha1-xKcRb2sA3z1fGjetPKUV0iBlplg=
 
-mangiafuoco@1.2.2:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/mangiafuoco/-/mangiafuoco-1.2.2.tgz#9c4ea7055ae1661a1bf5f489f72f8f938965c7fc"
-  integrity sha512-lW4TJw3YRbykNKg+KSs5Cpj6v6XFNq5R72mokTAIk3WjYjJxLf1u1aMTJAPMOHX2ZIM2rW+mN2vIAhmkCGxzrg==
+mangiafuoco@1.2.3:
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/mangiafuoco/-/mangiafuoco-1.2.3.tgz#44e3ae2f89659f1b54422c8e1aafebaa969a031f"
+  integrity sha512-DwlpkSRA8dcFWRLR2LG4x00Rnf/GXdx1KdzQTvMzZu+/KnODjuxbzGVkLm/j9M0sk1RHkpnXphZwbAc5zdYuiw==
   dependencies:
     es6-promisify "^5.0.0"
 

@@ -77,7 +77,14 @@ describe('hooks/subscribers/delegates', () => {
   // });
 
   describe('verifyReceipt', () => {
+    let assertValidBlockSlotStub: SinonStub;
+
+    beforeEach(() => {
+      assertValidBlockSlotStub = sandbox.stub(delegatesModule, 'assertValidBlockSlot');
+    });
+
     it('should add error if block is too old', async () => {
+      assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyReceipt.name,
         {errors: [], verified: true},
@@ -97,8 +104,6 @@ describe('hooks/subscribers/delegates', () => {
     });
 
     it('should add error if block is from wrong generator', async () => {
-      //Works only commenting one of the two hooks for verifyReceipt
-      const assertValidBlockSlotStub = sandbox.stub((instance as any).delegatesModule, 'assertValidBlockSlot');
       assertValidBlockSlotStub.throws(new Error('Failed to verify slot 123'));
       const oldvbsw = (instance as any).verifyBlockSlotWindow;
       (instance as any).verifyBlockSlotWindow = async (payload: any, block: any) => payload;
@@ -130,7 +135,6 @@ describe('hooks/subscribers/delegates', () => {
     });
 
     it('should add error if block is from wrong generator', async () => {
-      //Works only if commenting line 77 of src/hooks/subscribers/delegatesHooks.ts
       assertValidBlockSlotStub.throws(new Error('Failed to verify slot 123'));
       const oldvbs = (instance as any).verifyBlockSlot;
       (instance as any).verifyBlockSlot = async (payload: any, block: any) => payload;
@@ -145,7 +149,6 @@ describe('hooks/subscribers/delegates', () => {
     });
 
     it('should add error if block has slot less than lastblockslot', async () => {
-      // Works only if commenting line 103 of src/hooks/subscribers/delegatesHooks.ts
       assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyBlock.name,
@@ -156,7 +159,6 @@ describe('hooks/subscribers/delegates', () => {
       expect(r.errors).deep.eq(['Invalid block timestamp']);
     });
     it('should add error if block has slot in future', async () => {
-      // Works only if commenting line 103 of src/hooks/subscribers/delegatesHooks.ts
       getTimeStub = sandbox.stub((instance as any).slots, 'getTime');
       getTimeStub.returns(102 * 30 - 3);
       assertValidBlockSlotStub.resolves();
@@ -170,7 +172,6 @@ describe('hooks/subscribers/delegates', () => {
     });
 
     it('should NOT add error if block has slot in future but within timeDriftCorrection', async () => {
-      // Works only if commenting line 103 of src/hooks/subscribers/delegatesHooks.ts
       getTimeStub = sandbox.stub((instance as any).slots, 'getTime');
       getTimeStub.returns(102 * 30 - 2);
       assertValidBlockSlotStub.resolves();
@@ -185,7 +186,6 @@ describe('hooks/subscribers/delegates', () => {
 
 
     it('should not add any error if block was already marked as unverified', async () => {
-      // Works only if commenting line 103 of src/hooks/subscribers/delegatesHooks.ts
       assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyBlock.name,
