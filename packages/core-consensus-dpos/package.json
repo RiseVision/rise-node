@@ -29,7 +29,7 @@
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
     "inversify": "5.0.1",
-    "mangiafuoco": "1.2.2",
+    "mangiafuoco": "1.2.3",
     "mersenne-twister": "^1.1.0",
     "sequelize": "4.42.0",
     "sequelize-typescript": "0.6.6",

@@ -30,7 +30,7 @@
     "express": "4.16.4",
     "inversify": "5.0.1",
     "ip": "=1.1.5",
-    "mangiafuoco": "1.2.2",
+    "mangiafuoco": "1.2.3",
     "sequelize": "4.42.0",
     "sequelize-typescript": "0.6.6",
     "strftime": "=0.10.0",
