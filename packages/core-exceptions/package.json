@@ -4,6 +4,7 @@
     "module": true
   },
   "version": "1.0.0",
+  "description": "RISE Node Core: Exceptions Module",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +13,7 @@
     "transpile": "shx rm -rf dist; tsc",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts'"
   },
-  "author": "Rise Team",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",

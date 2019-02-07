@@ -4,7 +4,7 @@
     "module": true
   },
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Migration Module",
   "main": "dist/index.js",
   "scripts": {
     "transpile": "shx rm -rf dist; tsc",
@@ -13,8 +13,8 @@
     "start:mainnet": "rise-launchpad --net mainnet"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-blocks": "^1.0.0",
     "@risevision/core-consensus-dpos": "^1.0.0",

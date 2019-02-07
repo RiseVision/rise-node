@@ -1,15 +1,15 @@
 {
   "name": "@risevision/core-interfaces",
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Interfaces",
   "main": "dist/index.js",
   "scripts": {
     "test-unit": "echo",
     "transpile": "shx rm -rf dist; tsc"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-types": "^1.0.0",
     "inversify": "5.0.1",

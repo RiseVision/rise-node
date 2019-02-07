@@ -1,7 +1,7 @@
 {
   "name": "@risevision/core-launchpad",
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Launchpad",
   "main": "dist/index.js",
   "bin": {
     "rise-launchpad": "./dist/binary.js"
@@ -13,8 +13,8 @@
     "mochjav": "mocha -V"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",

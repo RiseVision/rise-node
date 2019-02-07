@@ -1,7 +1,7 @@
 {
   "name": "@risevision/core-utils",
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Utils",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -9,8 +9,8 @@
     "transpile": "shx rm -rf dist; tsc",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
     "circular-json": "0.5.9",

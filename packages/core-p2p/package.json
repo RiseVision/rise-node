@@ -4,7 +4,7 @@
     "module": true
   },
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Peer-to-peer Module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,8 +12,8 @@
     "transpile": "shx rm -rf dist; tsc",
     "test-unit": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-apis": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
