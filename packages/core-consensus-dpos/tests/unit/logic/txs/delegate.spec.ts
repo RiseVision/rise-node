@@ -18,6 +18,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { As } from 'type-tagger';
 import { dPoSSymbols } from '../../../../src/helpers';
 import {
   DelegateAsset,
@@ -73,7 +74,7 @@ describe('logic/transactions/delegate', () => {
           forgingPK: Buffer.from(
             '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
             'hex'
-          ),
+          ) as Buffer & As<'publicKey'>,
         },
       },
       fee: 10n,
@@ -102,7 +103,7 @@ describe('logic/transactions/delegate', () => {
       publicKey: Buffer.from(
         '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
         'hex'
-      ),
+      ) as Buffer & As<'publicKey'>,
       isMultisignature() {
         return false;
       },

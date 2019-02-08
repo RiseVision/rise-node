@@ -45,17 +45,14 @@
     "id": "delegates.getDelegate",
     "type": "object",
     "properties": {
-      "publicKey": {
-        "type": "string",
-        "format": "publicKey"
-      },
       "username": {
         "type": "string",
         "format": "username",
         "minLength": 1,
         "maxLength": 20
       }
-    }
+    },
+    "required": ["username"]
   },
   "search": {
     "id": "delegates.search",
@@ -131,6 +128,25 @@
         "minimum": 1
       }
     }
+  },
+  "getRewards": {
+    "id": "delegates.getRewards",
+    "type": "object",
+    "properties": {
+      "username": {
+        "type": "string",
+        "format": "username"
+      },
+      "from": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "to": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "required": ["username", "from", "to"]
   },
   "addDelegate": {
     "id": "delegates.addDelegate",

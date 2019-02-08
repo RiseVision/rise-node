@@ -5,6 +5,7 @@ import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import * as sodium from 'sodium-native';
+import { As } from 'type-tagger';
 import { Crypto } from '../../src/crypto_sodium_native';
 
 const realCrypto = new Crypto();
@@ -55,8 +56,8 @@ describe('helpers/crypto(sodium-native)', () => {
     });
 
     it('should pass empty buffers as first 2 parameters to sodium.crypto_sign_seed_keypair', () => {
-      const publicKey = Buffer.alloc(sodium.crypto_sign_PUBLICKEYBYTES);
-      const privateKey = Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES);
+      const publicKey = Buffer.alloc(sodium.crypto_sign_PUBLICKEYBYTES) as Buffer & As<'publicKey'>;
+      const privateKey = Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES) as Buffer & As<'privateKey'>;
       const hash = Buffer.from('aaaa', 'utf8');
       proxiedInst.makeKeyPair(hash);
       expect(stub.firstCall.args[0]).to.be.deep.eq(publicKey);
@@ -170,8 +171,8 @@ describe('helpers/crypto(sodium-native)', () => {
 
     const inputSeed = Buffer.from(inputSeedHex, 'hex');
     const expectedOutputKeys: IKeypair = {
-      privateKey: Buffer.from(privateKeyHex, 'hex'),
-      publicKey: Buffer.from(publicKeyHex, 'hex'),
+      privateKey: Buffer.from(privateKeyHex, 'hex') as Buffer & As<'privateKey'>,
+      publicKey: Buffer.from(publicKeyHex, 'hex') as Buffer & As<'publicKey'>,
     };
     const inputMessage = Buffer.from(messageHash);
     const expectedOutputSignature = Buffer.from(signatureHex, 'hex');

@@ -1,16 +1,18 @@
+import { AccountsSymbols } from '@risevision/core-accounts';
 import { DeprecatedAPIError } from '@risevision/core-apis';
 import {
   IAccountsModule,
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   HTTPError,
   IoCSymbol,
   SchemaValid,
   ValidateSchema,
 } from '@risevision/core-utils';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import {
   Get,
   JsonController,
@@ -20,7 +22,7 @@ import {
 } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
-import { AccountsModelForDPOS } from '../models';
+import { Accounts2DelegatesModel, AccountsModelForDPOS } from '../models';
 import { DelegatesModule } from '../modules';
 
 // tslint:disable-next-line no-var-requires
@@ -32,66 +34,34 @@ const schema = require('../../schema/accountsAPI.json');
 export class AccountsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.modules.accounts)
-  private accounts: IAccountsModule<AccountsModelForDPOS>;
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
+
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.accounts2Delegates)
+  private Accounts2DelegatesModel: typeof Accounts2DelegatesModel;
+  @inject(ModelSymbols.model)
+  @named(AccountsSymbols.model)
+  private AccountsModel: typeof AccountsModelForDPOS;
 
   @inject(Symbols.modules.system)
   private system: ISystemModule;
 
-  @Get('/delegates')
+  @Get('/votes')
   @ValidateSchema()
   public async getDelegates(@SchemaValid(schema.getDelegates)
   @QueryParams()
   params: {
     address: string;
   }) {
-    const account = await this.accounts.getAccount({ address: params.address });
-    if (!account) {
-      throw new HTTPError('Account not found', 200);
-    }
-    if (account.delegates) {
-      const { delegates } = await this.delegatesModule.getDelegates({
-        orderBy: 'rank:desc',
-      });
+    const rows = await this.Accounts2DelegatesModel.findAll({
+      attributes: ['username'],
+      raw: true,
+      where: { address: params.address },
+    });
+    const usernames = rows.map((r) => r.username);
 
-      // FIXME: In case of a voted delegate is not included in the top ranking delegates, it wont appear in the result
-      // A solution would be to check excluded delegates by querying AccountsModel by
-      // 'forgingPK': { [Op.in] account.delegates}
-      // And add those in the array without the rank informations.
-      return {
-        delegates: delegates
-          .filter((d) => account.delegates.indexOf(d.delegate.username) !== -1)
-          .map((d) => ({
-            address: d.delegate.address,
-            approval: d.info.approval,
-            missedblocks: d.delegate.missedblocks,
-            producedblocks: d.delegate.producedblocks,
-            productivity: d.info.productivity,
-            publicKey: d.delegate.forgingPK.toString('hex'),
-            rank: d.info.rank,
-            rate: d.info.rank,
-            username: d.delegate.username,
-            vote: d.delegate.vote,
-          })),
-      };
-    }
-    return { delegates: [] };
-  }
-
-  @Get('/delegates/fee')
-  @ValidateSchema()
-  public async getDelegatesFee(@SchemaValid(schema.getDelegatesFee, {
-    castNumbers: true,
-  })
-  @QueryParams()
-  params: {
-    height: number;
-  }) {
-    return {
-      fee: this.system.getFees(params.height).fees.delegate,
-    };
+    return { votes: usernames };
   }
 
   @Put('/delegates')

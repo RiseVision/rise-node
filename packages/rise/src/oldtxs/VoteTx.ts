@@ -23,10 +23,12 @@ import { Diff } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import { Model } from 'sequelize-typescript';
+import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import { OldVoteTxModel } from '../models';
 import { RISESymbols } from '../symbols';
 import { OldBaseTx } from './BaseOldTx';
+
 // tslint:disable-next-line
 const voteSchema = require('../../schema/vote.asset.json');
 
@@ -324,7 +326,8 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
 
     for (const vote of voteAsset.votes) {
       const add = vote.slice(0, 1) === '+';
-      const pubKey = Buffer.from(vote.slice(1), 'hex');
+      const pubKey = Buffer.from(vote.slice(1), 'hex') as Buffer &
+        As<'publicKey'>;
 
       const del = await this.accountsModule.getAccount({
         forgingPK: pubKey,

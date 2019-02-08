@@ -1,12 +1,14 @@
-import { Symbols } from '@risevision/core-interfaces';
+import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
+  BelongsTo,
   Column,
   DataType,
   ForeignKey,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+import { As } from 'type-tagger';
 
 @Table({ tableName: 'trsassets_delegates' })
 export class DelegatesModel extends BaseModel<DelegatesModel> {
@@ -25,5 +27,13 @@ export class DelegatesModel extends BaseModel<DelegatesModel> {
   public transactionId: string;
 
   @Column(DataType.BLOB)
-  public forgingPK: Buffer;
+  public forgingPK: Buffer & As<'publicKey'>;
+
+  @BelongsTo(() =>
+    DelegatesModel.container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.transactions
+    )
+  )
+  private tx: ITransactionsModel;
 }

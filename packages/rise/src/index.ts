@@ -12,6 +12,7 @@ import { TXSymbols } from '@risevision/core-transactions';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
+import { RiseUpgrader } from './helpers';
 import { RiseIdsHandler } from './idsHandler';
 import { RiseBlockBytes } from './logic';
 import { OldVoteTxModel } from './models';
@@ -22,7 +23,6 @@ import {
   OldVoteTx,
 } from './oldtxs';
 import { RISESymbols } from './symbols';
-import { RiseUpgrader } from './helpers';
 
 const oldEscape = SqlString.escape;
 SqlString.escape = (val, timeZone, dialect, format) => {
@@ -101,7 +101,6 @@ export class CoreModule extends BaseCoreModule<any> {
       .rebind(BlocksSymbols.logic.blockBytes)
       .to(RiseBlockBytes)
       .inSingletonScope();
-
   }
 
   public async initAppElements(): Promise<void> {
@@ -144,13 +143,17 @@ export class CoreModule extends BaseCoreModule<any> {
   }
 
   public async preBoot() {
-    const upgrader = this.container.get<RiseUpgrader>(RISESymbols.helpers.upgrader);
+    const upgrader = this.container.get<RiseUpgrader>(
+      RISESymbols.helpers.upgrader
+    );
     await upgrader.hookMethods();
     upgrader.setContainer(this.container);
   }
 
   public async postTeardown() {
-    const upgrader = this.container.get<RiseUpgrader>(RISESymbols.helpers.upgrader);
+    const upgrader = this.container.get<RiseUpgrader>(
+      RISESymbols.helpers.upgrader
+    );
     return upgrader.unHook();
   }
 }

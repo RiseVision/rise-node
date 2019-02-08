@@ -10,7 +10,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "transpile": "shx rm -rf dist; tsc",
-    "test-unit": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
+    "test-unit": "mocha  --bail --exit --require ts-node/register --require reflect-metadata './tests/**/*.spec.ts'"
   },
   "author": "",
   "license": "ISC",

@@ -4,89 +4,68 @@ import { OrderBy } from '../../src';
 
 // tslint:disable no-unused-expression
 describe('helpers/orderBy', () => {
-  it('should treat options as an empty object if another type is passed', () => {
-    const retVal = OrderBy('blockId:ASC', 'desc' as any);
-    expect(retVal.sortMethod).to.be.eq('ASC');
+  it('should return fn', () => {
+    const r = OrderBy('bit:asc');
+    expect(r).is.a('function');
   });
 
-  // This is possibly a bug because we don't want to end with a null sortField
-  it('should treat options.sortField as null if not passed/false', () => {
-    const retVal = OrderBy('', {});
-    expect(retVal.sortField).to.be.null;
+  it('should sort numeric', () => {
+    const orig = [{ a: 1 }, { a: 3 }, { a: 2 }];
+    expect(OrderBy('a:asc')(orig)).deep.eq([{ a: 1 }, { a: 2 }, { a: 3 }]);
+    expect(OrderBy('a:desc')(orig)).deep.eq([{ a: 3 }, { a: 2 }, { a: 1 }]);
   });
 
-  // This is possibly a bug because we don't want to end with a null sortMethod
-  it('should treat options.sortMethod as null if not passed/false', () => {
-    const retVal = OrderBy('blockId', {});
-    expect(retVal.sortMethod).to.be.null;
+  it('should sort bigint', () => {
+    const orig = [{ a: 1n }, { a: 3n }, { a: 2n }];
+    expect(OrderBy('a:asc')(orig)).deep.eq([{ a: 1n }, { a: 2n }, { a: 3n }]);
+    expect(OrderBy('a:desc')(orig)).deep.eq([{ a: 3n }, { a: 2n }, { a: 1n }]);
   });
 
-  it('should treat options.sortFields as empty array if not passed/false', () => {
-    const retVal = OrderBy('blockId', {});
-    // Error is returned when passed field is not whitelisted or if whitelist is empty
-    expect(retVal.error).to.be.undefined;
+  it('should sort string', () => {
+    const orig = [{ a: '1' }, { a: '3' }, { a: '2' }];
+    expect(OrderBy('a:asc')(orig)).deep.eq([
+      { a: '1' },
+      { a: '2' },
+      { a: '3' },
+    ]);
+    expect(OrderBy('a:desc')(orig)).deep.eq([
+      { a: '3' },
+      { a: '2' },
+      { a: '1' },
+    ]);
   });
 
-  it('should always quoteField if not passed', () => {
-    const retVal = OrderBy('blockId', {});
-    expect(retVal.sortField).to.be.eq('"blockId"');
+  it('should sort buffers', () => {
+    const one = Buffer.alloc(1).fill(0x1);
+    const two = Buffer.alloc(1).fill(0x2);
+    const three = Buffer.alloc(1).fill(0x3);
+    const orig = [{ a: one }, { a: three }, { a: two }];
+    expect(OrderBy('a:asc')(orig)).deep.eq([
+      { a: one },
+      { a: two },
+      { a: three },
+    ]);
+    expect(OrderBy('a:desc')(orig)).deep.eq([
+      { a: three },
+      { a: two },
+      { a: one },
+    ]);
   });
 
-  it('should clean the sortField string from non word, non space characters', () => {
-    const retVal = OrderBy('blockId!:ASC', { quoteField: false });
-    expect(retVal.sortField).to.be.eq('blockId');
+  it('should not touch original array', () => {
+    const orig = [{ a: 1 }, { a: 3 }, { a: 2 }];
+    const d = OrderBy('a:asc')(orig);
+    expect(d).not.deep.eq(orig);
   });
 
-  it('should set the sortMethod to DESC if the second chunk of orderBy is === desc', () => {
-    const retVal = OrderBy('blockId:desc', { quoteField: false });
-    expect(retVal.sortMethod).to.be.eq('DESC');
+  it('should order asc default', () => {
+    const orig = [{ a: 1 }, { a: 3 }, { a: 2 }];
+    const d = OrderBy('a')(orig);
+    expect(d).deep.eq([{ a: 1 }, { a: 2 }, { a: 3 }]);
   });
 
-  it('should prefix the field with string', () => {
-    const retVal = OrderBy('blockId:desc', {
-      fieldPrefix: 'my_',
-      quoteField: false,
-    });
-    expect(retVal.sortField).to.be.eq('my_blockId');
-  });
-
-  it('should prefix the field by calling passed function', () => {
-    const prefixFn = (s: string) => s.length + '_' + s;
-    const spy = sinon.spy(prefixFn);
-    const retVal = OrderBy('blockId:desc', {
-      fieldPrefix: spy,
-      quoteField: false,
-    });
-    expect(retVal.sortField).to.be.eq('7_blockId');
-    expect(spy.called).to.be.true;
-  });
-
-  it('should check the options.sortFields whitelist to make sure the sortField is valid', () => {
-    const retVal = OrderBy('blockId', { sortFields: ['txId'] });
-    expect(retVal.error).to.match(/Invalid/);
-  });
-
-  it('should consider options.sortMethod only when not passed inside first parameter', () => {
-    const retValPassed = OrderBy('blockId:desc', { sortMethod: 'ASC' });
-    const retValNotPassed = OrderBy('blockId', { sortMethod: 'ASC' });
-    expect(retValPassed.sortMethod).to.be.eq('DESC');
-    expect(retValNotPassed.sortMethod).to.be.eq('ASC');
-  });
-
-  it('should quote the field', () => {
-    const retVal = OrderBy('blockId', { quoteField: true });
-    const retVal2 = OrderBy('blockId', {});
-    expect(retVal.sortField).to.be.eq('"blockId"');
-    expect(retVal2.sortField).to.be.eq('"blockId"');
-  });
-
-  it('should not quote the field if options.quoteField is false', () => {
-    const retVal = OrderBy('blockId', { quoteField: false });
-    expect(retVal.sortField).to.be.eq('blockId');
-  });
-
-  it('should accept the sortField when options.sortFields whitelist is empty', () => {
-    const retVal = OrderBy('blockId', { sortFields: [], quoteField: false });
-    expect(retVal.sortField).to.be.eq('blockId');
+  it('should throw if unsortable', () => {
+    const orig = [{ a: () => 1 }, { a: () => 3 }, { a: () => 2 }];
+    expect(() => OrderBy('a')(orig)).to.throw('Uncomparable a');
   });
 });

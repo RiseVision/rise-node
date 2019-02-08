@@ -4,6 +4,7 @@ import * as sequelize from 'sequelize';
 import { Column, DataType, DefaultScope } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
 import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { As } from 'type-tagger';
 
 const buildArrayArgAttribute = (table: string): any => {
   return [
@@ -67,7 +68,7 @@ export class AccountsModelForDPOS extends IAccountsModel {
   public rewards: bigint;
 
   @Column(DataType.BLOB)
-  public forgingPK: Buffer;
+  public forgingPK: Buffer & As<'publicKey'>;
 
   public constructor(
     values?: FilteredModelAttributes<AccountsModelForDPOS>,
