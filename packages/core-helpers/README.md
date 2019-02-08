@@ -1,6 +1,6 @@
 # RISE Node Core: Helpers Module
 
-
+Various helpers for asynchronous process management and global App state management
 
 ## Authors
 - Andrea B. <vekexasia+crypto@gmail.com>

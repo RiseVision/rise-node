@@ -37,6 +37,22 @@ The Blocks Module provides the following Providers:
 
 These Providers are exposed through a `CoreModule` which binds the Providers to an IoC Container
 
+## Hooks
+
+### Actions
+
+* `OnPostApplyBlock`: Called after apply block before issuing database query
+* `OnDestroyBlock`: Called after destroying block
+* `OnTransactionSaved`: Called after transactions are persisted
+* `OnReceiveBlock`: Called after receiving block from peer
+
+### Filters
+
+* `VerifyReceipt`: Filter when verifying receipt from peer
+* `VerifyBlock`: Filter when verifying block
+* `ApplyBlockDBOps`: Filter when apply block database operations
+* `RollbackBlockDBOps`: Filter when rolling back block database operations
+
 ## API
 
 The Blocks API enpoint can be found at `/api/blocks`. Review [the API Reference](https://risevision.github.io/#tag/Blocks-API) for more information.
