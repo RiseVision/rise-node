@@ -19,7 +19,7 @@ These Providers are exposed through a `CoreModule` which binds the Providers to 
 
 ## API
 
-The Accounts API enpoint can be found at `/api/accounts`. Review [the API Reference](https://risevision.github.io/#tag/Accounts-API) for more information.
+The Accounts API endpoint can be found at `/api/accounts`. Review [the API Reference](https://risevision.github.io/#tag/Accounts-API) for more information.
 
 ## Authors
 - Andrea B. <vekexasia+crypto@gmail.com>

@@ -46,7 +46,7 @@ These Providers are exposed through a `CoreModule` which binds the Providers to 
 
 ## API
 
-The Peers API enpoint can be found at `/api/peers`. Review [the API Reference](https://risevision.github.io/#tag/Peers-API) for more information.
+The Peers API endpoint can be found at `/api/peers`. Review [the API Reference](https://risevision.github.io/#tag/Peers-API) for more information.
 
 
 ## Authors

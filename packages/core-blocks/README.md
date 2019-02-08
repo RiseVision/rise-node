@@ -55,7 +55,7 @@ These Providers are exposed through a `CoreModule` which binds the Providers to 
 
 ## API
 
-The Blocks API enpoint can be found at `/api/blocks`. Review [the API Reference](https://risevision.github.io/#tag/Blocks-API) for more information.
+The Blocks API endpoint can be found at `/api/blocks`. Review [the API Reference](https://risevision.github.io/#tag/Blocks-API) for more information.
 
 
 ## Authors

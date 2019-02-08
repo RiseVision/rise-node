@@ -50,7 +50,7 @@ This Module provides some important functionality for calculating rounds and que
 
 ## API
 
-The Delegates API enpoint can be found at `/api/delegates`, although this module adds some extra endpoints to the Accounts API as well. Review [the API Reference](https://risevision.github.io/#tag/Delegates-API) for more information.
+The Delegates API endpoint can be found at `/api/delegates`, although this module adds some extra endpoints to the Accounts API as well. Review [the API Reference](https://risevision.github.io/#tag/Delegates-API) for more information.
 
 
 ## Authors
