@@ -21,7 +21,7 @@ chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression max-line-length
 
-describe('apis/accountsAPI', function () {
+describe('apis/accountsAPI', function() {
   // TODO: Move all this to integration tests.
   this.timeout(10000);
   // let sandbox: SinonSandbox;

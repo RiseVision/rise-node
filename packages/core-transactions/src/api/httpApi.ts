@@ -147,7 +147,9 @@ export class TransactionsAPI {
 
     return {
       count,
-      transactions: transactions.map((t) => this.TXModel.toTransportTransaction(t)),
+      transactions: transactions.map((t) =>
+        this.TXModel.toTransportTransaction(t)
+      ),
     };
   }
 

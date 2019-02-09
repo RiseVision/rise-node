@@ -20,13 +20,13 @@ import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { dPoSSymbols, Slots } from '../../helpers';
+import { DposConstantsType } from '../../helpers';
 import {
   AccountsModelForDPOS,
   DelegatesModel,
   DelegatesRoundModel,
 } from '../../models';
 import { DelegatesModule } from '../../modules';
-import { DposConstantsType } from '../../helpers'
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
@@ -87,7 +87,10 @@ export class DelegatesHooks extends Extendable {
     const lastSlot = this.slots.getSlotNumber(lastBlock.timestamp);
 
     if (
-      slotNumber > this.slots.getSlotNumber(this.slots.getTime() + this.dposConstants.timeDriftCorrection) ||
+      slotNumber >
+        this.slots.getSlotNumber(
+          this.slots.getTime() + this.dposConstants.timeDriftCorrection
+        ) ||
       slotNumber <= lastSlot
     ) {
       // if in future or in the past => error

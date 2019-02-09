@@ -10,15 +10,18 @@ import { Container } from 'inversify';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
+import {
+  VerifyBlock,
+  VerifyReceipt,
+} from '../../../../../core-blocks/src/hooks';
 import { dPoSSymbols } from '../../../../src/helpers';
 import { DelegatesHooks } from '../../../../src/hooks/subscribers';
 import { DelegatesModel } from '../../../../src/models';
 import { DelegatesModule } from '../../../../src/modules';
-import { VerifyBlock, VerifyReceipt } from '../../../../../core-blocks/src/hooks';
 
 chai.use(chaiAsPromised);
 
-// tslint:disable no-identical-functions
+// tslint:disable no-identical-functions no-big-function
 describe('hooks/subscribers/delegates', () => {
   let container: Container;
   let instance: DelegatesHooks;
@@ -80,15 +83,18 @@ describe('hooks/subscribers/delegates', () => {
     let assertValidBlockSlotStub: SinonStub;
 
     beforeEach(() => {
-      assertValidBlockSlotStub = sandbox.stub(delegatesModule, 'assertValidBlockSlot');
+      assertValidBlockSlotStub = sandbox.stub(
+        delegatesModule,
+        'assertValidBlockSlot'
+      );
     });
 
     it('should add error if block is too old', async () => {
       assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyReceipt.name,
-        {errors: [], verified: true},
-        {timestamp: 0}
+        { errors: [], verified: true },
+        { timestamp: 0 }
       );
       expect(r.errors).deep.eq(['Block slot is too old']);
     });
@@ -96,9 +102,9 @@ describe('hooks/subscribers/delegates', () => {
     it('should add error if block is in the future', async () => {
       const r = await wphooksystem.apply_filters(
         VerifyReceipt.name,
-        {errors: [], verified: true},
-        {timestamp: Date.now()+50},
-        {timestamp: 30},
+        { errors: [], verified: true },
+        { timestamp: Date.now() + 50 },
+        { timestamp: 30 }
       );
       expect(r.errors).deep.eq(['Block slot is in the future']);
     });
@@ -106,24 +112,26 @@ describe('hooks/subscribers/delegates', () => {
     it('should add error if block is from wrong generator', async () => {
       assertValidBlockSlotStub.throws(new Error('Failed to verify slot 123'));
       const oldvbsw = (instance as any).verifyBlockSlotWindow;
-      (instance as any).verifyBlockSlotWindow = async (payload: any, block: any) => payload;
+      (instance as any).verifyBlockSlotWindow = async (
+        payload: any,
+        block: any
+      ) => payload;
       const r = await wphooksystem.apply_filters(
         VerifyReceipt.name,
-        {errors: [], verified: true},
-        {timestamp: 0}
+        { errors: [], verified: true },
+        { timestamp: 0 }
       );
       expect(r.errors).deep.eq(['Failed to verify slot 123']);
       (instance as any).verifyBlockSlotWindow = oldvbsw;
     });
 
-
     it('should not add any error if block was already marked as unverified', async () => {
       const r = await wphooksystem.apply_filters(
         VerifyReceipt.name,
-        {errors: ['first error'], verified: false},
-        {timestamp: 0}
+        { errors: ['first error'], verified: false },
+        { timestamp: 0 }
       );
-      expect(r).deep.eq({errors: ['first error'], verified: false} );
+      expect(r).deep.eq({ errors: ['first error'], verified: false });
     });
   });
 
@@ -131,18 +139,22 @@ describe('hooks/subscribers/delegates', () => {
     let assertValidBlockSlotStub: SinonStub;
     let getTimeStub: SinonStub;
     beforeEach(() => {
-      assertValidBlockSlotStub = sandbox.stub(delegatesModule, 'assertValidBlockSlot');
+      assertValidBlockSlotStub = sandbox.stub(
+        delegatesModule,
+        'assertValidBlockSlot'
+      );
     });
 
     it('should add error if block is from wrong generator', async () => {
       assertValidBlockSlotStub.throws(new Error('Failed to verify slot 123'));
       const oldvbs = (instance as any).verifyBlockSlot;
-      (instance as any).verifyBlockSlot = async (payload: any, block: any) => payload;
+      (instance as any).verifyBlockSlot = async (payload: any, block: any) =>
+        payload;
       const r = await wphooksystem.apply_filters(
         VerifyBlock.name,
-        {errors: [], verified: true},
-        {timestamp: 30}, // block
-        {timestamp: 0} //
+        { errors: [], verified: true },
+        { timestamp: 30 }, // block
+        { timestamp: 0 } //
       );
       expect(r.errors).deep.eq(['Failed to verify slot 123']);
       (instance as any).verifyBlockSlot = oldvbs;
@@ -152,9 +164,9 @@ describe('hooks/subscribers/delegates', () => {
       assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyBlock.name,
-        {errors: [], verified: true},
-        {timestamp: 100*30}, //block
-        {timestamp: 101*30} // lastBlock
+        { errors: [], verified: true },
+        { timestamp: 100 * 30 }, // block
+        { timestamp: 101 * 30 } // lastBlock
       );
       expect(r.errors).deep.eq(['Invalid block timestamp']);
     });
@@ -164,9 +176,9 @@ describe('hooks/subscribers/delegates', () => {
       assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyBlock.name,
-        {errors: [], verified: true},
-        {timestamp: 102*30}, //block
-        {timestamp: 101*30} // lastBlock
+        { errors: [], verified: true },
+        { timestamp: 102 * 30 }, // block
+        { timestamp: 101 * 30 } // lastBlock
       );
       expect(r.errors).deep.eq(['Invalid block timestamp']);
     });
@@ -177,21 +189,20 @@ describe('hooks/subscribers/delegates', () => {
       assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyBlock.name,
-        {errors: [], verified: true},
-        {timestamp: 102*30}, //block
-        {timestamp: 101*30} // lastBlock
+        { errors: [], verified: true },
+        { timestamp: 102 * 30 }, // block
+        { timestamp: 101 * 30 } // lastBlock
       );
       expect(r.errors).deep.eq([]);
     });
-
 
     it('should not add any error if block was already marked as unverified', async () => {
       assertValidBlockSlotStub.resolves();
       const r = await wphooksystem.apply_filters(
         VerifyBlock.name,
-        {errors: ['first error'], verified: false},
-        {timestamp: 102*30}, //block
-        {timestamp: 101*30} // lastBlock
+        { errors: ['first error'], verified: false },
+        { timestamp: 102 * 30 }, // block
+        { timestamp: 101 * 30 } // lastBlock
       );
       expect(r.errors).deep.eq(['first error']);
     });

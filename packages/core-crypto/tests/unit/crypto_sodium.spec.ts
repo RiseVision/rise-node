@@ -153,7 +153,8 @@ describe('helpers/crypto(sodium)', () => {
 
     const inputSeed = Buffer.from(inputSeedHex, 'hex');
     const expectedOutputKeys: IKeypair = {
-      privateKey: Buffer.from(privateKeyHex, 'hex') as Buffer & As<'privateKey'>,
+      privateKey: Buffer.from(privateKeyHex, 'hex') as Buffer &
+        As<'privateKey'>,
       publicKey: Buffer.from(publicKeyHex, 'hex') as Buffer & As<'publicKey'>,
     };
     const inputMessage = Buffer.from(messageHash);

@@ -164,6 +164,7 @@ describe('apis/transactionsAPI', () => {
         limit: 10,
         offset: 20,
         order: [['height', 'desc']],
+        raw: true,
         where: {},
       });
     });
