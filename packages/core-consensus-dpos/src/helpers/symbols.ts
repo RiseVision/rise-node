@@ -22,7 +22,6 @@ export const dPoSSymbols = {
     accounts2UDelegates: Symbol.for('rise.dpos.accounts2UDelegates'),
     delegates: Symbol.for('rise.dpos.delegates'),
     delegatesRound: Symbol.for('rise.dpos.delegatesRound'),
-    roundsFees: Symbol.for('rise.dpos.roundsFees'),
     votes: Symbol.for('rise.dpos.votes'),
   },
   modules: {

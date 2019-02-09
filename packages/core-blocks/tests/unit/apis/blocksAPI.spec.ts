@@ -2,6 +2,7 @@ import { APISymbols } from '@risevision/core-apis';
 import {
   IBlocksModel,
   ISystemModule,
+  ITimeToEpoch,
   ITransactionsModel,
   Symbols,
 } from '@risevision/core-interfaces';
@@ -12,6 +13,7 @@ import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
+import { Op } from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { BlocksConstantsType, BlocksModule, BlocksSymbols } from '../../../src';
@@ -83,6 +85,7 @@ describe('apis/blocksAPI', () => {
         limit: 100,
         offset: 0,
         order: [['height', 'desc']],
+        raw: true,
       };
       findAllStub = sandbox
         .stub(blocksModel, 'findAndCountAll')
@@ -387,6 +390,86 @@ describe('apis/blocksAPI', () => {
         reward: '1500000000',
         supply: '11000733541000000',
       });
+    });
+  });
+
+  describe('getRewards', () => {
+    let timeToEpoch: ITimeToEpoch;
+    beforeEach(() => {
+      timeToEpoch = container.get(Symbols.helpers.timeToEpoch);
+    });
+    it('should fail if params not ok', async () => {
+      await expect(instance.getRewards({} as any)).to.rejected;
+      await expect(
+        instance.getRewards({ generator: 'meow' as any, from: 0, to: 1 })
+      ).to.rejectedWith("Object didn't pass validation for format publicKey");
+
+      const validPk = Buffer.alloc(32).fill('a');
+
+      const params = {
+        from: -1,
+        generator: validPk.toString('hex') as any,
+        to: 1,
+      };
+      await expect(instance.getRewards(params)).to.rejectedWith(
+        'Value -1 is less than minimum'
+      );
+
+      params.from = 1;
+      params.to = -1;
+      await expect(instance.getRewards(params)).to.rejectedWith(
+        'Value -1 is less than minimum'
+      );
+
+      params.from = 1;
+      params.to = 0;
+      await expect(instance.getRewards(params)).to.rejectedWith(
+        'From/To params are invalid'
+      );
+
+      params.from = Math.floor(timeToEpoch.fromTimeStamp(0) / 1000) - 1000;
+      params.to = params.from + 1;
+
+      // From gets converted to `-1` in epoch timing
+      await expect(instance.getRewards(params)).to.rejectedWith(
+        'From/To params are invalid'
+      );
+    });
+    it('should query BlocksModel and process result properly', async () => {
+      const findAllStub = sandbox.stub(blocksModel, 'findAndCountAll');
+
+      const params = {
+        from: timeToEpoch.fromTimeStamp(10) / 1000,
+        generator: Buffer.alloc(32)
+          .fill(0)
+          .toString('hex') as any,
+        to: timeToEpoch.fromTimeStamp(100) / 1000,
+      };
+
+      findAllStub.resolves({
+        count: 10,
+        rows: [
+          { totalFee: 10n, reward: 1n },
+          { totalFee: 20n, reward: 2n },
+          { totalFee: '30', reward: '3' },
+          { totalFee: 40, reward: 4 },
+        ],
+      });
+
+      const res = await instance.getRewards(params);
+
+      expect(res).deep.eq({ fees: 100n, rewards: 10n, totalBlocks: 10 });
+
+      expect(
+        (findAllStub.firstCall.args[0].where as any).generatorPublicKey
+      ).deep.eq(Buffer.from(params.generator, 'hex'));
+
+      expect(
+        (findAllStub.firstCall.args[0].where as any).timestamp[Op.gte]
+      ).deep.eq(10);
+      expect(
+        (findAllStub.firstCall.args[0].where as any).timestamp[Op.lt]
+      ).deep.eq(100);
     });
   });
 });

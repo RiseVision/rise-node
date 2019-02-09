@@ -191,23 +191,6 @@ describe('logic/round', () => {
     });
   });
 
-  describe('markBlockId', () => {
-    it('should return null if backwards is true', () => {
-      scope.backwards = false;
-      expect(instance.markBlockId()).is.null;
-    });
-    it('should return update dbop if is not backward setting blockId to "0"', () => {
-      scope.backwards = true;
-      const res = instance.markBlockId();
-      expect(res.model).to.be.deep.eq(accountsModel);
-      expect(res.options).to.be.deep.eq({
-        where: { blockId: scope.block.id },
-      });
-      expect(res.type).to.be.eq('update');
-      expect(res.values).to.be.deep.eq({ blockId: '0' });
-    });
-  });
-
   describe('restoreVotesSnapshot', () => {
     it('should return custom op over accountsModel', () => {
       const res = instance.restoreVotesSnapshot();
@@ -234,38 +217,10 @@ describe('logic/round', () => {
         feesRemaining: 10n,
       });
 
-      const retVal = await instance.applyRound();
+      await instance.applyRound();
 
-      expect(at.calledTwice).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(0);
-      expect(at.secondCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledThrice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Delegate changes'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        changes: {
-          balance: 0n,
-          fees: 0n,
-          feesRemaining: 10n,
-          rewards: 0n,
-        },
-        delegate: 'aabbcc',
-      });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
-        'Fees remaining'
-      );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
-        delegate: 'aabbcc',
-        fees: 10n,
-      });
-      expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
-        'Applying round'
-      );
+      expect(at.calledOnce).to.be.true;
+      expect(at.firstCall.args).deep.eq([0]);
     });
 
     it('should behave correctly when backwards false, fees > 0 && feesRemaining > 0', async () => {
@@ -282,10 +237,9 @@ describe('logic/round', () => {
 
       const retVal = await instance.applyRound();
 
-      expect(at.calledThrice).to.be.true;
+      expect(at.calledTwice).to.be.true;
       expect(at.firstCall.args[0]).to.equal(0);
       expect(at.secondCall.args[0]).to.equal(1);
-      expect(at.thirdCall.args[0]).to.equal(1);
 
       expect(retVal[0].options.where.address).eq('aa');
       expect(retVal[0].values).deep.eq({
@@ -304,12 +258,6 @@ describe('logic/round', () => {
         producedblocks: sequelize.literal('producedblocks + 1'),
         rewards: sequelize.literal('rewards + 4'),
         cmb: 0,
-      });
-      expect(retVal[2].options.where.address).eq('bb');
-      expect(retVal[2].values).deep.eq({
-        balance: sequelize.literal('balance + 1'),
-        fees: sequelize.literal('fees + 1'),
-        u_balance: sequelize.literal('u_balance + 1'),
       });
     });
   });

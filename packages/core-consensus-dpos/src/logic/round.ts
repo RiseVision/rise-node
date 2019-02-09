@@ -36,7 +36,7 @@ export interface RoundLogicScope {
   // List of address which missed a block in this round
   roundOutsiders: Address[];
   roundDelegates: Buffer[];
-  roundFees: bigint;
+  roundFees: Array<bigint>;
   roundRewards: Array<bigint>;
   finishRound: boolean;
   dposV2: boolean;
@@ -128,27 +128,6 @@ export class RoundLogic {
   }
 
   /**
-   * In case of backwards calls updateBlockId with '0';
-   */
-  public markBlockId(): DBOp<any> {
-    if (this.scope.backwards) {
-      return {
-        model: this.scope.models.AccountsModel,
-        options: {
-          where: {
-            blockId: this.scope.block.id,
-          },
-        },
-        type: 'update',
-        values: {
-          blockId: '0',
-        },
-      };
-    }
-    return null;
-  }
-
-  /**
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
@@ -176,10 +155,7 @@ export class RoundLogic {
    * For each delegate in round calls mergeAccountAndGet with new Balance
    */
   public applyRound(): Array<DBOp<any>> {
-    const roundChanges = new this.scope.library.RoundChanges(
-      this.scope,
-      this.slots
-    );
+    const roundChanges = new this.scope.library.RoundChanges(this.scope);
     const queries: Array<DBOp<any>> = [];
 
     const delegates = this.scope.roundDelegates;
@@ -226,39 +202,6 @@ export class RoundLogic {
             'u_balance',
             this.scope.backwards ? -changes.balance : changes.balance
           ),
-        },
-      });
-    }
-
-    // last delegate will always get the remainder fees.
-    const remainderDelegate = delegates[delegates.length - 1];
-
-    const remainderChanges = roundChanges.at(delegates.length - 1);
-
-    if (remainderChanges.feesRemaining > 0) {
-      const feesRemaining = this.scope.backwards
-        ? -remainderChanges.feesRemaining
-        : remainderChanges.feesRemaining;
-
-      this.scope.library.logger.trace('Fees remaining', {
-        delegate: remainderDelegate.toString('hex'),
-        fees: feesRemaining,
-      });
-      queries.push({
-        model: this.scope.models.AccountsModel,
-        options: {
-          limit: 1,
-          where: {
-            address: this.scope.modules.accounts.generateAddressByPubData(
-              remainderDelegate
-            ),
-          },
-        },
-        type: 'update',
-        values: {
-          balance: toDiffLiteral('balance', feesRemaining),
-          fees: toDiffLiteral('fees', feesRemaining),
-          u_balance: toDiffLiteral('u_balance', feesRemaining),
         },
       });
     }

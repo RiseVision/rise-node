@@ -45,17 +45,14 @@
     "id": "delegates.getDelegate",
     "type": "object",
     "properties": {
-      "publicKey": {
-        "type": "string",
-        "format": "publicKey"
-      },
       "username": {
         "type": "string",
         "format": "username",
         "minLength": 1,
         "maxLength": 20
       }
-    }
+    },
+    "required": ["username"]
   },
   "search": {
     "id": "delegates.search",
@@ -132,22 +129,24 @@
       }
     }
   },
-  "getForgedByAccount": {
-    "id": "delegates.getForgedByAccount",
+  "getRewards": {
+    "id": "delegates.getRewards",
     "type": "object",
     "properties": {
       "username": {
         "type": "string",
         "format": "username"
       },
-      "start": {
-        "type": "integer"
+      "from": {
+        "type": "integer",
+        "minimum": 0
       },
-      "end": {
-        "type": "integer"
+      "to": {
+        "type": "integer",
+        "minimum": 0
       }
     },
-    "required": ["username"]
+    "required": ["username", "from", "to"]
   },
   "addDelegate": {
     "id": "delegates.addDelegate",

@@ -18,6 +18,7 @@ import {
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
+import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
 import { AccountsModelForDPOS, DelegatesModel } from '../models/';
@@ -29,7 +30,7 @@ const delegateAssetSchema = require('../../schema/asset.json');
 export type DelegateAsset = {
   delegate: {
     username: string;
-    forgingPK: Buffer;
+    forgingPK: Buffer & As<'publicKey'>;
   };
 };
 
@@ -74,7 +75,7 @@ export class RegisterDelegateTransaction extends BaseTx<
   }
 
   public readAssetFromBytes(bytes: Buffer): DelegateAsset {
-    const forgingPK = bytes.slice(0, 32);
+    const forgingPK = bytes.slice(0, 32) as Buffer & As<'publicKey'>;
     const username = bytes.slice(32).toString('utf8');
 
     return {
@@ -150,6 +151,11 @@ export class RegisterDelegateTransaction extends BaseTx<
       const account = await this.accountsModule.getAccount({ username });
       if (account) {
         throw new Error(`Username already exists: ${username}`);
+      }
+    } else {
+      // If not registration then tx should not specify the username.
+      if (tx.asset.delegate.username) {
+        throw new Error('Username cannot change');
       }
     }
 

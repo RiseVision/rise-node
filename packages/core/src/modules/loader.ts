@@ -187,6 +187,11 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, e.message, true);
     }
 
+    this.blocksModule.lastBlock = await this.BlocksModel.findOne({
+      limit: 1,
+      order: [['height', 'desc']],
+    });
+
     this.logger.info('Blockchain ready');
     await this.hookSystem.do_action(OnBlockchainReady.name);
     this.syncTimer();

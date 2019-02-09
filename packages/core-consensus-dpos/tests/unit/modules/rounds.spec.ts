@@ -101,7 +101,7 @@ describe('modules/rounds', () => {
       },
       round: 12,
       roundDelegates: [],
-      roundFees: 10n,
+      roundFees: [10n],
       roundOutsiders: [],
       roundRewards: [100n],
     };

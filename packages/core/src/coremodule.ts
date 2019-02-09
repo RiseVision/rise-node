@@ -53,6 +53,7 @@ export class CoreModule extends BaseCoreModule<void>
           b = _.merge(b, iM.constants[sortedModule.name]);
         }
       }
+      sortedModule.constants = b;
     }
     this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
 

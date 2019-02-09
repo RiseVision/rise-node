@@ -1,3 +1,4 @@
+import { AccountsSymbols } from '@risevision/core-accounts';
 import { BlocksModel, BlocksSymbols } from '@risevision/core-blocks';
 import {
   AccountFilterData,
@@ -6,12 +7,13 @@ import {
   IBlockReward,
   IBlocksModule,
   ILogger,
+  ITransactionsModel,
   ITransactionsModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { publicKey, SignedBlockType } from '@risevision/core-types';
-import { OrderBy } from '@risevision/core-utils';
+import { TXSymbols } from '@risevision/core-transactions';
+import { Address, publicKey, SignedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
 import { Op } from 'sequelize';
@@ -36,6 +38,8 @@ export class DelegatesModule {
   // Holds the current round delegates cache list.
   private delegatesListCache: { [round: number]: Buffer[] } = {};
 
+  @inject(Symbols.generic.txtypes)
+  private txTypes: Array<{ name: symbol; type: number }>;
   // Generic
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
@@ -77,8 +81,11 @@ export class DelegatesModule {
   @named(dPoSSymbols.models.delegatesRound)
   private delegatesRoundModel: typeof DelegatesRoundModel;
   @inject(ModelSymbols.model)
-  @named(dPoSSymbols.models.delegates)
+  @named(AccountsSymbols.model)
   private accountsModel: typeof AccountsModelForDPOS;
+  @inject(ModelSymbols.model)
+  @named(TXSymbols.models.model)
+  private transactionsModel: typeof ITransactionsModel;
 
   public async checkConfirmedDelegates(
     account: AccountsModelForDPOS,
@@ -225,89 +232,122 @@ export class DelegatesModule {
     return this.delegatesListCache[round];
   }
 
+  public async loadForgingPKByDelegate(sender: Address) {
+    const r: Array<
+      DelegatesModel & { 'tx.height': number }
+    > = (await this.delegatesModel.findAll({
+      include: [
+        {
+          attributes: ['height'],
+          model: this.transactionsModel,
+          where: {
+            senderId: sender,
+          },
+        },
+      ],
+      raw: true,
+    })) as any;
+
+    // sort
+    r.sort((a, b) => a['tx.height'] - b['tx.height']);
+    return r.map((a) => ({
+      forgingPK: a.forgingPK,
+      height: a['tx.height'],
+    }));
+  }
+
+  // tslint:disable-next-line max-line-length
+  public async calcDelegateInfo(
+    delegate: AccountsModelForDPOS,
+    orderedDelegates?: Array<{ cmb: number; username: string }>
+  ) {
+    if (!orderedDelegates) {
+      orderedDelegates = await this.accountsModel.findAll({
+        attributes: ['username', 'cmb'],
+        order: this.order(),
+        raw: true,
+        where: { isDelegate: 1, vote: { [Op.gte]: delegate.vote } },
+      });
+    }
+
+    // calculate approval
+    const totalSupply = this.blockReward.calcSupply(
+      this.blocksModule.lastBlock.height
+    );
+    const approval =
+      parseInt(((delegate.vote * 10n ** 4n) / totalSupply).toString(), 10) /
+      100;
+    const productivity =
+      Math.round(
+        (Math.abs(
+          100 -
+            delegate.missedblocks /
+              ((delegate.producedblocks + delegate.missedblocks) / 100)
+        ) || 0) * 1e2
+      ) / 1e2;
+
+    const rankV1 =
+      orderedDelegates.findIndex((a) => a.username === delegate.username) + 1;
+    const rankV2 =
+      orderedDelegates
+        .filter(
+          (a) => a.cmb <= this.dposConstants.dposv2.maxContinuousMissedBlocks
+        )
+        .findIndex((a) => a.username === delegate.username) + 1;
+
+    return { rankV1, rankV2, approval, productivity };
+  }
+
+  public async getDelegate(username: string) {
+    const delegate = await this.accountsModel.findOne({
+      raw: true,
+      where: { username },
+    });
+    if (!delegate) {
+      return null;
+    }
+    return {
+      account: delegate,
+      forgingPKs: await this.loadForgingPKByDelegate(delegate.address),
+    };
+  }
+
   /**
    * Gets delegates and for each calculate rank approval and productivity.
    */
-  public async getDelegates(query: {
-    limit?: number;
-    offset?: number;
-    orderBy: string;
-  }): Promise<{
-    delegates: Array<{
-      delegate: AccountsModelForDPOS;
-      info: { rank: number; approval: number; productivity: number };
-    }>;
-    count: number;
-    offset: number;
-    limit: number;
-    sortField: string;
-    sortMethod: 'ASC' | 'DESC';
-  }> {
+  public async getDelegates(
+    query: {
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<AccountsModelForDPOS[]> {
     if (!query) {
       throw new Error('Missing query argument');
     }
-
-    const delegates = await this.accountsModule.getAccounts({
-      isDelegate: 1,
-      sort: this.dposV2Helper.isV1()
-        ? { vote: -1, forgingPK: 1 }
-        : { votesWeight: -1, forgingPK: 1 },
-    });
 
     const limit = Math.min(
       this.dposConstants.activeDelegates,
       query.limit || this.dposConstants.activeDelegates
     );
     const offset = query.offset || 0;
-
-    const count = delegates.length;
-    const realLimit = Math.min(offset + limit, count);
-
-    const lastBlock = this.blocksModule.lastBlock;
-    const totalSupply = this.blockReward.calcSupply(lastBlock.height);
-
-    // tslint:disable-next-line
-    const crunchedDelegates: Array<{
-      delegate: AccountsModelForDPOS;
-      info: { rank: number; approval: number; productivity: number };
-    }> = [];
-    for (let i = 0; i < delegates.length; i++) {
-      const rank = i + 1;
-      const approval =
-        parseInt(
-          ((delegates[i].vote * 10n ** 4n) / totalSupply).toString(),
-          10
-        ) / 100;
-
-      const percent =
-        Math.abs(
-          100 -
-            delegates[i].missedblocks /
-              ((delegates[i].producedblocks + delegates[i].missedblocks) / 100)
-        ) || 0;
-
-      const productivity = Math.round(percent * 1e2) / 1e2;
-
-      crunchedDelegates.push({
-        delegate: delegates[i],
-        info: { rank, approval, productivity },
-      });
-    }
-
-    const orderBy = OrderBy(query.orderBy, { quoteField: false });
-
-    if (orderBy.error) {
-      throw new Error(orderBy.error);
-    }
-
-    return {
-      count,
-      delegates: crunchedDelegates,
-      limit: realLimit,
+    return await this.accountsModel.findAll({
+      attributes: [
+        'address',
+        'cmb',
+        'username',
+        'vote',
+        'votesWeight',
+        'producedblocks',
+        'missedblocks',
+      ],
+      limit,
       offset,
-      sortField: orderBy.sortField,
-      sortMethod: orderBy.sortMethod,
-    };
+      order: this.order(),
+      raw: true,
+      where: {
+        isDelegate: 1,
+      },
+    });
   }
 
   /**
@@ -524,5 +564,11 @@ export class DelegatesModule {
       this.delegatesListCache[round].splice(index, 1);
       this.delegatesListCache[round].push(chosenDelegate);
     }
+  }
+
+  private order() {
+    return this.dposV2Helper.isV1()
+      ? [['vote', 'DESC'], ['forgingPK', 'ASC']]
+      : [['votesWeight', 'DESC'], ['forgingPK', 'ASC']];
   }
 }

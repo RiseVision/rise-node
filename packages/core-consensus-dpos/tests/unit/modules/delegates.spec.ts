@@ -23,6 +23,7 @@ import { Op } from 'sequelize';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as supersha from 'supersha';
+import { As } from 'type-tagger';
 import { DposConstantsType, dPoSSymbols, Slots } from '../../../src/helpers';
 import { RoundsLogic } from '../../../src/logic/rounds';
 import { AccountsModelForDPOS, DelegatesRoundModel } from '../../../src/models';
@@ -128,7 +129,9 @@ describe('modules/delegates', () => {
         'checkDelegates'
       );
       checkDelegatesStub.resolves('test');
-      const acc = new accountsModel({ forgingPK: Buffer.from(pubKey, 'hex') });
+      const acc = new accountsModel({
+        forgingPK: Buffer.from(pubKey, 'hex') as Buffer & As<'publicKey'>,
+      });
       const retVal = await instance.checkConfirmedDelegates(
         acc,
         addedVotes,
@@ -152,7 +155,9 @@ describe('modules/delegates', () => {
         'checkDelegates'
       );
       checkDelegatesStub.resolves('test');
-      const acc = new accountsModel({ forgingPK: Buffer.from(pubKey, 'hex') });
+      const acc = new accountsModel({
+        forgingPK: Buffer.from(pubKey, 'hex') as Buffer & As<'publicKey'>,
+      });
       const retVal = await instance.checkUnconfirmedDelegates(
         acc,
         addedVotes,
@@ -587,102 +592,72 @@ describe('modules/delegates', () => {
     let getAccountsStub: SinonStub;
     beforeEach(() => {
       getAccountsStub = sandbox
-        .stub(accountsModule, 'getAccounts')
+        .stub(accountsModel, 'findAll')
         .resolves(testAccounts);
     });
 
-    it('should throw if !query', async () => {
-      await expect(instance.getDelegates(undefined)).to.be.rejectedWith(
-        'Missing query argument'
-      );
-    });
-
-    it('should call accountsModule.getAccounts', async () => {
-      await instance.getDelegates({ orderBy: 'votes' });
+    it('should call accounysModel.findAll', async () => {
+      await instance.getDelegates();
       expect(getAccountsStub.calledOnce).to.be.true;
       expect(getAccountsStub.firstCall.args[0]).to.be.deep.equal({
-        isDelegate: 1,
-        sort: { vote: -1, forgingPK: 1 },
+        attributes: [
+          'address',
+          'cmb',
+          'username',
+          'vote',
+          'votesWeight',
+          'producedblocks',
+          'missedblocks',
+        ],
+        limit: 101,
+        offset: 0,
+        order: [['vote', 'DESC'], ['forgingPK', 'ASC']],
+        raw: true,
+        where: { isDelegate: 1 },
       });
     });
-
-    it('should call blockReward.calcSupply', async () => {
-      await instance.getDelegates({ orderBy: 'votes' });
-      expect(calcSupplyStub.calledOnce).to.be.true;
-      expect(calcSupplyStub.firstCall.args[0]).to.be.equal(
-        blocksModule.lastBlock.height
-      );
-    });
-
-    // it('should call OrderBy using the passed value', async () => {
-    //   const orderBySpy = sandbox.spy(helpers, 'OrderBy');
-    //   await instance.getDelegates({ orderBy: 'votes' });
-    //   expect(orderBySpy.calledOnce).to.be.true;
-    //   expect(orderBySpy.firstCall.args[0]).to.be.equal('votes');
-    //   expect(orderBySpy.firstCall.args[1]).to.be.deep.equal({
-    //     quoteField: false,
-    //     sortField : null,
-    //     sortFields: [],
-    //     sortMethod: null,
-    //   });
-    // });
-    //
-    // it('should throw on OrderBy error', async () => {
-    //   sandbox.stub(helpers, 'OrderBy').returns({ error: 'OrderBy Err', });
-    //   await expect(instance.getDelegates({ orderBy: 'votes' })).to.be.rejectedWith('OrderBy Err');
-    // });
 
     it('should return the expected object', async () => {
       const retVal = await instance.getDelegates({
         limit: 50,
         offset: 40,
-        orderBy: 'votes',
       });
-      expect(retVal.count).to.be.equal(testAccounts.length);
-      expect(Array.isArray(retVal.delegates)).to.be.true;
-      retVal.delegates.forEach((delegate, key) => {
-        expect(delegate.info.rank).to.be.equal(key + 1);
-        expect(delegate.info.approval).to.be.equal(
-          Math.floor(
-            (parseInt(`${delegate.delegate.vote}`, 10) /
-              parseInt(`${totalSupply}`, 10)) *
-              1e4
-          ) / 1e2
-        );
-        const percent =
-          Math.abs(
-            100 -
-              delegate.delegate.missedblocks /
-                ((delegate.delegate.producedblocks +
-                  delegate.delegate.missedblocks) /
-                  100)
-          ) || 0;
-        expect(delegate.info.productivity).to.be.equal(
-          Math.round(percent * 1e2) / 1e2
-        );
-      });
-      expect(retVal.limit).to.be.equal(90);
-      expect(retVal.offset).to.be.equal(40);
-      expect(retVal.sortField).to.be.equal('votes');
-      expect(retVal.sortMethod).to.be.null;
+      expect(Array.isArray(retVal)).to.be.true;
+      expect(retVal).deep.eq(testAccounts);
     });
 
     it('should limit correctly when limit passed', async () => {
       const retVal = await instance.getDelegates({
         limit: 50,
-        orderBy: 'votes',
       });
-      expect(retVal.limit).to.be.equal(50);
+      expect(getAccountsStub.firstCall.args[0].limit).to.be.equal(50);
     });
 
     it('should limit correctly when offset passed', async () => {
       const retVal = await instance.getDelegates({
         limit: 50,
         offset: 50,
-        orderBy: 'votes',
       });
-      expect(retVal.limit).to.be.equal(100);
+      expect(getAccountsStub.firstCall.args[0].limit).to.be.equal(50);
     });
+  });
+
+  describe('calcDelegateInfo', () => {
+    it('should auto-calculate ordered delegates if not provided');
+    it('should compute proper v1 and v2 rank values');
+    it('should report 0 for rankV2 if cmb=85');
+    it(
+      'should report 0 for rankV1 and rankV2 if delegates are provided and given delegate is not in the list'
+    );
+  });
+
+  describe('getDelegate', () => {
+    it('should query accountsModel');
+    it('should load forgingPKs for such delegate');
+  });
+
+  describe('loadForgingPKByDelegate', () => {
+    it('should properly query model and return manipulated data');
   });
 
   describe('assertValidBlockSlot', () => {

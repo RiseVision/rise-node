@@ -33,7 +33,7 @@ export type BlocksConstantsType = {
 export const constants: BlocksConstantsType = {
   maxPayloadLength: 1024 * 1024,
   maxTxsPerBlock: 25,
-  receiptTimeOut: 30 * 2,
+  receiptTimeOut: 30 + 15, // 1.5 blocks
   rewards: [
     {
       fromHeight: 0,

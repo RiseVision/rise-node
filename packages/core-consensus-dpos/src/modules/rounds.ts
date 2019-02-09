@@ -84,7 +84,6 @@ export class RoundsModule {
       const roundLogic = new this.RoundLogic(roundLogicScope, this.slots);
       const ops: Array<DBOp<any>> = [];
       ops.push(...roundLogic.undo());
-      ops.push(roundLogic.markBlockId());
       return ops;
     });
   }
@@ -122,7 +121,7 @@ export class RoundsModule {
         // so we fix this glitch by monkeypatching the value and set roundDelegates to the correct genesis generator.
         roundSums = {
           roundDelegates: [block.generatorPublicKey],
-          roundFees: 0n,
+          roundFees: [0n],
           roundRewards: [0n],
         };
       }
@@ -191,14 +190,14 @@ export class RoundsModule {
     round: number,
     block: SignedBlockType
   ): Promise<{
-    roundFees: bigint;
+    roundFees: Array<bigint>;
     roundRewards: Array<bigint>;
     roundDelegates: Buffer[];
   }> {
     this.logger.debug('Summing round', round);
     // tslint:disable-next-line
     type sumRoundRes = {
-      fees: null | bigint;
+      fees: null | string[];
       rewards: null | string[];
       delegates: null | Buffer[];
     };
@@ -217,13 +216,13 @@ export class RoundsModule {
     const roundRewards = res.rewards.map((reward) =>
       BigInt(Math.floor(parseFloat(reward)))
     );
-    let roundFees = res.fees;
+    const roundFees = res.fees.map((a) => BigInt(a));
     const roundDelegates = res.delegates;
 
     if (roundDelegates.length === this.dposConstants.activeDelegates - 1) {
       // cur block is not in the database yet. So lets patch the results manually
       roundRewards.push(BigInt(block.reward));
-      roundFees += BigInt(block.totalFee);
+      roundFees.push(BigInt(block.totalFee));
       roundDelegates.push(block.generatorPublicKey);
     }
 

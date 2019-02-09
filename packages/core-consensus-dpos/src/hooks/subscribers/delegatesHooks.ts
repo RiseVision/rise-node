@@ -26,6 +26,7 @@ import {
   DelegatesRoundModel,
 } from '../../models';
 import { DelegatesModule } from '../../modules';
+import { DposConstantsType } from '../../helpers'
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
@@ -56,6 +57,9 @@ export class DelegatesHooks extends Extendable {
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
 
+  @inject(dPoSSymbols.constants)
+  private dposConstants: DposConstantsType;
+
   @OnCheckIntegrity()
   private async checkLoadingIntegrity(totalBlocks: number) {
     const delegatesCount = await this.accountsModel.count({
@@ -83,7 +87,7 @@ export class DelegatesHooks extends Extendable {
     const lastSlot = this.slots.getSlotNumber(lastBlock.timestamp);
 
     if (
-      slotNumber > this.slots.getSlotNumber(this.slots.getTime()) ||
+      slotNumber > this.slots.getSlotNumber(this.slots.getTime() + this.dposConstants.timeDriftCorrection) ||
       slotNumber <= lastSlot
     ) {
       // if in future or in the past => error
