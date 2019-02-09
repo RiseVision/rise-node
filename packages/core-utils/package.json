@@ -18,7 +18,7 @@
     "express": "4.16.4",
     "ip": "=1.1.5",
     "ip-address": "=5.8.9",
-    "mangiafuoco": "1.2.2",
+    "mangiafuoco": "1.2.3",
     "reflect-metadata": "^0.1.10",
     "sequelize": "4.42.0",
     "sequelize-typescript": "0.6.6",
