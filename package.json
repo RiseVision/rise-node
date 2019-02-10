@@ -19,6 +19,7 @@
     "transpile": "lerna run transpile",
     "single-transpile": "f(){ cd packages/$1; npm run transpile; }; f",
     "test-cover-unit": "NODE_ENV=test nyc --reporter=text-lcov lerna --ignore nyc exec yarn test-unit | coveralls",
+    "test-report-unit": "NODE_ENV=test nyc --reporter=text --reporter=html lerna --ignore nyc exec yarn test-unit && npx concurrently \"npx http-server -p 8383 coverage\" \"xdg-open http://localhost:8383\"",
     "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls",
     "static-analysis": "tslint --force --project ./tsconfig.json 'src/**/*.ts'",
     "test-subpackages": "mocha --expose-gc --max-old-space-size=4096 --bail --exit --require reflect-metadata --require ts-node/register './packages/*/tests/{!(benchmarks|integration)/**,}/*.spec.ts'",
