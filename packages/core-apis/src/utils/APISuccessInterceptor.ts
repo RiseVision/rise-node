@@ -9,6 +9,6 @@ import { APISymbols } from '../helpers';
 @Interceptor()
 export class APISuccessInterceptor implements InterceptorInterface {
   public intercept(action: Action, result: any): any | Promise<any> {
-    return { success: true, ...toTransportable(result) };
+    return { success: true, ...toTransportable(result, 10) };
   }
 }

@@ -3,9 +3,8 @@ import { IInfoModel, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
 import * as _ from 'lodash';
-import { sort } from 'semver';
 import * as uuid from 'uuid';
-import { LoaderAPI } from './apis';
+import { ConstantsAPI, LoaderAPI } from './apis';
 import { Migrator, TimeToEpoch } from './helpers';
 import { BlockMonitor } from './hooks';
 import { InfoModel, MigrationsModel } from './models';
@@ -39,11 +38,18 @@ export class CoreModule extends BaseCoreModule<void>
       .bind(APISymbols.api)
       .toConstructor(LoaderAPI)
       .whenTargetNamed(CoreSymbols.api.loader);
+    this.container
+      .bind(APISymbols.api)
+      .toConstructor(ConstantsAPI)
+      .whenTargetNamed(CoreSymbols.api.constants);
 
     this.container
       .bind(CoreSymbols.__internals.blockMonitor)
       .to(BlockMonitor)
       .inSingletonScope();
+
+    const allConstants = {};
+    allConstants[this.name] = this.constants;
 
     // Set constants
     for (const sortedModule of this.sortedModules) {
@@ -54,8 +60,10 @@ export class CoreModule extends BaseCoreModule<void>
         }
       }
       sortedModule.constants = b;
+      allConstants[sortedModule.name] = b;
     }
     this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
+    this.container.bind(CoreSymbols.allConstants).toConstantValue(allConstants);
 
     // add info and migrations model
     this.container
