@@ -24,9 +24,12 @@ import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
-import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import { TxLogicStaticCheck, TxLogicVerify } from './hooks/actions';
+import {
+  TxLogicStaticCheck,
+  TxLogicVerify,
+  TxSignatureVerify,
+} from './hooks/actions';
 import {
   TxApplyFilter,
   TxApplyUnconfirmedFilter,
@@ -43,9 +46,6 @@ const txSchema = require('../schema/transaction.json');
 export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
-
-  @inject(Symbols.generic.crypto)
-  private crypto: ICrypto;
 
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
@@ -197,11 +197,6 @@ export class TransactionLogic implements ITransactionLogic {
     //   throw new Error('Invalid sender. Can not send from genesis account');
     // }
 
-    // FIXME:
-    // if (!this.verifySignature(tx, tx.senderPubData, tx.signature)) {
-    //   throw new Error('Failed to verify signature');
-    // }
-
     // Check fee
     const fee = this.types[tx.type].calculateMinFee(tx, sender, height);
     if (fee > tx.fee) {
@@ -213,33 +208,32 @@ export class TransactionLogic implements ITransactionLogic {
     // Check confirmed sender balance
     this.assertEnoughBalance(tx.amount + tx.fee, 'balance', tx, sender);
 
+    if (!(await this.verifyTxSignature(tx, sender, height))) {
+      throw new Error(`Transaction ${tx.id} signature is not valid`);
+    }
+
     await this.hookSystem.do_action(TxLogicVerify.name, tx, sender, height);
-    // // Check timestamp
-    // if (this.slots.getSlotNumber(tx.timestamp) > this.slots.getSlotNumber()) {
-    //   throw new Error('Invalid transaction timestamp. Timestamp is in the future');
-    // }
 
     await this.types[tx.type].verify(tx, sender);
   }
 
-  /**
-   * Verifies the given signature (both first and second)
-   * @param {IBaseTransaction<any>} tx
-   * @param {Buffer} publicKey
-   * @param {string} signature
-   * @returns {boolean} true
-   */
-  public verifySignature(
+  public async verifyTxSignature(
     tx: IBaseTransaction<any, bigint>,
-    publicKey: Buffer,
-    signature: Buffer
-  ): boolean {
-    this.assertKnownTransactionType(tx.type);
-    if (!signature) {
+    sender: IAccountsModel,
+    height: number
+  ) {
+    try {
+      await this.hookSystem.do_action(
+        TxSignatureVerify.name,
+        tx,
+        this.getHash(tx),
+        sender,
+        height
+      );
+      return true;
+    } catch (e) {
       return false;
     }
-    const hash = this.getHash(tx);
-    return this.crypto.verify(hash, signature, publicKey);
   }
 
   public async apply(
@@ -364,8 +358,6 @@ export class TransactionLogic implements ITransactionLogic {
       values: txs.map((tx) => {
         this.assertKnownTransactionType(tx.type);
         const senderPubData = tx.senderPubData;
-        // const signature          = tx.signature;
-        // const signSignature   = tx.signSignature ? tx.signSignature : null;
         return {
           // tslint:disable object-literal-sort-keys
           id: tx.id,

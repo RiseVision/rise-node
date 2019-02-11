@@ -16,7 +16,7 @@ import * as chaiAsPromised from 'chai-as-promised';
 import * as crypto from 'crypto';
 import { Address, IKeypair, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
-import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
+import { Handler, WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import 'reflect-metadata';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
@@ -34,6 +34,7 @@ import {
   TXBytes,
   TxLogicStaticCheck,
   TxLogicVerify,
+  TxSignatureVerify,
   TXSymbols,
   TxUndoFilter,
   TxUndoUnconfirmedFilter,
@@ -356,8 +357,8 @@ describe('logic/transaction', () => {
       (tx as any).blockId = '12345ab';
       // instance stubs
       verifySignatureStub = sandbox
-        .stub(instance, 'verifySignature')
-        .returns(true);
+        .stub(instance, 'verifyTxSignature')
+        .resolves(true);
       checkBalanceStub = sandbox
         .stub(instance, 'assertEnoughBalance')
         .returns({ exceeded: false } as any);
@@ -480,12 +481,11 @@ describe('logic/transaction', () => {
       );
     });
 
-    // TODO: verifySignature
-    // it('should reject tx if verifySignature throws (for whatever reason', async () => {
-    //   verifySignatureStub.throws(new Error('whatever'));
-    //
-    //   await expect(instance.verify(tx, sender, 1)).to.rejectedWith('whatever');
-    // });
+    it('should reject tx if verifySignature throws (for whatever reason', async () => {
+      verifySignatureStub.throws(new Error('whatever'));
+
+      await expect(instance.verify(tx, sender, 1)).to.rejectedWith('whatever');
+    });
 
     it('should call checkBalance and throw if checkBalance returns an error', async () => {
       checkBalanceStub.throws(new Error('checkBalance error'));
@@ -584,29 +584,49 @@ describe('logic/transaction', () => {
       getHashStub = sandbox.stub(instance, 'getHash').returns(theHash);
     });
 
-    it('should call assertKnownTransactionType', () => {
-      instance.verifySignature(tx, account.publicKey, tx.signatures[0]);
-      expect(akttStub.calledOnce).to.be.true;
-      expect(akttStub.firstCall.args[0]).to.be.deep.equal(tx.type);
-    });
+    it('should call call verifisignaturehook', async () => {
+      const hookSystem = container.get<WordPressHookSystem>(
+        Symbols.generic.hookSystem
+      );
 
-    it('should call ed.verify', () => {
-      const edStub = sandbox.stub(cryptoImpl, 'verify').returns(true);
-      instance.verifySignature(tx, account.publicKey, tx.signatures[0]);
-      expect(edStub.calledOnce).to.be.true;
-      expect(edStub.firstCall.args[0]).to.be.deep.equal(theHash);
-      expect(edStub.firstCall.args[1]).to.be.deep.equal(tx.signatures[0]);
-      expect(edStub.firstCall.args[2]).to.be.deep.equal(account.publicKey);
-    });
-    describe('verificationType', () => {
-      it('should call getHash with false, false when VerificationType is ALL', () => {
-        instance.verifySignature(tx, account.publicKey, tx.signatures[0]);
-        expect(getHashStub.calledOnce).to.be.true;
-        expect(getHashStub.firstCall.args[0]).to.be.deep.equal(tx);
+      // Check errors - throw case
+      let handler = Handler.fromCback('test', (obj, err) => {
+        throw new Error('err');
       });
-    });
-    it('should call false if signature is null', () => {
-      expect(instance.verifySignature(tx, account.publicKey, null)).to.be.false;
+
+      await hookSystem.add_action(TxSignatureVerify.name, handler);
+      let r = await instance.verifyTxSignature(tx, sender, 10);
+      expect(r).false;
+      await hookSystem.remove_action(TxSignatureVerify.name, handler);
+
+      // check errors, proper error propagation
+      handler = Handler.fromCback('test', (obj, c) => {
+        c(new Error('err'), null);
+      });
+      await hookSystem.add_action(TxSignatureVerify.name, handler);
+      r = await instance.verifyTxSignature(tx, sender, 10);
+      expect(r).false;
+      await hookSystem.remove_action(TxSignatureVerify.name, handler);
+
+      // check params and no-errors.
+      const stub = sandbox.stub();
+      handler = Handler.fromCback('test', (obj, c, ...args) => {
+        stub(obj, ...args);
+        c(null, null);
+      });
+      await hookSystem.add_action(TxSignatureVerify.name, handler);
+      r = await instance.verifyTxSignature(tx, sender, 10);
+      await hookSystem.remove_action(TxSignatureVerify.name, handler);
+
+      // no error
+      expect(r).true;
+      // Expect proper parms
+      expect(stub.firstCall.args).deep.eq([
+        tx,
+        theHash,
+        sender,
+        10, // blockheight
+      ]);
     });
   });
 

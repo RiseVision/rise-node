@@ -4,7 +4,6 @@ import { inject, injectable } from 'inversify';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
 
-// TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule implements IBlocksModule {
   public lastBlock: SignedAndChainedBlockType;

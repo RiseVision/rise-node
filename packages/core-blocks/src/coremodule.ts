@@ -119,6 +119,9 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     await this.container
       .get<BlockLoader>(BlocksSymbols.__internals.loader)
       .hookMethods();
+    await this.container
+      .get<BlocksModuleVerify>(BlocksSymbols.modules.verify)
+      .hookMethods();
   }
 
   public async teardown(): Promise<void> {
@@ -127,6 +130,9 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .unHook();
     await this.container
       .get<BlockLoader>(BlocksSymbols.__internals.loader)
+      .unHook();
+    await this.container
+      .get<BlocksModuleVerify>(BlocksSymbols.modules.verify)
       .unHook();
   }
 

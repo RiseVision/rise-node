@@ -30,7 +30,3 @@ export const OnDestroyBlock = createAction<
 export const OnTransactionsSaved = createAction<
   (txs: Array<IBaseTransaction<any>>, block?: SignedBlockType) => Promise<void>
 >('core-blocks/onTransactionsSaved');
-
-export const OnReceiveBlock = createAction<
-  (block: SignedAndChainedBlockType) => Promise<void>
->('core-p2p/onReceiveBlock');

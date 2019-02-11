@@ -144,8 +144,10 @@ describe('logic/transactions/secondSignature', () => {
       expect(retVal).to.be.deep.equal(tx.asset.signature.publicKey);
     });
 
-    // TODO:
-    it('should serialize and deserialize properly');
+    it('should serialize and deserialize properly', () => {
+      const retVal = instance.assetBytes(tx);
+      expect(instance.readAssetFromBytes(retVal)).deep.eq(tx.asset);
+    });
   });
 
   describe('verify', () => {
