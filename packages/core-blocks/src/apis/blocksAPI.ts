@@ -191,8 +191,9 @@ export class BlocksAPI {
   }
 
   @Get('/getBroadhash')
-  public async getBroadHash() {
-    return { broadhash: await this.systemModule.getBroadhash() };
+  public getBroadHash() {
+    const lastBlock = this.blocksModule.lastBlock;
+    return { broadhash: lastBlock.id };
   }
 
   @Get('/getEpoch')
@@ -261,10 +262,10 @@ export class BlocksAPI {
   }
 
   @Get('/getStatus')
-  public async getStatus() {
+  public getStatus() {
     const lastBlock = this.blocksModule.lastBlock;
     return {
-      broadhash: await this.systemModule.getBroadhash(),
+      broadhash: lastBlock.id,
       epoch: this.constants.epochTime,
       fee: this.systemModule.getFees(lastBlock.height).fees.send.toString(),
       height: lastBlock.height,

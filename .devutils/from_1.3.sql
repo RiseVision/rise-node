@@ -14,6 +14,9 @@ ALTER TABLE blocks
 	ALTER COLUMN id TYPE VARCHAR(250),
 	alter column "previousBlock" type VARCHAR(250);
 
+ALTER TABLE peers
+	ALTER COLUMN "broadhash" TYPE VARCHAR(255);
+
 DROP TABLE IF EXISTS dapps;
 DROP TABLE IF EXISTS forks_stat;
 DROP TABLE IF EXISTS intransfer;

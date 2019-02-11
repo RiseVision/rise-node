@@ -54,14 +54,6 @@ export interface ISystemModule extends IModule {
    */
   versionCompatible(version): boolean;
 
-  /**
-   * Gets private nethash or creates a new one, based on input param and data.
-   * @implements {library.db.query}
-   * @implements {crypto.createHash}
-   * @return {hash|setImmediateCallback} err | private nethash or new hash.
-   */
-  getBroadhash(): Promise<string>;
-
   getFees(
     height?: number
   ): {
@@ -76,5 +68,5 @@ export interface ISystemModule extends IModule {
   /**
    * Updates private broadhash and height values.
    */
-  update(): Promise<void>;
+  update();
 }
