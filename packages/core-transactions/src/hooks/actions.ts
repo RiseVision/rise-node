@@ -1,6 +1,9 @@
 import { IAccountsModel } from '@risevision/core-interfaces';
 import { IBaseTransaction } from '@risevision/core-types';
-import { createActionDecorator as createAction } from '@risevision/core-utils';
+import {
+  ActionFilterDecoratorType,
+  createActionDecorator as createAction,
+} from '@risevision/core-utils';
 
 export const TxLogicStaticCheck = createAction<
   (
