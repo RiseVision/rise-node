@@ -246,10 +246,21 @@ export class BlocksModuleProcess {
         const txAccounts = await this.accountsModule.txAccounts(
           block.transactions
         );
+
         await this.accountsModule.checkTXsAccountsMap(
           block.transactions,
           txAccounts
         );
+
+        // verify transactions
+        for (const tx of block.transactions) {
+          await this.transactionLogic.verify(
+            tx,
+            txAccounts[tx.senderId],
+            block.height
+          );
+        }
+
         await this.blocksChainModule.applyBlock(
           block,
           false,
