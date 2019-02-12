@@ -103,9 +103,9 @@ const updateReadmeInfos = () => {
   const packageInfo = getPackageInfo('package.json');
   for (const packageName of allPackageNames()) {
     console.log(`Updating ${path.basename(packageName)}`);
-    replaceReadmeInfo(path.join(packageName, 'README.md'), readmeInfo);
+    // replaceReadmeInfo(path.join(packageName, 'README.md'), readmeInfo);
     replacePackageInfo(path.join(packageName, 'package.json'), packageInfo);
-    write(license, path.join(packageName, 'LICENSE'));
+    // write(license, path.join(packageName, 'LICENSE'));
   }
 };
 
