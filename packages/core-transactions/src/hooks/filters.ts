@@ -5,7 +5,10 @@ import {
   ITransportTransaction,
   SignedBlockType,
 } from '@risevision/core-types';
-import { createFilterDecorator } from '@risevision/core-utils';
+import {
+  ActionFilterDecoratorType,
+  createFilterDecorator,
+} from '@risevision/core-utils';
 
 /**
  * Decorator for tx-apply filter. Called when calculating every tx operations.
