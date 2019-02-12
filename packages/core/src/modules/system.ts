@@ -1,19 +1,16 @@
 import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
 import {
-  IBlocksModel,
   IBlocksModule,
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
 import {
   AppConfig,
   ConstantsType,
   PeerHeaders,
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
-import * as crypto from 'crypto';
-import { inject, injectable, named, postConstruct } from 'inversify';
+import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
 import * as semver from 'semver';
 
@@ -46,15 +43,10 @@ export class SystemModule implements ISystemModule {
   @inject(Symbols.modules.blocks)
   private blocksModule: IBlocksModule;
 
-  // Models
-  @inject(ModelSymbols.model)
-  @named(Symbols.models.blocks)
-  private BlocksModel: typeof IBlocksModel;
-
   @postConstruct()
   public postConstruct() {
     this.headers = {
-      broadhash: this.genesisBlock.payloadHash.toString('hex'),
+      broadhash: this.genesisBlock.id,
       firewalled: this.appConfig.firewalled ? 'true' : 'false',
       height: 1,
       nethash: this.genesisBlock.payloadHash.toString('hex'),
@@ -177,31 +169,6 @@ export class SystemModule implements ISystemModule {
     return semver.satisfies(version, this.minVersion);
   }
 
-  /**
-   * Gets private nethash or creates a new one, based on input param and data.
-   * @implements {library.db.query}
-   * @implements {crypto.createHash}
-   */
-  public async getBroadhash() {
-    const rows: Array<{ id: string }> = await this.BlocksModel.findAll({
-      attributes: ['id'],
-      limit: 5,
-      order: [['height', 'DESC']],
-      raw: true,
-    });
-    if (rows.length <= 1) {
-      return this.headers.nethash;
-    }
-
-    const seed = rows.map((r) => r.id).join('');
-
-    const hash = crypto
-      .createHash('sha256')
-      .update(seed, 'utf8')
-      .digest();
-    return hash.toString('hex');
-  }
-
   public getFees(
     height: number = this.blocksModule.lastBlock.height + 1
   ): {
@@ -233,8 +200,9 @@ export class SystemModule implements ISystemModule {
   /**
    * Updates private broadhash and height values.
    */
-  public async update() {
-    this.headers.broadhash = await this.getBroadhash();
-    this.headers.height = this.blocksModule.lastBlock.height;
+  public update() {
+    const lastBlock = this.blocksModule.lastBlock;
+    this.headers.broadhash = lastBlock.id;
+    this.headers.height = lastBlock.height;
   }
 }

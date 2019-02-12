@@ -51,7 +51,7 @@ export class BlocksP2P extends Extendable {
                 body: { block },
                 headers: {
                   // We need to advertise ourselves with the new broadhash
-                  broadhash: block.payloadHash.toString('hex'),
+                  broadhash: block.id,
                 },
               },
             },
