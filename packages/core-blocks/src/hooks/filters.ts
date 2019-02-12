@@ -3,7 +3,10 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { createFilterDecorator } from '@risevision/core-utils';
+import {
+  ActionFilterDecoratorType,
+  createFilterDecorator,
+} from '@risevision/core-utils';
 
 export const CommonHeightsToQuery = createFilterDecorator<
   (heights: number[], height: number) => Promise<number[]>

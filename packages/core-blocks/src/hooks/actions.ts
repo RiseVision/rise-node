@@ -5,7 +5,10 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { createActionDecorator as createAction } from '@risevision/core-utils';
+import {
+  ActionFilterDecoratorType,
+  createActionDecorator as createAction,
+} from '@risevision/core-utils';
 import { Transaction } from 'sequelize';
 
 /**
