@@ -73,17 +73,13 @@ describe('blocks/p2p/main', () => {
     await hookSystem.do_action(OnPostApplyBlock.name, block, true);
     expect(
       broadcastStub.firstCall.args[0].options.payload.headers.broadhash
-    ).eq(block.payloadHash.toString('hex'));
+    ).eq(block.id);
   });
   it('should broadcast the block filtering for old broadhash', async () => {
     const block = createFakeBlock(container);
     await hookSystem.do_action(OnPostApplyBlock.name, block, true);
-    expect(broadcastStub.firstCall.args[0].filters.broadhash).not.eq(
-      block.payloadHash.toString('hex')
-    );
-    expect(broadcastStub.firstCall.args[0].filters.broadhash).eq(
-      genesis.payloadHash.toString('hex')
-    );
+    expect(broadcastStub.firstCall.args[0].filters.broadhash).not.eq(block.id);
+    expect(broadcastStub.firstCall.args[0].filters.broadhash).eq(genesis.id);
   });
   it('should set relays to 1 if not set', async () => {
     const block = createFakeBlock(container);

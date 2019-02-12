@@ -17,6 +17,7 @@ import {
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
+import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import { OldBaseTx } from './BaseOldTx';
 
@@ -159,7 +160,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
       // tslint:disable-next-line
       u_username: tx.asset.delegate.username,
       username: tx.asset.delegate.username,
-      forgingPK: tx.senderPubData,
+      forgingPK: tx.senderPubData as Buffer & As<'publicKey'>,
     };
     sender.applyValues(data);
     return [
@@ -282,7 +283,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
       model: this.DelegatesModel,
       type: 'create',
       values: {
-        forgingPK: tx.senderPubData,
+        forgingPK: tx.senderPubData as Buffer & As<'publicKey'>,
         transactionId: tx.id,
         username: tx.asset.delegate.username,
       },

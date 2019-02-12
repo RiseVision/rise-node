@@ -32,6 +32,13 @@ export const createFilterDecorator = <K = () => Promise<any>>(
     hookGetter: any,
     priority?: number
   ) => {
+    if (typeof hookGetter !== 'function') {
+      priority = hookGetter;
+      return OnWPFilter<T & { hookSystem: WordPressHookSystem }, K>(
+        filter,
+        priority
+      );
+    }
     return OnWPFilter<T, K>(hookGetter, filter, priority);
   };
   Object.defineProperty(toRet, 'name', { value: filter, writable: false });
@@ -45,6 +52,13 @@ export const createActionDecorator = <K = () => Promise<any>>(
     hookGetter: any,
     priority?: number
   ) => {
+    if (typeof hookGetter !== 'function') {
+      priority = hookGetter;
+      return OnWPAction<T & { hookSystem: WordPressHookSystem }, K>(
+        action,
+        priority
+      );
+    }
     return OnWPAction<T, K>(hookGetter, action, priority);
   };
   Object.defineProperty(toRet, 'name', { value: action, writable: false });

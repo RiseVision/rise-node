@@ -10,7 +10,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "transpile": "shx rm -rf dist; tsc",
-    "test-unit": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
+    "test-unit": "mocha  --bail --exit --require ts-node/register --require reflect-metadata './tests/**/*.spec.ts'"
   },
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
@@ -31,7 +31,7 @@
     "filter-object": "^3.0.0",
     "inversify": "5.0.1",
     "lodash": "4.17.11",
-    "mangiafuoco": "1.2.2",
+    "mangiafuoco": "1.2.3",
     "mersenne-twister": "^1.1.0",
     "pg-promise": "=7.3.2",
     "routing-controllers": "=0.7.7",
@@ -39,6 +39,7 @@
     "sequelize-typescript": "0.6.6",
     "socket.io": "2.2.0",
     "supersha": "0.0.1",
+    "type-tagger": "^1.0.0",
     "varuint-bitcoin": "^1.1.0",
     "z-schema": "3.24.2"
   },

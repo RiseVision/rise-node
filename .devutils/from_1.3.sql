@@ -1,5 +1,11 @@
 BEGIN;
 
+-- make these address spendable again.
+update mem_accounts set address = '5R' where address = '97269111055079944786R';
+update mem_accounts set address = '49R' where address = '910097905859080079914R';
+update trs set "recipientId" = '5R' where "recipientId" = '97269111055079944786R';
+update trs set "recipientId" = '49R' where "recipientId" = '910097905859080079914R';
+
 DROP view IF EXISTS trs_list;
 drop view IF EXISTS blocks_list;
 drop view IF EXISTS full_blocks_list;
@@ -7,6 +13,9 @@ drop view IF EXISTS full_blocks_list;
 ALTER TABLE blocks
 	ALTER COLUMN id TYPE VARCHAR(250),
 	alter column "previousBlock" type VARCHAR(250);
+
+ALTER TABLE peers
+	ALTER COLUMN "broadhash" TYPE VARCHAR(255);
 
 DROP TABLE IF EXISTS dapps;
 DROP TABLE IF EXISTS forks_stat;
@@ -141,5 +150,3 @@ UPDATE mem_accounts ma
   WHERE ma."isDelegate" = 0;
 
 COMMIT;
-
-rollback;

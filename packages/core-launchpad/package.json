@@ -27,7 +27,7 @@
     "find-pkg": "2.0.0",
     "inversify": "5.0.1",
     "jsonpath": "^1.0.0",
-    "mangiafuoco": "1.2.2",
+    "mangiafuoco": "1.2.3",
     "pg": "~7.4.0",
     "reflect-metadata": "^0.1.12",
     "source-map-support": "0.5.9"

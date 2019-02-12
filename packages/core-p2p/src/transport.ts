@@ -285,20 +285,6 @@ export class TransportModule extends Extendable {
     );
   }
 
-  // TODO
-  // /**
-  //  * Validate signature with schema and calls processSignature from module multisignautre
-  //  */
-  // @ValidateSchema()
-  // public async receiveSignature(@SchemaValid(transportSchema.signature, 'Invalid signature body')
-  //                                 signature: { transaction: string, signature: string }) {
-  //   try {
-  //     await this.multisigModule.processSignature(signature);
-  //   } catch (e) {
-  //     throw new Error(`Error processing signature: ${e.message || e}`);
-  //   }
-  // }
-
   /**
    * Removes a peer by calling modules peer remove
    */

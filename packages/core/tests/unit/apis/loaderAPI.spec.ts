@@ -48,7 +48,8 @@ describe('apis/loaderAPI', () => {
     loaderModule = container.get(CoreSymbols.modules.loader);
 
     // loaderModule.loaded    = true;
-    blocksModule.lastBlock = { height: 1 } as any;
+    blocksModule.lastBlock = { id: 'fakeId', height: 1 } as any;
+    system.update();
 
     instance = container.getNamed(APISymbols.class, CoreSymbols.api.loader);
   });
@@ -76,8 +77,7 @@ describe('apis/loaderAPI', () => {
       expect(appStateGet.firstCall.args[0]).to.be.equal('node.consensus');
 
       expect(ret).to.be.deep.equal({
-        broadhash:
-          'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+        broadhash: 'fakeId',
         consensus: 'consensus',
         height: 1,
         syncing: 'consensus',

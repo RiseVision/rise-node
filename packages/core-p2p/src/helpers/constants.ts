@@ -3,7 +3,7 @@ export type P2PConstantsType = {
   broadcastInterval: number;
   broadcastLimit: number;
   maxPeers: number;
-  maxProtoBufPayloadLength: number; // (1.5MB) Maximum number of bytes for a Protocol Buffer Request/Response Body,
+  maxProtoBufPayloadLength: number;
   minBroadhashConsensus: number;
   parallelLimit: number;
   relayLimit: number;
@@ -13,7 +13,7 @@ export type P2PConstantsType = {
 export const constants: P2PConstantsType = {
   broadcastInterval: 5000,
   broadcastLimit: 20,
-  maxPeers: 100,
+  maxPeers: 200,
   maxProtoBufPayloadLength: 1572864, // (1.5MB) Maximum number of bytes for a Protocol Buffer Request/Response Body,
   minBroadhashConsensus: 75,
   parallelLimit: 20,

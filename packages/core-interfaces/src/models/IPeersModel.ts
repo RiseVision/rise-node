@@ -14,7 +14,7 @@ export class IPeersModel extends IBaseModel<IPeersModel> {
 
   public clock: number;
 
-  public broadhash: Buffer;
+  public broadhash: string;
 
   public height: number;
 }

@@ -12,7 +12,7 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, IKeypair } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -20,6 +20,7 @@ import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { SinonFakeTimers, SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { As } from 'type-tagger';
 import { dPoSSymbols, Slots } from '../../../src/helpers';
 import { AccountsModelForDPOS } from '../../../src/models';
 import { DelegatesModule, ForgeModule } from '../../../src/modules';
@@ -142,9 +143,9 @@ describe('modules/forge', () => {
 
     describe('when passed an object', () => {
       const hex = 'abcdef123456abcdef1234567891011123';
-      const pk = {
-        privateKey: Buffer.from('aaaa', 'hex'),
-        publicKey: Buffer.from(hex, 'hex'),
+      const pk: IKeypair = {
+        privateKey: Buffer.from('aaaa', 'hex') as Buffer & As<'privateKey'>,
+        publicKey: Buffer.from(hex, 'hex') as Buffer & As<'publicKey'>,
       };
 
       it('should store the keypair in this.keypairs', () => {
@@ -191,8 +192,8 @@ describe('modules/forge', () => {
 
     it('should set the passed key to true in enabledKeys', () => {
       instance.enableForge({
-        privateKey: Buffer.from('0'),
-        publicKey: Buffer.from('bbbb', 'hex'),
+        privateKey: Buffer.from('0') as Buffer & As<'privateKey'>,
+        publicKey: Buffer.from('bbbb', 'hex') as Buffer & As<'publicKey'>,
       });
       expect(instance.enabledKeys).to.be.deep.equal({
         aaaa: false,
@@ -203,8 +204,8 @@ describe('modules/forge', () => {
 
     it('should store the passed key in keypairs', () => {
       const kp = {
-        privateKey: Buffer.from('0'),
-        publicKey: Buffer.from('dddd', 'hex'),
+        privateKey: Buffer.from('0') as Buffer & As<'privateKey'>,
+        publicKey: Buffer.from('dddd', 'hex') as Buffer & As<'publicKey'>,
       };
       instance.enableForge(kp);
       // @ts-ignore

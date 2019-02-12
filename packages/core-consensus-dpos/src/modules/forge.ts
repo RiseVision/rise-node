@@ -228,6 +228,7 @@ export class ForgeModule extends Extendable implements IModule {
           .update(secret, 'utf8')
           .digest()
       );
+
       const account = await this.accountsModule.getAccount({
         forgingPK: keypair.publicKey,
       });

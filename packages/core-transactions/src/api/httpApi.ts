@@ -139,6 +139,7 @@ export class TransactionsAPI {
       limit: body.limit || 100,
       offset: body.offset || 0,
       order: orderBy,
+      raw: true,
       where,
     });
     // Reattach transactions asset
@@ -146,7 +147,9 @@ export class TransactionsAPI {
 
     return {
       count,
-      transactions: transactions.map((t) => t.toTransport()),
+      transactions: transactions.map((t) =>
+        this.TXModel.toTransportTransaction(t)
+      ),
     };
   }
 

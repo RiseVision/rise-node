@@ -37,15 +37,15 @@ export interface ITransactionLogic {
   /**
    * Verifies the given signature (both first and second)
    * @param {IBaseTransaction<any>} tx
-   * @param {Buffer} publicKey
-   * @param {string} signature
+   * @param {IAccountsModel} sender
+   * @param {number} height the height at which you want to verify tx signature(s) against
    * @returns {boolean} true
    */
-  verifySignature(
-    tx: IBaseTransaction<any>,
-    publicKey: Buffer,
-    signature: Buffer
-  ): boolean;
+  verifyTxSignature(
+    tx: IBaseTransaction<any, bigint>,
+    sender: IAccountsModel,
+    height: number
+  ): Promise<boolean>;
 
   apply(
     tx: IBaseTransaction<any>,

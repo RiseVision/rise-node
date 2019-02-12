@@ -5,6 +5,7 @@ import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import * as sodium from 'sodium';
+import { As } from 'type-tagger';
 import { Crypto } from '../../src/crypto_sodium';
 
 const realCrypto = new Crypto();
@@ -152,8 +153,9 @@ describe('helpers/crypto(sodium)', () => {
 
     const inputSeed = Buffer.from(inputSeedHex, 'hex');
     const expectedOutputKeys: IKeypair = {
-      privateKey: Buffer.from(privateKeyHex, 'hex'),
-      publicKey: Buffer.from(publicKeyHex, 'hex'),
+      privateKey: Buffer.from(privateKeyHex, 'hex') as Buffer &
+        As<'privateKey'>,
+      publicKey: Buffer.from(publicKeyHex, 'hex') as Buffer & As<'publicKey'>,
     };
     const inputMessage = Buffer.from(messageHash);
     const expectedOutputSignature = Buffer.from(signatureHex, 'hex');

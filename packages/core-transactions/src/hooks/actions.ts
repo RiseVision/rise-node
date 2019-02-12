@@ -18,6 +18,15 @@ export const TxLogicVerify = createAction<
   ) => Promise<void>
 >('core-transactions/txlogic/verify/tx');
 
+export const TxSignatureVerify = createAction<
+  (
+    tx: IBaseTransaction<any, bigint>,
+    hash: Buffer,
+    sender?: IAccountsModel,
+    height?: number
+  ) => Promise<void>
+>('core-transactions/txlogic/verify/tx');
+
 export const OnNewUnconfirmedTransation = createAction<
   (tx: IBaseTransaction<any, bigint>, broadcast?: boolean) => Promise<void>
 >('core-transactions/pool/onUnconfirmedTx');

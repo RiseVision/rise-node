@@ -12,6 +12,7 @@ import { TXSymbols } from '@risevision/core-transactions';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
+import { RiseUpgrader } from './helpers';
 import { RiseIdsHandler } from './idsHandler';
 import { RiseBlockBytes } from './logic';
 import { OldVoteTxModel } from './models';
@@ -52,8 +53,17 @@ export class CoreModule extends BaseCoreModule<any> {
 
   public addElementsToContainer() {
     this.container
+      .bind(RISESymbols.helpers.constants)
+      .toConstantValue(this.constants);
+
+    this.container
       .bind(Symbols.helpers.idsHandler)
       .to(RiseIdsHandler)
+      .inSingletonScope();
+
+    this.container
+      .bind(RISESymbols.helpers.upgrader)
+      .to(RiseUpgrader)
       .inSingletonScope();
 
     // Register old tx type.
@@ -91,10 +101,6 @@ export class CoreModule extends BaseCoreModule<any> {
       .rebind(BlocksSymbols.logic.blockBytes)
       .to(RiseBlockBytes)
       .inSingletonScope();
-    //
-    // this.sortedModules
-    //   .map((m) => ({name: m.name, constants: m.constants}))
-    //   .forEach(a => console.log(require('util').inspect(a, false, null, true)));
   }
 
   public async initAppElements(): Promise<void> {
@@ -134,5 +140,20 @@ export class CoreModule extends BaseCoreModule<any> {
       // tslint:disable-next-line
       return /^[0-9]{1,20}R/.test(str);
     });
+  }
+
+  public async preBoot() {
+    const upgrader = this.container.get<RiseUpgrader>(
+      RISESymbols.helpers.upgrader
+    );
+    await upgrader.hookMethods();
+    upgrader.setContainer(this.container);
+  }
+
+  public async postTeardown() {
+    const upgrader = this.container.get<RiseUpgrader>(
+      RISESymbols.helpers.upgrader
+    );
+    return upgrader.unHook();
   }
 }

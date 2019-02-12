@@ -16,6 +16,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
+    "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
@@ -25,7 +26,7 @@
     "express": "4.16.4",
     "express-rate-limit": "3.3.2",
     "inversify": "5.0.1",
-    "mangiafuoco": "1.2.2",
+    "mangiafuoco": "1.2.3",
     "routing-controllers": "=0.7.7",
     "sequelize": "4.42.0",
     "socket.io": "2.2.0"
