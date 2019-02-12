@@ -18,6 +18,7 @@
   "dependencies": {
     "@risevision/core": "^1.0.0",
     "@risevision/core-blocks": "^1.0.0",
+    "@risevision/core-crypto": "^1.0.0",
     "@risevision/core-consensus-dpos": "^1.0.0",
     "@risevision/core-exceptions": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
