@@ -2,6 +2,7 @@ export * from './api/middlewares';
 export * from './broadcaster';
 export * from './coremodule';
 export * from './helpers';
+export * from './hooks';
 export * from './interfaces';
 export * from './requests';
 export * from './peer';

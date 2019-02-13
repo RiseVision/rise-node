@@ -17,6 +17,7 @@ export interface AppConfig {
   topAccounts: boolean;
 
   peers: {
+    seeds: string[];
     list: Array<{
       ip: string;
       port: number;
