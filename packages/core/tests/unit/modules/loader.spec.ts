@@ -1445,26 +1445,18 @@ describe('modules/loader', () => {
 
   describe('.syncTimer', () => {
     let jobsQueueStub: IJobsQueue;
-    let lastReceiptStubs;
+    let blocksIsStaleStub: SinonStub;
     let loggerStub: LoggerStub;
     let syncStub: SinonStub;
     let getAppStateStub: SinonStub;
-    let lastReceipt;
 
     beforeEach(() => {
-      lastReceipt = 'lastReceipt';
-
-      lastReceiptStubs = {
-        get: sandbox.stub().returns(lastReceipt),
-        isStale: sandbox.stub().returns(true),
-      };
       jobsQueueStub = container.get(Symbols.helpers.jobsQueue);
       loggerStub = container.get(Symbols.helpers.logger);
       syncStub = sandbox
         .stub(instance as any, 'doSync')
         .resolves(Promise.resolve({}));
-
-      (blocksModule as any).lastReceipt = lastReceiptStubs;
+      blocksIsStaleStub = sandbox.stub(blocksModule, 'isStale').returns(true);
 
       getAppStateStub = sandbox.stub(appState, 'get');
       getAppStateStub.onFirstCall().returns(true);
@@ -1490,7 +1482,6 @@ describe('modules/loader', () => {
         'Sync timer trigger'
       );
       expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
-        last_receipt: lastReceipt,
         syncing: true,
       });
     });
@@ -1508,19 +1499,11 @@ describe('modules/loader', () => {
       expect(jobsQueueRegisterStub.firstCall.args[2]).to.be.equal(1000);
     });
 
-    it('should call blocksModule.lastReceipt.get', async () => {
-      await (instance as any).syncTimer();
-
-      expect(lastReceiptStubs.get.calledOnce).to.be.true;
-      expect(lastReceiptStubs.get.firstCall.args.length).to.be.equal(0);
-    });
-
     // TODO: lerna
-    // it('should call blocksModule.lastReceipt.isStale', async () => {
+    // it('should call blocksModule.isStale', async () => {
     //   await (instance as any).syncTimer();
     //
-    //   expect(lastReceiptStubs.isStale.calledOnce).to.be.true;
-    //   expect(lastReceiptStubs.isStale.firstCall.args.length).to.be.equal(0);
+    //   expect(blocksIsStaleStub.calledOnce).to.be.true;
     // });
 
     it('should call instance.sync', async () => {

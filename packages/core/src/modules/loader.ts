@@ -298,7 +298,6 @@ export class LoaderModule implements ILoaderModule {
       'loaderSyncTimer',
       async () => {
         this.logger.trace('Sync timer trigger', {
-          last_receipt: this.blocksModule.lastReceipt.get(),
           syncing: this.isSyncing,
         });
         this.appState.set('loader.isSyncing', true);

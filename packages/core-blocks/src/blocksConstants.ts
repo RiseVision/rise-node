@@ -5,13 +5,13 @@ export type BlocksConstantsType = {
    */
   targetTime: number;
   /**
-   * Timeout in seconds till we can consider being in a stale situation where a resync could happen
-   */
-  receiptTimeOut: number;
-  /**
    * Window of blocks of which a slot could be accepted
    */
   slotWindow: number;
+  /**
+   * Block age in seconds after which the state of the node gets labelled as stale for the resync
+   */
+  staleAgeThreshold: number;
   /**
    * Max amount of bytes in block payload
    */
@@ -33,7 +33,6 @@ export type BlocksConstantsType = {
 export const constants: BlocksConstantsType = {
   maxPayloadLength: 1024 * 1024,
   maxTxsPerBlock: 25,
-  receiptTimeOut: 30 + 15, // 1.5 blocks
   rewards: [
     {
       fromHeight: 0,
@@ -41,6 +40,7 @@ export const constants: BlocksConstantsType = {
     },
   ],
   slotWindow: 5,
+  staleAgeThreshold: 30 + 15, // 1.5 blocks
   targetTime: 30,
   validVersions: [0],
 };
