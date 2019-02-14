@@ -49,7 +49,7 @@ describe('apis/loaderAPI', () => {
 
     // loaderModule.loaded    = true;
     blocksModule.lastBlock = { id: 'fakeId', height: 1 } as any;
-    system.update();
+    system.update(blocksModule.lastBlock);
 
     instance = container.getNamed(APISymbols.class, CoreSymbols.api.loader);
   });

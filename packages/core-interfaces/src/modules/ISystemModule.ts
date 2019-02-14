@@ -1,4 +1,4 @@
-import { PeerHeaders } from '@risevision/core-types';
+import { PeerHeaders, SignedAndChainedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { IModule } from './IModule';
 
@@ -68,5 +68,5 @@ export interface ISystemModule extends IModule {
   /**
    * Updates private broadhash and height values.
    */
-  update();
+  update(lastBlock: SignedAndChainedBlockType);
 }
