@@ -1,6 +1,7 @@
 {
   "name": "@risevision/core",
   "version": "1.0.0",
+  "description": "RISE Node Core: System Module",
   "rise_vision": {
     "module": true
   },
@@ -16,21 +17,30 @@
     "test-cover-all": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test-all && cat ./coverage/lcov.info | coveralls",
     "static-analysis": "tslint --force --project ./tsconfig.json 'src/**/*.ts'"
   },
-  "author": "Rise Team",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-apis": "^1.0.0",
     "@risevision/core-blocks": "^1.0.0",
-    "@risevision/core-crypto": "^1.0.0",
-    "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-models": "^1.0.0",
     "@risevision/core-p2p": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
-    "@risevision/core-utils": "^1.0.0"
+    "@risevision/core-utils": "^1.0.0",
+    "inversify": "5.0.1",
+    "lodash": "4.17.11",
+    "mangiafuoco": "1.2.3",
+    "routing-controllers": "=0.7.7",
+    "semver": "^5.6.0",
+    "sequelize": "4.42.0",
+    "sequelize-typescript": "0.6.6",
+    "socket.io": "2.2.0",
+    "uuid": "=3.3.2",
+    "z-schema": "3.24.2"
   },
   "devDependencies": {
+    "@risevision/core-crypto": "^1.0.0",
     "@types/node": "^10.12.15",
     "mocha": "=5.2.0",
     "shx": "=0.3.2",

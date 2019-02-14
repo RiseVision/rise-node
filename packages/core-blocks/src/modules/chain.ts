@@ -470,6 +470,10 @@ export class BlocksModuleChain {
       );
       // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
+
+      /**
+       * @codesample actionHookCall
+       */
       await this.hookSystem.do_action(
         OnDestroyBlock.name,
         this.blocksModule.lastBlock,

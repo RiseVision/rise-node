@@ -22,6 +22,7 @@ export const OnPostApplyBlock = createAction<
 /**
  * Called After core module has performed all its operation about destroying a block.
  * You can interrupt the process by throwing or rejecting
+ * @codesample actionHook
  */
 export const OnDestroyBlock = createAction<
   (block: IBlocksModel, tx?: Transaction) => Promise<void>

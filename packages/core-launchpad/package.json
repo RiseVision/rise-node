@@ -1,7 +1,7 @@
 {
   "name": "@risevision/core-launchpad",
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Launchpad",
   "main": "dist/index.js",
   "bin": {
     "rise-launchpad": "./dist/binary.js"
@@ -13,23 +13,30 @@
     "mochjav": "mocha -V"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
     "app-module-path": "2.2.0",
+    "async-exit-hook": "^2.0.1",
+    "commander": "2.19.0",
     "dag-map": "=2.0.2",
+    "extend": "=3.0.2",
     "find-pkg": "2.0.0",
     "inversify": "5.0.1",
-    "pkginfo": "0.4.1",
-    "sequelize": "4.42.0",
-    "sequelize-typescript": "0.6.6"
+    "jsonpath": "^1.0.0",
+    "mangiafuoco": "1.2.3",
+    "pg": "~7.4.0",
+    "reflect-metadata": "^0.1.12",
+    "source-map-support": "0.5.9"
   },
   "devDependencies": {
     "mocha": "=5.2.0",
     "proxyquire": "^2.0.0",
+    "sequelize": "4.42.0",
+    "sequelize-typescript": "0.6.6",
     "shx": "=0.3.2",
     "ts-node": "7.0.1",
     "typescript": "3.2.2"

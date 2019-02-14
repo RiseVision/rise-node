@@ -54,6 +54,9 @@ export class RiseUpgrader extends Extendable {
     return null;
   }
 
+  /**
+   * @codesample actionHookApply
+   */
   @OnDestroyBlock()
   public onDestroyBlock(block: SignedAndChainedBlockType) {
     const prev = block.height;
