@@ -18,6 +18,8 @@ import { OnPeersReady } from '../actions';
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
 
+type ParsedTxtRecord = Map<string, string>;
+
 @injectable()
 export class PeersLoaderSubscriber extends Extendable {
   @inject(Symbols.generic.hookSystem)
@@ -89,27 +91,46 @@ export class PeersLoaderSubscriber extends Extendable {
 
   /**
    * Parse TXT DNS records into a Map.
-   * The expected format of the TXT records is as follows: `ip=1.2.3.4; port=1234`
-   * @param records response from dns.resolveTxt
+   *
+   * The expected format of the TXT records is the following: `ip=1.2.3.4; port=1234`. That would get parsed into
+   * `new Map([['ip', '1.2.3.4'], ['port', '1234']])`.
+   *
+   * @param rawRecordParts single record from dns.resolveTxt response
+   * @returns a Map containing the string representation of keys and values
    */
-  public parseTxtRecords(records: string[][]): Array<Map<string, string>> {
-    return records
-      .map((raw) => raw.join(''))
-      .map((raw) => {
-        // Parse raw record into a map object
-        return new Map(
-          raw
-            .split(';')
-            .map((part) => part.split('=').map((p) => p.trim()))
-            .filter((parts) => parts.length === 2)
-            .map(
-              (parts): Readonly<[string, string]> => [
-                parts[0].toLowerCase(),
-                parts[1],
-              ]
-            )
-        );
-      });
+  public parseTxtRecord(rawRecordParts: string[]): ParsedTxtRecord {
+    const rawRecord = rawRecordParts.join('');
+    // Parse raw record into a Map
+    return new Map(
+      rawRecord
+        .split(';')
+        .map((part) => part.split('=').map((p) => p.trim()))
+        .filter((parts) => parts.length === 2)
+        .map(
+          (parts): Readonly<[string, string]> => [
+            parts[0].toLowerCase(),
+            parts[1],
+          ]
+        )
+    );
+  }
+
+  /**
+   * Try to parse peer data form a parsed TXT record.
+   *
+   * @param record Parsed TXT record data
+   * @returns null when parsing failed, BasePeerType on success
+   */
+  public parsePeerData(record: ParsedTxtRecord): null | BasePeerType {
+    const peer = {
+      ip: record.get('ip'),
+      port: parseInt(record.get('port'), 10),
+    };
+    if (peer.ip && !isNaN(peer.port)) {
+      return peer;
+    } else {
+      return null;
+    }
   }
 
   public async resolveSeeds(seeds: string[]): Promise<BasePeerType[]> {
@@ -132,18 +153,9 @@ export class PeersLoaderSubscriber extends Extendable {
           } catch (e) {
             this.logger.warn(`Failed to resolve ${seed}`, e);
           }
-          return this.parseTxtRecords(records)
-            .map((record) => {
-              const peer = {
-                ip: record.get('ip'),
-                port: parseInt(record.get('port'), 10),
-              };
-              if (peer.ip && !isNaN(peer.port)) {
-                return peer;
-              } else {
-                return null;
-              }
-            })
+          return records
+            .map(this.parseTxtRecord)
+            .map(this.parsePeerData)
             .filter((peer) => peer !== null);
         }
       })

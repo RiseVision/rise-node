@@ -45,35 +45,61 @@ describe('p2p/hooks/loader', () => {
     sandbox.restore();
   });
 
-  describe('parseTxtRecords', () => {
+  describe('parseTxtRecord', () => {
     it('parses expected record formats', () => {
-      const records = instance.parseTxtRecords([
+      const records = [
         ['ip=111.112.113.114;', 'port=5544'],
         ['ip= 112.113.114.115; port = 1243'],
         ['IP=113.114.115.116; Port=9878'],
         ['ip= 2001:db8:85a3::8a2e:370:7334; port= 11123'],
-      ]);
-      expect(records.map((m) => Array.from(m))).to.deep.equal([
-        [['ip', '111.112.113.114'], ['port', '5544']],
-        [['ip', '112.113.114.115'], ['port', '1243']],
-        [['ip', '113.114.115.116'], ['port', '9878']],
-        [['ip', '2001:db8:85a3::8a2e:370:7334'], ['port', '11123']],
+      ].map(instance.parseTxtRecord);
+      expect(records).to.deep.equal([
+        new Map([['ip', '111.112.113.114'], ['port', '5544']]),
+        new Map([['ip', '112.113.114.115'], ['port', '1243']]),
+        new Map([['ip', '113.114.115.116'], ['port', '9878']]),
+        new Map([['ip', '2001:db8:85a3::8a2e:370:7334'], ['port', '11123']]),
       ]);
     });
 
     it('parses invalid record formats', () => {
-      const records = instance.parseTxtRecords([
+      const records = [
         ['ip=111.112.113.114,', 'port=5544'],
         ['ip= 112.113.114.115'],
         ['IP 113.114.115.116; Port 9878'],
         ['ip 2001:db8:85a3::8a2e:370:7334, port 11123'],
+      ].map(instance.parseTxtRecord);
+      expect(records).to.deep.equal([
+        new Map([]),
+        new Map([['ip', '112.113.114.115']]),
+        new Map([]),
+        new Map([]),
       ]);
-      expect(records.map((m) => Array.from(m))).to.deep.equal([
-        [],
-        [['ip', '112.113.114.115']],
-        [],
-        [],
+    });
+  });
+
+  describe('parsePeerData', () => {
+    it('parses valid records', () => {
+      const records = [
+        new Map([['ip', '111.112.113.114'], ['port', '5544']]),
+        new Map([['ip', '112.113.114.115'], ['port', '1243']]),
+        new Map([['ip', '113.114.115.116'], ['port', '9878']]),
+        new Map([['ip', '2001:db8:85a3::8a2e:370:7334'], ['port', '11123']]),
+      ].map(instance.parsePeerData);
+      expect(records).to.deep.equal([
+        { ip: '111.112.113.114', port: 5544 },
+        { ip: '112.113.114.115', port: 1243 },
+        { ip: '113.114.115.116', port: 9878 },
+        { ip: '2001:db8:85a3::8a2e:370:7334', port: 11123 },
       ]);
+    });
+
+    it('returns null for invalid records', () => {
+      const records = [
+        new Map([['ip', '111.112.113.114']]),
+        new Map([['ip', '111.112.113.114'], ['port', 'https']]),
+        new Map([['ipv6', '2001:db8:85a3::8a2e:370:7334'], ['port', '12345']]),
+      ].map(instance.parsePeerData);
+      expect(records).to.deep.equal([null, null, null]);
     });
   });
 
