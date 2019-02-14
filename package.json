@@ -3,7 +3,7 @@
   "version": "1.3.4",
   "private": true,
   "scripts": {
-    "start": "node app.js",
+    "start": "node dist/app.js",
     "test-integration": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/integration/**/*.spec.ts'",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts'",
     "test-all": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts' './tests/integration/**/*.spec.ts'",
