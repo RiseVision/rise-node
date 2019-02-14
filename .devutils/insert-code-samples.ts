@@ -45,7 +45,7 @@ const parseJsDocTag = (
   const startLine = lcCalc.fromIndex(
     jsDocNode.comment ? jsDocNode.pos : jsDocNode.end + 1
   ).line;
-  const endLine = lcCalc.fromIndex(jsDocNode.parent.body.end).line;
+  const endLine = lcCalc.fromIndex(jsDocNode.parent.end).line;
   const tagLine = lcCalc.fromIndex(tag.pos).line - startLine;
   const targetLines = srcLines.slice(startLine - 1, endLine);
   if (jsDocNode.comment) {

@@ -63,6 +63,9 @@ export class SignHooksListener extends ExtendableClass {
     }
   }
 
+  /**
+   * @codesample filterHookApply
+   */
   @FilterAPIGetAccount()
   public add2ndSignatureToAccount(
     accData: any,

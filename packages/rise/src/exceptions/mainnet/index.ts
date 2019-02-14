@@ -201,6 +201,8 @@ function tx10425551571020716913(excManager: ExceptionsManager) {
  * basically applyUnconfirmed +rollbacl and appy +rollback but newer code broadcasts an error.
  *
  * Affected block was: 441720
+ *
+ * @codesample registerException
  */
 function tx14712341342146176146(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
