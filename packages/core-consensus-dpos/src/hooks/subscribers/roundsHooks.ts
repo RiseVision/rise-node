@@ -1,9 +1,12 @@
 import {
   RecreateAccountsTables,
   SnapshotBlocksCountFilter,
-  UtilsCommonHeightList,
 } from '@risevision/core';
-import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
+import {
+  ApplyBlockDBOps,
+  CommonHeightsToQuery,
+  RollbackBlockDBOps,
+} from '@risevision/core-blocks';
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -91,7 +94,7 @@ export class RoundsHooks extends Extendable {
     return dbOP.concat(...roundOps.filter((op) => op !== null));
   }
 
-  @UtilsCommonHeightList()
+  @CommonHeightsToQuery()
   private async commonHeightList(
     heights: number[],
     height: number
