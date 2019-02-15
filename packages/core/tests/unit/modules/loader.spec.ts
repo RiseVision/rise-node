@@ -107,6 +107,7 @@ describe('modules/loader', () => {
       height: 1,
       id: 1,
     } as any;
+    systemModule.update(blocksModule.lastBlock);
     appState = container.get(Symbols.logic.appState);
     const logger = container.get<LoggerStub>(Symbols.helpers.logger);
     logger.stubReset();
@@ -154,6 +155,7 @@ describe('modules/loader', () => {
       blocksModule.lastBlock = {
         height: 0,
       } as any;
+      systemModule.update(blocksModule.lastBlock);
       (instance as any).network = {
         height: 1,
         peers: [],
@@ -238,6 +240,7 @@ describe('modules/loader', () => {
 
     it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', async () => {
       blocksModule.lastBlock.height = 5;
+      systemModule.update(blocksModule.lastBlock);
       getPeersStub.returns(peers);
 
       const ret = await instance.getNetwork();
@@ -953,6 +956,7 @@ describe('modules/loader', () => {
         promiseRetryStub.onCall(0).callsFake(
           sandbox.spy((w) => {
             blocksModule.lastBlock = { height: 2, id: 1 } as any;
+            systemModule.update(blocksModule.lastBlock);
             return Promise.resolve(w(retryStub));
           })
         );
@@ -961,6 +965,7 @@ describe('modules/loader', () => {
         promiseRetryStub.onCall(1).callsFake(
           sandbox.spy((w) => {
             blocksModule.lastBlock = { height: 1, id: 1 } as any;
+            systemModule.update(blocksModule.lastBlock);
             return Promise.resolve(w(retryStub));
           })
         );

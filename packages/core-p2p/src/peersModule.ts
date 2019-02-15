@@ -1,6 +1,5 @@
 import {
   IAppState,
-  IBlocksModule,
   ILogger,
   IPeersModel,
   ISystemModule,
@@ -37,8 +36,6 @@ export class PeersModule implements IPeersModule {
   // Modules
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   @inject(ModelSymbols.model)
   @named(p2pSymbols.model)
@@ -97,7 +94,7 @@ export class PeersModule implements IPeersModule {
     height: number;
     peers: Peer[];
   } {
-    const lastBlockHeight: number = this.blocksModule.lastBlock.height;
+    const lastBlockHeight: number = this.systemModule.getHeight();
 
     this.logger.trace('Good peers - received', { count: peers.length });
 

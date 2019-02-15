@@ -1,5 +1,5 @@
 import { SystemModule } from '@risevision/core';
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { BasePeerType, PeerState } from '@risevision/core-types';
@@ -226,8 +226,8 @@ describe('modules/peers', () => {
     beforeEach(() => {
       listStub = sandbox.stub(peersLogicStub, 'list');
       acceptableStub = sandbox.stub(peersLogicStub, 'acceptable');
-      const blocksModel = container.get<IBlocksModule>(Symbols.modules.blocks);
-      blocksModel.lastBlock = { height: 100 } as any;
+      const system = container.get<ISystemModule>(Symbols.modules.system);
+      system.update({ height: 100 } as any);
       getByFilterStub = sandbox.stub(inst, 'getByFilter');
       getByFilterStub.onFirstCall().callsFake(() => firstPeers);
       getByFilterStub.onSecondCall().callsFake(() => secondPeers);
@@ -294,8 +294,8 @@ describe('modules/peers', () => {
       listStub = sandbox.stub(peersLogicStub, 'list');
       listStub.onFirstCall().callsFake(() => fakePeers);
       acceptableStub = sandbox.stub(peersLogicStub, 'acceptable');
-      const blocksModel = container.get<IBlocksModule>(Symbols.modules.blocks);
-      blocksModel.lastBlock = { height: 100 } as any;
+      const system = container.get<ISystemModule>(Symbols.modules.system);
+      system.update({ height: 100 } as any);
     });
 
     it('should return consensus number', async () => {
