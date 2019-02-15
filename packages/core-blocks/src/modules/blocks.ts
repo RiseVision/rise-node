@@ -26,7 +26,7 @@ export class BlocksModule implements IBlocksModule {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  public async isStale() {
+  public isStale() {
     if (!this.lastBlock) {
       return true;
     }
@@ -40,7 +40,7 @@ export class BlocksModule implements IBlocksModule {
     }
 
     // Make sure we're not behind the rest of the network
-    const peers = await this.peersModule.getPeers({});
+    const peers = this.peersModule.getPeers({});
     const network = this.peersModule.findGoodPeers(peers);
     if (this.lastBlock.height < network.height) {
       return true;

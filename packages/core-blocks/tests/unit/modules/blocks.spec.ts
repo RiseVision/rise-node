@@ -68,48 +68,48 @@ describe('modules/blocks', () => {
   });
 
   describe('.isStale', () => {
-    it('should return boolean', async () => {
-      getPeersStub.resolves([]);
-      expect(await instance.isStale()).to.be.a('boolean');
+    it('should return boolean', () => {
+      getPeersStub.returns([]);
+      expect(instance.isStale()).to.be.a('boolean');
     });
-    it('should return true if lastBlock is undefined', async () => {
-      getPeersStub.resolves([]);
-      expect(await instance.isStale()).is.true;
+    it('should return true if lastBlock is undefined', () => {
+      getPeersStub.returns([]);
+      expect(instance.isStale()).is.true;
     });
-    it('should return true if lastBlock is old', async () => {
+    it('should return true if lastBlock is old', () => {
       instance.lastBlock = createFakeBlock(container, {});
-      getPeersStub.resolves([]);
-      getPeersStub.resolves([]);
-      expect(await instance.isStale()).is.true;
+      getPeersStub.returns([]);
+      getPeersStub.returns([]);
+      expect(instance.isStale()).is.true;
     });
-    it('should return false if lastBlock is recent and ahead of the network', async () => {
+    it('should return false if lastBlock is recent and ahead of the network', () => {
       instance.lastBlock = createFakeBlock(container, {
         timestamp: timeToEpoch.getTime(),
       });
-      getPeersStub.resolves([]);
-      expect(await instance.isStale()).is.false;
+      getPeersStub.returns([]);
+      expect(instance.isStale()).is.false;
     });
-    it('should return false if lastBlock is recent and the same with the network', async () => {
+    it('should return false if lastBlock is recent and the same with the network', () => {
       instance.lastBlock = createFakeBlock(container, {
         timestamp: timeToEpoch.getTime(),
       });
-      getPeersStub.resolves([
+      getPeersStub.returns([
         { height: instance.lastBlock.height },
         { height: instance.lastBlock.height },
         { height: instance.lastBlock.height },
       ]);
-      expect(await instance.isStale()).is.false;
+      expect(instance.isStale()).is.false;
     });
-    it('should return false if lastBlock is recent but behind the network', async () => {
+    it('should return false if lastBlock is recent but behind the network', () => {
       instance.lastBlock = createFakeBlock(container, {
         timestamp: timeToEpoch.getTime(),
       });
-      getPeersStub.resolves([
+      getPeersStub.returns([
         { height: instance.lastBlock.height + 2 },
         { height: instance.lastBlock.height + 2 },
         { height: instance.lastBlock.height + 1 },
       ]);
-      expect(await instance.isStale()).is.true;
+      expect(instance.isStale()).is.true;
     });
   });
 });

@@ -226,7 +226,7 @@ export class TransportModule extends Extendable {
   ): Promise<Out> {
     config.limit = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
-    const peers = await this.peersModule.getPeers(config);
+    const peers = this.peersModule.getPeers(config);
     if (peers.length === 0) {
       throw new Error('No peer available');
     }

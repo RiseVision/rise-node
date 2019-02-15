@@ -3,5 +3,5 @@ import { IModule } from './IModule';
 
 export interface IBlocksModule extends IModule {
   lastBlock: SignedAndChainedBlockType;
-  isStale(): Promise<boolean>;
+  isStale(): boolean;
 }

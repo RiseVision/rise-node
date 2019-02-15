@@ -57,7 +57,7 @@ export class BlockLoader extends Extendable {
 
   @OnWPFilter('core/loader/whatToSync')
   public async whatToSync(toSync: string[]) {
-    if (await this.blocksModule.isStale()) {
+    if (this.blocksModule.isStale()) {
       return toSync.concat('blocks');
     }
     return toSync;

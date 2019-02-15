@@ -168,7 +168,7 @@ export class PeersModule implements IPeersModule {
    * if orderBy Is not specified then returned peers are shuffled.
    */
   // tslint:disable-next-line cognitive-complexity
-  public async getByFilter(filter: PeerFilter): Promise<Peer[]> {
+  public getByFilter(filter: PeerFilter): Peer[] {
     const allowedFields = [
       'ip',
       'port',
@@ -237,17 +237,16 @@ export class PeersModule implements IPeersModule {
   /**
    * Gets peers list
    */
-  // tslint:disable-next-line max-line-length
-  public async getPeers(options: {
+  public getPeers(options: {
     limit?: number;
     broadhash?: string;
     allowedStates?: PeerState[];
-  }): Promise<Peer[]> {
+  }): Peer[] {
     options.limit = options.limit || this.p2pConstants.maxPeers;
     options.broadhash = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
-    let peersList = (await this.getByFilter({ broadhash: options.broadhash }))
+    let peersList = this.getByFilter({ broadhash: options.broadhash })
       // only matching states
       .filter((p) => options.allowedStates.indexOf(p.state) !== -1);
 
@@ -255,7 +254,7 @@ export class PeersModule implements IPeersModule {
     peersList = peersList.slice(0, options.limit);
 
     if (options.limit > peersList.length) {
-      let unmatchedBroadPeers = (await this.getByFilter({}))
+      let unmatchedBroadPeers = this.getByFilter({})
         // only matching states
         .filter((p) => options.allowedStates.indexOf(p.state) !== -1)
         // but different broadhashes

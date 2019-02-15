@@ -49,7 +49,7 @@ export class LoaderAPI {
 
   @Get('/ping')
   public async ping() {
-    const isStale = await this.blocksModule.isStale();
+    const isStale = this.blocksModule.isStale();
     return { success: !isStale };
   }
 }

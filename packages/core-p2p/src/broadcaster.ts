@@ -110,7 +110,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
     let peers = task.filters.peers;
     if (!task.filters.peers) {
-      peers = await this.peersModule.getPeers(task.filters);
+      peers = this.peersModule.getPeers(task.filters);
     }
 
     this.logger.debug('Begin broadcast');
