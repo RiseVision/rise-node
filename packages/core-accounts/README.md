@@ -8,14 +8,16 @@ Although much of the logic for accounts are done on the front end through Key Pa
 
 ## Providers
 
-The Accounts Module provides the following Providers:
+The Accounts Module provides the following Providers exposed in the `CoreModule`:
 
 - `AccountLogic`: Account update / retrieval abstractions
 - `AccountsModel`: Accounts ORM
 * `AccountsModule`: Accounts service for dealing with accessing and updating accounts
 * `AccountsAPI`: API Endpoints for querying and updating Accounts
 
-These Providers are exposed through a `CoreModule` which binds the Providers to an IoC Container
+## Filter Hooks
+
+The Account module also exposes a `FilterAPIGetAccount` filter hook, to modify an account retrieved by the API in another module. See [`core-utils`](../core-utils/README.md) for how to use.
 
 ## API
 

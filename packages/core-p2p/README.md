@@ -44,6 +44,13 @@ Because peers may request a wide variety of information about the status of the 
 
 These Providers are exposed through a `CoreModule` which binds the Providers to an IoC Container
 
+## Hooks
+
+The peer-to-peer module also exposes a few hooks in the peer lifecycle
+
+* `OnPeersReady` Action: Fired when peers are ready
+* `FilterHeaders` Filter: Modify peer headers to be sent to other peers
+
 ## API
 
 The Peers API endpoint can be found at `/api/peers`. Review [the API Reference](https://risevision.github.io/#tag/Peers-API) for more information.
