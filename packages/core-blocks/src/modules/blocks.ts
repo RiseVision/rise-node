@@ -22,7 +22,7 @@ export class BlocksModule implements IBlocksModule {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  public isStale(): boolean {
+  public async isStale() {
     if (!this.lastBlock) {
       return true;
     }

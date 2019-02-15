@@ -49,21 +49,21 @@ describe('modules/blocks', () => {
   });
 
   describe('.isStale', () => {
-    it('should return boolean', () => {
-      expect(instance.isStale()).to.be.a('boolean');
+    it('should return boolean', async () => {
+      expect(await instance.isStale()).to.be.a('boolean');
     });
-    it('should return true if lastBlock is undefined', () => {
-      expect(instance.isStale()).is.true;
+    it('should return true if lastBlock is undefined', async () => {
+      expect(await instance.isStale()).is.true;
     });
-    it('should return true if lastBlock is old', () => {
+    it('should return true if lastBlock is old', async () => {
       instance.lastBlock = createFakeBlock(container, {});
-      expect(instance.isStale()).is.true;
+      expect(await instance.isStale()).is.true;
     });
-    it('should return false if lastBlock is recent', () => {
+    it('should return false if lastBlock is recent', async () => {
       instance.lastBlock = createFakeBlock(container, {
         timestamp: timeToEpoch.getTime(),
       });
-      expect(instance.isStale()).is.false;
+      expect(await instance.isStale()).is.false;
     });
   });
 });

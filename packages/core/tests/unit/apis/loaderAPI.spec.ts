@@ -86,26 +86,26 @@ describe('apis/loaderAPI', () => {
   });
 
   describe('ping', () => {
-    it('should return false status if this.blocksModule.lastBlock in null', () => {
+    it('should return false status if this.blocksModule.lastBlock in null', async () => {
       blocksModule.lastBlock = null;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: false });
     });
 
-    it('should return true status if secondsAgo < constants.blockReceiptTimeOut', () => {
+    it('should return true status if secondsAgo < constants.blockReceiptTimeOut', async () => {
       blocksModule.lastBlock.timestamp = 1000000000;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: true });
     });
 
-    it('should return false status if secondsAgo >= constants.blockReceiptTimeOut', () => {
+    it('should return false status if secondsAgo >= constants.blockReceiptTimeOut', async () => {
       blocksModule.lastBlock.timestamp = 0;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: false });
     });

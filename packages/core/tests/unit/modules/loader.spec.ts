@@ -1461,7 +1461,7 @@ describe('modules/loader', () => {
       syncStub = sandbox
         .stub(instance as any, 'doSync')
         .resolves(Promise.resolve({}));
-      blocksIsStaleStub = sandbox.stub(blocksModule, 'isStale').returns(true);
+      blocksIsStaleStub = sandbox.stub(blocksModule, 'isStale').resolves(true);
 
       getAppStateStub = sandbox.stub(appState, 'get');
       getAppStateStub.onFirstCall().returns(true);

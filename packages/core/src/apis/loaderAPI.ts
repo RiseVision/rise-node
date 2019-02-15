@@ -48,7 +48,8 @@ export class LoaderAPI {
   }
 
   @Get('/ping')
-  public ping() {
-    return { success: !this.blocksModule.isStale() };
+  public async ping() {
+    const isStale = await this.blocksModule.isStale();
+    return { success: !isStale };
   }
 }
