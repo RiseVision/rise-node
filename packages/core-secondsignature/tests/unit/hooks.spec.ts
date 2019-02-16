@@ -81,7 +81,7 @@ describe('secondSignHooks', () => {
       // btx.signSignature = Buffer.from(btx.signSignature, 'hex');
       btx.id = idsHandler.calcTxIdFromBytes(txBytesHandler.fullBytes(btx));
       await expect(txLogic.verify(btx, sender, 1)).rejectedWith(
-        'Invalid second signature'
+        `Transaction ${btx.id} signature is not valid`
       );
     });
     it('should not complain if tx is not from a secondSign enabled sender', async () => {

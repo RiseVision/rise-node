@@ -7,11 +7,10 @@ import {
 import {
   TXBytes,
   TxLogicStaticCheck,
-  TxLogicVerify,
+  TxSignatureVerify,
   TXSymbols,
 } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
-import * as crypto from 'crypto';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { AccountsModelWith2ndSign } from '../AccountsModelWith2ndSign';
@@ -42,16 +41,13 @@ export class SignHooksListener extends ExtendableClass {
     }
   }
 
-  @TxLogicVerify()
-  public async txLogicVerify(
+  @TxSignatureVerify()
+  public async txSignatureVerify(
     tx: IBaseTransaction<any, bigint>,
+    hash: Buffer,
     sender: AccountsModelWith2ndSign
   ) {
-    if (sender.secondSignature) {
-      const hash = crypto
-        .createHash('sha256')
-        .update(this.txBytes.signableBytes(tx))
-        .digest();
+    if (!!sender.secondSignature) {
       const verified = this.crypto.verify(
         hash,
         tx.signatures[1],
@@ -63,6 +59,9 @@ export class SignHooksListener extends ExtendableClass {
     }
   }
 
+  /**
+   * @codesample filterHookApply
+   */
   @FilterAPIGetAccount()
   public add2ndSignatureToAccount(
     accData: any,
@@ -70,9 +69,7 @@ export class SignHooksListener extends ExtendableClass {
   ) {
     return {
       ...accData,
-      secondPublicKey: model.secondPublicKey
-        ? model.secondPublicKey.toString('hex')
-        : null,
+      secondPublicKey: model.secondPublicKey,
       secondSignature: model.secondSignature,
       unconfirmedSignature: model.u_secondSignature,
     };

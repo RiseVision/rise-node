@@ -185,8 +185,6 @@ export class DelegatesModule {
           return {
             ...delegate,
             // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
-            // TODO: With BigInt this might lose precision. Find a different way
-            //  to have same result with bigint without int casting.
             weight: rand ** (1 / parseInt(delegate.vote.toString(), 10)),
           };
         });

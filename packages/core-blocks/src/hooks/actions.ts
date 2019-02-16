@@ -5,7 +5,10 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { createActionDecorator as createAction } from '@risevision/core-utils';
+import {
+  ActionFilterDecoratorType,
+  createActionDecorator as createAction,
+} from '@risevision/core-utils';
 import { Transaction } from 'sequelize';
 
 /**
@@ -19,6 +22,7 @@ export const OnPostApplyBlock = createAction<
 /**
  * Called After core module has performed all its operation about destroying a block.
  * You can interrupt the process by throwing or rejecting
+ * @codesample actionHook
  */
 export const OnDestroyBlock = createAction<
   (block: IBlocksModel, tx?: Transaction) => Promise<void>
@@ -30,7 +34,3 @@ export const OnDestroyBlock = createAction<
 export const OnTransactionsSaved = createAction<
   (txs: Array<IBaseTransaction<any>>, block?: SignedBlockType) => Promise<void>
 >('core-blocks/onTransactionsSaved');
-
-export const OnReceiveBlock = createAction<
-  (block: SignedAndChainedBlockType) => Promise<void>
->('core-p2p/onReceiveBlock');

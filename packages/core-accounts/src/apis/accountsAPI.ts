@@ -75,18 +75,21 @@ export class AccountsAPI {
     if (!accData) {
       throw new HTTPError('Account not found', 200);
     }
+
+    /**
+     * @codesample filterHookCall
+     */
+    const account = await this.hookSystem.apply_filters(
+      FilterAPIGetAccount.name,
+      {
+        address: accData.address,
+        balance: `${accData.balance}`,
+        unconfirmedBalance: `${accData.u_balance}`,
+      },
+      accData
+    );
     return {
-      account: toTransportable(
-        await this.hookSystem.apply_filters(
-          FilterAPIGetAccount.name,
-          {
-            address: accData.address,
-            balance: `${accData.balance}`,
-            unconfirmedBalance: `${accData.u_balance}`,
-          },
-          accData
-        )
-      ),
+      account: toTransportable(account),
     };
   }
 

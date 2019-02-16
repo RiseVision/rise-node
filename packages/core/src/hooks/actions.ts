@@ -1,6 +1,9 @@
 import { IBlocksModel } from '@risevision/core-interfaces';
 import { BaseModel } from '@risevision/core-models';
-import { createActionDecorator as createAction } from '@risevision/core-utils';
+import {
+  ActionFilterDecoratorType,
+  createActionDecorator as createAction,
+} from '@risevision/core-utils';
 import { Container } from 'inversify';
 import { Transaction } from 'sequelize';
 

@@ -17,23 +17,31 @@ import {
 import { ModelSymbols } from '@risevision/core-models';
 import { ForkType, SignedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
-import { inject, injectable, named } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
+import { decorate, inject, injectable, named } from 'inversify';
+import {
+  OnWPAction,
+  WordPressHookSystem,
+  WPHooksSubscriber,
+} from 'mangiafuoco';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
-import { VerifyBlock, VerifyReceipt } from '../hooks';
+import { OnPostApplyBlock, VerifyBlock, VerifyReceipt } from '../hooks';
 import { BlockBytes } from '../logic/blockBytes';
 import { BlocksModuleChain } from './chain';
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
+
 @injectable()
-export class BlocksModuleVerify {
+export class BlocksModuleVerify extends Extendable {
   // Helpers
   @inject(BlocksSymbols.constants)
   private blocksConstants: BlocksConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  // tslint:disable-next-line
   @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
+  public hookSystem: WordPressHookSystem;
 
   // Logic
   @inject(Symbols.logic.block)
@@ -71,13 +79,6 @@ export class BlocksModuleVerify {
    * Contains the last N block Ids used to perform validations
    */
   private lastNBlockIds: string[] = [];
-
-  private isCleaning: boolean = false;
-
-  public cleanup(): Promise<void> {
-    this.isCleaning = true;
-    return Promise.resolve();
-  }
 
   /**
    * Verifies block before fork detection and return all possible errors related to block
@@ -139,7 +140,7 @@ export class BlocksModuleVerify {
     );
   }
 
-  // TODO: me
+  @OnWPAction('core/loader/onBlockchainReady')
   public async onBlockchainReady() {
     const blocks = await this.BlocksModel.findAll({
       attributes: ['id'],
@@ -150,6 +151,7 @@ export class BlocksModuleVerify {
     this.lastNBlockIds = blocks.map((b) => b.id);
   }
 
+  @OnPostApplyBlock()
   public async onNewBlock(block: SignedBlockType) {
     this.lastNBlockIds.push(block.id);
     if (this.lastNBlockIds.length > this.blocksConstants.slotWindow) {

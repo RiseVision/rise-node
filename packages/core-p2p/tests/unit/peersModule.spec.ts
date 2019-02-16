@@ -368,12 +368,7 @@ describe('modules/peers', () => {
       expect(truncateStub.called).is.true;
       expect(bulkCreateStub.called).is.true;
       expect(truncateStub.calledBefore(bulkCreateStub)).is.true;
-      expect(bulkCreateStub.firstCall.args[0]).to.be.deep.eq(
-        fakePeers.map((p) => ({
-          ...p,
-          broadhash: Buffer.from(p.broadhash, 'hex'),
-        }))
-      );
+      expect(bulkCreateStub.firstCall.args[0]).to.be.deep.eq(fakePeers);
       expect(loggerStub.stubs.info.calledOnce).to.be.true;
       expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(

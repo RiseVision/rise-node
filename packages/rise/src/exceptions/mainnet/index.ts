@@ -4,10 +4,19 @@ import {
   setupExceptionOnInstance,
 } from '@risevision/core-exceptions';
 import { IExceptionHandler } from '@risevision/core-exceptions';
-import { ITransactionLogic } from '@risevision/core-interfaces';
-import { TXSymbols } from '@risevision/core-transactions';
+import {
+  ICrypto,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-interfaces';
+import {
+  SignHooksListener,
+  SigSymbols,
+} from '@risevision/core-secondsignature';
+import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
 import { Container } from 'inversify';
+import { genericExceptionSymbols, secondSignatureExc } from '../generic';
 import { excSymbols } from './symbols';
 
 // tslint:disable max-line-length no-identical-functions
@@ -44,6 +53,22 @@ export async function registerExceptions(
     excSymbols.txlogic_applyUnconfirmed
   );
   await tx14712341342146176146(excManager);
+
+  const signHooksListener = container.get<SignHooksListener>(
+    SigSymbols.hooksListener
+  );
+  setupExceptionOnInstance(
+    excManager,
+    signHooksListener,
+    'txSignatureVerify',
+    genericExceptionSymbols.secondSignatureVerification
+  );
+
+  await secondSignatureExc(
+    excManager,
+    container.get<ICrypto>(Symbols.generic.crypto),
+    container.get<TXBytes>(TXSymbols.txBytes)
+  );
 }
 
 function block_127765(excManager: ExceptionsManager) {
@@ -201,6 +226,8 @@ function tx10425551571020716913(excManager: ExceptionsManager) {
  * basically applyUnconfirmed +rollbacl and appy +rollback but newer code broadcasts an error.
  *
  * Affected block was: 441720
+ *
+ * @codesample registerException
  */
 function tx14712341342146176146(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {

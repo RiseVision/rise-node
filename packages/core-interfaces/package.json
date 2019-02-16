@@ -1,20 +1,22 @@
 {
   "name": "@risevision/core-interfaces",
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Interfaces",
   "main": "dist/index.js",
   "scripts": {
     "test-unit": "echo",
     "transpile": "shx rm -rf dist; tsc"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-types": "^1.0.0",
     "inversify": "5.0.1",
     "sequelize": "4.42.0",
-    "sequelize-typescript": "0.6.6"
+    "sequelize-typescript": "0.6.6",
+    "type-tagger": "^1.0.0",
+    "utility-types": "^2.1.0"
   },
   "devDependencies": {
     "shx": "=0.3.2",

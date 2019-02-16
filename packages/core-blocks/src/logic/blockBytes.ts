@@ -45,7 +45,6 @@ export class BlockBytes {
     block: BlockHeader<Buffer, bigint>,
     includeSignature: boolean
   ): Buffer {
-    // TODO: Re-store.
     function encodeVarUint(buf: Buffer) {
       return Buffer.concat([varuint.encode(buf.length), buf]);
     }

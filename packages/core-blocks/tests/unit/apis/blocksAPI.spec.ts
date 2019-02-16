@@ -258,11 +258,11 @@ describe('apis/blocksAPI', () => {
   //
   describe('getBroadHash', () => {
     it('should return a broadhash', async () => {
-      const systemModule: ISystemModule = container.get(Symbols.modules.system);
-      sandbox.stub(systemModule, 'getBroadhash').resolves('thaBroadHash');
+      blocksModule.lastBlock = { id: 'someId' } as any;
+
       const ret = await instance.getBroadHash();
 
-      expect(ret).to.be.deep.equal({ broadhash: 'thaBroadHash' });
+      expect(ret).to.be.deep.equal({ broadhash: 'someId' });
     });
   });
   //
@@ -370,17 +370,15 @@ describe('apis/blocksAPI', () => {
     it('should return proper data.', async () => {
       const previousBlock = createFakeBlock(container);
       previousBlock.height = 499;
-      blocksModule.lastBlock = createFakeBlock(container, {
+      const lastBlock = createFakeBlock(container, {
         previousBlock: previousBlock as any,
-      }) as any;
-
-      const systemModule: ISystemModule = container.get(Symbols.modules.system);
-      sandbox.stub(systemModule, 'getBroadhash').resolves('thaBroadHash');
+      });
+      blocksModule.lastBlock = lastBlock as any;
 
       const res = await instance.getStatus();
 
       expect(res).deep.eq({
-        broadhash: 'thaBroadHash',
+        broadhash: lastBlock.id,
         epoch: new Date(Date.UTC(2016, 4, 24, 17, 0, 0, 0)),
         fee: '10000000',
         height: 500,

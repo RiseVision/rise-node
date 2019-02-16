@@ -152,29 +152,6 @@ describe('modules/system', () => {
     });
   });
 
-  describe('.getBroadHash', () => {
-    let blocksModel: typeof IBlocksModel;
-    let findAllStub: SinonStub;
-    beforeEach(() => {
-      blocksModel = container.getNamed(
-        ModelSymbols.model,
-        Symbols.models.blocks
-      );
-      findAllStub = sandbox.stub(blocksModel, 'findAll').resolves([]);
-    });
-    it('should return broadhash from genesisBlock if db.query returns empty array', async () => {
-      expect(await inst.getBroadhash()).to.be.eq(
-        'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6'
-      );
-    });
-    it('should compute broadhash from returned db data', async () => {
-      findAllStub.resolves([1, 2, 3, 4].map((id) => ({ id })));
-      expect(await inst.getBroadhash()).to.be.eq(
-        '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'
-      );
-    });
-  });
-
   describe('.networkCompatible', () => {
     it('should return true if given is same as headers nethash', () => {
       expect(
@@ -219,10 +196,10 @@ describe('modules/system', () => {
 
   describe('.update', () => {
     it('should update height and broadhash value', async () => {
-      sandbox.stub(inst, 'getBroadhash').resolves('meow');
       inst.headers.height = 0;
       inst.headers.broadhash = 'haha';
       blocksModule.lastBlock = {
+        id: 'meow',
         height: 2,
       } as any; // ^0.1.2
       await inst.update();

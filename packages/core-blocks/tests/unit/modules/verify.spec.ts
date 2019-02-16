@@ -69,8 +69,7 @@ describe('modules/blocks/verify', () => {
       'core-accounts',
       'core-transactions',
     ]);
-    const b = container.get<BlocksModuleVerify>(BlocksSymbols.modules.verify); // should not throw as it should be included
-    await b.cleanup(); // clean up this instance
+    container.get<BlocksModuleVerify>(BlocksSymbols.modules.verify); // should not throw as it should be included
     container.rebind(BlocksSymbols.modules.verify).to(BlocksModuleVerify); // Force recreation of module at each instance.
   });
   beforeEach(async () => {
@@ -124,12 +123,6 @@ describe('modules/blocks/verify', () => {
       // tslint:disable-next-line: no-string-literal
       // @ts-ignore
       expect(inst.lastNBlockIds).to.be.deep.eq(['1', '2', '3']);
-    });
-  });
-
-  describe('cleanup', () => {
-    it('should return Promise', () => {
-      expect(inst.cleanup()).to.be.a.instanceOf(Promise);
     });
   });
 

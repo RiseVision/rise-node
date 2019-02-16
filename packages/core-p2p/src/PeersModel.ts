@@ -22,8 +22,8 @@ export class PeersModel extends Model<PeersModel> implements IPeersModel {
   @Column
   public clock: number;
 
-  @Column(DataType.BLOB)
-  public broadhash: Buffer;
+  @Column
+  public broadhash: string;
 
   @Column
   public height: number;

@@ -283,18 +283,7 @@ export class PeersModule implements IPeersModule {
     await this.PeersModel.sequelize
       .transaction(async (transaction) => {
         await this.PeersModel.truncate({ transaction });
-        await this.PeersModel.bulkCreate(
-          peers.map((p) => {
-            if (p.broadhash) {
-              return {
-                ...p,
-                ...{ broadhash: Buffer.from(p.broadhash, 'hex') },
-              };
-            }
-            return p;
-          }),
-          { transaction }
-        );
+        await this.PeersModel.bulkCreate(peers, { transaction });
         this.logger.info('Peers exported to database');
       })
       .catch((err) => {
