@@ -16,6 +16,7 @@ import { RiseUpgrader } from './helpers';
 import { RiseIdsHandler } from './idsHandler';
 import { RiseBlockBytes } from './logic';
 import { OldVoteTxModel } from './models';
+import { RiseDelegatesModule } from './modules';
 import {
   OldRegDelegateTx,
   OldSecondSignatureTx,
@@ -100,6 +101,12 @@ export class CoreModule extends BaseCoreModule<any> {
     this.container
       .rebind(BlocksSymbols.logic.blockBytes)
       .to(RiseBlockBytes)
+      .inSingletonScope();
+
+    // Replace delegates with our own implementation which overrides rand weight calculation in some cases.
+    this.container
+      .rebind(dPoSSymbols.modules.delegates)
+      .to(RiseDelegatesModule)
       .inSingletonScope();
   }
 

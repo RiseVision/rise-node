@@ -36,56 +36,56 @@ import {
 @injectable()
 export class DelegatesModule {
   // Holds the current round delegates cache list.
-  private delegatesListCache: { [round: number]: Buffer[] } = {};
+  protected delegatesListCache: { [round: number]: Buffer[] } = {};
 
   @inject(Symbols.generic.txtypes)
-  private txTypes: Array<{ name: symbol; type: number }>;
+  protected txTypes: Array<{ name: symbol; type: number }>;
   // Generic
   @inject(Symbols.generic.zschema)
-  private schema: z_schema;
+  protected schema: z_schema;
 
   // Helpers
   @inject(dPoSSymbols.constants)
-  private dposConstants: DposConstantsType;
+  protected dposConstants: DposConstantsType;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.logger)
-  private logger: ILogger;
+  protected logger: ILogger;
   @inject(dPoSSymbols.helpers.slots)
-  private slots: Slots;
+  protected slots: Slots;
   @inject(dPoSSymbols.helpers.dposV2)
-  private dposV2Helper: DposV2Helper;
+  protected dposV2Helper: DposV2Helper;
 
   // Logic
   @inject(Symbols.logic.appState)
-  private appState: IAppState;
+  protected appState: IAppState;
   @inject(Symbols.logic.blockReward)
-  private blockReward: IBlockReward;
+  protected blockReward: IBlockReward;
   @inject(dPoSSymbols.logic.rounds)
-  private roundsLogic: RoundsLogic;
+  protected roundsLogic: RoundsLogic;
 
   // Modules
   @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule<AccountsModelForDPOS>;
+  protected accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
+  protected blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
+  protected transactionsModule: ITransactionsModule;
 
   @inject(ModelSymbols.model)
   @named(BlocksSymbols.model)
-  private blocksModel: typeof BlocksModel;
+  protected blocksModel: typeof BlocksModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegates)
-  private delegatesModel: typeof DelegatesModel;
+  protected delegatesModel: typeof DelegatesModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegatesRound)
-  private delegatesRoundModel: typeof DelegatesRoundModel;
+  protected delegatesRoundModel: typeof DelegatesRoundModel;
   @inject(ModelSymbols.model)
   @named(AccountsSymbols.model)
-  private accountsModel: typeof AccountsModelForDPOS;
+  protected accountsModel: typeof AccountsModelForDPOS;
   @inject(ModelSymbols.model)
   @named(TXSymbols.models.model)
-  private transactionsModel: typeof ITransactionsModel;
+  protected transactionsModel: typeof ITransactionsModel;
 
   public async checkConfirmedDelegates(
     account: AccountsModelForDPOS,
@@ -181,11 +181,10 @@ export class DelegatesModule {
 
         // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
         pool = delegates.map((delegate) => {
-          const rand = generator.random(); // 0 >= rand < 1
           return {
             ...delegate,
             // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
-            weight: rand ** (1 / parseInt(delegate.vote.toString(), 10)),
+            weight: this.calcV2Weight(generator.random(), delegate, round),
           };
         });
 
@@ -365,6 +364,20 @@ export class DelegatesModule {
       );
       throw new Error(`Failed to verify slot ${curSlot}`);
     }
+  }
+
+  /**
+   * Calculates v2 weight based on roudn, vote, and rand value.
+   * @param rand
+   * @param delegate
+   * @param round
+   */
+  protected calcV2Weight(
+    rand: number,
+    delegate: { publicKey: Buffer; vote: bigint },
+    round: number
+  ) {
+    return rand ** (1e8 / parseInt(delegate.vote.toString(), 10));
   }
 
   /**
