@@ -2,7 +2,6 @@ import { Symbols } from '@risevision/core-interfaces';
 // tslint:disable object-literal-sort-keys
 export const CoreSymbols = {
   constants: Symbols.generic.constants,
-  allConstants: Symbol.for('allConstants'),
   api: {
     loader: Symbol.for('loaderAPI'),
     constants: Symbol.for('constantsAPI'),

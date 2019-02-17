@@ -48,9 +48,6 @@ export class CoreModule extends BaseCoreModule<void>
       .to(BlockMonitor)
       .inSingletonScope();
 
-    const allConstants = {};
-    allConstants[this.name] = this.constants;
-
     // Set constants
     for (const sortedModule of this.sortedModules) {
       let b = sortedModule.constants || {};
@@ -60,10 +57,8 @@ export class CoreModule extends BaseCoreModule<void>
         }
       }
       sortedModule.constants = b;
-      allConstants[sortedModule.name] = b;
     }
     this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
-    this.container.bind(CoreSymbols.allConstants).toConstantValue(allConstants);
 
     // add info and migrations model
     this.container
