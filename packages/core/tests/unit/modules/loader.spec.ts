@@ -117,15 +117,6 @@ describe('modules/loader', () => {
     sandbox.restore();
   });
 
-  describe('.initialize', () => {
-    it('should set instance.network to default value after the creation of the object', () => {
-      expect((instance as any).network).to.be.deep.equal({
-        height: 0,
-        peers: [],
-      });
-    });
-  });
-
   describe('.getNetwork', () => {
     let peersModuleStub: IPeersModule;
     let peersLogicStub: PeersLogic;
@@ -151,26 +142,7 @@ describe('modules/loader', () => {
       loggerStub.stubReset();
     });
 
-    it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', () => {
-      blocksModule.lastBlock = {
-        height: 0,
-      } as any;
-      systemModule.update(blocksModule.lastBlock);
-      (instance as any).network = {
-        height: 1,
-        peers: [],
-      };
-
-      const result = instance.getNetwork();
-
-      expect(result).to.be.deep.equal({ height: 1, peers: [] });
-    });
-
-    it('should call instance.peersModule.list if instance.network.height > 0', () => {
-      (instance as any).network = {
-        height: 1,
-        peers: [],
-      };
+    it('should call peersModule.getPeers()', () => {
       getPeersStub.returns(peers);
 
       instance.getNetwork();
@@ -226,19 +198,15 @@ describe('modules/loader', () => {
       ]);
     });
 
-    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', () => {
+    it('should return network with empty peersArray prop if each of peersModule.list() peers is null', () => {
       getPeersStub.returns([null, null]);
 
       const ret = instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
-      expect((instance as any).network).to.be.deep.equal({
-        height: 0,
-        peers: [],
-      });
     });
 
-    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', () => {
+    it('should return network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', () => {
       blocksModule.lastBlock.height = 5;
       systemModule.update(blocksModule.lastBlock);
       getPeersStub.returns(peers);
@@ -248,7 +216,7 @@ describe('modules/loader', () => {
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
     });
 
-    it('should return instance.network with two peers in  peersArray prop', () => {
+    it('should return network with two peers in peersArray prop', () => {
       getPeersStub.returns(peers);
 
       const ret = instance.getNetwork();
@@ -265,7 +233,7 @@ describe('modules/loader', () => {
       expect(ret).to.be.deep.equal({ height: 4, peers: [peers[1], peers[0]] });
     });
 
-    it('should return instance.network with one item in peersArray(check .findGoodPeers second .filter)', () => {
+    it('should return network with one item in peersArray(check .findGoodPeers second .filter)', () => {
       peers[0].height = 10;
       getPeersStub.returns(peers);
 

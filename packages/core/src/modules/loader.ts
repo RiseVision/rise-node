@@ -47,7 +47,6 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.defaultSequence)
   public defaultSequence: ISequence;
-  private network: { height: number; peers: Peer[] };
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -98,25 +97,9 @@ export class LoaderModule implements ILoaderModule {
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
 
-  @postConstruct()
-  public initialize() {
-    this.network = {
-      height: 0,
-      peers: [],
-    };
-  }
-
   public getNetwork() {
-    if (
-      !(
-        this.network.height > 0 &&
-        Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1
-      )
-    ) {
-      const peers = this.peersModule.getPeers({});
-      this.network = this.peersModule.findGoodPeers(peers);
-    }
-    return this.network;
+    const peers = this.peersModule.getPeers({});
+    return this.peersModule.findGoodPeers(peers);
   }
 
   public getRandomPeer(): Peer {
