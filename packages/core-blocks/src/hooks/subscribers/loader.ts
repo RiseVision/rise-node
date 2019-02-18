@@ -1,4 +1,5 @@
 import {
+  IAppState,
   IBlocksModule,
   ILogger,
   ISequence,
@@ -16,7 +17,11 @@ import {
 } from 'mangiafuoco';
 import * as promiseRetry from 'promise-retry';
 import { BlocksSymbols } from '../../blocksSymbols';
-import { BlocksModuleProcess, BlocksModuleUtils } from '../../modules';
+import {
+  BlocksModuleChain,
+  BlocksModuleProcess,
+  BlocksModuleUtils,
+} from '../../modules';
 import { GetBlocksRequest } from '../../p2p';
 
 const Extendable = WPHooksSubscriber(Object);
@@ -32,10 +37,14 @@ export class BlockLoader extends Extendable {
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  @inject(Symbols.logic.appState)
+  private appStateLogic: IAppState;
   @inject(p2pSymbols.modules.peers)
   private peersModule: IPeersModule;
   @inject(BlocksSymbols.modules.blocks)
   private blocksModule: IBlocksModule;
+  @inject(BlocksSymbols.modules.chain)
+  private blocksChainModule: BlocksModuleChain;
 
   @inject(BlocksSymbols.modules.process)
   private blocksModuleProcess: BlocksModuleProcess;
@@ -111,7 +120,7 @@ export class BlockLoader extends Extendable {
     let loaded = false;
 
     const randomPeer = await peerProvider();
-    const lastBlock = this.blocksModule.lastBlock;
+    let lastBlock = this.blocksModule.lastBlock;
     if (typeof randomPeer === 'undefined') {
       await wait(1000);
       // This could happen when we received a block but we did not get the updated peer list.
@@ -120,19 +129,33 @@ export class BlockLoader extends Extendable {
 
     if (lastBlock.height !== 1) {
       this.logger.info(`Looking for common block with: ${randomPeer.string}`);
+      let commonBlock;
       try {
-        const commonBlock = await this.blocksModuleProcess.getCommonBlock(
+        commonBlock = await this.blocksModuleProcess.getCommonBlock(
           randomPeer,
           lastBlock.height
         );
-        if (!commonBlock) {
-          throw new Error('Failed to find common block');
-        }
       } catch (err) {
         this.logger.error(
           `Failed to find common block with: ${randomPeer.string}`
         );
         throw err;
+      }
+      // Rollback local chain to last common block with peer if we appear to be on a fork
+      if (
+        randomPeer.height > lastBlock.height &&
+        lastBlock.height > commonBlock.height &&
+        this.appStateLogic.getComputed('node.poorConsensus')
+      ) {
+        try {
+          while (lastBlock.height > commonBlock.height) {
+            lastBlock = await this.blocksChainModule.deleteLastBlock();
+          }
+          this.logger.error('Rollback complete, new last block', lastBlock.id);
+        } catch (err) {
+          this.logger.error('Rollback failed', err);
+          throw err;
+        }
       }
     }
     // Now that we know that peer is reliable we can sync blocks with him!!
