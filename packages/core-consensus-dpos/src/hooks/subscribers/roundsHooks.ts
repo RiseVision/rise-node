@@ -2,11 +2,7 @@ import {
   RecreateAccountsTables,
   SnapshotBlocksCountFilter,
 } from '@risevision/core';
-import {
-  ApplyBlockDBOps,
-  CommonHeightsToQuery,
-  RollbackBlockDBOps,
-} from '@risevision/core-blocks';
+import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -92,26 +88,6 @@ export class RoundsHooks extends Extendable {
   ) {
     const roundOps = await this.roundsModule.backwardTick(block, prevBlock);
     return dbOP.concat(...roundOps.filter((op) => op !== null));
-  }
-
-  @CommonHeightsToQuery()
-  private async commonHeightList(
-    heights: number[],
-    height: number
-  ): Promise<number[]> {
-    // Get IDs of first blocks of (n) last rounds, descending order
-    // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
-    // 1999599, 1999498
-    const firstInRound = this.roundsLogic.firstInRound(
-      this.roundsLogic.calcRound(height)
-    );
-    const heightsToQuery: number[] = [];
-    for (let i = 0; i < 5; i++) {
-      heightsToQuery.push(
-        firstInRound - this.dposConstants.activeDelegates * i
-      );
-    }
-    return heightsToQuery;
   }
 
   @SnapshotBlocksCountFilter()

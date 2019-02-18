@@ -14,20 +14,17 @@ import { SignedAndChainedBlockType } from '@risevision/core-types';
 import {
   BlockProgressLogger,
   catchToLoggerAndRemapError,
+  logspace,
 } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
+import { range, uniq } from 'lodash';
 import { Op } from 'sequelize';
-
-import { CommonHeightsToQuery } from '../hooks';
 
 @injectable()
 export class BlocksModuleUtils {
   // Generic
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-  @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
 
   // Helpers
   @inject(Symbols.helpers.sequence)
@@ -86,6 +83,22 @@ export class BlocksModuleUtils {
     return b;
   }
 
+  public getHeightsSequence(height: number): number[] {
+    const logStart = Math.max(1, height - 5);
+    const heightsToQuery: number[] = []
+      .concat(
+        // First 5 heights will be linear, one after another.
+        range(5).map((n) => height - n),
+        // The 10 next heights will have logarithmic spacing.
+        logspace(Math.log10(1), Math.log10(logStart + 1), 10)
+          .map((n) => logStart - (n - 1))
+          .map((n) => Math.floor(n))
+      )
+      .filter((n) => n >= 1);
+
+    return uniq(heightsToQuery);
+  }
+
   /**
    * Gets block IDs sequence - last block id, ids of first blocks of last 5 rounds and genesis block id.
    * @param {number} height
@@ -95,11 +108,7 @@ export class BlocksModuleUtils {
   ): Promise<{ firstHeight: number; ids: string[] }> {
     const lastBlock = this.blocksModule.lastBlock;
 
-    const heightsToQuery: number[] = await this.hookSystem.apply_filters(
-      CommonHeightsToQuery.name,
-      [],
-      height
-    );
+    const heightsToQuery = this.getHeightsSequence(height);
 
     const blocks: Array<{
       id: string;
