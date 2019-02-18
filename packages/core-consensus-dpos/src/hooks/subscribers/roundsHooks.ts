@@ -14,9 +14,11 @@ import {
   DBOp,
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
+import { logspace } from '@risevision/core-utils';
 import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';
+import { range, uniq } from 'lodash';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { DposConstantsType, dPoSSymbols } from '../../helpers';
 import { RoundsLogic } from '../../logic/rounds';
@@ -95,23 +97,24 @@ export class RoundsHooks extends Extendable {
   }
 
   @CommonHeightsToQuery()
-  private async commonHeightList(
+  public async commonHeightList(
     heights: number[],
     height: number
   ): Promise<number[]> {
-    // Get IDs of first blocks of (n) last rounds, descending order
-    // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
-    // 1999599, 1999498
-    const firstInRound = this.roundsLogic.firstInRound(
-      this.roundsLogic.calcRound(height)
+    const logStart = Math.max(1, height - 5);
+    const heightsToQuery: number[] = [].concat(
+      // First 5 heights will be linear, one after another.
+      range(5)
+        .map((n) => height - n)
+        .filter((n) => n >= 1),
+      // The 10 next heights will have logarithmic spacing.
+      logspace(Math.log10(1), Math.log10(logStart + 1), 10)
+        .map((n) => logStart - (n - 1))
+        .map((n) => Math.floor(n))
+        .filter((n) => n >= 1)
     );
-    const heightsToQuery: number[] = [];
-    for (let i = 0; i < 5; i++) {
-      heightsToQuery.push(
-        firstInRound - this.dposConstants.activeDelegates * i
-      );
-    }
-    return heightsToQuery;
+
+    return uniq(heightsToQuery);
   }
 
   @SnapshotBlocksCountFilter()
