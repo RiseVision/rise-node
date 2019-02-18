@@ -1,9 +1,5 @@
 import { SnapshotBlocksCountFilter } from '@risevision/core';
-import {
-  ApplyBlockDBOps,
-  CommonHeightsToQuery,
-  RollbackBlockDBOps,
-} from '@risevision/core-blocks';
+import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
 import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
@@ -78,117 +74,6 @@ describe('hooks/subscribers/rounds', () => {
     expect(stub.firstCall.args[0]).deep.eq(block);
     expect(stub.firstCall.args[1]).deep.eq(block2);
     expect(r).deep.eq(['a', 'b', 'c']);
-  });
-
-  describe('commonHeightList', () => {
-    const vectors = [
-      {
-        atHeight: 1,
-        expectHeights: [1],
-      },
-      {
-        atHeight: 2,
-        expectHeights: [2, 1],
-      },
-      {
-        atHeight: 5,
-        expectHeights: [5, 4, 3, 2, 1],
-      },
-      {
-        atHeight: 6,
-        expectHeights: [6, 5, 4, 3, 2, 1],
-      },
-      {
-        atHeight: 10,
-        expectHeights: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-      },
-      {
-        atHeight: 100,
-        expectHeights: [
-          100,
-          99,
-          98,
-          97,
-          96,
-          95,
-          94,
-          93,
-          91,
-          88,
-          83,
-          75,
-          61,
-          38,
-        ],
-      },
-      {
-        atHeight: 1000,
-        expectHeights: [
-          1000,
-          999,
-          998,
-          997,
-          996,
-          995,
-          993,
-          991,
-          986,
-          974,
-          949,
-          896,
-          781,
-          533,
-        ],
-      },
-      {
-        atHeight: 10000,
-        expectHeights: [
-          10000,
-          9999,
-          9998,
-          9997,
-          9996,
-          9995,
-          9993,
-          9988,
-          9974,
-          9936,
-          9829,
-          9531,
-          8704,
-          6403,
-        ],
-      },
-    ];
-    for (const vec of vectors) {
-      it(`should work for height ${vec.atHeight}`, async () => {
-        const res = await instance.commonHeightList([], vec.atHeight);
-        expect(res).deep.eq(vec.expectHeights);
-      });
-    }
-    it('should overwrite filter data and return proper heights', async () => {
-      const res = await wphooksystem.apply_filters(
-        CommonHeightsToQuery.name,
-        ['banana'],
-        2000000
-      );
-      expect(res).deep.eq([
-        2000000,
-        1999999,
-        1999998,
-        1999997,
-        1999996,
-        1999995,
-        1999990,
-        1999970,
-        1999870,
-        1999364,
-        1996829,
-        1984122,
-        1920416,
-        1601049,
-      ]);
-    });
   });
 
   describe('snapshotBlockCount', () => {

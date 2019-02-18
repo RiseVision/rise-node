@@ -2,11 +2,7 @@ import {
   RecreateAccountsTables,
   SnapshotBlocksCountFilter,
 } from '@risevision/core';
-import {
-  ApplyBlockDBOps,
-  CommonHeightsToQuery,
-  RollbackBlockDBOps,
-} from '@risevision/core-blocks';
+import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
 import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
@@ -14,11 +10,9 @@ import {
   DBOp,
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
-import { logspace } from '@risevision/core-utils';
 import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';
-import { range, uniq } from 'lodash';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { DposConstantsType, dPoSSymbols } from '../../helpers';
 import { RoundsLogic } from '../../logic/rounds';
@@ -94,27 +88,6 @@ export class RoundsHooks extends Extendable {
   ) {
     const roundOps = await this.roundsModule.backwardTick(block, prevBlock);
     return dbOP.concat(...roundOps.filter((op) => op !== null));
-  }
-
-  @CommonHeightsToQuery()
-  public async commonHeightList(
-    heights: number[],
-    height: number
-  ): Promise<number[]> {
-    const logStart = Math.max(1, height - 5);
-    const heightsToQuery: number[] = [].concat(
-      // First 5 heights will be linear, one after another.
-      range(5)
-        .map((n) => height - n)
-        .filter((n) => n >= 1),
-      // The 10 next heights will have logarithmic spacing.
-      logspace(Math.log10(1), Math.log10(logStart + 1), 10)
-        .map((n) => logStart - (n - 1))
-        .map((n) => Math.floor(n))
-        .filter((n) => n >= 1)
-    );
-
-    return uniq(heightsToQuery);
   }
 
   @SnapshotBlocksCountFilter()
