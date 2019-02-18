@@ -378,7 +378,7 @@ describe('src/modules/transport.ts', () => {
 
       peersModuleGetPeersStub = sandbox
         .stub(peersModule, 'getPeers')
-        .resolves(peers);
+        .returns(peers);
     });
 
     it('should call peersModule.getPeers', async () => {

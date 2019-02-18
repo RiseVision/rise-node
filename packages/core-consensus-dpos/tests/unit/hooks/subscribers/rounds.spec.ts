@@ -1,8 +1,9 @@
+import { SnapshotBlocksCountFilter } from '@risevision/core';
 import {
-  SnapshotBlocksCountFilter,
-  UtilsCommonHeightList,
-} from '@risevision/core';
-import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
+  ApplyBlockDBOps,
+  CommonHeightsToQuery,
+  RollbackBlockDBOps,
+} from '@risevision/core-blocks';
 import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
 import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
@@ -81,7 +82,7 @@ describe('hooks/subscribers/rounds', () => {
 
   it('commonHeightList should overwrite filter data and return proper heights', async () => {
     const res = await wphooksystem.apply_filters(
-      UtilsCommonHeightList.name,
+      CommonHeightsToQuery.name,
       ['banana'],
       2000000
     );

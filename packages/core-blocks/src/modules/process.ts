@@ -446,8 +446,6 @@ export class BlocksModuleProcess {
     );
     await this.blocksVerifyModule.checkBlockTransactions(block, accountsMap);
 
-    this.blocksModule.lastReceipt.update();
-
     // if nothing has thrown till here then block is valid and can be applied.
     // The block and the transactions are OK i.e:
     // * Block and transactions have valid values (signatures, block slots, etc...)

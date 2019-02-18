@@ -106,21 +106,21 @@ export class LoaderModule implements ILoaderModule {
     };
   }
 
-  public async getNetwork() {
+  public getNetwork() {
     if (
       !(
         this.network.height > 0 &&
         Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1
       )
     ) {
-      const peers = await this.peersModule.getPeers({});
+      const peers = this.peersModule.getPeers({});
       this.network = this.peersModule.findGoodPeers(peers);
     }
     return this.network;
   }
 
-  public async getRandomPeer(): Promise<Peer> {
-    const { peers } = await this.getNetwork();
+  public getRandomPeer(): Peer {
+    const { peers } = this.getNetwork();
     if (peers.length === 0) {
       throw new Error('No acceptable peers for the operation');
     }
@@ -298,7 +298,6 @@ export class LoaderModule implements ILoaderModule {
       'loaderSyncTimer',
       async () => {
         this.logger.trace('Sync timer trigger', {
-          last_receipt: this.blocksModule.lastReceipt.get(),
           syncing: this.isSyncing,
         });
         this.appState.set('loader.isSyncing', true);

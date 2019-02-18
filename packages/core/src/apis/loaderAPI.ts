@@ -48,16 +48,8 @@ export class LoaderAPI {
   }
 
   @Get('/ping')
-  public ping() {
-    let status = false;
-    if (this.blocksModule.lastBlock) {
-      const secondsAgo =
-        Math.floor(Date.now() / 1000) -
-        (Math.floor(this.constants.epochTime.getTime() / 1000) +
-          this.blocksModule.lastBlock.timestamp);
-      status = secondsAgo < this.blocksConstants.receiptTimeOut;
-    }
-
-    return { success: status };
+  public async ping() {
+    const isStale = this.blocksModule.isStale();
+    return { success: !isStale };
   }
 }

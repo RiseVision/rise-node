@@ -107,6 +107,7 @@ describe('modules/loader', () => {
       height: 1,
       id: 1,
     } as any;
+    systemModule.update(blocksModule.lastBlock);
     appState = container.get(Symbols.logic.appState);
     const logger = container.get<LoggerStub>(Symbols.helpers.logger);
     logger.stubReset();
@@ -150,36 +151,37 @@ describe('modules/loader', () => {
       loggerStub.stubReset();
     });
 
-    it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', async () => {
+    it('should return unchanged instance.network if (network.height <= 0 and Math.abs(expressive) === 1)', () => {
       blocksModule.lastBlock = {
         height: 0,
       } as any;
+      systemModule.update(blocksModule.lastBlock);
       (instance as any).network = {
         height: 1,
         peers: [],
       };
 
-      const result = await instance.getNetwork();
+      const result = instance.getNetwork();
 
       expect(result).to.be.deep.equal({ height: 1, peers: [] });
     });
 
-    it('should call instance.peersModule.list if instance.network.height > 0', async () => {
+    it('should call instance.peersModule.list if instance.network.height > 0', () => {
       (instance as any).network = {
         height: 1,
         peers: [],
       };
       getPeersStub.returns(peers);
 
-      await instance.getNetwork();
+      instance.getNetwork();
 
       expect(getPeersStub.calledOnce).to.be.true;
     });
 
-    it('should call instance.logger.trace methods', async () => {
+    it('should call instance.logger.trace methods', () => {
       getPeersStub.returns(peers);
 
-      await instance.getNetwork();
+      instance.getNetwork();
 
       expect(loggerStub.stubs.trace.callCount).to.be.equal(3);
 
@@ -208,10 +210,10 @@ describe('modules/loader', () => {
       });
     });
 
-    it('should call instance.logger.debug methods', async () => {
+    it('should call instance.logger.debug methods', () => {
       getPeersStub.returns(peers);
       loggerStub.stubs.debug.resetHistory();
-      await instance.getNetwork();
+      instance.getNetwork();
 
       expect(loggerStub.stubs.debug.callCount).to.be.equal(1);
       expect(loggerStub.stubs.debug.getCall(0).args.length).to.be.equal(2);
@@ -224,10 +226,10 @@ describe('modules/loader', () => {
       ]);
     });
 
-    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', async () => {
+    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers is null', () => {
       getPeersStub.returns([null, null]);
 
-      const ret = await instance.getNetwork();
+      const ret = instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
       expect((instance as any).network).to.be.deep.equal({
@@ -236,37 +238,38 @@ describe('modules/loader', () => {
       });
     });
 
-    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', async () => {
+    it('should return instance.network with empty peersArray prop if each of peersModule.list() peers has height < lastBlock.height ', () => {
       blocksModule.lastBlock.height = 5;
+      systemModule.update(blocksModule.lastBlock);
       getPeersStub.returns(peers);
 
-      const ret = await instance.getNetwork();
+      const ret = instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 0, peers: [] });
     });
 
-    it('should return instance.network with two peers in  peersArray prop', async () => {
+    it('should return instance.network with two peers in  peersArray prop', () => {
       getPeersStub.returns(peers);
 
-      const ret = await instance.getNetwork();
+      const ret = instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 2, peers });
     });
 
-    it('should return a sorted peersArray', async () => {
+    it('should return a sorted peersArray', () => {
       peers[1].height += 3;
       getPeersStub.returns(peers);
 
-      const ret = await instance.getNetwork();
+      const ret = instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 4, peers: [peers[1], peers[0]] });
     });
 
-    it('should return instance.network with one item in peersArray(check .findGoodPeers second .filter)', async () => {
+    it('should return instance.network with one item in peersArray(check .findGoodPeers second .filter)', () => {
       peers[0].height = 10;
       getPeersStub.returns(peers);
 
-      const ret = await instance.getNetwork();
+      const ret = instance.getNetwork();
 
       expect(ret).to.be.deep.equal({ height: 10, peers: [peers[0]] });
     });
@@ -280,23 +283,23 @@ describe('modules/loader', () => {
       peers = createFakePeers(3);
       getNetworkStub = sandbox
         .stub(instance as any, 'getNetwork')
-        .resolves({ peers });
+        .returns({ peers });
     });
 
-    it('should call instance.getNetwork', async () => {
-      await instance.getRandomPeer();
+    it('should call instance.getNetwork', () => {
+      instance.getRandomPeer();
 
       expect(getNetworkStub.calledOnce).to.be.true;
     });
 
-    it('should return random peer', async () => {
-      const ret = await instance.getRandomPeer();
+    it('should return random peer', () => {
+      const ret = instance.getRandomPeer();
 
       expect(peers).to.include(ret);
     });
-    it('should reject if no peers', async () => {
-      getNetworkStub.resolves({ peers: [] });
-      await expect(instance.getRandomPeer()).rejectedWith(
+    it('should reject if no peers', () => {
+      getNetworkStub.returns({ peers: [] });
+      expect(() => instance.getRandomPeer()).to.throw(
         'No acceptable peers for the operation'
       );
     });
@@ -953,6 +956,7 @@ describe('modules/loader', () => {
         promiseRetryStub.onCall(0).callsFake(
           sandbox.spy((w) => {
             blocksModule.lastBlock = { height: 2, id: 1 } as any;
+            systemModule.update(blocksModule.lastBlock);
             return Promise.resolve(w(retryStub));
           })
         );
@@ -961,6 +965,7 @@ describe('modules/loader', () => {
         promiseRetryStub.onCall(1).callsFake(
           sandbox.spy((w) => {
             blocksModule.lastBlock = { height: 1, id: 1 } as any;
+            systemModule.update(blocksModule.lastBlock);
             return Promise.resolve(w(retryStub));
           })
         );
@@ -1445,26 +1450,18 @@ describe('modules/loader', () => {
 
   describe('.syncTimer', () => {
     let jobsQueueStub: IJobsQueue;
-    let lastReceiptStubs;
+    let blocksIsStaleStub: SinonStub;
     let loggerStub: LoggerStub;
     let syncStub: SinonStub;
     let getAppStateStub: SinonStub;
-    let lastReceipt;
 
     beforeEach(() => {
-      lastReceipt = 'lastReceipt';
-
-      lastReceiptStubs = {
-        get: sandbox.stub().returns(lastReceipt),
-        isStale: sandbox.stub().returns(true),
-      };
       jobsQueueStub = container.get(Symbols.helpers.jobsQueue);
       loggerStub = container.get(Symbols.helpers.logger);
       syncStub = sandbox
         .stub(instance as any, 'doSync')
         .resolves(Promise.resolve({}));
-
-      (blocksModule as any).lastReceipt = lastReceiptStubs;
+      blocksIsStaleStub = sandbox.stub(blocksModule, 'isStale').resolves(true);
 
       getAppStateStub = sandbox.stub(appState, 'get');
       getAppStateStub.onFirstCall().returns(true);
@@ -1490,7 +1487,6 @@ describe('modules/loader', () => {
         'Sync timer trigger'
       );
       expect(loggerStub.stubs.trace.secondCall.args[1]).to.be.deep.equal({
-        last_receipt: lastReceipt,
         syncing: true,
       });
     });
@@ -1508,19 +1504,11 @@ describe('modules/loader', () => {
       expect(jobsQueueRegisterStub.firstCall.args[2]).to.be.equal(1000);
     });
 
-    it('should call blocksModule.lastReceipt.get', async () => {
-      await (instance as any).syncTimer();
-
-      expect(lastReceiptStubs.get.calledOnce).to.be.true;
-      expect(lastReceiptStubs.get.firstCall.args.length).to.be.equal(0);
-    });
-
     // TODO: lerna
-    // it('should call blocksModule.lastReceipt.isStale', async () => {
+    // it('should call blocksModule.isStale', async () => {
     //   await (instance as any).syncTimer();
     //
-    //   expect(lastReceiptStubs.isStale.calledOnce).to.be.true;
-    //   expect(lastReceiptStubs.isStale.firstCall.args.length).to.be.equal(0);
+    //   expect(blocksIsStaleStub.calledOnce).to.be.true;
     // });
 
     it('should call instance.sync', async () => {

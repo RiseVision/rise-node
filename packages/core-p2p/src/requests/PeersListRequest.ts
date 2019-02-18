@@ -32,7 +32,7 @@ export class PeersListRequest extends BaseProtobufTransportMethod<
   private p2pConstants: P2PConstantsType;
 
   protected async produceResponse(payload: any): Promise<PeersListResponse> {
-    const peers = await this.peersModule.getPeers({
+    const peers = this.peersModule.getPeers({
       limit: this.p2pConstants.maxPeers,
     });
     return { peers };

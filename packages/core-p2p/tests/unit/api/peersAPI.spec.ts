@@ -120,18 +120,16 @@ describe('apis/peersAPI', () => {
   });
 
   describe('count()', () => {
-    it('Failed to get peer count', async () => {
+    it('Failed to get peer count', () => {
       getByFilterStub.throws(new Error('MyError'));
-      await expect(instance.count()).to.be.rejectedWith(
-        'Failed to get peer count'
-      );
+      expect(() => instance.count()).to.throw('Failed to get peer count');
     });
 
-    it('should return an object with the properties: banned, connected and disconnected', async () => {
+    it('should return an object with the properties: banned, connected and disconnected', () => {
       getByFilterStub.onCall(0).returns([{ a: 1 }]);
       getByFilterStub.onCall(1).returns([{ a: 1 }, { b: 2 }]);
       getByFilterStub.onCall(2).returns([{ a: 1 }, { b: 2 }, { c: 3 }]);
-      result = await instance.count();
+      result = instance.count();
       expect(result).to.deep.equal({
         banned: 3,
         connected: 1,
@@ -150,8 +148,8 @@ describe('apis/peersAPI', () => {
   });
 
   describe('version()', () => {
-    it('should return an object with the properties: build, minVersion and version', async () => {
-      result = await instance.version();
+    it('should return an object with the properties: build, minVersion and version', () => {
+      result = instance.version();
       expect(result).to.deep.equal({
         build: '1.2.3',
         minVersion: '1.0',

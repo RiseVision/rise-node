@@ -1,19 +1,29 @@
+import {
+  ISystemModule,
+  ITimeToEpoch,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { IPeersModule } from '@risevision/core-p2p';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { peers } from 'dpos-api-wrapper/dist/es5/apis';
 import { Container } from 'inversify';
+import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
 import { BlocksModule, BlocksSymbols } from '../../../src';
+import { createFakeBlock } from '../utils/createFakeBlocks';
 
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression
 describe('modules/blocks', () => {
+  let timeToEpoch: ITimeToEpoch;
   let instance: BlocksModule;
   let container: Container;
   let sandbox: SinonSandbox;
+  let getPeersStub: SinonStub;
 
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
@@ -26,6 +36,19 @@ describe('modules/blocks', () => {
       'core-transactions',
     ]);
     instance = container.get(BlocksSymbols.modules.blocks);
+    timeToEpoch = container.get(Symbols.helpers.timeToEpoch);
+
+    // Patch the systems module so that there is no need to call update() on it
+    const systemModule: ISystemModule = container.get(Symbols.modules.system);
+    sandbox
+      .stub(systemModule, 'getHeight')
+      .callsFake(() => instance.lastBlock.height);
+    sandbox
+      .stub(systemModule.headers, 'height')
+      .get(() => instance.lastBlock.height);
+
+    const peersModule: IPeersModule = container.get(Symbols.modules.peers);
+    getPeersStub = sandbox.stub(peersModule, 'getPeers').resolves([]);
   });
 
   afterEach(() => {
@@ -33,9 +56,6 @@ describe('modules/blocks', () => {
   });
 
   describe('instanceance fields', () => {
-    it('should have lastReceipt', () => {
-      expect(instance.lastReceipt).to.exist;
-    });
     it('should set lastBlock to undefined', () => {
       expect(instance.lastBlock).to.be.undefined;
     });
@@ -47,50 +67,49 @@ describe('modules/blocks', () => {
     });
   });
 
-  describe('.lastReceipt', () => {
-    describe('.get', () => {
-      it('should return undefined if never updated', () => {
-        expect(instance.lastReceipt.get()).to.be.undefined;
-      });
-      it('should return a number if updated', () => {
-        instance.lastReceipt.update();
-        expect(instance.lastReceipt.get()).to.be.a('number');
-      });
+  describe('.isStale', () => {
+    it('should return boolean', () => {
+      getPeersStub.returns([]);
+      expect(instance.isStale()).to.be.a('boolean');
     });
-
-    describe('.isStale', () => {
-      it('should return boolean', () => {
-        expect(instance.lastReceipt.isStale()).to.be.a('boolean');
-      });
-      it('should return true if never updated', () => {
-        expect(instance.lastReceipt.isStale()).is.true;
-      });
-      it('should return true if updated was call more than 10secs ago (see before)', () => {
-        const t = sinon.useFakeTimers();
-        instance.lastReceipt.update();
-        t.tick(10000);
-        expect(instance.lastReceipt.isStale()).is.true;
-        t.restore();
-      });
-
-      it('should return false if just updated', () => {
-        instance.lastReceipt.update();
-        expect(instance.lastReceipt.isStale()).is.false;
-      });
+    it('should return true if lastBlock is undefined', () => {
+      getPeersStub.returns([]);
+      expect(instance.isStale()).is.true;
     });
-
-    describe('.update', () => {
-      it('should allow passing time', () => {
-        instance.lastReceipt.update(10);
-        expect(instance.lastReceipt.get()).to.be.eq(10);
+    it('should return true if lastBlock is old', () => {
+      instance.lastBlock = createFakeBlock(container, {});
+      getPeersStub.returns([]);
+      getPeersStub.returns([]);
+      expect(instance.isStale()).is.true;
+    });
+    it('should return false if lastBlock is recent and ahead of the network', () => {
+      instance.lastBlock = createFakeBlock(container, {
+        timestamp: timeToEpoch.getTime(),
       });
-      it('should use current time if not passed', () => {
-        const fakeTimers = sinon.useFakeTimers();
-        fakeTimers.setSystemTime(112233 * 1000);
-        instance.lastReceipt.update();
-        expect(instance.lastReceipt.get()).to.be.eq(112233);
-        fakeTimers.restore();
+      getPeersStub.returns([]);
+      expect(instance.isStale()).is.false;
+    });
+    it('should return false if lastBlock is recent and the same with the network', () => {
+      instance.lastBlock = createFakeBlock(container, {
+        timestamp: timeToEpoch.getTime(),
       });
+      getPeersStub.returns([
+        { height: instance.lastBlock.height },
+        { height: instance.lastBlock.height },
+        { height: instance.lastBlock.height },
+      ]);
+      expect(instance.isStale()).is.false;
+    });
+    it('should return false if lastBlock is recent but behind the network', () => {
+      instance.lastBlock = createFakeBlock(container, {
+        timestamp: timeToEpoch.getTime(),
+      });
+      getPeersStub.returns([
+        { height: instance.lastBlock.height + 2 },
+        { height: instance.lastBlock.height + 2 },
+        { height: instance.lastBlock.height + 1 },
+      ]);
+      expect(instance.isStale()).is.true;
     });
   });
 });
