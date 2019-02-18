@@ -85,17 +85,16 @@ export class BlocksModuleUtils {
 
   public getHeightsSequence(height: number): number[] {
     const logStart = Math.max(1, height - 5);
-    const heightsToQuery: number[] = [].concat(
-      // First 5 heights will be linear, one after another.
-      range(5)
-        .map((n) => height - n)
-        .filter((n) => n >= 1),
-      // The 10 next heights will have logarithmic spacing.
-      logspace(Math.log10(1), Math.log10(logStart + 1), 10)
-        .map((n) => logStart - (n - 1))
-        .map((n) => Math.floor(n))
-        .filter((n) => n >= 1)
-    );
+    const heightsToQuery: number[] = []
+      .concat(
+        // First 5 heights will be linear, one after another.
+        range(5).map((n) => height - n),
+        // The 10 next heights will have logarithmic spacing.
+        logspace(Math.log10(1), Math.log10(logStart + 1), 10)
+          .map((n) => logStart - (n - 1))
+          .map((n) => Math.floor(n))
+      )
+      .filter((n) => n >= 1);
 
     return uniq(heightsToQuery);
   }
