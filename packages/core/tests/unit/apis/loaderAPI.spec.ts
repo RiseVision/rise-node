@@ -37,6 +37,8 @@ describe('apis/loaderAPI', () => {
       'core-helpers',
       'core-crypto',
       'core-accounts',
+      'core-transactions',
+      'core-blocks',
     ]);
 
     appState = container.get(Symbols.logic.appState);
@@ -46,7 +48,8 @@ describe('apis/loaderAPI', () => {
     loaderModule = container.get(CoreSymbols.modules.loader);
 
     // loaderModule.loaded    = true;
-    blocksModule.lastBlock = { height: 1 } as any;
+    blocksModule.lastBlock = { id: 'fakeId', height: 1 } as any;
+    system.update(blocksModule.lastBlock);
 
     instance = container.getNamed(APISymbols.class, CoreSymbols.api.loader);
   });
@@ -74,8 +77,7 @@ describe('apis/loaderAPI', () => {
       expect(appStateGet.firstCall.args[0]).to.be.equal('node.consensus');
 
       expect(ret).to.be.deep.equal({
-        broadhash:
-          'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+        broadhash: 'fakeId',
         consensus: 'consensus',
         height: 1,
         syncing: 'consensus',
@@ -84,26 +86,26 @@ describe('apis/loaderAPI', () => {
   });
 
   describe('ping', () => {
-    it('should return false status if this.blocksModule.lastBlock in null', () => {
+    it('should return false status if this.blocksModule.lastBlock in null', async () => {
       blocksModule.lastBlock = null;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: false });
     });
 
-    it('should return true status if secondsAgo < constants.blockReceiptTimeOut', () => {
+    it('should return true status if secondsAgo < constants.blockReceiptTimeOut', async () => {
       blocksModule.lastBlock.timestamp = 1000000000;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: true });
     });
 
-    it('should return false status if secondsAgo >= constants.blockReceiptTimeOut', () => {
+    it('should return false status if secondsAgo >= constants.blockReceiptTimeOut', async () => {
       blocksModule.lastBlock.timestamp = 0;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: false });
     });

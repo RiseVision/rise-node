@@ -7,14 +7,23 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { DBUpdateOp, IBaseTransaction, TransactionType } from '@risevision/core-types';
+import {
+  Address,
+  DBUpdateOp,
+  IBaseTransaction,
+  TransactionType,
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { As } from 'type-tagger';
 import { dPoSSymbols } from '../../../../src/helpers';
-import { DelegateAsset, RegisterDelegateTransaction } from '../../../../src/logic/delegateTransaction';
+import {
+  DelegateAsset,
+  RegisterDelegateTransaction,
+} from '../../../../src/logic/delegateTransaction';
 import { AccountsModelForDPOS, DelegatesModel } from '../../../../src/models';
 
 const expect = chai.expect;
@@ -62,23 +71,30 @@ describe('logic/transactions/delegate', () => {
       asset: {
         delegate: {
           username: 'topdelegate',
+          forgingPK: Buffer.from(
+            '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
+            'hex'
+          ) as Buffer & As<'publicKey'>,
         },
       },
       fee: 10n,
       id: '8139741256612355994',
-      senderId: '1233456789012345R',
+      senderId: '1233456789012345R' as Address,
       recipientId: null,
-      senderPublicKey: Buffer.from(
+      senderPubData: Buffer.from(
         '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
         'hex'
       ),
-      signature: Buffer.from(
-        '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-          'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
-        'hex'
-      ),
+      signatures: [
+        Buffer.from(
+          '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
+            'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
+          'hex'
+        ),
+      ],
       timestamp: 0,
       type: TransactionType.DELEGATE,
+      version: 0,
     };
 
     sender = {
@@ -87,7 +103,7 @@ describe('logic/transactions/delegate', () => {
       publicKey: Buffer.from(
         '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
         'hex'
-      ),
+      ) as Buffer & As<'publicKey'>,
       isMultisignature() {
         return false;
       },
@@ -104,9 +120,12 @@ describe('logic/transactions/delegate', () => {
       TXSymbols.transaction,
       dPoSSymbols.logic.delegateTransaction
     );
-    getFeesStub = sandbox
-      .stub(systemModuleStub, 'getFees')
-      .returns({ fees: { delegate: 2500n }, fromHeight: 1, toHeight: 1000000, height: 100 });
+    getFeesStub = sandbox.stub(systemModuleStub, 'getFees').returns({
+      fees: { delegate: 2500n },
+      fromHeight: 1,
+      toHeight: 1000000,
+      height: 100,
+    });
   });
 
   afterEach(() => {
@@ -115,31 +134,25 @@ describe('logic/transactions/delegate', () => {
 
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
-      instance.calculateFee(tx, sender, block.height);
+      instance.calculateMinFee(tx, sender, block.height);
       expect(getFeesStub.calledOnce).to.be.true;
       expect(getFeesStub.firstCall.args[0]).to.be.equal(block.height);
     });
   });
 
-  describe('getBytes', () => {
-    it('should return null if no username', () => {
+  describe('assetBytes', () => {
+    it('should return just the forging key if no username', () => {
       delete tx.asset.delegate.username;
-      const retVal = instance.getBytes(tx, false, false);
-      expect(retVal).to.be.null;
+      const retVal = instance.assetBytes(tx);
+      expect(retVal).to.be.deep.eq(tx.asset.delegate.forgingPK);
     });
-
-    it('should call Buffer.from', () => {
-      const fromSpy = sandbox.spy(Buffer, 'from');
-      instance.getBytes(tx, false, false);
-      expect(fromSpy.calledOnce).to.be.true;
-      expect(fromSpy.firstCall.args[0]).to.be.equal(tx.asset.delegate.username);
-      expect(fromSpy.firstCall.args[1]).to.be.equal('utf8');
-    });
-
-    it('should return a Buffer', () => {
-      const retVal = instance.getBytes(tx, false, false);
-      expect(retVal).to.be.deep.equal(
-        Buffer.from(tx.asset.delegate.username, 'utf8')
+    it('should return the utf8 username if provided', () => {
+      const retVal = instance.assetBytes(tx);
+      expect(retVal).to.be.deep.eq(
+        Buffer.concat([
+          tx.asset.delegate.forgingPK,
+          Buffer.from(tx.asset.delegate.username, 'utf8'),
+        ])
       );
     });
   });
@@ -153,7 +166,7 @@ describe('logic/transactions/delegate', () => {
     });
 
     it('should throw when tx.recipientId', async () => {
-      tx.recipientId = 'recipient';
+      tx.recipientId = 'recipient' as Address;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid recipient'
       );
@@ -184,11 +197,24 @@ describe('logic/transactions/delegate', () => {
       );
     });
 
-    it('should throw when no username', async () => {
+    it('should throw when no forgingPK', async () => {
+      delete tx.asset.delegate.forgingPK;
+      await expect(instance.verify(tx, sender)).to.be.rejectedWith(
+        'ForgingPK is undefined'
+      );
+    });
+
+    it('should throw when no username and acct is not delegate', async () => {
       delete tx.asset.delegate.username;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
-        'Username is undefined'
+        'Account needs to be a delegate'
       );
+    });
+
+    it('should NOT throw when no username and acct IS delegate', async () => {
+      delete tx.asset.delegate.username;
+      sender.isDelegate = 1;
+      await expect(instance.verify(tx, sender)).to.not.be.rejected;
     });
 
     it('should throw when username is not lowercase', async () => {
@@ -223,10 +249,11 @@ describe('logic/transactions/delegate', () => {
     });
 
     it('should throw when username is a possible address - given param should be uppercased', async () => {
-      tx.asset.delegate.username = '1r';
-      await expect(instance.verify(tx, sender)).to.be.rejectedWith(
-        'Username can not be a potential address'
-      );
+      // TODO: How to test?
+      // tx.asset.delegate.username = '';
+      // await expect(instance.verify(tx, sender)).to.be.rejectedWith(
+      //   'Username can not be a potential address'
+      // );
     });
 
     it('should throw if zschema does not validate the username', async () => {
@@ -263,6 +290,7 @@ describe('logic/transactions/delegate', () => {
         isDelegate: 1,
         username: 'topdelegate',
         u_username: 'topdelegate',
+        forgingPK: tx.asset.delegate.forgingPK,
         vote: 0n,
       });
     });
@@ -277,6 +305,7 @@ describe('logic/transactions/delegate', () => {
         isDelegate: 1,
         u_isDelegate: 1,
         vote: 0n,
+        forgingPK: tx.asset.delegate.forgingPK,
         username: tx.asset.delegate.username,
         u_username: tx.asset.delegate.username,
       });
@@ -304,6 +333,7 @@ describe('logic/transactions/delegate', () => {
       await instance.undo(tx, block, sender);
       expect(applyValuesStub.called).is.true;
       expect(applyValuesStub.firstCall.args[0]).deep.eq({
+        forgingPK: null,
         u_isDelegate: 1,
         isDelegate: 0,
         username: null,
@@ -318,6 +348,7 @@ describe('logic/transactions/delegate', () => {
       expect(op.type).is.eq('update');
       expect(op.model).is.deep.eq(accountsModel);
       expect(op.values).is.deep.eq({
+        forgingPK: null,
         isDelegate: 0,
         u_isDelegate: 1,
         vote: 0n,
@@ -331,6 +362,8 @@ describe('logic/transactions/delegate', () => {
         },
       });
     });
+
+    it('should properly rollback to previous forgingPK when any');
   });
 
   describe('applyUnconfirmed', () => {
@@ -431,24 +464,6 @@ describe('logic/transactions/delegate', () => {
     });
   });
 
-  describe('dbRead', () => {
-    it('should return null if !d_username', () => {
-      const retVal = instance.dbRead({});
-      expect(retVal).to.be.null;
-    });
-
-    it('should return the delegate object', () => {
-      const retVal = instance.dbRead({
-        d_username: 'thebestdelegate',
-      });
-      expect(retVal).to.be.deep.equal({
-        delegate: {
-          username: 'thebestdelegate',
-        },
-      });
-    });
-  });
-
   describe('dbSave', () => {
     it('should return the Createop object', async () => {
       const createOp = await instance.dbSave(tx);
@@ -478,8 +493,16 @@ describe('logic/transactions/delegate', () => {
     });
     it('should use model result and modify original arr', async () => {
       modelFindAllStub.resolves([
-        { transactionId: 2, username: 'second' },
-        { transactionId: 1, username: 'first' },
+        {
+          transactionId: 2,
+          username: 'second',
+          forgingPK: Buffer.alloc(1).fill(2),
+        },
+        {
+          transactionId: 1,
+          username: 'first',
+          forgingPK: Buffer.alloc(1).fill(1),
+        },
       ]);
       const txs: any = [{ id: 1 }, { id: 2 }];
 
@@ -490,6 +513,7 @@ describe('logic/transactions/delegate', () => {
         asset: {
           delegate: {
             username: 'first',
+            forgingPK: Buffer.from('01', 'hex'),
           },
         },
       });
@@ -498,6 +522,7 @@ describe('logic/transactions/delegate', () => {
         asset: {
           delegate: {
             username: 'second',
+            forgingPK: Buffer.from('02', 'hex'),
           },
         },
       });

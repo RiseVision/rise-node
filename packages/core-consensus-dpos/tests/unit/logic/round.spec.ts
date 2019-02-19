@@ -6,6 +6,7 @@ import * as chai from 'chai';
 import * as fs from 'fs';
 import { Container } from 'inversify';
 import { Op } from 'sequelize';
+import * as sequelize from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { dPoSSymbols, RoundChanges } from '../../../src/helpers';
@@ -16,7 +17,7 @@ const expect = chai.expect;
 const pgpStub = { as: undefined } as any;
 
 const performVoteSnapshotSQL = fs.readFileSync(
-  `${__dirname}/../../../sql/performVotesSnapshot.sql`,
+  `${__dirname}/../../../sql/queries/performVotesSnapshot.sql`,
   'utf8'
 );
 
@@ -62,7 +63,9 @@ describe('logic/round', () => {
       },
       modules: {
         accounts: {
-          generateAddressByPublicKey: sandbox.stub().returns(1),
+          generateAddressByPubData: sandbox
+            .stub()
+            .callsFake((a) => a.toString('hex')),
           mergeAccountAndGetOPs: sandbox.stub().returns([]),
         },
       },
@@ -181,27 +184,10 @@ describe('logic/round', () => {
       expect(ret.type).is.eq('custom');
       expect(ret.model).is.deep.eq(accountsModel);
       expect(ret.query).is.deep.eq(
-        fs.readFileSync(`${__dirname}/../../../sql/recalcVotes.sql`, {
+        fs.readFileSync(`${__dirname}/../../../sql/queries/recalcVotes.sql`, {
           encoding: 'utf8',
         })
       );
-    });
-  });
-
-  describe('markBlockId', () => {
-    it('should return null if backwards is true', () => {
-      scope.backwards = false;
-      expect(instance.markBlockId()).is.null;
-    });
-    it('should return update dbop if is not backward setting blockId to "0"', () => {
-      scope.backwards = true;
-      const res = instance.markBlockId();
-      expect(res.model).to.be.deep.eq(accountsModel);
-      expect(res.options).to.be.deep.eq({
-        where: { blockId: scope.block.id },
-      });
-      expect(res.type).to.be.eq('update');
-      expect(res.values).to.be.deep.eq({ blockId: '0' });
     });
   });
 
@@ -225,40 +211,16 @@ describe('logic/round', () => {
 
     it('should apply round changes to each delegate, with backwards false and fees > 0', async () => {
       at.returns({
+        balance: 0n,
+        fees: 0n,
+        rewards: 0n,
         feesRemaining: 10n,
       });
 
-      const retVal = await instance.applyRound();
+      await instance.applyRound();
 
-      expect(at.calledTwice).to.be.true;
-      expect(at.firstCall.args.length).to.equal(1);
-      expect(at.firstCall.args[0]).to.equal(0);
-      expect(at.secondCall.args[0]).to.equal(0);
-      expect(scope.library.logger.trace.calledThrice).to.be.true;
-      expect(scope.library.logger.trace.firstCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.firstCall.args[0]).to.be.equal(
-        'Delegate changes'
-      );
-      expect(scope.library.logger.trace.firstCall.args[1]).to.deep.equal({
-        changes: {
-          feesRemaining: 10n,
-        },
-        delegate: 'aabbcc',
-      });
-      expect(scope.library.logger.trace.secondCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.secondCall.args[0]).to.be.equal(
-        'Fees remaining'
-      );
-      expect(scope.library.logger.trace.secondCall.args[1]).to.deep.equal({
-        delegate: 'aabbcc',
-        fees: 10n,
-      });
-      expect(scope.library.logger.trace.thirdCall.args.length).to.be.equal(2);
-      expect(scope.library.logger.trace.thirdCall.args[0]).to.be.equal(
-        'Applying round'
-      );
-      // TODO: Check this ->
-      expect(retVal).to.deep.equal([]);
+      expect(at.calledOnce).to.be.true;
+      expect(at.firstCall.args).deep.eq([0]);
     });
 
     it('should behave correctly when backwards false, fees > 0 && feesRemaining > 0', async () => {
@@ -275,51 +237,28 @@ describe('logic/round', () => {
 
       const retVal = await instance.applyRound();
 
-      expect(at.calledThrice).to.be.true;
+      expect(at.calledTwice).to.be.true;
       expect(at.firstCall.args[0]).to.equal(0);
       expect(at.secondCall.args[0]).to.equal(1);
-      expect(at.thirdCall.args[0]).to.equal(1);
 
-      expect(scope.modules.accounts.mergeAccountAndGetOPs.calledThrice).is.true;
-      expect(
-        scope.modules.accounts.mergeAccountAndGetOPs.firstCall.args[0]
-      ).is.deep.eq({
-        balance: 10n,
-        blockId: '1',
+      expect(retVal[0].options.where.address).eq('aa');
+      expect(retVal[0].values).deep.eq({
+        balance: sequelize.literal('balance + 10'),
+        fees: sequelize.literal('fees + 5'),
+        u_balance: sequelize.literal('u_balance + 10'),
+        producedblocks: sequelize.literal('producedblocks + 1'),
+        rewards: sequelize.literal('rewards + 4'),
         cmb: 0,
-        fees: 5n,
-        producedblocks: 1,
-        publicKey: Buffer.from('aa', 'hex'),
-        rewards: 4n,
-        u_balance: 10n,
-        round: 10,
       });
-      expect(
-        scope.modules.accounts.mergeAccountAndGetOPs.secondCall.args[0]
-      ).is.deep.eq({
-        balance: 10n,
-        blockId: '1',
+      expect(retVal[1].options.where.address).eq('bb');
+      expect(retVal[1].values).deep.eq({
+        balance: sequelize.literal('balance + 10'),
+        fees: sequelize.literal('fees + 5'),
+        u_balance: sequelize.literal('u_balance + 10'),
+        producedblocks: sequelize.literal('producedblocks + 1'),
+        rewards: sequelize.literal('rewards + 4'),
         cmb: 0,
-        fees: 5n,
-        producedblocks: 1,
-        publicKey: Buffer.from('bb', 'hex'),
-        rewards: 4n,
-        u_balance: 10n,
-        round: 10,
       });
-      // Remainder of 1 feesRemaining
-      expect(
-        scope.modules.accounts.mergeAccountAndGetOPs.thirdCall.args[0]
-      ).is.deep.eq({
-        balance: 1n,
-        blockId: '1',
-        fees: 1n,
-        publicKey: Buffer.from('bb', 'hex'),
-        u_balance: 1n,
-        round: 10,
-      });
-
-      expect(retVal).to.be.deep.eq([]);
     });
   });
 

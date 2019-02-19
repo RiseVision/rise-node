@@ -1,10 +1,5 @@
-import {
-  IAppState,
-  IJobsQueue,
-  ILogger,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { AppConfig, ConstantsType, PeerType } from '@risevision/core-types';
+import { IJobsQueue, ILogger, Symbols } from '@risevision/core-interfaces';
+import { AppConfig, PeerType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
@@ -45,9 +40,6 @@ export class BroadcasterLogic implements IBroadcasterLogic {
   // Helpers
   @inject(p2pSymbols.constants)
   private p2pConstants: P2PConstantsType;
-
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
 
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
@@ -113,17 +105,17 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     task: BroadcastTask<any, any, any>
   ): Promise<{ peer: PeerType[] }> {
     task.filters = task.filters || {};
-    task.filters.limit = task.filters.limit || this.constants.maxPeers;
+    task.filters.limit = task.filters.limit || this.p2pConstants.maxPeers;
     task.filters.broadhash = task.filters.broadhash || null;
 
     let peers = task.filters.peers;
     if (!task.filters.peers) {
-      peers = await this.peersModule.getPeers(task.filters);
+      peers = this.peersModule.getPeers(task.filters);
     }
 
     this.logger.debug('Begin broadcast');
 
-    if (task.filters.limit === this.constants.maxPeers) {
+    if (task.filters.limit === this.p2pConstants.maxPeers) {
       peers = peers.slice(0, this.p2pConstants.broadcastLimit);
     }
 

@@ -75,9 +75,9 @@ describe('modules/blocks/chain', () => {
         height: 10,
         previousBlock: 'previousBlock',
         transactions: [
-          { type: 0, senderPublicKey: 'first' },
-          { type: 0, senderPublicKey: 'second' },
-          { type: 0, senderPublicKey: 'third' },
+          { type: 10, senderPublicKey: 'first' },
+          { type: 10, senderPublicKey: 'second' },
+          { type: 10, senderPublicKey: 'third' },
         ],
         destroy: destroyStub,
       } as any;

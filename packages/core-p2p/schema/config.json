@@ -7,23 +7,11 @@
         "trustProxy": {
           "type": "boolean"
         },
-        "list": {
+        "seeds": {
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "type": "object",
-            "properties": {
-              "ip": {
-                "type": "string",
-                "format": "ip"
-              },
-              "port": {
-                "type": "integer",
-                "minValue": 1,
-                "maxValue": 65535
-              }
-            },
-            "required": ["ip", "port"]
+            "type": "string"
           }
         },
         "access": {
@@ -77,7 +65,7 @@
           "required": ["limits", "timeout"]
         }
       },
-      "required": ["trustProxy", "list", "options", "access"]
+      "required": ["trustProxy", "seeds", "options", "access"]
     }
   },
   "required": ["peers", "broadcasts"]

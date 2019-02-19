@@ -1,15 +1,11 @@
 import { APISymbols } from '@risevision/core-apis';
-import {
-  IBaseTransactionType,
-  ITransactionLogic,
-  Symbols,
-} from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
-import * as z_schema from 'z-schema';
 import { TransactionsAPI } from './api';
 import { TXLoader } from './loader';
+import { SendTxAssetModel, TransactionsModel } from './models';
 import { GetTransactionsRequest, PostTransactionsRequest } from './p2p';
 import { PoolManager } from './PoolManager';
 import { InnerTXQueue } from './poolTXsQueue';
@@ -17,7 +13,7 @@ import { SendTransaction } from './sendTransaction';
 import { TransactionLogic } from './TransactionLogic';
 import { TransactionsModule } from './TransactionModule';
 import { TransactionPool } from './TransactionPool';
-import { TransactionsModel } from './TransactionsModel';
+import { TXBytes } from './txbytes';
 import { TXSymbols } from './txSymbols';
 
 // tslint:disable-next-line
@@ -42,7 +38,12 @@ export class CoreModule extends BaseCoreModule {
     this.container
       .bind(ModelSymbols.model)
       .toConstructor(TransactionsModel)
-      .whenTargetNamed(TXSymbols.model);
+      .whenTargetNamed(TXSymbols.models.model);
+
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(SendTxAssetModel)
+      .whenTargetNamed(TXSymbols.models.sendTxAsset);
 
     this.container
       .bind(Symbols.modules.transactions)
@@ -79,25 +80,18 @@ export class CoreModule extends BaseCoreModule {
       .bind(TXSymbols.loader)
       .to(TXLoader)
       .inSingletonScope();
+
+    this.container
+      .bind(TXSymbols.txBytes)
+      .to(TXBytes)
+      .inSingletonScope();
+
+    this.container.bind(TXSymbols.constants).toConstantValue(this.constants);
   }
 
   public async initAppElements() {
-    const TXTypes = this.container.getAll<IBaseTransactionType<any, any>>(
-      TXSymbols.transaction
-    );
-    const txLogic = this.container.get<ITransactionLogic>(
-      Symbols.logic.transaction
-    );
-
-    for (const txType of TXTypes) {
-      txLogic.attachAssetType(txType);
-    }
-
     // initializes pool manager through postConstruct
     this.container.get<PoolManager>(TXSymbols.poolManager);
-    z_schema.registerFormat('txId', (value: string) => {
-      return /^[0-9]+$/.test(value);
-    });
 
     await this.container.get<TXLoader>(TXSymbols.loader).hookMethods();
   }

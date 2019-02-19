@@ -2,7 +2,7 @@
 import { IAccountsModel } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { DBUpdateOp } from '@risevision/core-types';
+import { Address, DBUpdateOp } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -31,6 +31,7 @@ describe('logic/account', () => {
       'core',
       'core-helpers',
       'core-crypto',
+      'core-transactions',
     ]);
   });
   beforeEach(async () => {
@@ -44,34 +45,6 @@ describe('logic/account', () => {
     sandbox.restore();
   });
 
-  describe('fields', () => {
-    it('should correctly fill in editable fields', () => {
-      // @ts-ignore
-      expect(instance.editable).deep.eq([
-        'isDelegate',
-        'u_isDelegate',
-        'secondSignature',
-        'u_secondSignature',
-        'balance',
-        'u_balance',
-        'vote',
-        'rate',
-        'delegates',
-        'u_delegates',
-        'multisignatures',
-        'u_multisignatures',
-        'multimin',
-        'u_multimin',
-        'multilifetime',
-        'u_multilifetime',
-        'blockId',
-        'producedblocks',
-        'missedblocks',
-        'fees',
-        'rewards',
-      ]);
-    });
-  });
   // describe('recreateTables', () => {
   //   let dropStub: SinonStub;
   //   let sequelizeStub: SinonStub;
@@ -95,28 +68,6 @@ describe('logic/account', () => {
   //   });
   // });
 
-  describe('account.assertPublicKey', () => {
-    it('public key is not a string error', () => {
-      const error = 'Invalid public key, must be a string';
-      expect(() => instance.assertPublicKey(null)).to.throw(error);
-    });
-
-    it('public key is too short error', () => {
-      const error = 'Invalid public key, must be 64 characters long';
-      expect(() => instance.assertPublicKey('short string')).to.throw(error);
-    });
-
-    it('publicKey is undefined & allowUndefined is false', () => {
-      const error = 'Public Key is undefined';
-      expect(() => instance.assertPublicKey(undefined, false)).to.throw(error);
-    });
-
-    it('publicKey is 64byte long but not hex', () => {
-      expect(() =>
-        instance.assertPublicKey(new Array(64).fill('g').join(''))
-      ).to.throw('Invalid public key, must be a hex string');
-    });
-  });
   //
   describe('account.get', () => {
     const filter = {};
@@ -201,36 +152,8 @@ describe('logic/account', () => {
     });
 
     describe('queries', () => {
-      it('should filter out non existing fields', async () => {
-        await instance.getAll({
-          address: '1',
-          brother: 'thers a place to rediscovar',
-          isDelegate: 1,
-          publicKey: new Buffer('1'),
-          username: 'user',
-        } as any);
-
-        expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
-          address: '1',
-          isDelegate: 1,
-          publicKey: new Buffer('1'),
-          username: 'user',
-        });
-      });
-      it('should uppercase address', async () => {
-        await instance.getAll({ address: 'hey' });
-        expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
-          address: 'HEY',
-        });
-      });
-      it('should uppercase addresses', async () => {
-        await instance.getAll({ address: { $in: ['hey', 'brother'] } });
-        expect(
-          findAllStub.firstCall.args[0].where.address[Op.in]
-        ).to.be.deep.eq(['HEY', 'BROTHER']);
-      });
       it('should filter out undefined filter fields', async () => {
-        await instance.getAll({ address: '1', publicKey: undefined });
+        await instance.getAll({ address: '1', balance: undefined });
 
         expect(findAllStub.firstCall.args[0].where).to.be.deep.eq({
           address: '1',
@@ -254,13 +177,6 @@ describe('logic/account', () => {
         expect(findAllStub.secondCall.args[0].offset).to.be.undefined;
       });
 
-      it('should allow string sort param', async () => {
-        await instance.getAll({ address: '1', sort: 'username' });
-        expect(findAllStub.firstCall.args[0].order).to.be.deep.eq([
-          ['username', 'ASC'],
-        ]);
-      });
-
       it('should allow array sort param', async () => {
         await instance.getAll({
           address: '1',
@@ -273,123 +189,73 @@ describe('logic/account', () => {
       });
     });
   });
-  //
-  describe('account.set', () => {
-    let upsertStub: SinonStub;
-    beforeEach(() => {
-      upsertStub = sandbox.stub(accModel, 'upsert').resolves();
-    });
 
-    it('should call AccountsModel upsert with upperccasedAddress', async () => {
-      await instance.set('address', { balance: 10n });
-      expect(upsertStub.firstCall.args[0]).to.be.deep.eq({
-        address: 'ADDRESS',
-        balance: 10n,
-      });
-    });
-    it('should throw if publicKey is defined but invalid', async () => {
-      await expect(instance.set('address', { publicKey: new Buffer('a') })).to
-        .be.rejected;
-    });
-  });
-
-  describe('account.merge', () => {
-    it('should throw if not valid publicKey', () => {
-      expect(() =>
-        instance.merge('1R', { publicKey: new Buffer(1) })
-      ).to.throw();
-    });
+  describe('account.mergeBalanceDiff', () => {
     it('should return empty array if no ops to be performed', () => {
-      const ops: any = instance.merge('1R', {});
+      const ops: any = instance.mergeBalanceDiff('1R' as Address, {});
       expect(ops.length).to.be.eq(1);
       const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({});
     });
-    it('should allow only editable fields and discard the others', () => {
-      const ops = instance.merge('1R', {
-        balance: 11,
-        u_balance: 12,
-        rate: 13,
-        virgin: 14,
-        rewards: 15,
-        fees: 16,
-        producedblocks: 17,
-        publicKey: Buffer.alloc(32).fill('a'),
-        secondSignature: 19,
-        u_secondSignature: 20,
-        isDelegate: 21,
-        u_isDelegate: 22,
-        missedblocks: 18,
-        blockId: '1',
-        round: 10,
-        vote: 10,
-        username: 'meow',
-        u_username: 'meow',
-        address: '2R',
-        secondPublicKey: new Buffer('aa'),
-      } as any);
+    it('should allow only balance fields and discard the others', () => {
+      const ops = instance.mergeBalanceDiff(
+        '1R' as Address,
+        {
+          balance: 11n,
+          u_balance: 12n,
+          rate: 13n,
+          virgin: 14n,
+          rewards: 15n,
+          fees: 16n,
+          producedblocks: 17n,
+          publicKey: Buffer.alloc(32).fill('a'),
+          secondSignature: 19n,
+          u_secondSignature: 20n,
+          isDelegate: 21n,
+          u_isDelegate: 22n,
+          missedblocks: 18n,
+          blockId: '1',
+          round: 10n,
+          vote: 10n,
+          username: 'meow',
+          u_username: 'meow',
+          address: '2R',
+          secondPublicKey: Buffer.from('aa', 'hex'),
+        } as any
+      );
 
       const updateOp = ops[0] as DBUpdateOp<any>;
       expect(updateOp.type).to.be.deep.eq('update');
       expect(updateOp.values).to.be.deep.eq({
-        vote: { val: 'vote + 10' },
         balance: { val: 'balance + 11' },
         u_balance: { val: 'u_balance + 12' },
-        rate: { val: 'rate + 13' },
-        rewards: { val: 'rewards + 15' },
-        fees: { val: 'fees + 16' },
-        producedblocks: { val: 'producedblocks + 17' },
-        missedblocks: { val: 'missedblocks + 18' },
-        blockId: '1',
       });
     });
     it('should handle balance', () => {
-      const ops: any = instance.merge('1R', {
+      const ops: any = instance.mergeBalanceDiff('1R' as Address, {
         balance: 10n,
-        blockId: '1',
-        round: 1,
       });
       expect((ops[0] as DBUpdateOp<any>).values).to.be.deep.eq({
         balance: { val: 'balance + 10' },
-        blockId: '1',
       });
     });
 
     it('should remove account virginity on u_balance', () => {
-      const ops: any = instance.merge('1R', { u_balance: -1n });
+      const ops: any = instance.mergeBalanceDiff('1R' as Address, {
+        u_balance: -1n,
+      });
       expect(ops[0].values).to.be.deep.eq({
         u_balance: { val: 'u_balance - 1' },
         virgin: 0,
       });
     });
   });
-  //
-  describe('account.remove', () => {
-    let destroyStub: SinonStub;
-    beforeEach(() => {
-      destroyStub = sandbox.stub(accModel, 'destroy').resolves();
-    });
-    it('should call accountsmodel.destroy with uppercase account', async () => {
-      await instance.remove('1r');
-      expect(destroyStub.calledOnce).is.true;
-      expect(destroyStub.firstCall.args[0]).is.deep.eq({
-        where: {
-          address: '1R',
-        },
-      });
-    });
 
-    it('should return whatever detroy returns', async () => {
-      destroyStub.resolves(10);
-      expect(await instance.remove('1r')).to.be.eq(10);
-    });
-  });
-
-  describe('generateAddressByPublicKey', () => {
+  describe('generateAddressFromPubData', () => {
     it('should return the address', () => {
       // tslint:disable max-line-length
-      const address = instance.generateAddressByPublicKey(
+      const address = instance.generateAddressFromPubData(
         Buffer.from(
           '29cca24dae30655882603ba49edba31d956c2e79a062c9bc33bcae26138b39da',
           'hex'

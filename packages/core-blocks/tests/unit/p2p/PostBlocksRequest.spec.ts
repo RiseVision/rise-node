@@ -4,7 +4,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import {
   createRandomTransactions,
-  toBufferedTransaction,
+  toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { expect } from 'chai';
@@ -94,21 +94,28 @@ describe('apis/requests/PostBlockRequest', () => {
       blocks.push(
         createFakeBlock(container, {
           previousBlock: blocks[2],
-          transactions: createRandomTransactions(3).map(toBufferedTransaction),
+          transactions: createRandomTransactions(3).map(toNativeTx),
         })
       );
 
       blocks[3].transactions.forEach((t: any) => {
-        t.blockId = blocks[3].id;
-        t.relays = 1;
-        t.height = blocks[3].height;
         delete t.asset;
+        delete t.id;
       });
 
       for (const b of blocks) {
-        await createRequest(null, { block: b });
+        const r = await createRequest(null, { block: b, relays: 1 });
         expect(bpOnReceiveBlockStub.calledOnce).true;
-        expect(bpOnReceiveBlockStub.firstCall.args[0]).deep.eq({
+
+        expect({
+          ...bpOnReceiveBlockStub.firstCall.args[0],
+          transactions: b.transactions.map((t: any) => {
+            delete t.id;
+            // expect(t.signatures).deep.eq([]);
+            delete t.signatures;
+            return t;
+          }),
+        }).deep.eq({
           ...b,
           relays: 1,
         });

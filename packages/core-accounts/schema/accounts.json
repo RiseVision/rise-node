@@ -57,11 +57,7 @@
         "type": "string",
         "format": "address",
         "minLength": 1,
-        "maxLength": 22
-      },
-      "publicKey": {
-        "type": "string",
-        "format": "publicKey"
+        "maxLength": 250
       }
     },
     "additionalProperties": false

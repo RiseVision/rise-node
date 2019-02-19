@@ -26,21 +26,21 @@ export interface IPeersModule {
   /**
    * Gets the peers using the given filter.
    */
-  getByFilter(filter: PeerFilter): Promise<Peer[]>;
+  getByFilter(filter: PeerFilter): Peer[];
 
   /**
-   * Gets peers list and calculated consensus. (Does not update conensus att application level)
+   * Gets peers list
    */
-  // tslint:disable-next-line max-line-length
-  list(options: {
+  getPeers(options: {
     limit?: number;
     broadhash?: string;
     allowedStates?: PeerState[];
-  }): Promise<{ consensus: number; peers: Peer[] }>;
+  }): Peer[];
 
-  getPeers(params: { limit?: number; broadhash?: string }): Promise<Peer[]>;
-
-  updateConsensus(): Promise<number>;
+  /**
+   * Recalculate the consensus. Should be called when new blocks are received.
+   */
+  updateConsensus(): void;
 
   /**
    * Given a list of peers (with associated blockchain height), we find a list

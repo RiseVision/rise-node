@@ -17,6 +17,7 @@ describe('AccountsModel', () => {
       'core-accounts',
       'core-helpers',
       'core-crypto',
+      'core-transactions',
     ]);
     AccountsModel = container.getNamed(
       ModelSymbols.model,
@@ -47,8 +48,10 @@ describe('AccountsModel', () => {
 
   describe('toPOJO', () => {
     it('should convert any buffer to string', () => {
-      const acc = new AccountsModel({ publicKey: Buffer.from('aa', 'hex') });
-      expect(acc.toPOJO()).deep.eq({ address: null, publicKey: 'aa' });
+      const acc = new AccountsModel({
+        address: Buffer.from('aa', 'hex'),
+      } as any);
+      expect(acc.toPOJO()).deep.eq({ address: 'aa' });
     });
   });
 });

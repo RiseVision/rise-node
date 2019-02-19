@@ -76,7 +76,8 @@
         "vote": 100000000,
         "secondsignature": 500000000,
         "delegate": 2500000000,
-        "multisignature": 500000000
+        "multisignature": 500000000,
+        "sendDataMultiplier": 1000000
       }
     }
   ],

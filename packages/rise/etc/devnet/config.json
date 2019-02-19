@@ -45,12 +45,7 @@
   "peers": {
     "enabled": true,
     "trustProxy": false,
-    "list": [
-      {
-        "ip": "127.0.0.1",
-        "port": 9999
-      }
-    ],
+    "seeds": ["127.0.0.1:9999"],
     "access": {
       "blackList": []
     },

@@ -1,11 +1,9 @@
 import {
-  IInnerTXQueue,
   ILogger,
   ITransactionLogic,
   ITransactionPool,
   Symbols,
 } from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import { TXAppConfig } from './helpers/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';
@@ -40,8 +38,6 @@ export class TransactionPool implements ITransactionPool {
   // generic
   @inject(Symbols.generic.appConfig)
   private config: TXAppConfig;
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
 
   // Helpers
   @inject(Symbols.helpers.logger)

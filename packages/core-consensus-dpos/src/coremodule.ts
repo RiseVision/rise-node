@@ -27,7 +27,7 @@ import {
   Accounts2U_DelegatesModel,
   AccountsModelForDPOS,
   DelegatesModel,
-  RoundsFeesModel,
+  DelegatesRoundModel,
   VotesModel,
 } from './models/';
 import { DelegatesModule, ForgeModule, RoundsModule } from './modules';
@@ -106,8 +106,8 @@ export class CoreModule extends BaseCoreModule<DposAppConfig>
 
     this.container
       .bind(ModelSymbols.model)
-      .toConstructor(RoundsFeesModel)
-      .whenTargetNamed(dPoSSymbols.models.roundsFees);
+      .toConstructor(DelegatesRoundModel)
+      .whenTargetNamed(dPoSSymbols.models.delegatesRound);
 
     this.container
       .bind(ModelSymbols.model)

@@ -71,8 +71,6 @@ export class BlocksModuleChain {
   private blocksModule: IBlocksModule;
   @inject(BlocksSymbols.modules.utils)
   private blocksModuleUtils: BlocksModuleUtils;
-  // @inject(Symbols.modules.rounds)
-  // private roundsModule: IRoundsModule;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
 
@@ -174,11 +172,20 @@ export class BlocksModuleChain {
     );
 
     try {
+      const senders = await this.accountsModule.unfoldSenders(
+        block.transactions
+      );
+      await this.dbHelper.performOps([
+        {
+          model: this.AccountsModel,
+          query: this.AccountsModel.createBulkAccountsSQL(senders),
+          type: 'custom',
+        },
+      ]);
       for (const tx of block.transactions) {
         // Apply transactions through setAccountAndGet, bypassing unconfirmed/confirmed states
-        const sender = await this.accountsModule.assignPublicKeyToAccount({
+        const sender = await this.accountsModule.getAccount({
           address: tx.senderId,
-          publicKey: tx.senderPublicKey,
         });
         // Apply tx.
         const ops: Array<DBOp<any>> = [
@@ -292,14 +299,7 @@ export class BlocksModuleChain {
       ops.push(
         ...(await this.transactionLogic.applyUnconfirmed(
           tx,
-          accountsMap[tx.senderId],
-          tx.requesterPublicKey
-            ? accountsMap[
-                this.accountsModule.generateAddressByPublicKey(
-                  tx.requesterPublicKey
-                )
-              ]
-            : undefined
+          accountsMap[tx.senderId]
         ))
       );
     }
@@ -470,6 +470,10 @@ export class BlocksModuleChain {
       );
       // await this.roundsModule.backwardTick(lb, previousBlock, dbTX);
       await lb.destroy({ transaction: dbTX });
+
+      /**
+       * @codesample actionHookCall
+       */
       await this.hookSystem.do_action(
         OnDestroyBlock.name,
         this.blocksModule.lastBlock,

@@ -5,7 +5,7 @@ import {
   ILogger,
 } from '@risevision/core-interfaces';
 import {
-  address,
+  Address,
   DBCustomOp,
   DBOp,
   SignedBlockType,
@@ -17,15 +17,15 @@ import { RoundChanges, Slots } from '../helpers/';
 import { AccountsModelForDPOS } from '../models';
 
 const performVotesSnapshotSQL = fs.readFileSync(
-  `${__dirname}/../../sql/performVotesSnapshot.sql`,
+  `${__dirname}/../../sql/queries/performVotesSnapshot.sql`,
   { encoding: 'utf8' }
 );
 const restoreVotesSnasphotSQL = fs.readFileSync(
-  `${__dirname}/../../sql/restoreVotesSnapshot.sql`,
+  `${__dirname}/../../sql/queries/restoreVotesSnapshot.sql`,
   { encoding: 'utf8' }
 );
 const recalcVotesSQL = fs.readFileSync(
-  `${__dirname}/../../sql/recalcVotes.sql`,
+  `${__dirname}/../../sql/queries/recalcVotes.sql`,
   { encoding: 'utf8' }
 );
 
@@ -34,9 +34,9 @@ export interface RoundLogicScope {
   backwards: boolean;
   round: number;
   // List of address which missed a block in this round
-  roundOutsiders: address[];
+  roundOutsiders: Address[];
   roundDelegates: Buffer[];
-  roundFees: bigint;
+  roundFees: Array<bigint>;
   roundRewards: Array<bigint>;
   finishRound: boolean;
   dposV2: boolean;
@@ -58,6 +58,15 @@ export interface IRoundLogicNewable {
   new (scope: RoundLogicScope, slots: Slots): RoundLogic;
 }
 
+function toDiffLiteral(column, value: number | bigint) {
+  const operand = value > 0 ? '+' : '-';
+  // remove sign when serializing to string as operand will already take care of it.
+  value = value > 0 ? value : -value;
+  if (typeof value !== 'bigint' && typeof value !== 'number') {
+    throw new Error('Invalid diff literal');
+  }
+  return sequelize.literal(`${column} ${operand} ${value}`);
+}
 // This cannot be injected directly as it needs to be created.
 // rounds module.
 export class RoundLogic {
@@ -119,27 +128,6 @@ export class RoundLogic {
   }
 
   /**
-   * In case of backwards calls updateBlockId with '0';
-   */
-  public markBlockId(): DBOp<any> {
-    if (this.scope.backwards) {
-      return {
-        model: this.scope.models.AccountsModel,
-        options: {
-          where: {
-            blockId: this.scope.block.id,
-          },
-        },
-        type: 'update',
-        values: {
-          blockId: '0',
-        },
-      };
-    }
-    return null;
-  }
-
-  /**
    * Performed when rollbacking last block of a round.
    * It restores the votes snapshot from sql
    */
@@ -167,10 +155,7 @@ export class RoundLogic {
    * For each delegate in round calls mergeAccountAndGet with new Balance
    */
   public applyRound(): Array<DBOp<any>> {
-    const roundChanges = new this.scope.library.RoundChanges(
-      this.scope,
-      this.slots
-    );
+    const roundChanges = new this.scope.library.RoundChanges(this.scope);
     const queries: Array<DBOp<any>> = [];
 
     const delegates = this.scope.roundDelegates;
@@ -184,46 +169,41 @@ export class RoundLogic {
       });
 
       // merge Account in the direction.
-      queries.push(
-        ...this.scope.modules.accounts.mergeAccountAndGetOPs({
-          balance: this.scope.backwards ? -changes.balance : changes.balance,
-          blockId: this.scope.block.id,
+      queries.push({
+        model: this.scope.models.AccountsModel,
+        options: {
+          limit: 1,
+          where: {
+            address: this.scope.modules.accounts.generateAddressByPubData(
+              delegate
+            ),
+          },
+        },
+        type: 'update',
+        values: {
+          balance: toDiffLiteral(
+            'balance',
+            this.scope.backwards ? -changes.balance : changes.balance
+          ),
           cmb: 0,
-          fees: this.scope.backwards ? -changes.fees : changes.fees,
-          producedblocks: this.scope.backwards ? -1 : 1,
-          publicKey: delegate,
-          rewards: this.scope.backwards ? -changes.rewards : changes.rewards,
-          round: this.scope.round,
-          u_balance: this.scope.backwards ? -changes.balance : changes.balance,
-        })
-      );
-    }
-
-    // last delegate will always get the remainder fees.
-    const remainderDelegate = delegates[delegates.length - 1];
-
-    const remainderChanges = roundChanges.at(delegates.length - 1);
-
-    if (remainderChanges.feesRemaining > 0) {
-      const feesRemaining = this.scope.backwards
-        ? -remainderChanges.feesRemaining
-        : remainderChanges.feesRemaining;
-
-      this.scope.library.logger.trace('Fees remaining', {
-        delegate: remainderDelegate.toString('hex'),
-        fees: feesRemaining,
+          fees: toDiffLiteral(
+            'fees',
+            this.scope.backwards ? -changes.fees : changes.fees
+          ),
+          producedblocks: toDiffLiteral(
+            'producedblocks',
+            this.scope.backwards ? -1 : 1
+          ),
+          rewards: toDiffLiteral(
+            'rewards',
+            this.scope.backwards ? -changes.rewards : changes.rewards
+          ),
+          u_balance: toDiffLiteral(
+            'u_balance',
+            this.scope.backwards ? -changes.balance : changes.balance
+          ),
+        },
       });
-
-      queries.push(
-        ...this.scope.modules.accounts.mergeAccountAndGetOPs({
-          balance: feesRemaining,
-          blockId: this.scope.block.id,
-          fees: feesRemaining,
-          publicKey: remainderDelegate,
-          round: this.scope.round,
-          u_balance: feesRemaining,
-        })
-      );
     }
 
     this.scope.library.logger.trace('Applying round', queries.length);

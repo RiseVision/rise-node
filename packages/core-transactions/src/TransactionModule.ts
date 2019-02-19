@@ -11,7 +11,6 @@ import {
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import { PeersModule } from '@risevision/core-p2p';
 import {
-  ConstantsType,
   IBaseTransaction,
   PeerType,
   SignedAndChainedBlockType,
@@ -33,8 +32,6 @@ export class TransactionsModule implements ITransactionsModule {
   private accountsModule: IAccountsModule;
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
 
   @inject(Symbols.helpers.db)
   private dbHelper: DBHelper;
@@ -132,26 +129,9 @@ export class TransactionsModule implements ITransactionsModule {
     if (!sender && transaction.blockId !== this.genesisBlock.id) {
       throw new Error('Invalid block id');
     } else {
-      if (transaction.requesterPublicKey) {
-        const requester = await this.accountsModule.getAccount({
-          publicKey: transaction.requesterPublicKey,
-        });
-        if (!requester) {
-          throw new Error('Requester not found');
-        }
-
-        await this.dbHelper.performOps(
-          await this.transactionLogic.applyUnconfirmed(
-            transaction,
-            sender,
-            requester
-          )
-        );
-      } else {
-        await this.dbHelper.performOps(
-          await this.transactionLogic.applyUnconfirmed(transaction, sender)
-        );
-      }
+      await this.dbHelper.performOps(
+        await this.transactionLogic.applyUnconfirmed(transaction, sender)
+      );
     }
   }
 
@@ -160,7 +140,7 @@ export class TransactionsModule implements ITransactionsModule {
    */
   public async undoUnconfirmed(transaction): Promise<void> {
     const sender = await this.accountsModule.getAccount({
-      publicKey: transaction.senderPublicKey,
+      address: transaction.senderId,
     });
     // tslint:disable-next-line max-line-length
     this.logger.debug(
@@ -208,16 +188,6 @@ export class TransactionsModule implements ITransactionsModule {
     if (!acc) {
       throw new Error('Cannot find account from accounts');
     }
-    let requester = null;
-    if (tx.requesterPublicKey) {
-      requester =
-        accountsMap[
-          this.accountsModule.generateAddressByPublicKey(tx.requesterPublicKey)
-        ];
-      if (!requester) {
-        throw new Error('Cannot find requester from accounts');
-      }
-    }
-    await this.transactionLogic.verify(tx, acc, requester, height);
+    await this.transactionLogic.verify(tx, acc, height);
   }
 }

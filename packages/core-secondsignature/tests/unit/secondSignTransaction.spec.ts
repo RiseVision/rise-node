@@ -7,14 +7,22 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { DBUpdateOp, IBaseTransaction, TransactionType } from '@risevision/core-types';
+import {
+  Address,
+  DBUpdateOp,
+  IBaseTransaction,
+  TransactionType,
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
-import { SecondSignatureAsset, SecondSignatureTransaction } from '../../src/secondSignature';
+import {
+  SecondSignatureAsset,
+  SecondSignatureTransaction,
+} from '../../src/secondSignature';
 import { SignaturesModel } from '../../src/SignaturesModel';
 import { SigSymbols } from '../../src/symbols';
 
@@ -62,25 +70,30 @@ describe('logic/transactions/secondSignature', () => {
       amount: 0n,
       asset: {
         signature: {
-          publicKey:
+          publicKey: Buffer.from(
             'a2bac0a1525e9605a37e6c6588716f9c941530c74eabdf0b27b10b3817e58fe3',
+            'hex'
+          ),
         },
       },
       fee: 10n,
       id: '8139741256612355994',
       recipientId: null,
-      senderId: '1233456789012345R',
-      senderPublicKey: Buffer.from(
+      senderId: '1233456789012345R' as Address,
+      senderPubData: Buffer.from(
         '6588716f9c941530c74eabdf0b27b1a2bac0a1525e9605a37e6c0b3817e58fe3',
         'hex'
       ),
-      signature: Buffer.from(
-        '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
-          'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
-        'hex'
-      ),
+      signatures: [
+        Buffer.from(
+          '0a1525e9605a37e6c6588716f9c9a2bac41530c74e3817e58fe3abdf0b27b10b' +
+            'a2bac0a1525e9605a37e6c6588716f9c7b10b3817e58fe3941530c74eabdf0b2',
+          'hex'
+        ),
+      ],
       timestamp: 0,
-      type: TransactionType.SIGNATURE,
+      type: 11,
+      version: 0,
     };
 
     sender = {
@@ -106,9 +119,12 @@ describe('logic/transactions/secondSignature', () => {
       TXSymbols.transaction,
       SigSymbols.transaction
     );
-    sandbox
-      .stub(systemModuleStub, 'getFees')
-      .returns({ fees: { secondsignature: 1000n }, fromHeight: 1, height: 10, toHeight: 10000000000 } );
+    sandbox.stub(systemModuleStub, 'getFees').returns({
+      fees: { secondsignature: 1000n },
+      fromHeight: 1,
+      height: 10,
+      toHeight: 10000000000,
+    });
   });
 
   afterEach(() => {
@@ -117,28 +133,20 @@ describe('logic/transactions/secondSignature', () => {
 
   describe('calculateFee', () => {
     it('should call systemModule.getFees', () => {
-      const retVal = instance.calculateFee(tx, sender, block.height);
+      const retVal = instance.calculateMinFee(tx, sender, block.height);
       expect(retVal).to.be.equal(1000n);
     });
   });
 
-  describe('getBytes', () => {
-    it('should call Buffer.from', () => {
-      const fromSpy = sandbox.spy(Buffer, 'from');
-      instance.getBytes(tx, false, false);
-      expect(fromSpy.calledOnce).to.be.true;
-      expect(fromSpy.firstCall.args[0]).to.be.equal(
-        tx.asset.signature.publicKey
-      );
-      expect(fromSpy.firstCall.args[1]).to.be.equal('hex');
-      fromSpy.restore();
+  describe('assetBytes + readFromAssetBytes', () => {
+    it('should return the given pubkey', () => {
+      const retVal = instance.assetBytes(tx);
+      expect(retVal).to.be.deep.equal(tx.asset.signature.publicKey);
     });
 
-    it('should return a Buffer', () => {
-      const retVal = instance.getBytes(tx, false, false);
-      expect(retVal).to.be.deep.equal(
-        Buffer.from(tx.asset.signature.publicKey, 'hex')
-      );
+    it('should serialize and deserialize properly', () => {
+      const retVal = instance.assetBytes(tx);
+      expect(instance.readAssetFromBytes(retVal)).deep.eq(tx.asset);
     });
   });
 
@@ -159,7 +167,7 @@ describe('logic/transactions/secondSignature', () => {
     });
 
     it('should throw when tx.recipientId', async () => {
-      tx.recipientId = 'recipient';
+      tx.recipientId = 'recipient' as Address;
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid recipient'
       );
@@ -180,7 +188,7 @@ describe('logic/transactions/secondSignature', () => {
     });
 
     it('should call zschema.validate and throw if it does not validate', async () => {
-      tx.asset.signature.publicKey = 'invalid pubkey';
+      tx.asset.signature.publicKey = Buffer.from('invalid pubkey', 'utf8');
       await expect(instance.verify(tx, sender)).to.be.rejectedWith(
         'Invalid public key'
       );
@@ -196,7 +204,7 @@ describe('logic/transactions/secondSignature', () => {
       await instance.apply(tx, block, sender);
       expect(applyValuesStub.called).is.true;
       expect(applyValuesStub.firstCall.args[0]).deep.eq({
-        secondPublicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        secondPublicKey: tx.asset.signature.publicKey,
         secondSignature: 1,
         u_secondSignature: 0,
       });
@@ -210,7 +218,7 @@ describe('logic/transactions/secondSignature', () => {
       expect(op.model).deep.eq(accountsModel);
       expect(op.options).deep.eq({ where: { address: sender.address } });
       expect(op.values).deep.eq({
-        secondPublicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        secondPublicKey: tx.asset.signature.publicKey,
         secondSignature: 1,
         u_secondSignature: 0,
       });
@@ -318,7 +326,10 @@ describe('logic/transactions/secondSignature', () => {
     });
 
     it('should throw if validation fails', () => {
-      tx.asset.signature.publicKey = 'not a valid publickey';
+      tx.asset.signature.publicKey = Buffer.from(
+        'not a valid publickey',
+        'utf8'
+      );
       expect(() => {
         instance.objectNormalize(tx);
       }).to.throw(/pass validation for format publicKey/);
@@ -333,13 +344,13 @@ describe('logic/transactions/secondSignature', () => {
       tx.asset.signature.publicKey = null;
       expect(() => {
         instance.objectNormalize(tx);
-      }).to.throw(/Expected type string but found type null/);
+      }).to.throw(/Expected type object but found type null/);
 
       // empty pubkey
-      tx.asset.signature.publicKey = '';
+      tx.asset.signature.publicKey = Buffer.alloc(0);
       expect(() => {
         instance.objectNormalize(tx);
-      }).to.throw(/Object didn't pass validation for format publicKey/);
+      }).to.throw(/Object didn't pass validation for format publicKeyBuf/);
     });
 
     it('should return the tx', () => {
@@ -354,7 +365,7 @@ describe('logic/transactions/secondSignature', () => {
       expect(op.type).eq('create');
       expect(op.model).deep.eq(signaturesModel);
       expect((op as any).values).deep.eq({
-        publicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        publicKey: tx.asset.signature.publicKey,
         transactionId: tx.id,
       });
     });
@@ -387,7 +398,7 @@ describe('logic/transactions/secondSignature', () => {
       expect(txs[0]).deep.eq({
         asset: {
           signature: {
-            publicKey: 'aa',
+            publicKey: Buffer.from('aa', 'hex'),
           },
         },
         id: 1,
@@ -395,12 +406,11 @@ describe('logic/transactions/secondSignature', () => {
       expect(txs[1]).deep.eq({
         asset: {
           signature: {
-            publicKey: 'bb',
+            publicKey: Buffer.from('bb', 'hex'),
           },
         },
         id: 2,
       });
     });
   });
-
 });

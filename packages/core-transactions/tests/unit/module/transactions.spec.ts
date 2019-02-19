@@ -26,10 +26,7 @@ import {
   TXSymbols,
 } from '../../../src';
 import { InnerTXQueue } from '../../../src/poolTXsQueue';
-import {
-  createRandomTransaction,
-  toBufferedTransaction,
-} from '../utils/txCrafter';
+import { createRandomTransaction, toNativeTx } from '../utils/txCrafter';
 
 chai.use(chaiAsPromised);
 // tslint:disable
@@ -110,18 +107,16 @@ describe('modules/transactions', () => {
     let applyUnconfirmedSpy: SinonSpy;
     beforeEach(() => {
       const acc = generateAccount();
-      tx = createRandomTransaction(acc);
+      tx = toNativeTx(createRandomTransaction(acc));
       sender = new AccountsModel({
         address: acc.address,
-        balance: BigInt(tx.amount * 2 + tx.fee),
-        u_balance: BigInt(tx.amount * 2 + tx.fee),
-        publicKey: Buffer.from(acc.publicKey, 'hex'),
+        balance: BigInt(tx.amount * 2n + tx.fee),
+        u_balance: BigInt(tx.amount * 2n + tx.fee),
       });
 
       const req = generateAccount();
       requester = new AccountsModel({
         address: req.address,
-        publicKey: Buffer.from(req.publicKey, 'hex'),
       });
       getAccountStub = sandbox
         .stub(accountsModule, 'getAccount')
@@ -136,47 +131,12 @@ describe('modules/transactions', () => {
         instance.applyUnconfirmed(tx as any, undefined)
       ).to.be.rejectedWith('Invalid sender');
     });
-
-    describe('when requesterPublicKey is set', () => {
-      beforeEach(() => {
-        tx.requesterPublicKey = 'requesterPublicKey';
-      });
-
-      it('should call accountsModule.getAccount', async () => {
-        await instance.applyUnconfirmed(tx as any, sender);
-        expect(getAccountStub.calledOnce).to.be.true;
-        expect(getAccountStub.firstCall.args.length).to.be.equal(1);
-        expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
-          publicKey: tx.requesterPublicKey,
-        });
-      });
-
-      it('should throw if requester not found', async () => {
-        getAccountStub.returns(false);
-        await expect(
-          instance.applyUnconfirmed(tx as any, sender)
-        ).to.be.rejectedWith('Requester not found');
-      });
-
-      it('should call transactionLogic.applyUnconfirmed with 3 parameters', async () => {
-        await instance.applyUnconfirmed(tx as any, sender);
-        expect(applyUnconfirmedSpy.calledOnce).to.be.true;
-        expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(3);
-        expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
-        expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
-        expect(applyUnconfirmedSpy.firstCall.args[2]).to.be.deep.equal(
-          requester
-        );
-      });
-    });
-    describe('when requesterPublicKey is NOT set', () => {
-      it('should call transactionLogic.applyUnconfirmed with 2 parameters', async () => {
-        await instance.applyUnconfirmed(tx as any, sender);
-        expect(applyUnconfirmedSpy.calledOnce).to.be.true;
-        expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(2);
-        expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
-        expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
-      });
+    it('should call transactionLogic.applyUnconfirmed with 2 parameters', async () => {
+      await instance.applyUnconfirmed(tx as any, sender);
+      expect(applyUnconfirmedSpy.calledOnce).to.be.true;
+      expect(applyUnconfirmedSpy.firstCall.args.length).to.be.equal(2);
+      expect(applyUnconfirmedSpy.firstCall.args[0]).to.be.deep.equal(tx);
+      expect(applyUnconfirmedSpy.firstCall.args[1]).to.be.deep.equal(sender);
     });
   });
 
@@ -194,7 +154,6 @@ describe('modules/transactions', () => {
         address: acc.address,
         balance: BigInt(tx.amount * 2 + tx.fee),
         u_balance: BigInt(tx.amount * 2 + tx.fee),
-        publicKey: Buffer.from(acc.publicKey, 'hex'),
       });
       getAccountStub = sandbox
         .stub(accountsModule, 'getAccount')
@@ -208,7 +167,7 @@ describe('modules/transactions', () => {
       expect(getAccountStub.calledOnce).to.be.true;
       expect(getAccountStub.firstCall.args.length).to.be.equal(1);
       expect(getAccountStub.firstCall.args[0]).to.be.deep.equal({
-        publicKey: tx.senderPublicKey,
+        address: tx.senderId,
       });
     });
 
@@ -285,28 +244,28 @@ describe('modules/transactions', () => {
   describe('checkTransaction', () => {
     let tx: IBaseTransaction<any, bigint>;
     let readyStub: SinonStub;
-    let genAddressStub: SinonStub;
+    // let genAddressStub: SinonStub;
     let verifyStub: SinonStub;
     beforeEach(() => {
-      tx = toBufferedTransaction(createRandomTransaction());
+      tx = toNativeTx(createRandomTransaction());
       readyStub = sandbox.stub(txLogic, 'ready').resolves(true);
       verifyStub = sandbox.stub(txLogic, 'verify').resolves();
-      genAddressStub = sandbox
-        .stub(accountsModule, 'generateAddressByPublicKey')
-        .returns('1R');
+      // genAddressStub = sandbox
+      //   .stub(accountsModule, 'generateAddressByPublicKey')
+      //   .returns('1R');
     });
     it('should throw if account is not found in map', async () => {
       await expect(instance.checkTransaction(tx, {}, 1)).to.rejectedWith(
         'Cannot find account from accounts'
       );
     });
-    it('should throw if tx has requesterPublicKey but notin accountsMap', async () => {
-      tx.requesterPublicKey = Buffer.from('abababab', 'hex');
-      genAddressStub.returns('1111R');
-      await expect(
-        instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1)
-      ).to.rejectedWith('Cannot find requester from accounts');
-    });
+    // it('should throw if tx has requesterPublicKey but notin accountsMap', async () => {
+    //   tx.requesterPublicKey = Buffer.from('abababab', 'hex');
+    //   genAddressStub.returns('1111R');
+    //   await expect(
+    //     instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1)
+    //   ).to.rejectedWith('Cannot find requester from accounts');
+    // });
 
     // it('should query readyness and throw if not ready', async () => {
     //   readyStub.returns(false);
@@ -314,8 +273,7 @@ describe('modules/transactions', () => {
     //     .to.rejectedWith(`Transaction ${tx.id} is not ready`);
     // });
     it('should query txLogic.verify with proper data', async () => {
-      tx.requesterPublicKey = Buffer.from('abababab', 'hex');
-      genAddressStub.returns('1111R');
+      // genAddressStub.returns('1111R');
       readyStub.returns(true);
       verifyStub.resolves();
 
@@ -333,8 +291,7 @@ describe('modules/transactions', () => {
       expect(verifyStub.calledOnce).true;
       expect(verifyStub.firstCall.args[0]).deep.eq(tx);
       expect(verifyStub.firstCall.args[1]).deep.eq(account);
-      expect(verifyStub.firstCall.args[2]).deep.eq(requester);
-      expect(verifyStub.firstCall.args[3]).deep.eq(1);
+      expect(verifyStub.firstCall.args[2]).deep.eq(1);
     });
   });
 

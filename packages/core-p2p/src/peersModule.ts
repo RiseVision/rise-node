@@ -1,23 +1,17 @@
 import {
   IAppState,
-  IBlocksModule,
   ILogger,
   IPeersModel,
   ISystemModule,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import {
-  AppConfig,
-  ConstantsType,
-  PeerState,
-  PeerType,
-} from '@risevision/core-types';
+import { AppConfig, PeerState, PeerType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
 import * as shuffle from 'shuffle-array';
-import { p2pSymbols } from './helpers';
+import { P2PConstantsType, p2pSymbols } from './helpers';
 import { IPeersModule, PeerFilter } from './interfaces';
 import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
@@ -29,11 +23,10 @@ export class PeersModule implements IPeersModule {
   private appConfig: AppConfig;
 
   // Helpers
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
-
+  @inject(p2pSymbols.constants)
+  private p2pConstants: P2PConstantsType;
   // Logic
   @inject(Symbols.logic.peers)
   private peersLogic: PeersLogic;
@@ -43,8 +36,6 @@ export class PeersModule implements IPeersModule {
   // Modules
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   @inject(ModelSymbols.model)
   @named(p2pSymbols.model)
@@ -55,9 +46,38 @@ export class PeersModule implements IPeersModule {
     return this.dbSave();
   }
 
-  public async updateConsensus() {
-    await this.getPeers({ limit: this.constants.maxPeers });
-    return this.appState.get('node.consensus');
+  public updateConsensus() {
+    const { consensus } = this.determineConsensus(this.systemModule.broadhash);
+    this.appState.set('node.consensus', consensus);
+  }
+
+  /**
+   * Calculate consensus for given broadhash (defaults to current node broadhash).
+   */
+  public determineConsensus(
+    broadhash: string
+  ): {
+    consensus: number;
+    matchingPeers: number;
+    totalPeers: number;
+  } {
+    let peersList = this.peersLogic
+      .list(false)
+      .filter((p) => p.state === PeerState.CONNECTED);
+    peersList = this.peersLogic.acceptable(peersList);
+
+    const totalPeers = peersList.length;
+    const matchingPeers = peersList.filter((p) => p.broadhash === broadhash)
+      .length;
+
+    let consensus = Math.round((matchingPeers / totalPeers) * 1e2 * 1e2) / 1e2;
+    consensus = isNaN(consensus) ? 0 : consensus;
+
+    return {
+      consensus,
+      matchingPeers,
+      totalPeers,
+    };
   }
 
   /**
@@ -74,7 +94,7 @@ export class PeersModule implements IPeersModule {
     height: number;
     peers: Peer[];
   } {
-    const lastBlockHeight: number = this.blocksModule.lastBlock.height;
+    const lastBlockHeight: number = this.systemModule.getHeight();
 
     this.logger.trace('Good peers - received', { count: peers.length });
 
@@ -120,37 +140,27 @@ export class PeersModule implements IPeersModule {
     }
   }
 
-  public async getPeers(params: {
-    limit?: number;
-    broadhash?: string;
-  }): Promise<Peer[]> {
-    params.limit = params.limit || this.constants.maxPeers;
-    params.broadhash = params.broadhash || null;
-
-    const originalLimit = params.limit;
-
-    const peersList = await this.list(params);
-    const peers = peersList.peers;
-    const consensus = peersList.consensus;
-
-    if (originalLimit === this.constants.maxPeers) {
-      this.appState.set('node.consensus', consensus);
-    }
-    return peers;
-  }
   /**
    * Sets peer state to active and updates it to the list
    */
   public update(peer: Peer) {
     peer.state = PeerState.CONNECTED;
-    return this.peersLogic.upsert(peer, false);
+    const updated = this.peersLogic.upsert(peer, false);
+    if (updated) {
+      this.updateConsensus();
+    }
+    return updated;
   }
 
   /**
    * Remove a peer from the list if its not one from config files
    */
   public remove(peerIP: string, port: number): boolean {
-    return this.peersLogic.remove({ ip: peerIP, port });
+    const removed = this.peersLogic.remove({ ip: peerIP, port });
+    if (removed) {
+      this.updateConsensus();
+    }
+    return removed;
   }
 
   /**
@@ -158,7 +168,7 @@ export class PeersModule implements IPeersModule {
    * if orderBy Is not specified then returned peers are shuffled.
    */
   // tslint:disable-next-line cognitive-complexity
-  public async getByFilter(filter: PeerFilter): Promise<Peer[]> {
+  public getByFilter(filter: PeerFilter): Peer[] {
     const allowedFields = [
       'ip',
       'port',
@@ -225,29 +235,26 @@ export class PeersModule implements IPeersModule {
   }
 
   /**
-   * Gets peers list and calculated consensus.
+   * Gets peers list
    */
-  // tslint:disable-next-line max-line-length
-  public async list(options: {
+  public getPeers(options: {
     limit?: number;
     broadhash?: string;
     allowedStates?: PeerState[];
-  }): Promise<{ consensus: number; peers: Peer[] }> {
-    options.limit = options.limit || this.constants.maxPeers;
+  }): Peer[] {
+    options.limit = options.limit || this.p2pConstants.maxPeers;
     options.broadhash = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
-    let peersList = (await this.getByFilter({ broadhash: options.broadhash }))
+    let peersList = this.getByFilter({ broadhash: options.broadhash })
       // only matching states
       .filter((p) => options.allowedStates.indexOf(p.state) !== -1);
 
     peersList = this.peersLogic.acceptable(peersList);
     peersList = peersList.slice(0, options.limit);
 
-    const matchedBroadhash = peersList.length;
-
     if (options.limit > peersList.length) {
-      let unmatchedBroadPeers = (await this.getByFilter({}))
+      let unmatchedBroadPeers = this.getByFilter({})
         // only matching states
         .filter((p) => options.allowedStates.indexOf(p.state) !== -1)
         // but different broadhashes
@@ -258,13 +265,8 @@ export class PeersModule implements IPeersModule {
       peersList = peersList.slice(0, options.limit);
     }
 
-    let consensus =
-      Math.round((matchedBroadhash / peersList.length) * 1e2 * 1e2) / 1e2;
-
-    consensus = isNaN(consensus) ? 0 : consensus;
-
     this.logger.debug(`Listing ${peersList.length} total peers`);
-    return { consensus, peers: peersList };
+    return peersList;
   }
 
   private async dbSave() {
@@ -277,18 +279,7 @@ export class PeersModule implements IPeersModule {
     await this.PeersModel.sequelize
       .transaction(async (transaction) => {
         await this.PeersModel.truncate({ transaction });
-        await this.PeersModel.bulkCreate(
-          peers.map((p) => {
-            if (p.broadhash) {
-              return {
-                ...p,
-                ...{ broadhash: Buffer.from(p.broadhash, 'hex') },
-              };
-            }
-            return p;
-          }),
-          { transaction }
-        );
+        await this.PeersModel.bulkCreate(peers, { transaction });
         this.logger.info('Peers exported to database');
       })
       .catch((err) => {

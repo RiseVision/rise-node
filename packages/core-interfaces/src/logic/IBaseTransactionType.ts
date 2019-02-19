@@ -8,9 +8,9 @@ import { Model } from 'sequelize-typescript';
 import { IAccountsModel } from '../models';
 
 export interface IBaseTransactionType<T, M extends Model<any>> {
-  readonly type: TransactionType;
+  type: number;
 
-  calculateFee(
+  calculateMinFee(
     tx: IBaseTransaction<T>,
     sender: IAccountsModel,
     height: number
@@ -18,12 +18,18 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
 
   verify(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<void>;
 
-  getBytes(
-    tx: IBaseTransaction<T>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
-  ): Buffer;
+  findConflicts(
+    txs: Array<IBaseTransaction<T>>
+  ): Promise<Array<IBaseTransaction<T>>>;
 
+  fullBytes(tx: IBaseTransaction<T>): Buffer;
+
+  signableBytes(tx: IBaseTransaction<T>): Buffer;
+
+  assetBytes(tx: IBaseTransaction<T>): Buffer;
+
+  readAssetFromBytes(bytes: Buffer): T;
+  fromBytes(buff: Buffer): IBaseTransaction<T, bigint>;
   apply(
     tx: IBaseTransaction<T>,
     block: SignedBlockType,
@@ -60,4 +66,9 @@ export interface IBaseTransactionType<T, M extends Model<any>> {
   ready(tx: IBaseTransaction<T>, sender: IAccountsModel): Promise<boolean>;
 
   attachAssets(txs: Array<IBaseTransaction<T>>): Promise<void>;
+
+  /**
+   * Returns static value of maximum bytes size this tx will occupy when serialized.
+   */
+  getMaxBytesSize(): number;
 }

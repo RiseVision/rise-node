@@ -3,11 +3,10 @@ import {
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { createFilterDecorator } from '@risevision/core-utils';
-
-export const CommonHeightsToQuery = createFilterDecorator<
-  (heights: number[], height: number) => Promise<number[]>
->('core/blocks/utils/commonHeightList');
+import {
+  ActionFilterDecoratorType,
+  createFilterDecorator,
+} from '@risevision/core-utils';
 
 // tslint:disable-next-line
 type VR = { errors: string[]; verified: boolean };

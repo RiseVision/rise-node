@@ -1,12 +1,12 @@
 'use strict';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { LiskWallet } from 'dpos-offline';
+import { Address, RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import { Symbols } from '../../../../core-interfaces/src';
 import { IAccountLogic } from '../../../../core-interfaces/src/logic';
 import { IAccountsModel } from '../../../../core-interfaces/src/models';
@@ -16,10 +16,7 @@ import { ModelSymbols } from '../../../../core-models/src/helpers';
 import { DBUpsertOp, IBaseTransaction } from '../../../../core-types/src';
 import { SendTxApplyFilter, SendTxUndoFilter, TXSymbols } from '../../../src';
 import { SendTransaction } from '../../../src/sendTransaction';
-import {
-  createSendTransaction,
-  toBufferedTransaction,
-} from '../utils/txCrafter';
+import { createSendTransaction, toNativeTx } from '../utils/txCrafter';
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);
@@ -55,9 +52,9 @@ describe('logic/transactions/send', () => {
 
     systemModule = container.get(Symbols.modules.system);
 
-    sender = new AccountsModel({ publicKey: new Buffer('123') });
-    tx = toBufferedTransaction(
-      createSendTransaction(new LiskWallet('meow', 'R'), '1R', 10, {
+    sender = new AccountsModel({});
+    tx = toNativeTx(
+      createSendTransaction(RiseV2.deriveKeypair('meow'), '1R' as Address, 10, {
         amount: 10,
       })
     );
@@ -72,16 +69,23 @@ describe('logic/transactions/send', () => {
   });
 
   describe('calculateFee', () => {
+    let systemModuleStub: SinonStub;
+    beforeEach(() => {
+      systemModuleStub = sandbox.stub(systemModule, 'getFees').returns({
+        fees: { send: 101n, sendDataMultiplier: 1n },
+        fromHeight: 1,
+        height: 10,
+        toHeight: 100000,
+      });
+    });
     it('should call systemModule.getFees', () => {
-      const systemModuleStub = sandbox
-        .stub(systemModule, 'getFees')
-        .returns({ fees: { send: 101n } , fromHeight: 1, toHeight: 100000, height: 10});
-      const fee = instance.calculateFee(tx, sender, 10);
+      const fee = instance.calculateMinFee(tx, sender, 10);
       expect(systemModuleStub.calledOnce).to.be.true;
       expect(systemModuleStub.firstCall.args.length).to.equal(1);
       expect(systemModuleStub.firstCall.args[0]).to.equal(10);
       expect(fee).eq(101n);
     });
+    it('should use the multiplier if some data is sent');
   });
 
   describe('verify', () => {
@@ -98,15 +102,17 @@ describe('logic/transactions/send', () => {
       );
     });
 
-    it('should resolce on successful execution', () => {
+    it('should resolve on successful execution', () => {
       expect(instance.verify(tx, sender)).to.be.fulfilled;
     });
+
+    it('should throw if asset length is > 128');
   });
 
   describe('apply', () => {
     it('should return an array of objects', async () => {
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns([{ foo: 'bar' }] as any);
       const result = await instance.apply(tx as any, block, sender);
       expect(result).to.be.an('array');
@@ -115,14 +121,15 @@ describe('logic/transactions/send', () => {
       expect(accountMergeStub.args[0][0]).to.equal(tx.recipientId);
       expect(accountMergeStub.args[0][1]).to.deep.equal({
         balance: BigInt(tx.amount),
-        blockId: block.id,
         u_balance: BigInt(tx.amount),
       });
       // expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
     });
 
     it('should to be rejected if accountLogic.merge() throws an error', async () => {
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'mergeBalanceDiff')
+        .returns([]);
 
       const error = new Error('Fake Error!');
       accountMergeStub.throws(error);
@@ -133,7 +140,7 @@ describe('logic/transactions/send', () => {
     it('should go through SendTxUndoFilter', async () => {
       const stub = sandbox.stub();
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns(['a'] as any);
 
       class A extends WPHooksSubscriber(Object) {
@@ -162,7 +169,7 @@ describe('logic/transactions/send', () => {
   describe('undo', () => {
     it('should return an array of objects', async () => {
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns([{ foo: 'bar' }] as any);
 
       const result: DBUpsertOp<any> = (await instance.undo(
@@ -176,14 +183,15 @@ describe('logic/transactions/send', () => {
       expect(accountMergeStub.args[0][0]).to.equal(tx.recipientId);
       expect(accountMergeStub.args[0][1]).to.deep.equal({
         balance: BigInt(-tx.amount),
-        blockId: block.id,
         u_balance: BigInt(-tx.amount),
       });
       // expect(roundsLogicStub.stubs.calcRound.calledOnce).to.be.true;
     });
 
     it('should to be rejected if accountLogic.merge() throws an error', async () => {
-      const accountMergeStub = sandbox.stub(accountLogic, 'merge').returns([]);
+      const accountMergeStub = sandbox
+        .stub(accountLogic, 'mergeBalanceDiff')
+        .returns([]);
       const error = new Error('Fake Error!');
       accountMergeStub.throws(error);
       await expect(instance.undo(tx as any, block, sender)).to.be.rejectedWith(
@@ -194,7 +202,7 @@ describe('logic/transactions/send', () => {
     it('should go through SendTxUndoFilter', async () => {
       const stub = sandbox.stub();
       const accountMergeStub = sandbox
-        .stub(accountLogic, 'merge')
+        .stub(accountLogic, 'mergeBalanceDiff')
         .returns(['a'] as any);
       // tslint:disable-next-line
       class A extends WPHooksSubscriber(Object) {
@@ -227,8 +235,10 @@ describe('logic/transactions/send', () => {
   });
 
   describe('dbSave', () => {
-    it('should return null', () => {
+    it('should return null if no asset', () => {
       expect(instance.dbSave({} as any)).to.deep.equal(null);
     });
+    it('should return proper dbOp if some data');
+    it('should return null if asset but data length is zero');
   });
 });

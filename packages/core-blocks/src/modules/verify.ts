@@ -6,45 +6,48 @@ import {
   IBlocksModel,
   IBlocksModule,
   IForkModule,
+  IIdsHandler,
   ILogger,
   ITransactionLogic,
   ITransactionPool,
   ITransactionsModule,
+  ITXBytes,
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import {
-  ConstantsType,
-  ForkType,
-  SignedAndChainedBlockType,
-  SignedBlockType,
-} from '@risevision/core-types';
+import { ForkType, SignedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
-import { inject, injectable, named } from 'inversify';
-import { WordPressHookSystem } from 'mangiafuoco';
+import { decorate, inject, injectable, named } from 'inversify';
+import {
+  OnWPAction,
+  WordPressHookSystem,
+  WPHooksSubscriber,
+} from 'mangiafuoco';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
-import { VerifyBlock, VerifyReceipt } from '../hooks';
+import { OnPostApplyBlock, VerifyBlock, VerifyReceipt } from '../hooks';
+import { BlockBytes } from '../logic/blockBytes';
 import { BlocksModuleChain } from './chain';
 
+const Extendable = WPHooksSubscriber(Object);
+decorate(injectable(), Extendable);
+
 @injectable()
-export class BlocksModuleVerify {
+export class BlocksModuleVerify extends Extendable {
   // Helpers
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
+  // tslint:disable-next-line
   @inject(Symbols.generic.hookSystem)
-  private hookSystem: WordPressHookSystem;
+  public hookSystem: WordPressHookSystem;
 
   // Logic
   @inject(Symbols.logic.block)
   private blockLogic: IBlockLogic;
   @inject(Symbols.logic.blockReward)
   private blockRewardLogic: IBlockReward;
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
-
   // Modules
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
@@ -56,8 +59,16 @@ export class BlocksModuleVerify {
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
   private transactionsModule: ITransactionsModule;
+  @inject(Symbols.logic.transaction)
+  private transactionLogic: ITransactionLogic;
   @inject(Symbols.logic.txpool)
   private txPool: ITransactionPool;
+  @inject(Symbols.helpers.idsHandler)
+  private idsHandler: IIdsHandler;
+  @inject(BlocksSymbols.logic.blockBytes)
+  private blockBytes: BlockBytes;
+  @inject(Symbols.helpers.txBytes)
+  private txBytes: ITXBytes;
 
   // Models
   @inject(ModelSymbols.model)
@@ -68,13 +79,6 @@ export class BlocksModuleVerify {
    * Contains the last N block Ids used to perform validations
    */
   private lastNBlockIds: string[] = [];
-
-  private isCleaning: boolean = false;
-
-  public cleanup(): Promise<void> {
-    this.isCleaning = true;
-    return Promise.resolve();
-  }
 
   /**
    * Verifies block before fork detection and return all possible errors related to block
@@ -136,20 +140,21 @@ export class BlocksModuleVerify {
     );
   }
 
-  // TODO: me
+  @OnWPAction('core/loader/onBlockchainReady')
   public async onBlockchainReady() {
     const blocks = await this.BlocksModel.findAll({
       attributes: ['id'],
-      limit: this.constants.blocks.slotWindow,
+      limit: this.blocksConstants.slotWindow,
       order: [['height', 'desc']],
       raw: true,
     });
     this.lastNBlockIds = blocks.map((b) => b.id);
   }
 
+  @OnPostApplyBlock()
   public async onNewBlock(block: SignedBlockType) {
     this.lastNBlockIds.push(block.id);
-    if (this.lastNBlockIds.length > this.constants.blocks.slotWindow) {
+    if (this.lastNBlockIds.length > this.blocksConstants.slotWindow) {
       this.lastNBlockIds.shift();
     }
   }
@@ -160,7 +165,7 @@ export class BlocksModuleVerify {
   ) {
     const allIds = [];
     for (const tx of block.transactions) {
-      tx.id = this.transactionLogic.getId(tx);
+      tx.id = this.idsHandler.calcTxIdFromBytes(this.txBytes.fullBytes(tx));
       // Apply block id to the tx
       tx.blockId = block.id;
       allIds.push(tx.id);
@@ -194,6 +199,15 @@ export class BlocksModuleVerify {
       }
       throw new Error(
         `Transactions already confirmed: ${confirmedIDs.join(', ')}`
+      );
+    }
+
+    const conflicts = await this.transactionLogic.findConflicts(
+      block.transactions
+    );
+    if (conflicts.length > 0) {
+      throw new Error(
+        'Found conflicting transactions in block. Block is invalid!'
       );
     }
 
@@ -247,7 +261,7 @@ export class BlocksModuleVerify {
    * Verifies that block has a valid version
    */
   private verifyVersion(block: SignedBlockType): string[] {
-    if (block.version > 0) {
+    if (this.blocksConstants.validVersions.indexOf(block.version) === -1) {
       return ['Invalid block version'];
     }
     return [];
@@ -263,7 +277,9 @@ export class BlocksModuleVerify {
   }
 
   private verifyId(block: SignedBlockType) {
-    const id = this.blockLogic.getId(block);
+    const id = this.idsHandler.calcBlockIdFromBytes(
+      this.blockBytes.signableBytes(block, true)
+    );
     if (block.id !== id) {
       return [`BlockID: Expected ${id} - Received ${block.id}`];
     }
@@ -276,7 +292,7 @@ export class BlocksModuleVerify {
    */
   private verifyPayload(block: SignedBlockType): string[] {
     const errors: string[] = [];
-    if (block.payloadLength > this.constants.blocks.maxPayloadLength) {
+    if (block.payloadLength > this.blocksConstants.maxPayloadLength) {
       errors.push('Payload length is too long');
     }
 
@@ -286,7 +302,7 @@ export class BlocksModuleVerify {
       );
     }
 
-    if (block.transactions.length > this.constants.blocks.maxTxsPerBlock) {
+    if (block.transactions.length > this.blocksConstants.maxTxsPerBlock) {
       errors.push('Number of transactions exceeds maximum per block');
     }
 
@@ -299,9 +315,10 @@ export class BlocksModuleVerify {
     for (const tx of block.transactions) {
       let bytes: Buffer;
       try {
-        bytes = this.transactionLogic.getBytes(tx);
+        bytes = this.txBytes.fullBytes(tx);
         payloadHash.update(bytes);
       } catch (e) {
+        this.logger.warn('TX error while verifying block payload', e);
         errors.push(e.toString());
         continue;
       }
@@ -311,8 +328,8 @@ export class BlocksModuleVerify {
       }
 
       appliedTransactions[tx.id] = tx;
-      totalAmount += BigInt(tx.amount);
-      totalFee += BigInt(tx.fee);
+      totalAmount += tx.amount;
+      totalFee += tx.fee;
     }
 
     if (!payloadHash.digest().equals(block.payloadHash)) {

@@ -1,20 +1,22 @@
 {
   "name": "@risevision/core-types",
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Types",
   "main": "dist/index.js",
   "scripts": {
+    "test-unit": "echo",
     "transpile": "tsc"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
-    "sequelize": "4.41.2",
-    "sequelize-typescript": "0.6.6"
+    "sequelize": "4.42.0",
+    "sequelize-typescript": "0.6.6",
+    "type-tagger": "^1.0.0"
   },
   "devDependencies": {
     "shx": "=0.3.2",
-    "typescript": "=3.2.0-rc"
+    "typescript": "3.2.2"
   }
 }

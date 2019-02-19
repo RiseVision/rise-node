@@ -1,5 +1,5 @@
 import { SystemModule } from '@risevision/core';
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { BasePeerType, PeerState } from '@risevision/core-types';
@@ -104,110 +104,110 @@ describe('modules/peers', () => {
       'nonce',
     ];
 
-    it('should call peersLogic.list with false', async () => {
+    it('should call peersLogic.list with false', () => {
       listStub.returns([]);
-      await inst.getByFilter({});
+      inst.getByFilter({});
       expect(listStub.called).is.true;
       expect(listStub.firstCall.args[0]).is.false;
     });
 
     for (const f of fields) {
-      it(`should filter out peer if ${f} is undefined`, async () => {
+      it(`should filter out peer if ${f} is undefined`, () => {
         const p = createFakePeer();
         p[f] = undefined;
         listStub.returns([p]);
 
         const filter = {};
         filter[f] = undefined;
-        const res = await inst.getByFilter(filter);
+        const res = inst.getByFilter(filter);
         expect(res).to.be.empty;
       });
-      it(`should filter out peer if ${f} is != 'value'`, async () => {
+      it(`should filter out peer if ${f} is != 'value'`, () => {
         const p = createFakePeer();
         listStub.returns([p]);
         const filter = {};
         filter[f] = p[f] + 1;
-        const res = await inst.getByFilter(filter);
+        const res = inst.getByFilter(filter);
         expect(res).to.be.empty;
       });
     }
 
     describe('ordering', () => {
-      it('should order peers by height asc', async () => {
+      it('should order peers by height asc', () => {
         const p1 = createFakePeer({ height: 2 });
         const p2 = createFakePeer({ height: 1 });
         listStub.returns([p1, p2]);
-        const res = await inst.getByFilter({ orderBy: 'height:asc' });
+        const res = inst.getByFilter({ orderBy: 'height:asc' });
         expect(res).to.be.deep.eq([p2, p1]);
       });
-      it('should order peers by height desc', async () => {
+      it('should order peers by height desc', () => {
         const p1 = createFakePeer({ height: 2 });
         const p2 = createFakePeer({ height: 1 });
         listStub.returns([p1, p2]);
-        const res = await inst.getByFilter({ orderBy: 'height:desc' });
+        const res = inst.getByFilter({ orderBy: 'height:desc' });
         expect(res).to.be.deep.eq([p1, p2]);
       });
-      it('should order peers by height asc if not provided sorting mechanism', async () => {
+      it('should order peers by height asc if not provided sorting mechanism', () => {
         const p1 = createFakePeer({ height: 2 });
         const p2 = createFakePeer({ height: 1 });
         listStub.returns([p1, p2]);
-        const res = await inst.getByFilter({ orderBy: 'height' });
+        const res = inst.getByFilter({ orderBy: 'height' });
         expect(res).to.be.deep.eq([p2, p1]);
       });
 
-      it('should order peers by version asc', async () => {
+      it('should order peers by version asc', () => {
         const p1 = createFakePeer({ version: '0.1.1' });
         const p2 = createFakePeer({ version: '0.1.0' });
         listStub.returns([p1, p2]);
-        const res = await inst.getByFilter({ orderBy: 'version:asc' });
+        const res = inst.getByFilter({ orderBy: 'version:asc' });
         expect(res).to.be.deep.eq([p2, p1]);
       });
-      it('should order peers by version desc', async () => {
+      it('should order peers by version desc', () => {
         const p1 = createFakePeer({ version: '0.1.1' });
         const p2 = createFakePeer({ version: '0.1.0' });
         listStub.returns([p1, p2]);
-        const res = await inst.getByFilter({ orderBy: 'version:desc' });
+        const res = inst.getByFilter({ orderBy: 'version:desc' });
         expect(res).to.be.deep.eq([p1, p2]);
       });
-      it('should order peers by version asc if not provided sorting mechanism', async () => {
+      it('should order peers by version asc if not provided sorting mechanism', () => {
         const p1 = createFakePeer({ version: '0.1.1' });
         const p2 = createFakePeer({ version: '0.1.0' });
         listStub.returns([p1, p2]);
-        const res = await inst.getByFilter({ orderBy: 'version' });
+        const res = inst.getByFilter({ orderBy: 'version' });
         expect(res).to.be.deep.eq([p2, p1]);
       });
 
-      it('should order peers random if not provided', async () => {
+      it('should order peers random if not provided', () => {
         const peers = Array.apply(null, new Array(20)).map((id, idx) =>
           createFakePeer({ height: idx })
         );
         listStub.returns(peers);
-        expect(await inst.getByFilter({})).to.not.be.deep.eq(peers);
+        expect(inst.getByFilter({})).to.not.be.deep.eq(peers);
       });
     });
 
-    it('should trim results by using limits param', async () => {
+    it('should trim results by using limits param', () => {
       const peers = Array.apply(null, new Array(20)).map((id, idx) =>
         createFakePeer({ height: idx })
       );
       listStub.returns(peers);
-      const res = await inst.getByFilter({ limit: 10 });
+      const res = inst.getByFilter({ limit: 10 });
       expect(res.length).to.be.eq(10);
     });
-    it('should offset results by using offset param', async () => {
+    it('should offset results by using offset param', () => {
       const peers = Array.apply(null, new Array(20)).map((id, idx) =>
         createFakePeer({ height: idx })
       );
       listStub.returns(peers);
-      const res = await inst.getByFilter({ offset: 5, orderBy: 'height:asc' });
+      const res = inst.getByFilter({ offset: 5, orderBy: 'height:asc' });
       expect(res[0].height).to.be.eq(5);
     });
-    it('should offset & trim results by using offset & limit params', async () => {
+    it('should offset & trim results by using offset & limit params', () => {
       const peers = Array.apply(null, new Array(20)).map((id, idx) =>
         createFakePeer({ height: idx })
       );
       listStub.returns(peers);
-      const res = await inst.getByFilter({
+      const res = inst.getByFilter({
         limit: 10,
         offset: 5,
         orderBy: 'height:asc',
@@ -217,7 +217,7 @@ describe('modules/peers', () => {
     });
   });
 
-  describe('.list', () => {
+  describe('.getPeers', () => {
     let getByFilterStub: SinonStub;
     let firstPeers: BasePeerType[];
     let secondPeers: BasePeerType[];
@@ -226,63 +226,52 @@ describe('modules/peers', () => {
     beforeEach(() => {
       listStub = sandbox.stub(peersLogicStub, 'list');
       acceptableStub = sandbox.stub(peersLogicStub, 'acceptable');
-      const blocksModel = container.get<IBlocksModule>(Symbols.modules.blocks);
-      blocksModel.lastBlock = { height: 100 } as any;
+      const system = container.get<ISystemModule>(Symbols.modules.system);
+      system.update({ height: 100 } as any);
       getByFilterStub = sandbox.stub(inst, 'getByFilter');
       getByFilterStub.onFirstCall().callsFake(() => firstPeers);
       getByFilterStub.onSecondCall().callsFake(() => secondPeers);
     });
 
-    it('should return consensus number', async () => {
+    it('should return peers array', () => {
       firstPeers = [createFakePeer()];
       secondPeers = [];
       acceptableStub.returns(firstPeers);
       acceptableStub.onSecondCall().returns(secondPeers);
-      const target = await inst.list({});
-      expect(target).to.haveOwnProperty('consensus');
-      expect(target.consensus).to.be.a('number');
-      expect(target.consensus).to.be.deep.eq(100);
+      const peers = inst.getPeers({});
+      expect(peers).to.be.an('array');
     });
-    it('should return peers array', async () => {
-      firstPeers = [createFakePeer()];
-      secondPeers = [];
-      acceptableStub.returns(firstPeers);
-      acceptableStub.onSecondCall().returns(secondPeers);
-      const target = await inst.list({});
-      expect(target).to.haveOwnProperty('peers');
-      expect(target.peers).to.be.an('array');
-    });
-    it('should not concat unmatchedbroadhash if limit is matching the matching peers length', async () => {
+    it('should not concat unmatchedbroadhash if limit is matching the matching peers length', () => {
       firstPeers = createFakePeers(10);
       secondPeers = [createFakePeer()];
       acceptableStub.returns(firstPeers);
-      const t = await inst.list({ limit: 10 });
-      expect(t.peers.length).to.be.eq(10);
-      expect(t.peers).to.be.deep.eq(firstPeers);
+      const peers = inst.getPeers({ limit: 10 });
+      expect(peers.length).to.be.eq(10);
+      expect(peers).to.be.deep.eq(firstPeers);
       expect(acceptableStub.calledOnce).is.true;
     });
-    it('should call getByFilter with broadhash filter', async () => {
+    it('should call getByFilter with broadhash filter', () => {
       const systemModule = container.get<SystemModule>(Symbols.modules.system);
       systemModule.headers.broadhash = 'broadhashhh';
       firstPeers = [createFakePeer()];
       secondPeers = [];
       acceptableStub.returns(firstPeers);
       acceptableStub.onSecondCall().returns(secondPeers);
-      await inst.list({});
+      inst.getPeers({});
       expect(getByFilterStub.called).is.true;
       expect(getByFilterStub.firstCall.args[0]).to.haveOwnProperty('broadhash');
       expect(getByFilterStub.firstCall.args[0].broadhash).to.be.eq(
         systemModule.broadhash
       );
     });
-    it('should return only acceptable peers by calling peersLogic.acceptable.', async () => {
+    it('should return only acceptable peers by calling peersLogic.acceptable.', () => {
       firstPeers = [createFakePeer()];
       secondPeers = [createFakePeer()];
       acceptableStub.returns([]);
-      const res = await inst.list({});
-      expect(res.peers).to.be.empty;
+      const peers = inst.getPeers({});
+      expect(peers).to.be.empty;
     });
-    it('should concat unmatched broadhash peers and truncate with limit.', async () => {
+    it('should concat unmatched broadhash peers and truncate with limit.', () => {
       firstPeers = createFakePeers(5);
       secondPeers = createFakePeers(10).map((item) => {
         item.broadhash = 'unmatched';
@@ -290,39 +279,59 @@ describe('modules/peers', () => {
       });
       acceptableStub.callsFake((w) => w);
 
-      const res = await inst.list({ limit: 10 });
-      expect(res.peers.length).to.be.eq(10);
-      expect(res.peers.slice(5, 10)).to.be.deep.eq(secondPeers.slice(0, 5));
-      expect(res.peers.slice(0, 5)).to.be.deep.eq(firstPeers);
+      const peers = inst.getPeers({ limit: 10 });
+      expect(peers.length).to.be.eq(10);
+      expect(peers.slice(5, 10)).to.be.deep.eq(secondPeers.slice(0, 5));
+      expect(peers.slice(0, 5)).to.be.deep.eq(firstPeers);
     });
-    describe('consensus', () => {
-      it('should return 0 if no acceptable peers', async () => {
-        firstPeers = secondPeers = createFakePeers(20);
-        acceptableStub.returns([]);
-        const res = await inst.list({ limit: 10 });
-        expect(res.consensus).to.be.eq(0);
-      });
-      it('should return 100 if all matching broadhash', async () => {
-        firstPeers = createFakePeers(20);
-        secondPeers = [];
-        acceptableStub.callsFake((w) => w);
-        const res = await inst.list({});
-        expect(res.consensus).to.be.eq(100);
-      });
-      it('should return 25 if 25 matched and 100 did not on limit 100', async () => {
-        firstPeers = createFakePeers(25);
-        secondPeers = createFakePeers(100);
-        acceptableStub.callsFake((w) => w);
-        const res = await inst.list({ limit: 100 });
-        expect(res.consensus).to.be.eq(25);
-      });
-      it('should return 33.33 if 25 matched and 50 did not on limit 100', async () => {
-        firstPeers = createFakePeers(25);
-        secondPeers = createFakePeers(50);
-        acceptableStub.callsFake((w) => w);
-        const res = await inst.list({ limit: 100 });
-        expect(res.consensus).to.be.eq(33.33);
-      });
+  });
+
+  describe('.determineConsensus', () => {
+    let fakePeers: BasePeerType[];
+    let listStub: SinonStub;
+    let acceptableStub: SinonStub;
+    beforeEach(() => {
+      listStub = sandbox.stub(peersLogicStub, 'list');
+      listStub.onFirstCall().callsFake(() => fakePeers);
+      acceptableStub = sandbox.stub(peersLogicStub, 'acceptable');
+      const system = container.get<ISystemModule>(Symbols.modules.system);
+      system.update({ height: 100 } as any);
+    });
+
+    it('should return consensus number', async () => {
+      fakePeers = [createFakePeer()];
+      acceptableStub.returns(fakePeers);
+      const target = await inst.determineConsensus('aa');
+      expect(target).to.haveOwnProperty('consensus');
+      expect(target.consensus).to.be.a('number');
+      expect(target.consensus).to.be.deep.eq(100);
+    });
+    it('should return 0 if no acceptable peers', async () => {
+      fakePeers = createFakePeers(20);
+      acceptableStub.returns([]);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(0);
+    });
+    it('should return 0 if no connected peers', async () => {
+      fakePeers = createFakePeers(20, { state: PeerState.DISCONNECTED });
+      acceptableStub.callsFake((w) => w);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(0);
+    });
+    it('should return 100 if all matching broadhash', async () => {
+      fakePeers = createFakePeers(20);
+      acceptableStub.callsFake((w) => w);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(100);
+    });
+    it('should return 25 if 100 matched and 300 did not', async () => {
+      fakePeers = [].concat(
+        createFakePeers(100),
+        createFakePeers(300, { broadhash: 'bb' })
+      );
+      acceptableStub.callsFake((w) => w);
+      const res = await inst.determineConsensus('aa');
+      expect(res.consensus).to.be.eq(25);
     });
   });
 
@@ -359,12 +368,7 @@ describe('modules/peers', () => {
       expect(truncateStub.called).is.true;
       expect(bulkCreateStub.called).is.true;
       expect(truncateStub.calledBefore(bulkCreateStub)).is.true;
-      expect(bulkCreateStub.firstCall.args[0]).to.be.deep.eq(
-        fakePeers.map((p) => ({
-          ...p,
-          broadhash: Buffer.from(p.broadhash, 'hex'),
-        }))
-      );
+      expect(bulkCreateStub.firstCall.args[0]).to.be.deep.eq(fakePeers);
       expect(loggerStub.stubs.info.calledOnce).to.be.true;
       expect(loggerStub.stubs.info.firstCall.args.length).to.be.equal(1);
       expect(loggerStub.stubs.info.firstCall.args[0]).to.be.equal(

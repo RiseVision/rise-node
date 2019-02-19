@@ -44,8 +44,6 @@ export class ForgeModule extends Extendable implements IModule {
   @inject(Symbols.generic.appConfig)
   private config: DposAppConfig;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & DposConstantsType;
   // helpers
   @inject(Symbols.generic.crypto)
   private crypto: ICrypto;
@@ -191,10 +189,6 @@ export class ForgeModule extends Extendable implements IModule {
       return;
     }
 
-    // NOTE: This is wrapped in a default sequence because it's called only from delegatesNextForge
-
-    await this.peersModule.updateConsensus();
-
     if (
       this.appState.getComputed('node.poorConsensus') &&
       !this.config.forging.force
@@ -234,8 +228,9 @@ export class ForgeModule extends Extendable implements IModule {
           .update(secret, 'utf8')
           .digest()
       );
+
       const account = await this.accountsModule.getAccount({
-        publicKey: keypair.publicKey,
+        forgingPK: keypair.publicKey,
       });
       if (!account) {
         throw new Error(
@@ -250,7 +245,7 @@ export class ForgeModule extends Extendable implements IModule {
         this.logger.info(`Forging enabled on account ${account.address}`);
       } else {
         this.logger.warn(
-          `Account with public Key: ${account.publicKey} is not a delegate`
+          `Account with public Key: ${account.address} is not a delegate`
         );
       }
     }

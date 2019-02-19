@@ -17,7 +17,6 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
 import {
   BasePeerType,
-  ConstantsType,
   ForkType,
   IBaseTransaction,
   IKeypair,
@@ -50,7 +49,7 @@ export class BlocksModuleProcess {
   private genesisBlock: SignedAndChainedBlockType;
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
-  @inject(Symbols.generic.constants)
+  @inject(BlocksSymbols.constants)
   private blocksConstants: BlocksConstantsType;
 
   // Helpers
@@ -247,10 +246,21 @@ export class BlocksModuleProcess {
         const txAccounts = await this.accountsModule.txAccounts(
           block.transactions
         );
+
         await this.accountsModule.checkTXsAccountsMap(
           block.transactions,
           txAccounts
         );
+
+        // verify transactions
+        for (const tx of block.transactions) {
+          await this.transactionLogic.verify(
+            tx,
+            txAccounts[tx.senderId],
+            block.height
+          );
+        }
+
         await this.blocksChainModule.applyBlock(
           block,
           false,
@@ -318,7 +328,7 @@ export class BlocksModuleProcess {
   ): Promise<SignedAndChainedBlockType> {
     const previousBlock = this.blocksModule.lastBlock;
     const txs = this.txPool.unconfirmed.txList({
-      limit: this.blocksConstants.blocks.maxTxsPerBlock,
+      limit: this.blocksConstants.maxTxsPerBlock,
     });
 
     const ready: Array<IBaseTransaction<any, bigint>> = [];
@@ -327,7 +337,7 @@ export class BlocksModuleProcess {
     );
     for (const tx of txs) {
       const sender = await this.accountsModule.getAccount({
-        publicKey: tx.senderPublicKey,
+        address: tx.senderId,
       });
       if (!sender) {
         throw new Error('Sender not found');
@@ -347,16 +357,22 @@ export class BlocksModuleProcess {
       }
 
       try {
-        await this.transactionLogic.verify(
-          tx,
-          sender,
-          null,
-          previousBlock.height
-        );
+        await this.transactionLogic.verify(tx, sender, previousBlock.height);
         ready.push(tx);
       } catch (err) {
         // TODO: why is error swallowed here? shouldn't we better handle this error?
         this.logger.error(err.stack);
+      }
+    }
+
+    // Remove conflicting transactions transactions
+    const conflicts = await this.transactionLogic.findConflicts(ready);
+    for (const tx of conflicts) {
+      for (let i = 0; i < ready.length; i++) {
+        if (ready[i].id === tx.id) {
+          ready.splice(i, 1);
+          break;
+        }
       }
     }
     return this.generateBlockWithTransactions(keypair, timestamp, ready);
@@ -429,8 +445,6 @@ export class BlocksModuleProcess {
       accountsMap
     );
     await this.blocksVerifyModule.checkBlockTransactions(block, accountsMap);
-
-    this.blocksModule.lastReceipt.update();
 
     // if nothing has thrown till here then block is valid and can be applied.
     // The block and the transactions are OK i.e:

@@ -1,7 +1,6 @@
 import {
   RecreateAccountsTables,
   SnapshotBlocksCountFilter,
-  UtilsCommonHeightList,
 } from '@risevision/core';
 import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
 import { ILogger, Symbols } from '@risevision/core-interfaces';
@@ -51,8 +50,8 @@ export class RoundsHooks extends Extendable {
   // tslint:disable-next-line
   private Accounts2U_DelegatesModel: typeof Accounts2U_DelegatesModel;
 
-  @inject(Symbols.generic.constants)
-  private constants: DposConstantsType;
+  @inject(dPoSSymbols.constants)
+  private dposConstants: DposConstantsType;
 
   @inject(Symbols.generic.appConfig)
   private appConfig: AppConfig;
@@ -65,17 +64,11 @@ export class RoundsHooks extends Extendable {
     ];
     for (const model of models) {
       await model
-        .drop({ cascade: true })
+        .truncate({ cascade: true })
         .catch(
           catchToLoggerAndRemapError('Account#removeTables error', this.logger)
         );
     }
-
-    await this.Accounts2DelegatesModel.sequelize.query(
-      fs.readFileSync(`${__dirname}/../../../sql/memoryTables.sql`, {
-        encoding: 'utf8',
-      })
-    );
   }
 
   @ApplyBlockDBOps()
@@ -97,24 +90,6 @@ export class RoundsHooks extends Extendable {
     return dbOP.concat(...roundOps.filter((op) => op !== null));
   }
 
-  @UtilsCommonHeightList()
-  private async commonHeightList(
-    heights: number[],
-    height: number
-  ): Promise<number[]> {
-    // Get IDs of first blocks of (n) last rounds, descending order
-    // EXAMPLE: For height 2000000 (round 19802) we will get IDs of blocks at height: 1999902, 1999801, 1999700,
-    // 1999599, 1999498
-    const firstInRound = this.roundsLogic.firstInRound(
-      this.roundsLogic.calcRound(height)
-    );
-    const heightsToQuery: number[] = [];
-    for (let i = 0; i < 5; i++) {
-      heightsToQuery.push(firstInRound - this.constants.activeDelegates * i);
-    }
-    return heightsToQuery;
-  }
-
   @SnapshotBlocksCountFilter()
   private async snapshotBlockCount(blocksCount: number) {
     const round = this.roundsLogic.calcRound(blocksCount);
@@ -124,7 +99,7 @@ export class RoundsHooks extends Extendable {
     }
     if (this.appConfig.loading.snapshot >= round) {
       this.appConfig.loading.snapshot = round;
-      if (blocksCount % this.constants.activeDelegates > 0) {
+      if (blocksCount % this.dposConstants.activeDelegates > 0) {
         // Normalize to previous round if we
         this.appConfig.loading.snapshot = round > 1 ? round - 1 : 1;
       }

@@ -3,12 +3,14 @@ import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   BelongsTo,
   Column,
+  DataType,
   ForeignKey,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+import { As } from 'type-tagger';
 
-@Table({ tableName: 'delegates' })
+@Table({ tableName: 'trsassets_delegates' })
 export class DelegatesModel extends BaseModel<DelegatesModel> {
   @PrimaryKey
   @Column
@@ -24,11 +26,14 @@ export class DelegatesModel extends BaseModel<DelegatesModel> {
   @Column
   public transactionId: string;
 
+  @Column(DataType.BLOB)
+  public forgingPK: Buffer & As<'publicKey'>;
+
   @BelongsTo(() =>
     DelegatesModel.container.getNamed(
       ModelSymbols.model,
       Symbols.models.transactions
     )
   )
-  public transaction: ITransactionsModel = null;
+  private tx: ITransactionsModel;
 }

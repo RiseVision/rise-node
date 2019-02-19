@@ -8,15 +8,18 @@ export const Symbols = {
     hookSystem: Symbol.for('rise.hookSystem'),
     nonce: Symbol.for('rise.nonce'),
     socketIO: Symbol.for('rise.socketIO'),
+    txtypes: Symbol.for('rise.txtypes'),
     versionBuild: Symbol.for('rise.versionBuild'),
     zschema: Symbol.for('rise.zschema'),
   },
   helpers: {
     db: Symbol.for('rise.dbHelper'),
+    idsHandler: Symbol.for('rise.helpers.iidsHandler'),
     jobsQueue: Symbol.for('rise.jobsQueue'),
     logger: Symbol.for('rise.logger'),
     sequence: Symbol.for('rise.sequence'),
     timeToEpoch: Symbol.for('rise.timeToEpoch'),
+    txBytes: Symbol.for('rise.helpers.txBytes'),
   },
   logic: {
     account: Symbol.for('rise.account'),
@@ -32,7 +35,6 @@ export const Symbols = {
   models: {
     accounts: Symbol.for('rise.accountsModel'),
     blocks: Symbol.for('rise.blocksModel'),
-    forkStats: Symbol.for('rise.forkStats'),
     info: Symbol.for('rise.infoModel'),
     migrations: Symbol.for('rise.migrations'),
     peers: Symbol.for('rise.peers'),

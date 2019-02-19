@@ -4,7 +4,7 @@
     "module": true
   },
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Crypto Module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,20 +12,20 @@
     "transpile": "shx rm -rf dist; tsc",
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/**/*.spec.ts'"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
-    "@risevision/core-utils": "^1.0.0",
+    "sodium": "3.0.2",
     "sodium-native": "^2.2.3"
   },
   "devDependencies": {
     "@types/chai": "4.1.7",
     "@types/chai-arrays": "^1.0.2",
     "@types/chai-as-promised": "^7.1.0",
-    "@types/node": "^10.12.10",
+    "@types/node": "^10.12.15",
     "@types/sinon": "5.0.7",
     "chai": "4.2.0",
     "chai-arrays": "=2.0.0",
@@ -34,6 +34,6 @@
     "mocha": "=5.2.0",
     "shx": "=0.3.2",
     "ts-node": "7.0.1",
-    "typescript": "=3.2.0-rc"
+    "typescript": "3.2.2"
   }
 }

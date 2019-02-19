@@ -1,25 +1,32 @@
-import { OnCheckIntegrity } from '@risevision/core';
+import { OnCheckIntegrity, RecreateAccountsTables } from '@risevision/core';
 import { AccountsSymbols } from '@risevision/core-accounts';
 import {
+  ApplyBlockDBOps,
   BlocksConstantsType,
+  BlocksSymbols,
+  RollbackBlockDBOps,
   VerifyBlock,
   VerifyReceipt,
 } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
+import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, SignedBlockType } from '@risevision/core-types';
-import * as fs from 'fs';
+import {
+  ConstantsType,
+  DBOp,
+  SignedAndChainedBlockType,
+  SignedBlockType,
+} from '@risevision/core-types';
+import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
-import * as sequelize from 'sequelize';
 import { dPoSSymbols, Slots } from '../../helpers';
-import { AccountsModelForDPOS, DelegatesModel } from '../../models';
+import { DposConstantsType } from '../../helpers';
+import {
+  AccountsModelForDPOS,
+  DelegatesModel,
+  DelegatesRoundModel,
+} from '../../models';
 import { DelegatesModule } from '../../modules';
-
-const countDuplicatedDelegatesSQL = fs.readFileSync(
-  `${__dirname}/../../../sql/countDuplicatedDelegates.sql`,
-  { encoding: 'utf8' }
-);
 
 const Extendable = WPHooksSubscriber(Object);
 decorate(injectable(), Extendable);
@@ -34,15 +41,24 @@ export class DelegatesHooks extends Extendable {
   @inject(ModelSymbols.model)
   @named(AccountsSymbols.model)
   private accountsModel: typeof AccountsModelForDPOS;
+  @inject(ModelSymbols.model)
+  @named(dPoSSymbols.models.delegatesRound)
+  private delegatesRoundModel: typeof DelegatesRoundModel;
+
+  @inject(Symbols.helpers.logger)
+  private logger: ILogger;
 
   @inject(dPoSSymbols.helpers.slots)
   private slots: Slots;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
 
   @inject(dPoSSymbols.modules.delegates)
   private delegatesModule: DelegatesModule;
+
+  @inject(dPoSSymbols.constants)
+  private dposConstants: DposConstantsType;
 
   @OnCheckIntegrity()
   private async checkLoadingIntegrity(totalBlocks: number) {
@@ -51,13 +67,6 @@ export class DelegatesHooks extends Extendable {
     });
     if (delegatesCount === 0) {
       throw new Error('No delegates found');
-    }
-    const [duplicatedDelegates] = await this.delegatesModel.sequelize.query(
-      countDuplicatedDelegatesSQL,
-      { type: sequelize.QueryTypes.SELECT }
-    );
-    if (duplicatedDelegates.count > 0) {
-      throw new Error('Delegates table corrupted with duplicated entries');
     }
   }
 
@@ -78,7 +87,10 @@ export class DelegatesHooks extends Extendable {
     const lastSlot = this.slots.getSlotNumber(lastBlock.timestamp);
 
     if (
-      slotNumber > this.slots.getSlotNumber(this.slots.getTime()) ||
+      slotNumber >
+        this.slots.getSlotNumber(
+          this.slots.getTime() + this.dposConstants.timeDriftCorrection
+        ) ||
       slotNumber <= lastSlot
     ) {
       // if in future or in the past => error
@@ -124,7 +136,7 @@ export class DelegatesHooks extends Extendable {
     const curSlot = this.slots.getSlotNumber();
     const blockSlot = this.slots.getSlotNumber(block.timestamp);
     const errors = [];
-    if (curSlot - blockSlot > this.constants.blocks.slotWindow) {
+    if (curSlot - blockSlot > this.blocksConstants.slotWindow) {
       errors.push('Block slot is too old');
     }
     if (curSlot < blockSlot) {
@@ -133,5 +145,36 @@ export class DelegatesHooks extends Extendable {
     payload.errors = errors;
     payload.verified = errors.length === 0;
     return payload;
+  }
+
+  @ApplyBlockDBOps()
+  private async onApplyBlockDBOpsFilter(
+    dbOP: Array<DBOp<any>>,
+    block: SignedAndChainedBlockType
+  ) {
+    await this.delegatesModule.onBlockChanged('forward', block.height);
+    return dbOP;
+  }
+
+  @RollbackBlockDBOps()
+  private async onRollbackBlockDBOpsFilter(
+    dbOP: Array<DBOp<any>>,
+    block: SignedAndChainedBlockType,
+    prevBlock: SignedAndChainedBlockType
+  ) {
+    await this.delegatesModule.onBlockChanged('backward', prevBlock.height);
+    return dbOP;
+  }
+
+  @RecreateAccountsTables()
+  private async recreateTables(): Promise<void> {
+    await this.delegatesRoundModel
+      .truncate({ cascade: true })
+      .catch(
+        catchToLoggerAndRemapError(
+          'DelegatesRoundModel#removeTables error',
+          this.logger
+        )
+      );
   }
 }

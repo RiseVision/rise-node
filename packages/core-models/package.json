@@ -4,25 +4,31 @@
     "module": true
   },
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Models Module",
   "main": "dist/index.js",
   "scripts": {
     "test-unit": "mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts'",
     "transpile": "shx rm -rf dist; tsc"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
-    "lodash": "4.17.11"
+    "cls-hooked": "^4.2.2",
+    "inversify": "5.0.1",
+    "lodash": "4.17.11",
+    "reflect-metadata": "^0.1.12",
+    "sequelize": "4.42.0",
+    "sequelize-typescript": "0.6.6",
+    "squel": "=5.12.2"
   },
   "devDependencies": {
-    "@types/lodash": "4.14.118",
+    "@types/lodash": "4.14.119",
     "shx": "=0.3.2",
-    "typescript": "=3.2.0-rc"
+    "typescript": "3.2.2"
   }
 }

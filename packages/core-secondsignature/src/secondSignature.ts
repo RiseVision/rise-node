@@ -10,9 +10,9 @@ import {
   DBOp,
   IBaseTransaction,
   SignedBlockType,
-  TransactionType,
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
+import * as _ from 'lodash';
 import * as z_schema from 'z-schema';
 import { AccountsModelWith2ndSign } from './AccountsModelWith2ndSign';
 import { SignaturesModel } from './SignaturesModel';
@@ -22,9 +22,9 @@ import { SigSymbols } from './symbols';
 const secondSignatureSchema = require('../schema/secondSignature.json');
 
 // tslint:disable-next-line interface-over-type-literal
-export type SecondSignatureAsset = {
+export type SecondSignatureAsset<T = Buffer> = {
   signature: {
-    publicKey: string;
+    publicKey: Buffer;
   };
 };
 
@@ -50,11 +50,7 @@ export class SecondSignatureTransaction extends BaseTx<
   @named(SigSymbols.model)
   private SignaturesModel: typeof SignaturesModel;
 
-  constructor() {
-    super(TransactionType.SIGNATURE);
-  }
-
-  public calculateFee(
+  public calculateMinFee(
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: IAccountsModel,
     height: number
@@ -62,27 +58,17 @@ export class SecondSignatureTransaction extends BaseTx<
     return this.systemModule.getFees(height).fees.secondsignature;
   }
 
-  public getBytes(
-    tx: IBaseTransaction<SecondSignatureAsset>,
-    skipSignature: boolean,
-    skipSecondSignature: boolean
-  ): Buffer {
-    return Buffer.from(tx.asset.signature.publicKey, 'hex');
+  public assetBytes(tx: IBaseTransaction<SecondSignatureAsset>): Buffer {
+    return tx.asset.signature.publicKey;
   }
 
   /**
    * Returns asset, given Buffer containing it
    */
-  public fromBytes(
-    bytes: Buffer,
-    tx?: IBaseTransaction<any>
-  ): SecondSignatureAsset {
-    if (bytes === null) {
-      return null;
-    }
+  public readAssetFromBytes(bytes: Buffer): SecondSignatureAsset {
     return {
       signature: {
-        publicKey: bytes.toString('hex'),
+        publicKey: bytes,
       },
     };
   }
@@ -106,11 +92,31 @@ export class SecondSignatureTransaction extends BaseTx<
     if (
       !tx.asset.signature.publicKey ||
       !this.schema.validate(tx.asset.signature.publicKey, {
-        format: 'publicKey',
+        format: 'publicKeyBuf',
       })
     ) {
       throw new Error('Invalid public key');
     }
+  }
+
+  public async findConflicts(
+    txs: Array<IBaseTransaction<SecondSignatureAsset>>
+  ): Promise<Array<IBaseTransaction<SecondSignatureAsset>>> {
+    // This piece of logic does find conflicting transactions from same sender
+    // this will ensure no conflicting 2nd sign txs from same sender that are casted wont get included in the block.
+
+    const grouped = _.groupBy(txs, (a) => a.senderId);
+    const conflictingTransactions: Array<
+      IBaseTransaction<SecondSignatureAsset>
+    > = [];
+    // tslint:disable-next-line
+    for (const senderId in grouped) {
+      const groupedTXsBySender = grouped[senderId];
+      if (groupedTXsBySender.length > 1) {
+        conflictingTransactions.push(...groupedTXsBySender.slice(1));
+      }
+    }
+    return conflictingTransactions;
   }
 
   public async apply(
@@ -118,7 +124,7 @@ export class SecondSignatureTransaction extends BaseTx<
     block: SignedBlockType,
     sender: AccountsModelWith2ndSign
   ): Promise<Array<DBOp<any>>> {
-    const secondPublicKey = Buffer.from(tx.asset.signature.publicKey, 'hex');
+    const secondPublicKey = tx.asset.signature.publicKey;
     sender.applyValues({
       secondPublicKey,
       secondSignature: 1,
@@ -212,12 +218,18 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<SecondSignatureAsset, bigint>
+    tx: IBaseTransaction<SecondSignatureAsset<string | Buffer>, bigint>
   ): IBaseTransaction<SecondSignatureAsset, bigint> {
     const report = this.schema.validate(
       tx.asset.signature,
       secondSignatureSchema
     );
+    if (typeof tx.asset.signature.publicKey === 'string') {
+      tx.asset.signature.publicKey = Buffer.from(
+        tx.asset.signature.publicKey,
+        'hex'
+      );
+    }
     if (!report) {
       throw new Error(
         `Failed to validate signature schema: ${this.schema
@@ -231,14 +243,12 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(
-    tx: IBaseTransaction<SecondSignatureAsset>
-  ): DBOp<any> {
+  public dbSave(tx: IBaseTransaction<SecondSignatureAsset>): DBOp<any> {
     return {
       model: this.SignaturesModel,
       type: 'create',
       values: {
-        publicKey: Buffer.from(tx.asset.signature.publicKey, 'hex'),
+        publicKey: tx.asset.signature.publicKey,
         transactionId: tx.id,
       },
     };
@@ -261,7 +271,7 @@ export class SecondSignatureTransaction extends BaseTx<
       const info = res[indexes[tx.id]];
       tx.asset = {
         signature: {
-          publicKey: info.publicKey.toString('hex'),
+          publicKey: info.publicKey,
         },
       };
     });

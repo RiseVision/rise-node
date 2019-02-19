@@ -1,17 +1,16 @@
 import { CoreSymbols } from '@risevision/core';
 import { DeprecatedAPIError } from '@risevision/core-apis';
+import { toTransportable } from '@risevision/core-helpers';
 import {
   IAccountsModel,
   IAccountsModule,
   ISystemModule,
-  Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
   AppConfig,
   ConstantsType,
   FieldsInModel,
-  publicKey,
 } from '@risevision/core-types';
 import {
   HTTPError,
@@ -62,47 +61,35 @@ export class AccountsAPI {
   @QueryParams()
   query: {
     address?: string;
-    publicKey?: publicKey;
   }) {
-    if (isEmpty(query.address) && isEmpty(query.publicKey)) {
+    if (isEmpty(query.address)) {
       throw new HTTPError(
         'Missing required property: address or publicKey',
         200
       );
     }
 
-    const address = !isEmpty(query.publicKey)
-      ? this.accountsModule.generateAddressByPublicKey(
-          Buffer.from(query.publicKey, 'hex')
-        )
-      : query.address;
-
-    if (
-      !isEmpty(query.address) &&
-      !isEmpty(query.publicKey) &&
-      address !== query.address
-    ) {
-      throw new HTTPError('Account publicKey does not match address', 200);
-    }
-    const theQuery: { address: string; publicKey?: Buffer } = { address };
-    if (!isEmpty(query.publicKey)) {
-      theQuery.publicKey = Buffer.from(query.publicKey, 'hex');
-    }
-    const accData = await this.accountsModule.getAccount(theQuery);
+    const accData = await this.accountsModule.getAccount({
+      address: query.address,
+    });
     if (!accData) {
       throw new HTTPError('Account not found', 200);
     }
+
+    /**
+     * @codesample filterHookCall
+     */
+    const account = await this.hookSystem.apply_filters(
+      FilterAPIGetAccount.name,
+      {
+        address: accData.address,
+        balance: `${accData.balance}`,
+        unconfirmedBalance: `${accData.u_balance}`,
+      },
+      accData
+    );
     return {
-      account: await this.hookSystem.apply_filters(
-        FilterAPIGetAccount.name,
-        {
-          address: accData.address,
-          balance: `${accData.balance}`,
-          publicKey: accData.hexPublicKey,
-          unconfirmedBalance: `${accData.u_balance}`,
-        },
-        accData
-      ),
+      account: toTransportable(account),
     };
   }
 
@@ -121,22 +108,6 @@ export class AccountsAPI {
     return { balance, unconfirmedBalance };
   }
 
-  @Get('/getPublicKey')
-  @ValidateSchema()
-  public async getPublickey(@SchemaValid(accountSchema.getPublicKey)
-  @QueryParams()
-  params: {
-    address: string;
-  }) {
-    const account = await this.accountsModule.getAccount({
-      address: params.address,
-    });
-    if (!account) {
-      throw new HTTPError('Account not found', 200);
-    }
-    return { publicKey: account.hexPublicKey };
-  }
-
   @Get('/top')
   @ValidateSchema()
   public async topAccounts(@SchemaValid(accountSchema.top, {
@@ -153,22 +124,18 @@ export class AccountsAPI {
     let { limit, offset } = params;
     limit = limit || 100;
     offset = offset || 0;
-    const returnFields: FieldsInModel<IAccountsModel> = [
-      'address',
-      'balance',
-      'publicKey',
-    ];
+    const returnFields: FieldsInModel<IAccountsModel> = ['address', 'balance'];
     const accs = await this.accountsModule.getAccounts({
       limit,
       offset,
-      sort: { balance: -1 },
+      sort: { balance: -1 as -1 },
     });
 
     return {
       accounts: accs
         .map((acc) => acc.toPOJO())
         .map((acc) => filterObject(acc, returnFields))
-        .map((acc) => ({ ...acc, balance: `${acc.balance}` })),
+        .map((acc) => toTransportable(acc)),
     };
   }
 

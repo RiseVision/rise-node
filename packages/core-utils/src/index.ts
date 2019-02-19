@@ -6,6 +6,7 @@ export * from './diff';
 export * from './genericUtils';
 export * from './httpError';
 export * from './loggerCreator';
+export * from './math';
 export * from './orderBy';
 export * from './promiseUtils';
 export * from './utilsSymbols';

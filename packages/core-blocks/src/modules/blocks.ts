@@ -1,43 +1,52 @@
-import { IBlocksModule, ILogger, Symbols } from '@risevision/core-interfaces';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
-  ConstantsType,
-  SignedAndChainedBlockType,
-} from '@risevision/core-types';
+  IBlocksModule,
+  ILogger,
+  ITimeToEpoch,
+  Symbols,
+} from '@risevision/core-interfaces';
+import { IPeersModule } from '@risevision/core-p2p';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { BlocksConstantsType } from '../blocksConstants';
+import { BlocksSymbols } from '../blocksSymbols';
 
-// TODO Eventually remove this module and use appState instead.
 @injectable()
 export class BlocksModule implements IBlocksModule {
   public lastBlock: SignedAndChainedBlockType;
-  public lastReceipt: {
-    get: () => number;
-    isStale: () => boolean;
-    update: (time?: number) => void;
-  };
-  @inject(Symbols.generic.constants)
-  private constants: BlocksConstantsType;
-  private internalLastReceipt: number;
+
+  @inject(BlocksSymbols.constants)
+  private blocksConstants: BlocksConstantsType;
+
+  @inject(Symbols.helpers.timeToEpoch)
+  private timeToEpoch: ITimeToEpoch;
+
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
+
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  constructor() {
-    this.lastReceipt = {
-      get: () => this.internalLastReceipt,
-      isStale: () => {
-        if (!this.internalLastReceipt) {
-          return true;
-        }
-        // Current time in seconds - lastReceipt (seconds)
-        const secondsAgo =
-          Math.floor(Date.now() / 1000) - this.internalLastReceipt;
-        return secondsAgo > this.constants.blocks.receiptTimeOut;
-      },
-      update: (time: number = Math.floor(Date.now() / 1000)) => {
-        this.internalLastReceipt = time;
-      },
-    };
+  public isStale() {
+    if (!this.lastBlock) {
+      return true;
+    }
+
+    const lastBlockTime = this.timeToEpoch.fromTimeStamp(
+      this.lastBlock.timestamp
+    );
+    const lastBlockAge = Math.floor((Date.now() - lastBlockTime) / 1000);
+    if (lastBlockAge > this.blocksConstants.staleAgeThreshold) {
+      return true;
+    }
+
+    // Make sure we're not behind the rest of the network
+    const peers = this.peersModule.getPeers({});
+    const network = this.peersModule.findGoodPeers(peers);
+    if (this.lastBlock.height < network.height) {
+      return true;
+    }
+
+    return false;
   }
 
   public cleanup() {

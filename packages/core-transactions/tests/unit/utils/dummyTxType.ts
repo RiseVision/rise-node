@@ -3,7 +3,7 @@ import { DBOp, IBaseTransaction } from '../../../../core-types/src';
 import { BaseTx } from '../../../src';
 
 export class DummyTxType extends BaseTx<void, any> {
-  public calculateFee(
+  public calculateMinFee(
     tx: IBaseTransaction<void>,
     sender: IAccountsModel,
     height: number
@@ -19,7 +19,9 @@ export class DummyTxType extends BaseTx<void, any> {
     return undefined;
   }
 
-  public objectNormalize(tx: IBaseTransaction<void, bigint>): IBaseTransaction<void, bigint> {
+  public objectNormalize(
+    tx: IBaseTransaction<void, bigint>
+  ): IBaseTransaction<void, bigint> {
     return undefined;
   }
 }

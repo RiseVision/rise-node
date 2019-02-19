@@ -1,12 +1,14 @@
 import { FilterAPIGetAccount } from '@risevision/core-accounts';
 import {
+  ICrypto,
   ITransactionLogic,
   Symbols,
-  VerificationType,
 } from '@risevision/core-interfaces';
 import {
+  TXBytes,
   TxLogicStaticCheck,
-  TxLogicVerify,
+  TxSignatureVerify,
+  TXSymbols,
 } from '@risevision/core-transactions';
 import { IBaseTransaction } from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
@@ -23,33 +25,33 @@ export class SignHooksListener extends ExtendableClass {
 
   @inject(Symbols.logic.transaction)
   private txLogic: ITransactionLogic;
+  @inject(TXSymbols.txBytes)
+  private txBytes: TXBytes;
+
+  @inject(Symbols.generic.crypto)
+  private crypto: ICrypto;
 
   @TxLogicStaticCheck()
   public async txStaticCheck(
     tx: IBaseTransaction<any>,
     sender: AccountsModelWith2ndSign
   ) {
-    if (sender.secondSignature && !tx.signSignature) {
+    if (sender.secondSignature && tx.signatures.length < 2) {
       throw new Error('Missing second signature');
-    }
-    if (!sender.secondSignature && tx.signSignature) {
-      throw new Error(
-        'Second Signature provided but account does not have one registered'
-      );
     }
   }
 
-  @TxLogicVerify()
-  public async txLogicVerify(
+  @TxSignatureVerify()
+  public async txSignatureVerify(
     tx: IBaseTransaction<any, bigint>,
+    hash: Buffer,
     sender: AccountsModelWith2ndSign
   ) {
-    if (sender.secondSignature) {
-      const verified = this.txLogic.verifySignature(
-        tx,
-        sender.secondPublicKey,
-        tx.signSignature,
-        VerificationType.SECOND_SIGNATURE
+    if (!!sender.secondSignature) {
+      const verified = this.crypto.verify(
+        hash,
+        tx.signatures[1],
+        sender.secondPublicKey
       );
       if (!verified) {
         throw new Error('Invalid second signature');
@@ -57,6 +59,9 @@ export class SignHooksListener extends ExtendableClass {
     }
   }
 
+  /**
+   * @codesample filterHookApply
+   */
   @FilterAPIGetAccount()
   public add2ndSignatureToAccount(
     accData: any,
@@ -64,9 +69,7 @@ export class SignHooksListener extends ExtendableClass {
   ) {
     return {
       ...accData,
-      secondPublicKey: model.secondPublicKey
-        ? model.secondPublicKey.toString('hex')
-        : null,
+      secondPublicKey: model.secondPublicKey,
       secondSignature: model.secondSignature,
       unconfirmedSignature: model.u_secondSignature,
     };

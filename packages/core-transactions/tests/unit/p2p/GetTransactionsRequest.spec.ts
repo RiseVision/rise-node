@@ -1,20 +1,17 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { createFakePeer } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
 import { expect } from 'chai';
+import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';
 import { generateAccount } from '../../../../core-accounts/tests/unit/utils/accountsUtils';
-import { ConstantsType } from '../../../../core-types/src';
 import {
   GetTransactionsRequest,
   TransactionPool,
+  TxConstantsType,
   TXSymbols,
 } from '../../../src/';
-import {
-  createRandomTransaction,
-  toBufferedTransaction,
-} from '../utils/txCrafter';
+import { createRandomTransaction, toNativeTx } from '../utils/txCrafter';
 
 // tslint:disable no-unused-expression
 describe('apis/requests/GetTransactionsRequest', () => {
@@ -51,47 +48,37 @@ describe('apis/requests/GetTransactionsRequest', () => {
     expect(finalData).deep.eq({ transactions: [] });
   });
   it('with 1 tx', async () => {
-    const tx = toBufferedTransaction(createRandomTransaction());
+    const tx = toNativeTx(createRandomTransaction());
     txPool.unconfirmed.add(tx, { receivedAt: new Date() });
     const finalData = await createRequest();
-    delete tx.signSignature;
-    delete tx.signatures;
     expect(finalData).deep.eq({
-      transactions: [{ ...tx, relays: 1, asset: null }],
+      transactions: [{ ...tx, relays: 3, asset: null }],
     });
   });
   it('with some txs from dif pool - order is respected', async () => {
-    const unconfirmed = toBufferedTransaction(createRandomTransaction());
-    const pending = toBufferedTransaction(createRandomTransaction());
-    const ready = toBufferedTransaction(createRandomTransaction());
+    const unconfirmed = toNativeTx(createRandomTransaction());
+    const pending = toNativeTx(createRandomTransaction());
+    const ready = toNativeTx(createRandomTransaction());
 
     txPool.unconfirmed.add(unconfirmed, { receivedAt: new Date() });
     txPool.pending.add(pending, { receivedAt: new Date(), ready: false });
     txPool.ready.add(ready, { receivedAt: new Date() });
-
-    delete unconfirmed.signSignature;
-    delete pending.signSignature;
-    delete ready.signSignature;
-    delete unconfirmed.signatures;
-    delete pending.signatures;
-    delete ready.signatures;
 
     const finalData = await createRequest();
     expect(finalData).deep.eq({
       transactions: [unconfirmed, pending, ready].map((t) => ({
         ...t,
         asset: null,
-        relays: 1,
+        relays: 3,
       })),
     });
   });
   it('with some signatures', async () => {
     const t = createRandomTransaction();
-    const unconfirmed = toBufferedTransaction(t);
+    const unconfirmed = toNativeTx(t);
     unconfirmed.signatures = new Array(3)
       .fill(null)
-      .map(() => generateAccount().getSignatureOfTransaction(t))
-      .map((s) => Buffer.from(s, 'hex'));
+      .map(() => RiseV2.txs.calcSignature(t, generateAccount()));
     txPool.unconfirmed.add(unconfirmed, { receivedAt: new Date() });
     const finalData = await createRequest();
     expect(finalData.transactions).not.empty;
@@ -102,17 +89,17 @@ describe('apis/requests/GetTransactionsRequest', () => {
     );
   });
   it('should honor limit', async () => {
-    const constants = container.get<ConstantsType>(Symbols.generic.constants);
+    const constants = container.get<TxConstantsType>(TXSymbols.constants);
     constants.maxSharedTxs = 10;
     new Array(10)
       .fill(null)
-      .map(() => toBufferedTransaction(createRandomTransaction()))
+      .map(() => toNativeTx(createRandomTransaction()))
       .forEach((t) => txPool.unconfirmed.add(t, { receivedAt: new Date() }));
-    txPool.pending.add(toBufferedTransaction(createRandomTransaction()), {
+    txPool.pending.add(toNativeTx(createRandomTransaction()), {
       ready: false,
       receivedAt: new Date(),
     });
-    txPool.ready.add(toBufferedTransaction(createRandomTransaction()), {
+    txPool.ready.add(toNativeTx(createRandomTransaction()), {
       receivedAt: new Date(),
     });
     const finalData = await createRequest();

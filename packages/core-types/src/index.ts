@@ -4,7 +4,6 @@ export * from './crypto';
 export * from './dbops';
 export * from './genericTypes';
 export * from './forkTypes';
-export * from './rawDBTypes';
 export * from './sanityTypes';
 export * from './utils';
 export * from './peer';

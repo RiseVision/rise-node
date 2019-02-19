@@ -1,3 +1,5 @@
+import { Address } from './sanityTypes';
+
 export enum TransactionType {
   SEND = 0,
   SIGNATURE = 1,
@@ -13,40 +15,27 @@ export interface ITransportTransaction<T> {
   type: TransactionType;
   amount: string | number;
   senderId?: string;
-  senderPublicKey: string;
-  requesterPublicKey?: string;
+  senderPubData: string;
   timestamp: number;
   asset?: T;
   recipientId: string;
-  signature: string;
   id: string;
   fee: string | number;
-  signatures?: string[];
-  signSignature?: string;
+  signatures: string[];
+  version?: number;
 }
 
 export interface IBaseTransaction<T, amountType = bigint> {
   type: TransactionType;
+  version: number;
   amount: amountType;
-  senderId?: string;
-  senderPublicKey: Buffer;
-  requesterPublicKey?: Buffer;
+  senderId?: Address;
+  senderPubData: Buffer;
   timestamp: number;
   asset?: T;
-  recipientId: string;
-  signature: Buffer;
+  recipientId: Address;
   id: string;
   fee: amountType;
   blockId?: string;
-  signatures?: Buffer[];
-  signSignature?: Buffer;
-}
-
-export interface IBytesTransaction {
-  bytes: Buffer;
-  hasRequesterPublicKey: boolean;
-  hasSignSignature: boolean;
-  fee: Buffer;
-  relays?: number;
-  signatures?: Buffer[];
+  signatures: Buffer[];
 }

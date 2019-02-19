@@ -17,7 +17,7 @@ export class DposV2Helper {
   public isV2(height: number = this.blocksModule.lastBlock.height) {
     return (
       this.constants.dposv2.firstBlock > 0 &&
-      height > this.constants.dposv2.firstBlock
+      height >= this.constants.dposv2.firstBlock
     );
   }
 

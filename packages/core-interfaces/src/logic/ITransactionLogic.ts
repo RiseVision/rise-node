@@ -8,52 +8,11 @@ import { Model } from 'sequelize-typescript';
 import { IAccountsModel } from '../models';
 import { IBaseTransactionType } from './IBaseTransactionType';
 
-/**
- * VerificationType When checking against signature.
- */
-export enum VerificationType {
-  /**
-   * Check signature is valid for both signature and secondsignature
-   */
-  ALL,
-  /**
-   * Check if signature is a valid signature
-   */
-  SIGNATURE,
-  /**
-   * Check if signature is a valid secondsign
-   */
-  SECOND_SIGNATURE,
-}
 export interface ITransactionLogic {
-  attachAssetType<K, M extends Model<any>>(
-    instance: IBaseTransactionType<K, M>
-  ): IBaseTransactionType<K, M>;
-  /**
-   * Calculate tx id
-   * @returns {string} the id.
-   */
-  getId(tx: IBaseTransaction<any>): string;
-
   /**
    * Hash for the transaction
    */
-  getHash(
-    tx: IBaseTransaction<any>,
-    skipSign: boolean,
-    skipSecondSign: boolean
-  ): Buffer;
-
-  /**
-   * Return the transaction bytes.
-   * @returns {Buffer}
-   */
-
-  getBytes(
-    tx: IBaseTransaction<any>,
-    skipSignature?: boolean,
-    skipSecondSignature?: boolean
-  ): Buffer;
+  getHash(tx: IBaseTransaction<any>): Buffer;
 
   ready(tx: IBaseTransaction<any>, sender: IAccountsModel): Promise<boolean>;
 
@@ -62,34 +21,31 @@ export interface ITransactionLogic {
   /**
    * Checks if balanceKey is less than amount for sender
    */
-  checkBalance(
+  assertEnoughBalance(
     amount: bigint,
     balanceKey: 'balance' | 'u_balance',
     tx: IBaseTransaction<any>,
-    sender: any
-  ): { error: string; exceeded: boolean };
+    sender: IAccountsModel
+  ): void;
 
   verify(
     tx: IBaseTransaction<any>,
     sender: IAccountsModel,
-    requester: IAccountsModel,
     height: number
   ): Promise<void>;
 
   /**
    * Verifies the given signature (both first and second)
    * @param {IBaseTransaction<any>} tx
-   * @param {Buffer} publicKey
-   * @param {string} signature
-   * @param {VerificationType} verificationType
+   * @param {IAccountsModel} sender
+   * @param {number} height the height at which you want to verify tx signature(s) against
    * @returns {boolean} true
    */
-  verifySignature(
-    tx: IBaseTransaction<any>,
-    publicKey: Buffer,
-    signature: Buffer,
-    verificationType: VerificationType
-  ): boolean;
+  verifyTxSignature(
+    tx: IBaseTransaction<any, bigint>,
+    sender: IAccountsModel,
+    height: number
+  ): Promise<boolean>;
 
   apply(
     tx: IBaseTransaction<any>,
@@ -109,8 +65,7 @@ export interface ITransactionLogic {
 
   applyUnconfirmed(
     tx: IBaseTransaction<any, bigint>,
-    sender: IAccountsModel,
-    requester?: IAccountsModel
+    sender: IAccountsModel
   ): Promise<Array<DBOp<any>>>;
 
   /**
@@ -140,9 +95,6 @@ export interface ITransactionLogic {
       | ITransportTransaction<any>
   ): IBaseTransaction<any, bigint>;
 
-  fromProtoBuffer(buff: Buffer): IBaseTransaction<any, bigint>;
-
-  toProtoBuffer(tx: IBaseTransaction<any>): Buffer;
   /**
    * Attach Asset object to each transaction passed
    * @param {Array<IBaseTransaction<any>>} txs
@@ -150,22 +102,13 @@ export interface ITransactionLogic {
    */
   attachAssets(txs: Array<IBaseTransaction<any>>): Promise<void>;
 
+  findConflicts(
+    txs: Array<IBaseTransaction<any>>
+  ): Promise<Array<IBaseTransaction<any>>>;
+
   /**
    * Gets maximum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.
    * @returns {number} maximum bytes size
    */
   getMaxBytesSize(): number;
-
-  /**
-   * Gets minimum size in bytes for a transaction. Used in Protocol Buffer response space allocation calculations.
-   * @returns {number} minimum bytes size
-   */
-  getMinBytesSize(): number;
-
-  /**
-   * Gets maximum size in bytes for a specific transaction type. Used in Protocol Buffer response space allocation.
-   * @param {number} txType numeric identifier of the transaction type
-   * @returns {number} maximum bytes size for this type
-   */
-  getByteSizeByTxType(txType: number): number;
 }

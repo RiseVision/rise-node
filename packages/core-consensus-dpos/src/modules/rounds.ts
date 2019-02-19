@@ -8,7 +8,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { address, DBOp, SignedBlockType } from '@risevision/core-types';
+import { Address, DBOp, SignedBlockType } from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as sequelize from 'sequelize';
@@ -23,9 +23,12 @@ import { IRoundLogicNewable, RoundLogicScope, RoundsLogic } from '../logic/';
 import { AccountsModelForDPOS } from '../models/';
 import { DelegatesModule } from './delegates';
 
-const sumRoundSQL = fs.readFileSync(`${__dirname}/../../sql/sumRound.sql`, {
-  encoding: 'utf8',
-});
+const sumRoundSQL = fs.readFileSync(
+  `${__dirname}/../../sql/queries/sumRound.sql`,
+  {
+    encoding: 'utf8',
+  }
+);
 
 @injectable()
 export class RoundsModule {
@@ -33,8 +36,8 @@ export class RoundsModule {
   private RoundChanges: typeof RoundChanges;
 
   // Helpers and generics
-  @inject(Symbols.generic.constants)
-  private constants: DposConstantsType;
+  @inject(dPoSSymbols.constants)
+  private dposConstants: DposConstantsType;
   @inject(Symbols.helpers.db)
   private dbHelper: IDBHelper;
   @inject(Symbols.generic.socketIO)
@@ -81,7 +84,6 @@ export class RoundsModule {
       const roundLogic = new this.RoundLogic(roundLogicScope, this.slots);
       const ops: Array<DBOp<any>> = [];
       ops.push(...roundLogic.undo());
-      ops.push(roundLogic.markBlockId());
       return ops;
     });
   }
@@ -119,7 +121,7 @@ export class RoundsModule {
         // so we fix this glitch by monkeypatching the value and set roundDelegates to the correct genesis generator.
         roundSums = {
           roundDelegates: [block.generatorPublicKey],
-          roundFees: 0n,
+          roundFees: [0n],
           roundRewards: [0n],
         };
       }
@@ -132,8 +134,8 @@ export class RoundsModule {
         backwards,
         block,
         dposV2:
-          block.height >= this.constants.dposv2.firstBlock &&
-          this.constants.dposv2.firstBlock > 0,
+          block.height >= this.dposConstants.dposv2.firstBlock &&
+          this.dposConstants.dposv2.firstBlock > 0,
         finishRound,
         library: {
           RoundChanges: this.RoundChanges,
@@ -170,7 +172,7 @@ export class RoundsModule {
   private async getOutsiders(
     round: number,
     roundDelegates: Buffer[]
-  ): Promise<address[]> {
+  ): Promise<Address[]> {
     const strPKDelegates = roundDelegates.map((r) => r.toString('hex'));
 
     const height = this.roundsLogic.lastInRound(round);
@@ -180,7 +182,7 @@ export class RoundsModule {
 
     return originalDelegates
       .filter((pk) => strPKDelegates.indexOf(pk.toString('hex')) === -1)
-      .map((pk) => this.accountsModule.generateAddressByPublicKey(pk));
+      .map((pk) => this.accountsModule.generateAddressByPubData(pk));
   }
 
   // tslint:disable-next-line
@@ -188,14 +190,14 @@ export class RoundsModule {
     round: number,
     block: SignedBlockType
   ): Promise<{
-    roundFees: bigint;
+    roundFees: Array<bigint>;
     roundRewards: Array<bigint>;
     roundDelegates: Buffer[];
   }> {
     this.logger.debug('Summing round', round);
     // tslint:disable-next-line
     type sumRoundRes = {
-      fees: null | bigint;
+      fees: null | string[];
       rewards: null | string[];
       delegates: null | Buffer[];
     };
@@ -204,7 +206,7 @@ export class RoundsModule {
       {
         plain: true, // Returns single row.
         replacements: {
-          activeDelegates: this.constants.activeDelegates,
+          activeDelegates: this.dposConstants.activeDelegates,
           round,
         },
         type: sequelize.QueryTypes.SELECT,
@@ -214,13 +216,13 @@ export class RoundsModule {
     const roundRewards = res.rewards.map((reward) =>
       BigInt(Math.floor(parseFloat(reward)))
     );
-    let roundFees = res.fees;
+    const roundFees = res.fees.map((a) => BigInt(a));
     const roundDelegates = res.delegates;
 
-    if (roundDelegates.length === this.constants.activeDelegates - 1) {
+    if (roundDelegates.length === this.dposConstants.activeDelegates - 1) {
       // cur block is not in the database yet. So lets patch the results manually
       roundRewards.push(BigInt(block.reward));
-      roundFees += BigInt(block.totalFee);
+      roundFees.push(BigInt(block.totalFee));
       roundDelegates.push(block.generatorPublicKey);
     }
 

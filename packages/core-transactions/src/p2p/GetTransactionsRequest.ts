@@ -1,13 +1,14 @@
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { ConstantsType, IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
+import { TxConstantsType } from '../helpers';
 import { TransactionPool } from '../TransactionPool';
+import { TXBytes } from '../txbytes';
 import { TXSymbols } from '../txSymbols';
 
 // tslint:disable-next-line
@@ -39,20 +40,19 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
     type: 'object',
   };
 
-  @inject(Symbols.logic.transaction)
-  private transactionLogic: ITransactionLogic;
+  @inject(TXSymbols.txBytes)
+  private txBytes: TXBytes;
 
   @inject(TXSymbols.pool)
   private pool: TransactionPool;
 
-  // TODO: lerna remove me and use tx type constants.
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType;
+  @inject(TXSymbols.constants)
+  private txConstants: TxConstantsType;
 
   protected async produceResponse(
     request: SingleTransportPayload<null, null>
   ): Promise<GetTransactionsRequestDataType> {
-    let limit = this.constants.maxSharedTxs;
+    let limit = this.txConstants.maxSharedTxs;
 
     const unconfirmed = this.pool.unconfirmed.list({ limit }).map((t) => t.tx);
     limit -= unconfirmed.length;
@@ -72,9 +72,10 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
   ): Promise<Buffer> {
     return super.encodeResponse(
       {
-        transactions: data.transactions.map((tx) =>
-          this.transactionLogic.toProtoBuffer(tx)
-        ),
+        transactions: data.transactions.map((d) => ({
+          relays: 3,
+          tx: this.txBytes.toBuffer(d),
+        })),
       } as any,
       null
     );
@@ -89,9 +90,10 @@ export class GetTransactionsRequest extends BaseProtobufTransportMethod<
       peer
     )) as any;
     return {
-      transactions: (superRes.transactions || []).map((bufTx) =>
-        this.transactionLogic.fromProtoBuffer(bufTx)
-      ),
+      transactions: (superRes.transactions || []).map((d: any) => ({
+        ...this.txBytes.fromBuffer(d.tx),
+        relays: d.relays,
+      })),
     };
   }
 }

@@ -12,7 +12,6 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
-  ConstantsType,
   IBaseTransaction,
   ITransportTransaction,
 } from '@risevision/core-types';
@@ -25,7 +24,7 @@ import {
   SchemaValid,
   ValidateSchema,
 } from '@risevision/core-utils';
-import { LiskWallet as RISEWallet, SendTx } from 'dpos-offline';
+import { Address, RiseV2 } from 'dpos-offline';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -54,8 +53,6 @@ const schema = require('../../schema/api.json');
 export class TransactionsAPI {
   @inject(Symbols.generic.zschema)
   public schema: z_schema;
-  @inject(Symbols.generic.constants)
-  public constants: ConstantsType;
 
   @inject(Symbols.helpers.timeToEpoch)
   public timeToEpoch: ITimeToEpoch;
@@ -73,7 +70,7 @@ export class TransactionsAPI {
   private systemModule: ISystemModule;
 
   @inject(ModelSymbols.model)
-  @named(TXSymbols.model)
+  @named(TXSymbols.models.model)
   private TXModel: typeof ITransactionsModel;
   @inject(ModelSymbols.model)
   @named(ModelSymbols.names.accounts)
@@ -142,14 +139,17 @@ export class TransactionsAPI {
       limit: body.limit || 100,
       offset: body.offset || 0,
       order: orderBy,
+      raw: true,
       where,
     });
     // Reattach transactions asset
-    await this.txLogic.attachAssets(transactions);
+    // await this.txLogic.attachAssets(transactions);
 
     return {
       count,
-      transactions: transactions.map((t) => t.toTransport()),
+      transactions: transactions.map((t) =>
+        this.TXModel.toTransportTransaction(t)
+      ),
     };
   }
 
@@ -184,7 +184,6 @@ export class TransactionsAPI {
   public async getPendings(@SchemaValid(schema.getPooledTransactions)
   @QueryParams()
   params: {
-    senderPublicKey?: string;
     address?: string;
   }) {
     const txs = this.pool.pending.txList({ reverse: true });
@@ -192,13 +191,6 @@ export class TransactionsAPI {
     return {
       count: txs.length,
       transactions: txs
-        .filter((tx) =>
-          params.senderPublicKey
-            ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                tx.senderPublicKey
-              )
-            : true
-        )
         .filter((tx) =>
           params.address ? params.address === tx.recipientId : true
         )
@@ -225,7 +217,6 @@ export class TransactionsAPI {
   public async getQueuedTxs(@SchemaValid(schema.getPooledTransactions)
   @QueryParams()
   params: {
-    senderPublicKey?: string;
     address?: string;
   }) {
     const txs = this.pool.queued.txList({ reverse: true });
@@ -233,13 +224,6 @@ export class TransactionsAPI {
     return {
       count: txs.length,
       transactions: txs
-        .filter((tx) =>
-          params.senderPublicKey
-            ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                tx.senderPublicKey
-              )
-            : true
-        )
         .filter((tx) =>
           params.address ? params.address === tx.recipientId : true
         )
@@ -266,7 +250,6 @@ export class TransactionsAPI {
   public async getUnconfirmedTxs(@SchemaValid(schema.getPooledTransactions)
   @QueryParams()
   params: {
-    senderPublicKey?: string;
     address?: string;
   }) {
     const txs = this.pool.unconfirmed.txList({ reverse: true });
@@ -276,15 +259,7 @@ export class TransactionsAPI {
         .filter((tx) => {
           // Either senderPublicKey or address matching as recipientId
           // or all if no params were set.
-          return (
-            (!params.senderPublicKey && !params.address) ||
-            (params.senderPublicKey
-              ? Buffer.from(params.senderPublicKey, 'hex').equals(
-                  tx.senderPublicKey
-                )
-              : false) ||
-            (params.address ? params.address === tx.recipientId : false)
-          );
+          return params.address ? params.address === tx.recipientId : true;
         })
         .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
@@ -317,23 +292,32 @@ export class TransactionsAPI {
     amount: number;
     secondSecret?: string;
   }) {
-    const w = new RISEWallet(body.secret, this.constants.addressSuffix);
-    const second = body.secondSecret
-      ? new RISEWallet(body.secondSecret, this.constants.addressSuffix)
+    const kp = RiseV2.deriveKeypair(body.secret);
+    const skp = body.secondSecret
+      ? RiseV2.deriveKeypair(body.secondSecret)
       : undefined;
-    const transaction = w.signTransaction(
-      new SendTx()
-        .set('amount', body.amount)
-        .set('timestamp', this.timeToEpoch.getTime())
-        .set('recipientId', body.recipientId)
-        .set(
-          'fee',
-          parseInt(this.systemModule.getFees().fees.send.toString(), 10)
-        ),
-      second
+
+    const transaction = RiseV2.txs.createAndSign(
+      {
+        amount: `${body.amount}`,
+        kind: 'send',
+        recipient: body.recipientId as Address,
+      },
+      kp,
+      true
     );
 
-    const res = await this.put({ transaction });
+    if (skp) {
+      transaction.signatures.push(RiseV2.txs.calcSignature(transaction, skp));
+    }
+
+    const postableTx = RiseV2.txs.toPostable(transaction);
+    const res = await this.put({
+      transaction: {
+        ...postableTx,
+        version: (postableTx as any).version || 0,
+      } as any,
+    });
     if (res.accepted && res.accepted.length === 1) {
       return { transactionId: res.accepted[0] };
     } else {
@@ -474,19 +458,19 @@ export class TransactionsAPI {
 
     if (Array.isArray(body.senderIds)) {
       whereClause.senderId = {
-        [Op.in]: body.senderIds.map((item) => item.toUpperCase()),
+        [Op.in]: body.senderIds,
       };
       if (body.senderId) {
-        whereClause.senderId[Op.in].push(body.senderId.toUpperCase());
+        whereClause.senderId[Op.in].push(body.senderId);
       }
     }
 
     if (Array.isArray(body.recipientIds)) {
       whereClause.recipientId = {
-        [Op.in]: body.recipientIds.map((item) => item.toUpperCase()),
+        [Op.in]: body.recipientIds,
       };
       if (body.recipientId) {
-        whereClause.recipientId[Op.in].push(body.recipientId.toUpperCase());
+        whereClause.recipientId[Op.in].push(body.recipientId);
       }
     }
 

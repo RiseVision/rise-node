@@ -20,11 +20,7 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
-import {
-  AppConfig,
-  ConstantsType,
-  SignedAndChainedBlockType,
-} from '@risevision/core-types';
+import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { logOnly } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -51,7 +47,6 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.defaultSequence)
   public defaultSequence: ISequence;
-  private network: { height: number; peers: Peer[] };
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -63,8 +58,8 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & BlocksConstantsType;
+  @inject(BlocksSymbols.constants)
+  private constants: BlocksConstantsType;
   @inject(Symbols.helpers.jobsQueue)
   private jobsQueue: IJobsQueue;
   @inject(Symbols.helpers.logger)
@@ -102,29 +97,13 @@ export class LoaderModule implements ILoaderModule {
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
 
-  @postConstruct()
-  public initialize() {
-    this.network = {
-      height: 0,
-      peers: [],
-    };
+  public getNetwork() {
+    const peers = this.peersModule.getPeers({});
+    return this.peersModule.findGoodPeers(peers);
   }
 
-  public async getNetwork() {
-    if (
-      !(
-        this.network.height > 0 &&
-        Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1
-      )
-    ) {
-      const { peers } = await this.peersModule.list({});
-      this.network = this.peersModule.findGoodPeers(peers);
-    }
-    return this.network;
-  }
-
-  public async getRandomPeer(): Promise<Peer> {
-    const { peers } = await this.getNetwork();
+  public getRandomPeer(): Peer {
+    const { peers } = this.getNetwork();
     if (peers.length === 0) {
       throw new Error('No acceptable peers for the operation');
     }
@@ -191,6 +170,11 @@ export class LoaderModule implements ILoaderModule {
       return this.load(blocksCount, limit, e.message, true);
     }
 
+    this.blocksModule.lastBlock = await this.BlocksModel.findOne({
+      limit: 1,
+      order: [['height', 'desc']],
+    });
+
     this.logger.info('Blockchain ready');
     await this.hookSystem.do_action(OnBlockchainReady.name);
     this.syncTimer();
@@ -200,20 +184,28 @@ export class LoaderModule implements ILoaderModule {
     count: number,
     limitPerIteration: number,
     message?: string,
-    emitBlockchainReady = false
+    emitBlockchainReady = false,
+    offset: number = 0
   ) {
-    let offset = 0;
     if (message) {
       this.logger.warn(message);
       this.logger.warn('Recreating memory tables');
     }
 
-    await this.hookSystem.do_action(RecreateAccountsTables.name);
-
+    if (offset > 0) {
+      this.blocksModule.lastBlock = await this.BlocksModel.findOne({
+        where: {
+          height: offset,
+        },
+      });
+      offset += 1;
+    } else {
+      await this.hookSystem.do_action(RecreateAccountsTables.name);
+    }
     while (count >= offset) {
       if (count > 1) {
         this.logger.info(
-          'Rebuilding blockchain, current block height: ' + (offset + 1)
+          'Rebuilding blockchain, current block height: ' + offset
         );
       }
       await this.blocksProcessModule.loadBlocksOffset(
@@ -246,7 +238,13 @@ export class LoaderModule implements ILoaderModule {
       blocksCount
     );
 
-    await this.load(blocksCount, limit, 'Blocks Verification enabled', false);
+    await this.load(
+      blocksCount,
+      limit,
+      'Blocks Verification enabled',
+      false,
+      process.env.OFFSET ? parseInt(process.env.OFFSET, 10) : 0
+    );
 
     if (this.blocksModule.lastBlock.height !== blocksCount) {
       // tslint:disable-next-line max-line-length
@@ -283,14 +281,13 @@ export class LoaderModule implements ILoaderModule {
       'loaderSyncTimer',
       async () => {
         this.logger.trace('Sync timer trigger', {
-          last_receipt: this.blocksModule.lastReceipt.get(),
           syncing: this.isSyncing,
         });
         this.appState.set('loader.isSyncing', true);
         await this.doSync().catch(logOnly(this.logger));
         this.appState.set('loader.isSyncing', false);
       },
-      Math.max(1000, this.constants.blocks.targetTime * (1000 / 50))
+      Math.max(1000, this.constants.targetTime * (1000 / 50))
     );
   }
 }

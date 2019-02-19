@@ -20,11 +20,7 @@ export class SocketIOAPI extends Extendable {
   public io: SocketIO.Server;
 
   @OnWPAction('core/blocks/chain/applyBlock.post')
-  public async onNewBlock(
-    block: SignedBlockType,
-    tx: Transaction,
-    broadcast: boolean
-  ) {
+  public async onNewBlock(block: SignedBlockType, broadcast: boolean) {
     // If !broadcast it probably means we're syncing.
     if (broadcast) {
       this.io.sockets.emit('blocks/change', block);

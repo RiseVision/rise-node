@@ -1,32 +1,37 @@
-import { DBOp, FieldsInModel, publicKey } from '@risevision/core-types';
-import * as sequelize from 'sequelize';
+import { Address, DBOp } from '@risevision/core-types';
+import { WhereLogic } from 'sequelize';
+import { As } from 'type-tagger';
+import { Omit } from 'utility-types';
 import { IAccountsModel } from '../models';
 
 // tslint:disable-next-line
-export type AccountFilterData = {
-  isDelegate?: 1 | 0;
-  username?: string;
+export type AccountFilterData<T extends IAccountsModel = IAccountsModel> = Omit<
+  { [k in keyof T]?: T[k] | WhereLogic },
+  'address'
+> & {
   address?: string | { $in: string[] };
-  publicKey?: Buffer | sequelize.WhereLogic;
   limit?: number;
   offset?: number;
-  cmb?: sequelize.WhereLogic;
-  sort?: string | { [k: string]: -1 | 1 };
+  sort?: { [k in keyof T]?: -1 | 1 };
 };
 
 export type AccountDiffType<IAM = IAccountsModel> = {
   [k in keyof IAM]?: IAM[k]
 } & { round?: number };
+
 export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {
   /**
    * Updates account from mem_account with diff data belongings to an editable field
    * Inserts into mem_round "address", "amount", "delegate", "blockId", "round"
    * based on field balance or delegates.
    * @param {string} address
-   * @param {MemAccountsData} diff
+   * @param {object} diff
    * @returns {Promise<any>}
    */
-  merge(address: string, diff: AccountDiffType): Array<DBOp<any>>;
+  mergeBalanceDiff(
+    address: Address,
+    diff: { balance?: bigint; u_balance?: bigint }
+  ): Array<DBOp<any>>;
 
-  generateAddressByPublicKey(pk: Buffer): string;
+  generateAddressFromPubData(pubData: Buffer): string & As<'address'>;
 }

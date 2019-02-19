@@ -4,10 +4,19 @@ import {
   setupExceptionOnInstance,
 } from '@risevision/core-exceptions';
 import { IExceptionHandler } from '@risevision/core-exceptions';
-import { ITransactionLogic } from '@risevision/core-interfaces';
-import { TXSymbols } from '@risevision/core-transactions';
+import {
+  ICrypto,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-interfaces';
+import {
+  SignHooksListener,
+  SigSymbols,
+} from '@risevision/core-secondsignature';
+import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
 import { Container } from 'inversify';
+import { genericExceptionSymbols, secondSignatureExc } from '../generic';
 import { excSymbols } from './symbols';
 
 // tslint:disable max-line-length no-identical-functions
@@ -29,7 +38,7 @@ export async function registerExceptions(
   setupExceptionOnInstance(
     excManager,
     tl,
-    'checkBalance',
+    'assertEnoughBalance',
     excSymbols.txlogic_checkBalance
   );
   await tx1563714189640390961(excManager);
@@ -44,6 +53,22 @@ export async function registerExceptions(
     excSymbols.txlogic_applyUnconfirmed
   );
   await tx14712341342146176146(excManager);
+
+  const signHooksListener = container.get<SignHooksListener>(
+    SigSymbols.hooksListener
+  );
+  setupExceptionOnInstance(
+    excManager,
+    signHooksListener,
+    'txSignatureVerify',
+    genericExceptionSymbols.secondSignatureVerification
+  );
+
+  await secondSignatureExc(
+    excManager,
+    container.get<ICrypto>(Symbols.generic.crypto),
+    container.get<TXBytes>(TXSymbols.txBytes)
+  );
 }
 
 function block_127765(excManager: ExceptionsManager) {
@@ -87,10 +112,10 @@ function tx1563714189640390961(excManager: ExceptionsManager) {
     ) {
       return (
         tx.id === '1563714189640390961' &&
-        tx.senderPublicKey.toString('hex') ===
+        tx.senderPubData.toString('hex') ===
           '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
         // tslint:disable-next-line
-        tx.signature.toString('hex') ===
+        tx.signatures[0].toString('hex') ===
           '23453a9979ab97b20523acfab3ecd2dd3e9d5decaf6412d34bd9e4da3841ba6f81e6172dd560d113e64184f179b3de2e97d7d62d8daab04271b992b8e4fceb0e'
       );
     },
@@ -129,10 +154,10 @@ function tx5557619371011868150(excManager: ExceptionsManager) {
     ) {
       return (
         tx.id === '5557619371011868150' &&
-        tx.senderPublicKey.toString('hex') ===
+        tx.senderPubData.toString('hex') ===
           '0275d0ee6f100cd429bbdc8556e3d1f49cca610f093c2e51e02cf038e8813282' &&
         // tslint:disable-next-line
-        tx.signature.toString('hex') ===
+        tx.signatures[0].toString('hex') ===
           '74a014e909a532fc07f98ec4afe5f353ef274ac0bcda71308f06acbf434d60b0ff197eb9bb01b4360d34cbbb2e292842c6a6f7792089f58c2f5ea8578a10eb0c'
       );
     },
@@ -167,9 +192,9 @@ function tx10425551571020716913(excManager: ExceptionsManager) {
     ) {
       return (
         tx.id === '10425551571020716913' &&
-        tx.senderPublicKey.toString('hex') ===
+        tx.senderPubData.toString('hex') ===
           'bcbdeb90a958880088465bc0614d8b877214a33284d460a917208730399f4140' &&
-        tx.signature.toString('hex') ===
+        tx.signatures[0].toString('hex') ===
           '48bb8adfc375378af8b2dc873595905fe910711b93a71ed5548ffcaa39194e7bb470ea15b5398ed016ddc6d37eee7c62c6e67ba627d5037eee76030e7f1bfe0c'
       );
     },
@@ -201,16 +226,18 @@ function tx10425551571020716913(excManager: ExceptionsManager) {
  * basically applyUnconfirmed +rollbacl and appy +rollback but newer code broadcasts an error.
  *
  * Affected block was: 441720
+ *
+ * @codesample registerException
  */
 function tx14712341342146176146(excManager: ExceptionsManager) {
   const handler: IExceptionHandler<ITransactionLogic> = {
     canHandle(obj: ITransactionLogic, tx: IBaseTransaction<any>) {
       return (
         tx.id === '14712341342146176146' &&
-        tx.senderPublicKey.toString('hex') ===
+        tx.senderPubData.toString('hex') ===
           '505a860f782db11937a1183732770878c45215567856670a9219c27ada80f22e' &&
         // tslint:disable-next-line
-        tx.signature.toString('hex') ===
+        tx.signatures[0].toString('hex') ===
           '75ded480d00179b80ae975d91189c2d68fb474b95cd09c1769b2ea693eaa0e502bffe958c8c8bed39b025926b4e7e6ac766f3c82d569a178bc5dd40b7ee2c303'
       );
     },

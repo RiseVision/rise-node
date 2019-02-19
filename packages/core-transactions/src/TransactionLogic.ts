@@ -1,42 +1,42 @@
 import {
   IAccountLogic,
   IAccountsModel,
+  IBaseTransactionType,
   ICrypto,
+  IIdsHandler,
   ILogger,
   ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
   Symbols,
-  VerificationType,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
-  ConstantsType,
   DBBulkCreateOp,
   DBOp,
   IBaseTransaction,
-  IBytesTransaction,
   ITransportTransaction,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
-import { toBigIntBE, toBigIntLE, toBufferBE, toBufferLE } from 'bigint-buffer';
-import * as ByteBuffer from 'bytebuffer';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem } from 'mangiafuoco';
-import { Model } from 'sequelize-typescript';
 import z_schema from 'z-schema';
-import { BaseTx } from './BaseTx';
-import { TxLogicStaticCheck, TxLogicVerify } from './hooks/actions';
+import {
+  TxLogicStaticCheck,
+  TxLogicVerify,
+  TxSignatureVerify,
+} from './hooks/actions';
 import {
   TxApplyFilter,
   TxApplyUnconfirmedFilter,
   TxUndoFilter,
   TxUndoUnconfirmedFilter,
 } from './hooks/filters';
+import { TXBytes } from './txbytes';
 import { TXSymbols } from './txSymbols';
 
 // tslint:disable-next-line no-var-requires
@@ -44,14 +44,8 @@ const txSchema = require('../schema/transaction.json');
 
 @injectable()
 export class TransactionLogic implements ITransactionLogic {
-  @inject(Symbols.generic.constants)
-  private constants: ConstantsType & { blocks: { maxTxsPerBlock: number } };
-
   @inject(Symbols.logic.account)
   private accountLogic: IAccountLogic;
-
-  @inject(Symbols.generic.crypto)
-  private crypto: ICrypto;
 
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
@@ -67,236 +61,29 @@ export class TransactionLogic implements ITransactionLogic {
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
+  @inject(TXSymbols.txBytes)
+  private txBytes: TXBytes;
+
+  @inject(Symbols.helpers.idsHandler)
+  private idsHandler: IIdsHandler;
+
   @inject(ModelSymbols.model)
-  @named(TXSymbols.model)
+  @named(TXSymbols.models.model)
   private TransactionsModel: typeof ITransactionsModel;
   @inject(Symbols.generic.hookSystem)
   private hookSystem: WordPressHookSystem;
 
-  private types: { [k: number]: BaseTx<any, any> } = {};
-
-  public attachAssetType<K, M extends Model<any>>(
-    instance: BaseTx<K, M>
-  ): BaseTx<K, M> {
-    if (!(instance instanceof BaseTx)) {
-      throw new Error('Invalid instance interface');
-    }
-    this.types[instance.type] = instance;
-    return instance;
-  }
-
-  /**
-   * Calculate tx id
-   * @returns {string} the id.
-   */
-  public getId(tx: IBaseTransaction<any, bigint>): string {
-    return this.getIdFromBytes(this.getBytes(tx));
-  }
+  @inject(Symbols.generic.txtypes)
+  private types: { [type: number]: IBaseTransactionType<any, any> };
 
   /**
    * Hash for the transaction
    */
-  public getHash(
-    tx: IBaseTransaction<any, bigint>,
-    skipSign: boolean = false,
-    skipSecondSign: boolean = false
-  ): Buffer {
+  public getHash(tx: IBaseTransaction<any, bigint>): Buffer {
     return crypto
       .createHash('sha256')
-      .update(this.getBytes(tx, skipSign, skipSecondSign))
+      .update(this.types[tx.type].signableBytes(tx))
       .digest();
-  }
-
-  /**
-   * Return the transaction bytes.
-   * @returns {Buffer}
-   */
-  // tslint:disable-next-line cognitive-complexity
-  public getBytes(
-    tx: IBaseTransaction<any, bigint>,
-    skipSignature: boolean = false,
-    skipSecondSignature: boolean = false
-  ): Buffer {
-    if (!(tx.type in this.types)) {
-      throw new Error(`Unknown transaction type ${tx.type}`);
-    }
-
-    const txType = this.types[tx.type];
-
-    const assetBytes = txType.getBytes(tx, skipSignature, skipSecondSignature);
-
-    const bb = new ByteBuffer(
-      1 + 4 + 32 + 32 + 8 + 8 + 64 + 64 + assetBytes.length,
-      true
-    );
-
-    bb.writeByte(tx.type);
-    bb.writeInt(tx.timestamp);
-
-    bb.append(tx.senderPublicKey);
-
-    if (tx.requesterPublicKey) {
-      bb.append(tx.requesterPublicKey);
-    }
-
-    if (tx.recipientId) {
-      const recipient = tx.recipientId.slice(
-        0,
-        -this.constants.addressSuffix.length
-      );
-
-      const num = BigInt(recipient);
-      let recBuf = toBufferBE(num, 8);
-      // This is due to a bug in how addresses were serialized.
-      if (num > 18446744073709551616n) {
-        recBuf = toBufferBE(num, 16).slice(0, 8);
-      }
-
-      bb.append(recBuf);
-    } else {
-      bb.append(Buffer.alloc(8).fill(0));
-    }
-
-    bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
-
-    if (assetBytes.length > 0) {
-      bb.append(assetBytes);
-    }
-
-    if (!skipSignature && tx.signature) {
-      bb.append(tx.signature);
-    }
-
-    if (!skipSecondSignature && tx.signSignature) {
-      bb.append(tx.signSignature);
-    }
-
-    bb.flip();
-
-    return bb.toBuffer() as any;
-  }
-
-  public toProtoBuffer(
-    tx: IBaseTransaction<any, bigint> & { relays: number }
-  ): Buffer {
-    const obj = {
-      bytes: this.getBytes(tx),
-      fee: toBufferLE(tx.fee, this.constants.amountBytes),
-      hasRequesterPublicKey:
-        typeof tx.requesterPublicKey !== 'undefined' &&
-        tx.requesterPublicKey != null,
-      hasSignSignature:
-        typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
-      relays: Number.isInteger(tx.relays) ? tx.relays : 1,
-      signatures: tx.signatures,
-    };
-
-    return this.protoBufHelper.encode(
-      obj,
-      'transactions.tx',
-      'bytesTransaction'
-    );
-  }
-
-  // tslint:disable-next-line
-  public fromProtoBuffer(
-    data: Buffer
-  ): IBaseTransaction<any, bigint> & { relays: number } {
-    const tx: IBytesTransaction = this.protoBufHelper.decode(
-      data,
-      'transactions.tx',
-      'bytesTransaction'
-    );
-
-    const bb = ByteBuffer.wrap(tx.bytes, 'binary', true);
-    const type = bb.readByte(0);
-    const timestamp = bb.readUint32(1);
-    const senderPublicKey = tx.bytes.slice(5, 37);
-    let requesterPublicKey = null;
-    let offset = 37;
-
-    // Read requesterPublicKey if available
-    if (tx.hasRequesterPublicKey) {
-      requesterPublicKey = tx.bytes.slice(offset, offset + 32);
-      offset += 32;
-    }
-
-    // RecipientId is valid only if it's not 8 bytes with 0 value
-    const recipientIdBytes = tx.bytes.slice(offset, offset + 8);
-    offset += 8;
-    let recipientValid = false;
-    for (let i = 0; i < 8; i++) {
-      if (recipientIdBytes.readUInt8(i) !== 0) {
-        recipientValid = true;
-        break;
-      }
-    }
-
-    const recipientId = recipientValid
-      ? toBigIntBE(recipientIdBytes).toString() +
-        this.constants.addressSuffix
-      : null;
-
-    const amount = toBigIntLE(
-      tx.bytes.slice(offset, offset + this.constants.amountBytes)
-    );
-    offset += this.constants.amountBytes;
-
-    const signature = tx.hasSignSignature
-      ? tx.bytes.slice(bb.buffer.length - 128, bb.buffer.length - 64)
-      : tx.bytes.slice(bb.buffer.length - 64, bb.buffer.length);
-
-    // Read signSignature if available
-    const signSignature = tx.bytes.slice(
-      bb.buffer.length - 64,
-      bb.buffer.length
-    );
-
-    // All remaining bytes between amount and signSignature (or signature) are the asset.
-    let assetBytes = null;
-    const optionalElementsLength =
-      (tx.hasRequesterPublicKey ? 32 : 0) + (tx.hasSignSignature ? 64 : 0);
-    const assetLength =
-      bb.buffer.length -
-      (1 +
-        4 +
-        32 +
-        this.constants.amountBytes +
-        8 +
-        64 +
-        optionalElementsLength);
-
-    if (assetLength < 0) {
-      throw new Error('Buffer length does not match expected sequence');
-    } else if (assetLength > 0) {
-      assetBytes = tx.bytes.slice(offset, offset + assetLength);
-    }
-
-    const transaction: IBaseTransaction<any, bigint> & { relays: number } = {
-      amount,
-      fee: toBigIntLE(tx.fee),
-      id: this.getIdFromBytes(tx.bytes),
-      recipientId,
-      relays: tx.relays,
-      requesterPublicKey,
-      senderId: this.accountLogic.generateAddressByPublicKey(senderPublicKey),
-      senderPublicKey,
-      signature,
-      timestamp,
-      type,
-    };
-    if (tx.hasRequesterPublicKey) {
-      transaction.requesterPublicKey = requesterPublicKey;
-    }
-    if (tx.hasSignSignature) {
-      transaction.signSignature = signSignature;
-    }
-    transaction.asset = this.types[type].fromBytes(assetBytes, transaction);
-
-    if (tx.signatures && tx.signatures.length > 0) {
-      transaction.signatures = tx.signatures;
-    }
-    return transaction;
   }
 
   public async ready(
@@ -321,29 +108,44 @@ export class TransactionLogic implements ITransactionLogic {
   /**
    * Checks if balanceKey is less than amount for sender
    */
-  public checkBalance(
+  public assertEnoughBalance(
     amount: bigint,
     balanceKey: 'balance' | 'u_balance',
     tx: IBaseTransaction<any>,
     sender: IAccountsModel
   ) {
-    const exceededBalance = sender[balanceKey] < amount;
     // tslint:disable-next-line
-    const exceeded = tx['blockId'] !== this.genesisBlock.id && exceededBalance;
-    return {
-      error: exceeded
-        ? `Account does not have enough currency: ${sender.address} balance: ${
-            sender[balanceKey]
-          } - ${amount}`
-        : null,
-      exceeded,
-    };
+    if (tx['blockId'] !== this.genesisBlock.id && sender[balanceKey] < amount) {
+      throw new Error(
+        `\`Account does not have enough currency: ${sender.address} balance: ${
+          sender[balanceKey]
+        } - ${amount}\``
+      );
+    }
+  }
+
+  public async findConflicts(
+    txs: Array<IBaseTransaction<any>>
+  ): Promise<Array<IBaseTransaction<any>>> {
+    const allConflicts: Array<IBaseTransaction<any>> = [];
+    const txsByGroup = _.groupBy(txs, (i) => i.type);
+    // tslint:disable-next-line forin
+    for (const type in txsByGroup) {
+      const loopTXs = txsByGroup[type];
+      this.assertKnownTransactionType(loopTXs[0].type);
+
+      const conflictingTransactions = await this.types[
+        loopTXs[0].type
+      ].findConflicts(loopTXs);
+      allConflicts.push(...conflictingTransactions);
+    }
+
+    return allConflicts;
   }
 
   public async verify(
     tx: IBaseTransaction<any, bigint>,
     sender: IAccountsModel,
-    requester: IAccountsModel,
     height: number
   ) {
     this.assertKnownTransactionType(tx.type);
@@ -355,7 +157,6 @@ export class TransactionLogic implements ITransactionLogic {
       TxLogicStaticCheck.name,
       tx,
       sender,
-      requester,
       height
     );
 
@@ -365,111 +166,74 @@ export class TransactionLogic implements ITransactionLogic {
       );
     }
 
-    const txID = this.getId(tx);
+    const txID = this.idsHandler.calcTxIdFromBytes(
+      this.types[tx.type].fullBytes(tx)
+    );
     if (txID !== tx.id) {
-      throw new Error('Invalid transaction id');
-    }
-
-    // Check sender public key
-    if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
-      // tslint:disable-next-line
       throw new Error(
-        `Invalid sender public key: ${tx.senderPublicKey.toString(
-          'hex'
-        )} expected ${sender.publicKey.toString('hex')}`
+        `Invalid transaction id - Expected ${txID}, Received ${tx.id}`
       );
     }
 
-    // Check sender is not genesis account unless block id equals genesis
-    if (
-      this.genesisBlock.generatorPublicKey.equals(sender.publicKey) &&
-      (tx as IBaseTransaction<any>).blockId !== this.genesisBlock.id
-    ) {
-      throw new Error('Invalid sender. Can not send from genesis account');
-    }
-
-    if (
-      String((tx as any).senderId).toUpperCase() !==
-      String(sender.address).toUpperCase()
-    ) {
+    const calcAddress = this.idsHandler.addressFromPubData(tx.senderPubData);
+    if (calcAddress !== sender.address || tx.senderId !== calcAddress) {
       throw new Error('Invalid sender address');
     }
+    // // Check sender public key
+    // if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
+    //   // tslint:disable-next-line
+    //   throw new Error(
+    //     `Invalid sender public key: ${tx.senderPublicKey.toString(
+    //       'hex'
+    //     )} expected ${sender.publicKey.toString('hex')}`
+    //   );
+    // }
 
-    if (
-      !this.verifySignature(
-        tx,
-        tx.requesterPublicKey || tx.senderPublicKey,
-        tx.signature,
-        VerificationType.SIGNATURE
-      )
-    ) {
-      throw new Error('Failed to verify signature');
-    }
+    // Check sender is not genesis account unless block id equals genesis
+    // if (
+    //   this.genesisBlock.generatorPublicKey.equals(sender.publicKey) &&
+    //   (tx as IBaseTransaction<any>).blockId !== this.genesisBlock.id
+    // ) {
+    //   throw new Error('Invalid sender. Can not send from genesis account');
+    // }
 
     // Check fee
-    const fee = this.types[tx.type].calculateFee(tx, sender, height);
-    if (fee !== tx.fee) {
-      throw new Error('Invalid transaction fee');
+    const fee = this.types[tx.type].calculateMinFee(tx, sender, height);
+    if (fee > tx.fee) {
+      throw new Error(`Invalid transaction fee. Min fee is ${fee}`);
     }
 
     this.assertValidAmounts(tx);
 
     // Check confirmed sender balance
-    const amount = BigInt(tx.amount) + BigInt(tx.fee);
-    const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
-    if (senderBalance.exceeded) {
-      throw new Error(senderBalance.error);
+    this.assertEnoughBalance(tx.amount + tx.fee, 'balance', tx, sender);
+
+    if (!(await this.verifyTxSignature(tx, sender, height))) {
+      throw new Error(`Transaction ${tx.id} signature is not valid`);
     }
 
-    await this.hookSystem.do_action(
-      TxLogicVerify.name,
-      tx,
-      sender,
-      requester,
-      height
-    );
-    // // Check timestamp
-    // if (this.slots.getSlotNumber(tx.timestamp) > this.slots.getSlotNumber()) {
-    //   throw new Error('Invalid transaction timestamp. Timestamp is in the future');
-    // }
+    await this.hookSystem.do_action(TxLogicVerify.name, tx, sender, height);
 
     await this.types[tx.type].verify(tx, sender);
   }
 
-  /**
-   * Verifies the given signature (both first and second)
-   * @param {IBaseTransaction<any>} tx
-   * @param {Buffer} publicKey
-   * @param {string} signature
-   * @param {VerificationType} verificationType
-   * @returns {boolean} true
-   */
-  public verifySignature(
+  public async verifyTxSignature(
     tx: IBaseTransaction<any, bigint>,
-    publicKey: Buffer,
-    signature: Buffer,
-    verificationType: VerificationType
-  ): boolean {
-    this.assertKnownTransactionType(tx.type);
-    if (!signature) {
+    sender: IAccountsModel,
+    height: number
+  ) {
+    try {
+      await this.hookSystem.do_action(
+        TxSignatureVerify.name,
+        tx,
+        this.getHash(tx),
+        sender,
+        height
+      );
+      return true;
+    } catch (e) {
       return false;
     }
-    // ALL
-    let skipSign = false;
-    let skipSecondSign = false;
-    switch (verificationType) {
-      case VerificationType.SECOND_SIGNATURE:
-        skipSecondSign = true;
-        break;
-      case VerificationType.SIGNATURE:
-        skipSecondSign = skipSign = true;
-        break;
-    }
-    return this.crypto.verify(
-      this.getHash(tx, skipSign, skipSecondSign),
-      signature,
-      publicKey
-    );
   }
 
   public async apply(
@@ -481,23 +245,17 @@ export class TransactionLogic implements ITransactionLogic {
       throw new Error('Transaction is not ready');
     }
 
-    const amount = BigInt(tx.amount) + BigInt(tx.fee);
-    const senderBalance = this.checkBalance(amount, 'balance', tx, sender);
-    if (senderBalance.exceeded) {
-      throw new Error(senderBalance.error);
-    }
+    const amount = tx.amount + tx.fee;
+    this.assertEnoughBalance(tx.amount + tx.fee, 'balance', tx, sender);
 
     sender.balance -= amount;
     this.logger.trace('Logic/Transaction->apply', {
       balance: -amount,
-      blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
       sender: sender.address,
     });
-    const ops = this.accountLogic.merge(sender.address, {
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
       balance: -amount,
-      blockId: block.id,
-      // round  : this.roundsLogic.calcRound(block.height),
     });
     ops.push(...(await this.types[tx.type].apply(tx, block, sender)));
     return await this.hookSystem.apply_filters(
@@ -523,14 +281,11 @@ export class TransactionLogic implements ITransactionLogic {
     sender.balance += amount;
     this.logger.trace('Logic/Transaction->undo', {
       balance: amount,
-      blockId: block.id,
       // round  : this.roundsLogic.calcRound(block.height),
       sender: sender.address,
     });
-    const ops = this.accountLogic.merge(sender.address, {
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
       balance: amount,
-      blockId: block.id,
-      // round  : this.roundsLogic.calcRound(block.height),
     });
     ops.push(...(await this.types[tx.type].undo(tx, block, sender)));
     return await this.hookSystem.apply_filters(
@@ -548,15 +303,12 @@ export class TransactionLogic implements ITransactionLogic {
     sender: IAccountsModel,
     requester?: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
-    const amount = BigInt(tx.amount) + BigInt(tx.fee);
-    const senderBalance = this.checkBalance(amount, 'u_balance', tx, sender);
-    if (senderBalance.exceeded) {
-      throw new Error(senderBalance.error);
-    }
+    const amount = tx.amount + tx.fee;
+    this.assertEnoughBalance(amount, 'u_balance', tx, sender);
 
     sender.u_balance -= amount;
 
-    const ops = this.accountLogic.merge(sender.address, {
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
       u_balance: -amount,
     });
     ops.push(...(await this.types[tx.type].applyUnconfirmed(tx, sender)));
@@ -580,7 +332,9 @@ export class TransactionLogic implements ITransactionLogic {
 
     sender.u_balance += amount;
 
-    const ops = this.accountLogic.merge(sender.address, { u_balance: amount });
+    const ops = this.accountLogic.mergeBalanceDiff(sender.address, {
+      u_balance: amount,
+    });
     ops.push(...(await this.types[tx.type].undoUnconfirmed(tx, sender)));
     return await this.hookSystem.apply_filters(
       TxUndoUnconfirmedFilter.name,
@@ -603,12 +357,7 @@ export class TransactionLogic implements ITransactionLogic {
       type: 'bulkCreate',
       values: txs.map((tx) => {
         this.assertKnownTransactionType(tx.type);
-        const senderPublicKey = tx.senderPublicKey;
-        const signature = tx.signature;
-        const signSignature = tx.signSignature ? tx.signSignature : null;
-        const requesterPublicKey = tx.requesterPublicKey
-          ? tx.requesterPublicKey
-          : null;
+        const senderPubData = tx.senderPubData;
         return {
           // tslint:disable object-literal-sort-keys
           id: tx.id,
@@ -616,19 +365,13 @@ export class TransactionLogic implements ITransactionLogic {
           height,
           type: tx.type,
           timestamp: tx.timestamp,
-          senderPublicKey,
-          requesterPublicKey,
+          senderPubData,
           senderId: tx.senderId,
           recipientId: tx.recipientId || null,
           amount: BigInt(tx.amount),
           fee: BigInt(tx.fee),
-          signature,
-          signSignature,
-          signatures: tx.signatures
-            ? (tx.signatures
-                .map((s: Buffer) => s.toString('hex'))
-                .join(',') as any) // Signatures are stringified and joined.
-            : null,
+          version: tx.version || 0,
+          signatures: tx.signatures,
           // tslint:enable object-literal-sort-keys
         };
       }),
@@ -662,15 +405,14 @@ export class TransactionLogic implements ITransactionLogic {
       }
     }
     // Convert hex encoded fields to Buffers (if they're not already buffers)
-    [
-      'senderPublicKey',
-      'requesterPublicKey',
-      'signature',
-      'signSignature',
-    ].forEach((k) => {
-      if (typeof tx[k] === 'string') {
-        tx[k] = Buffer.from(tx[k], 'hex');
+    if (typeof tx.senderPubData === 'string') {
+      tx.senderPubData = Buffer.from(tx.senderPubData, 'hex');
+    }
+    tx.signatures = (tx.signatures as any[]).map<Buffer>((s) => {
+      if (typeof s === 'string') {
+        return Buffer.from(s, 'hex');
       }
+      return s;
     });
 
     tx.amount = BigInt(tx.amount);
@@ -715,18 +457,6 @@ export class TransactionLogic implements ITransactionLogic {
     return max;
   }
 
-  public getMinBytesSize(): number {
-    let min = Number.MAX_SAFE_INTEGER;
-    Object.keys(this.types).forEach((type) => {
-      min = Math.min(min, this.types[type].getMaxBytesSize());
-    });
-    return min;
-  }
-
-  public getByteSizeByTxType(txType: number): number {
-    return this.types[txType].getMaxBytesSize();
-  }
-
   private assertValidAmounts(tx: IBaseTransaction<any, bigint>) {
     // Check amount
     const amountFields = ['fee', 'amount'];
@@ -735,27 +465,11 @@ export class TransactionLogic implements ITransactionLogic {
       if (typeof v !== 'bigint') {
         throw new Error(`${k} is not a bigint`);
       }
-      if (v < 0 || v > BigInt(this.constants.totalAmount)) {
+      if (v < 0n) {
         throw new Error(
           `tx.${k} is either negative or greater than totalAmount`
         );
       }
     });
-  }
-
-  /**
-   * Calculate tx id from getBytes() output
-   * @returns {string} the id.
-   */
-  private getIdFromBytes(bytes: Buffer): string {
-    const hash = crypto
-      .createHash('sha256')
-      .update(bytes)
-      .digest();
-    const temp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      temp[i] = hash[7 - i];
-    }
-    return toBigIntBE(temp).toString();
   }
 }

@@ -42,7 +42,7 @@ export class PeersAPI {
     params: any
   ) {
     try {
-      const peers = await this.peersModule.getByFilter(params);
+      const peers = this.peersModule.getByFilter(params);
       return { peers: peers.map((peer) => peer.object()) };
     } catch (err) {
       throw new HTTPError('Failed to get peers', 200);
@@ -57,30 +57,31 @@ export class PeersAPI {
     ip: string;
     port: number;
   }) {
+    let peers;
     try {
-      const peers = await this.peersModule.getByFilter(params);
-      if (peers.length > 0) {
-        return { peer: peers[0] };
-      } else {
-        return Promise.reject(new HTTPError('Peer not found', 200));
-      }
+      peers = this.peersModule.getByFilter(params);
     } catch (err) {
       throw new HTTPError('Failed to get peers', 200);
+    }
+    if (peers.length > 0) {
+      return { peer: peers[0] };
+    } else {
+      throw new HTTPError('Peer not found', 200);
     }
   }
 
   @Get('/count')
-  public async count() {
+  public count() {
     try {
-      const connected = (await this.peersModule.getByFilter({
+      const connected = this.peersModule.getByFilter({
         state: PeerState.CONNECTED,
-      })).length;
-      const disconnected = (await this.peersModule.getByFilter({
+      }).length;
+      const disconnected = this.peersModule.getByFilter({
         state: PeerState.DISCONNECTED,
-      })).length;
-      const banned = (await this.peersModule.getByFilter({
+      }).length;
+      const banned = this.peersModule.getByFilter({
         state: PeerState.BANNED,
-      })).length;
+      }).length;
 
       return { connected, disconnected, banned };
     } catch (e) {
@@ -89,7 +90,7 @@ export class PeersAPI {
   }
 
   @Get('/version')
-  public async version() {
+  public version() {
     return {
       build: this.versionBuild,
       minVersion: this.systemModule.getMinVersion(),

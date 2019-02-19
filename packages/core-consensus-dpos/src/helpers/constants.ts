@@ -8,6 +8,7 @@ export const constants = {
   },
   maxVotesPerTransaction: 2,
   maximumVotes: 1,
+  timeDriftCorrection: 2, // 2 Seconds
 };
 
 export type DposConstantsType = typeof constants;

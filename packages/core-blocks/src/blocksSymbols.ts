@@ -5,8 +5,10 @@ export const BlocksSymbols = {
     api: Symbol.for('rise.blocks.api.api'),
     transport: Symbol.for('rise.blocks.api.transport'),
   },
+  constants: Symbol.for('rise.blocks.constants'),
   logic: {
     block: Symbols.logic.block,
+    blockBytes: Symbol.for('rise.blocks.logic.blockBytes'),
     blockReward: Symbols.logic.blockReward,
   },
   model: Symbols.models.blocks,

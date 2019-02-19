@@ -1,22 +1,23 @@
-import {
-  IBaseTransaction,
-  IBytesTransaction,
-  ITransportTransaction,
-} from './transactions';
+import { IBaseTransaction, ITransportTransaction } from './transactions';
 
 // tslint:disable-next-line
-export type BlockType<T = Buffer, N = bigint> = {
-  height?: number;
+export type BlockHeader<T = Buffer, N = bigint> = {
   version: number;
+  timestamp: number;
+  previousBlock: string;
+  numberOfTransactions: number;
   totalAmount: N;
   totalFee: N;
   reward: N;
-  payloadHash: T;
-  timestamp: number;
-  numberOfTransactions: number;
   payloadLength: number;
-  previousBlock: string;
+  payloadHash: T;
   generatorPublicKey: T;
+  blockSignature?: T;
+};
+
+// tslint:disable-next-line
+export type BlockType<T = Buffer, N = bigint> = BlockHeader<T, N> & {
+  height?: number;
   transactions?: Array<IBaseTransaction<any, N>>;
 };
 
@@ -29,18 +30,3 @@ export type SignedBlockType<T = Buffer, N = bigint> = BlockType<T, N> & {
 export type SignedAndChainedBlockType = SignedBlockType<Buffer> & {
   height: number;
 };
-
-export type SignedAndChainedTransportBlockType = SignedBlockType<
-  string,
-  string
-> & {
-  height: number;
-  transactions?: Array<ITransportTransaction<any>>;
-};
-
-export interface IBytesBlock {
-  bytes: Buffer;
-  transactions: Buffer[];
-  height?: number;
-  relays: number;
-}

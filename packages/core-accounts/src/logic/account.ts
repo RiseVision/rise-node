@@ -4,50 +4,25 @@ import {
   AccountFilterData,
   IAccountLogic,
   IAccountsModel,
+  IIdsHandler,
   ILogger,
   Symbols,
 } from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, DBOp, ModelAttributes } from '@risevision/core-types';
-import { toBigIntBE } from 'bigint-buffer';
-import * as crypto from 'crypto';
-import * as filterObject from 'filter-object';
-import { inject, injectable, named, postConstruct } from 'inversify';
+import { Address, ConstantsType, DBOp } from '@risevision/core-types';
+import { inject, injectable, named } from 'inversify';
 import * as sequelize from 'sequelize';
-import { Op } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { AccountsSymbols } from '../symbols';
-import { accountsModelCreator } from './models/account';
-import { IModelField, IModelFilter } from './models/modelField';
 
 @injectable()
 export class AccountLogic implements IAccountLogic {
-  private table = 'mem_accounts';
-
-  /**
-   * All fields
-   */
-  private fields: Array<{
-    alias: string;
-    field?: string;
-    expression?: string;
-  }> = [];
-
-  /**
-   * Conversions by fieldName
-   */
-  private conv: { [fieldName: string]: any } = {};
-
-  private model: IModelField[];
-
-  /**
-   * List of editable fields.
-   */
-  private editable: string[];
-
   @inject(CoreSymbols.constants)
   private constants: ConstantsType;
+
+  @inject(Symbols.helpers.idsHandler)
+  private idsHandler: IIdsHandler;
 
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
@@ -58,68 +33,6 @@ export class AccountLogic implements IAccountLogic {
 
   @inject(LaunchpadSymbols.zschema)
   private schema: z_schema;
-
-  @postConstruct()
-  public postConstruct() {
-    this.model = accountsModelCreator(this.table, this.constants);
-
-    this.fields = this.model.map((field) => {
-      const tmp: any = {};
-      if (field.expression) {
-        tmp.expression = field.expression;
-      } else {
-        if (field.mod) {
-          tmp.expression = field.mod;
-        }
-        tmp.field = field.name;
-      }
-      if (tmp.expression || field.alias) {
-        tmp.alias = field.alias || field.name;
-      }
-      return tmp;
-    });
-
-    // conversions
-    this.model.forEach((field) => (this.conv[field.name] = field.conv));
-
-    // build editable fields
-    this.editable = this.model
-      .filter((field) => !field.immutable)
-      .map((field) => field.name);
-  }
-
-  /**
-   * Verifies validity of public Key
-   * @param {string} publicKey
-   * @param {boolean} allowUndefined
-   */
-  public assertPublicKey(
-    publicKey: string | Buffer,
-    allowUndefined: boolean = true
-  ) {
-    if (typeof publicKey !== 'undefined') {
-      if (Buffer.isBuffer(publicKey)) {
-        if (publicKey.length !== 32) {
-          throw new Error(
-            'Invalid public key. If buffer it must be 32 bytes long'
-          );
-        }
-      } else {
-        if (typeof publicKey !== 'string') {
-          throw new Error('Invalid public key, must be a string');
-        }
-        if (publicKey.length !== 64) {
-          throw new Error('Invalid public key, must be 64 characters long');
-        }
-
-        if (!this.schema.validate(publicKey, { format: 'hex' })) {
-          throw new Error('Invalid public key, must be a hex string');
-        }
-      }
-    } else if (!allowUndefined) {
-      throw new Error('Public Key is undefined');
-    }
-  }
 
   /**
    * Get account information for specific fields and filtering criteria
@@ -135,30 +48,23 @@ export class AccountLogic implements IAccountLogic {
   public getAll(filter: AccountFilterData): Promise<IAccountsModel[]> {
     const sort: any = filter.sort ? filter.sort : {};
 
-    const condition: any = filterObject(filter, [
-      'isDelegate',
-      'username',
-      'address',
-      'publicKey',
-    ]);
-    if (typeof filter.address === 'string') {
-      condition.address = filter.address.toUpperCase();
-    } else if (typeof filter.address !== 'undefined') {
-      condition.address = {
-        [Op.in]: filter.address.$in.map((add) => add.toUpperCase()),
-      };
-    }
+    const { limit, offset } = filter;
+
+    delete filter.sort;
+    delete filter.limit;
+    delete filter.offset;
+
     // Remove fields = undefined (such as limit, offset and sort)
-    Object.keys(condition).forEach((k) => {
-      if (typeof condition[k] === 'undefined') {
-        delete condition[k];
+    Object.keys(filter).forEach((k) => {
+      if (typeof filter[k] === 'undefined') {
+        delete filter[k];
       }
     });
 
     return Promise.resolve(
       this.AccountsModel.findAll({
-        limit: filter.limit > 0 ? filter.limit : undefined,
-        offset: filter.offset > 0 ? filter.offset : undefined,
+        limit: limit > 0 ? limit : undefined,
+        offset: offset > 0 ? offset : undefined,
         order:
           typeof sort === 'string'
             ? [[sort, 'ASC']]
@@ -166,21 +72,9 @@ export class AccountLogic implements IAccountLogic {
                 col,
                 sort[col] === -1 ? 'DESC' : 'ASC',
               ]),
-        where: condition,
+        where: filter,
       })
     );
-  }
-
-  /**
-   * Sets fields for specific address in mem_accounts table
-   * @param {string} address
-   * @param fields
-   */
-  public async set(address: string, fields: ModelAttributes<IAccountsModel>) {
-    this.assertPublicKey(fields.publicKey);
-    address = String(address).toUpperCase();
-    fields.address = address;
-    await this.AccountsModel.upsert(fields);
   }
 
   /**
@@ -189,53 +83,23 @@ export class AccountLogic implements IAccountLogic {
    * @returns {any}
    */
   // tslint:disable-next-line cognitive-complexity
-  public merge(address: string, diff: AccountDiffType): Array<DBOp<any>> {
+  public mergeBalanceDiff(
+    address: Address,
+    diff: { balance?: bigint; u_balance?: bigint }
+  ): Array<DBOp<any>> {
     const update: any = {};
-    address = address.toUpperCase();
     const dbOps: Array<DBOp<any>> = [];
 
-    this.assertPublicKey(diff.publicKey);
-    for (const fieldName of this.editable) {
-      if (typeof diff[fieldName] === 'undefined') {
-        continue;
+    ['balance', 'u_balance'].forEach((column) => {
+      if (typeof diff[column] === 'bigint') {
+        const operand = diff[column] > 0 ? '+' : '-';
+        const value = diff[column] > 0 ? diff[column] : -diff[column];
+        update[column] = sequelize.literal(`${column} ${operand} ${value}`);
+        if (operand === '-') {
+          update.virgin = 0;
+        }
       }
-      const trueValue = diff[fieldName];
-      switch (this.conv[fieldName]) {
-        case String:
-          update[fieldName] = trueValue;
-          break;
-        case BigInt:
-          let fixedValue: bigint = trueValue;
-          let operand = '+';
-          if (trueValue < 0n) {
-            fixedValue = - fixedValue;
-            operand = '-';
-          }
-          update[fieldName] = sequelize.literal(
-            `${fieldName} ${operand} ${fixedValue}`
-          );
-          // If decrementing u_balance on account
-          if (fieldName === 'u_balance' && operand === '-') {
-            // Remove virginity and ensure marked columns become immutable
-            update.virgin = 0;
-          }
-          break;
-        case Number:
-          if (isNaN(trueValue) || trueValue === Infinity) {
-            throw new Error(`Encountered insane number: ${trueValue}`);
-          }
-          if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
-            update[fieldName] = sequelize.literal(
-              `${fieldName} + ${Math.floor(trueValue)}`
-            );
-          } else if (trueValue < 0) {
-            update[fieldName] = sequelize.literal(
-              `${fieldName} - ${Math.floor(Math.abs(trueValue))}`
-            );
-          }
-          break;
-      }
-    }
+    });
 
     dbOps.push({
       model: this.AccountsModel,
@@ -250,29 +114,7 @@ export class AccountLogic implements IAccountLogic {
     return dbOps;
   }
 
-  /**
-   * Removes an account from mem_account table based on address.
-   * @param {string} address
-   * @returns {Promise<number>}
-   */
-  public async remove(address: string): Promise<number> {
-    return await this.AccountsModel.destroy({
-      where: { address: address.toUpperCase() },
-    });
-  }
-
-  public generateAddressByPublicKey(publicKey: Buffer): string {
-    this.assertPublicKey(publicKey, false);
-
-    const hash = crypto
-      .createHash('sha256')
-      .update(publicKey)
-      .digest();
-
-    const tmp = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      tmp[i] = hash[7 - i];
-    }
-    return `${toBigIntBE(tmp).toString()}${this.constants.addressSuffix}`;
+  public generateAddressFromPubData(pubData: Buffer): Address {
+    return this.idsHandler.addressFromPubData(pubData);
   }
 }

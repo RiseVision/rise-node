@@ -1,5 +1,14 @@
 syntax = "proto3";
 
+message singleTransportTx {
+    bytes tx = 1;
+    uint32 relays = 2;
+}
 message transportTransactions {
-    repeated bytes transactions = 1;
+    repeated singleTransportTx transactions = 1;
+}
+
+message transportTx {
+    bytes data = 1;
+    repeated bytes buffers = 2;
 }

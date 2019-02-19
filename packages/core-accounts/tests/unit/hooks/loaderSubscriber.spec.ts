@@ -30,6 +30,7 @@ describe('accounts/hooks/loaderSubscriber', () => {
       'core-accounts',
       'core-helpers',
       'core-crypto',
+      'core-transactions',
     ]);
     accModel = container.getNamed(ModelSymbols.model, AccountsSymbols.model);
     hookSystem = new WordPressHookSystem(new InMemoryFilterModel());
@@ -46,37 +47,8 @@ describe('accounts/hooks/loaderSubscriber', () => {
   });
 
   it('should recreate accts table on proper hook', async () => {
-    const dropStub = sandbox.stub(accModel, 'drop').resolves();
-    const queryStub = sandbox.stub(accModel.sequelize, 'query').resolves();
+    const dropStub = sandbox.stub(accModel, 'truncate').resolves();
     await hookSystem.do_action(RecreateAccountsTables.name);
-
     expect(dropStub.calledOnce).is.true;
-    expect(queryStub.calledOnce).is.true;
-    expect(
-      queryStub.calledWith(
-        fs.readFileSync(
-          path.join(__dirname, '..', '..', '..', 'sql', 'memoryTables.sql'),
-          { encoding: 'utf8' }
-        )
-      )
-    );
-  });
-  describe('integrity hook', () => {
-    let accountsCountStub: SinonStub;
-    let queryStub: SinonStub;
-    beforeEach(() => {
-      accountsCountStub = sandbox.stub(accModel, 'count').resolves(1);
-      queryStub = sandbox.stub(accModel.sequelize, 'query').resolves([]);
-    });
-    it('should call load if there are some orphanedMemAccounts', async () => {
-      queryStub.resolves(['a']);
-      await expect(hookSystem.do_action(OnCheckIntegrity.name, 1)).rejectedWith(
-        'Detected orphaned blocks in mem_accounts'
-      );
-      expect(queryStub.firstCall.args[0]).to.be.deep.eq(
-        // tslint:disable-next-line
-        'SELECT a."blockId", b."id" FROM mem_accounts a LEFT OUTER JOIN blocks b ON b."id" = a."blockId" WHERE a."blockId" IS NOT NULL AND a."blockId" != \'0\' AND b."id" IS NULL\n'
-      );
-    });
   });
 });

@@ -1,14 +1,19 @@
 import { ICrypto } from '@risevision/core-interfaces';
 import { IKeypair } from '@risevision/core-types';
 import * as sodium from 'sodium-native';
+import { As } from 'type-tagger';
 
 export class Crypto implements ICrypto {
   /**
    * Creates a keypair given hash.
    */
   public makeKeyPair(hash: Buffer): IKeypair {
-    const publicKey = Buffer.alloc(sodium.crypto_sign_PUBLICKEYBYTES);
-    const privateKey = Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES);
+    const publicKey = Buffer.alloc(
+      sodium.crypto_sign_PUBLICKEYBYTES
+    ) as Buffer & As<'publicKey'>;
+    const privateKey = Buffer.alloc(
+      sodium.crypto_sign_SECRETKEYBYTES
+    ) as Buffer & As<'privateKey'>;
     sodium.crypto_sign_seed_keypair(publicKey, privateKey, hash);
     return { privateKey, publicKey };
   }

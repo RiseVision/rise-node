@@ -3,17 +3,19 @@ import { IInfoModel, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
 import * as _ from 'lodash';
+import { sort } from 'semver';
 import * as uuid from 'uuid';
 import { LoaderAPI } from './apis';
-import { constants } from './constants';
-import { TimeToEpoch } from './helpers';
+import { Migrator, TimeToEpoch } from './helpers';
+import { BlockMonitor } from './hooks';
+import { InfoModel, MigrationsModel } from './models';
 import { ForkModule, LoaderModule, SystemModule } from './modules';
 import { CoreSymbols } from './symbols';
 
 export class CoreModule extends BaseCoreModule<void>
   implements ICoreModuleWithModels {
   public configSchema = {};
-  public constants = constants;
+  public constants = {};
 
   public async addElementsToContainer() {
     this.container
@@ -38,11 +40,37 @@ export class CoreModule extends BaseCoreModule<void>
       .toConstructor(LoaderAPI)
       .whenTargetNamed(CoreSymbols.api.loader);
 
-    let c = this.constants;
+    this.container
+      .bind(CoreSymbols.__internals.blockMonitor)
+      .to(BlockMonitor)
+      .inSingletonScope();
+
+    // Set constants
     for (const sortedModule of this.sortedModules) {
-      c = _.merge(c, sortedModule.constants || {});
+      let b = sortedModule.constants || {};
+      for (const iM of this.sortedModules) {
+        if (iM.constants && iM.constants[sortedModule.name]) {
+          b = _.merge(b, iM.constants[sortedModule.name]);
+        }
+      }
+      sortedModule.constants = b;
     }
-    this.container.bind(CoreSymbols.constants).toConstantValue(c);
+    this.container.bind(CoreSymbols.constants).toConstantValue(this.constants);
+
+    // add info and migrations model
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(InfoModel)
+      .whenTargetNamed(CoreSymbols.models.info);
+    this.container
+      .bind(ModelSymbols.model)
+      .toConstructor(MigrationsModel)
+      .whenTargetNamed(CoreSymbols.models.migrations);
+
+    this.container
+      .bind(CoreSymbols.helpers.migrator)
+      .to(Migrator)
+      .inSingletonScope();
   }
 
   public initAppElements(): Promise<void> | void {
@@ -56,9 +84,12 @@ export class CoreModule extends BaseCoreModule<void>
   }
 
   public async onPostInitModels() {
+    // Start migrator.
+    await this.container.get<Migrator>(CoreSymbols.helpers.migrator).init();
+
     const infoModel = this.container.getNamed<typeof IInfoModel>(
       ModelSymbols.model,
-      ModelSymbols.names.info
+      CoreSymbols.models.info
     );
     // Create or restore nonce!
     const [val] = await infoModel.findOrCreate({
@@ -75,12 +106,21 @@ export class CoreModule extends BaseCoreModule<void>
   }
 
   public async boot() {
+    await this.container
+      .get<BlockMonitor>(CoreSymbols.__internals.blockMonitor)
+      .hookMethods();
+
     const loaderModule = this.container.get<LoaderModule>(
       CoreSymbols.modules.loader
     );
     await loaderModule.loadBlockChain();
   }
+
   public async teardown(): Promise<void> {
+    await this.container
+      .get<BlockMonitor>(CoreSymbols.__internals.blockMonitor)
+      .unHook();
+
     await this.container
       .get<LoaderModule>(CoreSymbols.modules.loader)
       .cleanup();

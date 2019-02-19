@@ -368,7 +368,7 @@ describe('src/modules/transport.ts', () => {
     let result;
     let requestHandler;
 
-    let peersModuleListStub;
+    let peersModuleGetPeersStub;
 
     beforeEach(() => {
       requestHandler = new StubbedRequest();
@@ -376,17 +376,17 @@ describe('src/modules/transport.ts', () => {
       config = {};
       peers = [{ makeRequest: sandbox.stub().returns(result) }];
 
-      peersModuleListStub = sandbox
-        .stub(peersModule, 'list')
-        .resolves({ peers });
+      peersModuleGetPeersStub = sandbox
+        .stub(peersModule, 'getPeers')
+        .returns(peers);
     });
 
-    it('should call peersModule.list', async () => {
+    it('should call peersModule.getPeers', async () => {
       await inst.getFromRandomPeer(config, requestHandler, {});
 
-      expect(peersModuleListStub.calledOnce).to.be.true;
-      expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
-      expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({
+      expect(peersModuleGetPeersStub.calledOnce).to.be.true;
+      expect(peersModuleGetPeersStub.firstCall.args.length).to.be.equal(1);
+      expect(peersModuleGetPeersStub.firstCall.args[0]).to.be.deep.equal({
         allowedStates: [PeerState.CONNECTED, PeerState.DISCONNECTED],
         limit: 1,
       });

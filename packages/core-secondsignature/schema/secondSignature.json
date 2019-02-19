@@ -3,8 +3,8 @@
   "object": true,
   "properties": {
     "publicKey": {
-      "format": "publicKey",
-      "type": "string"
+      "format": "publicKeyBuf",
+      "type": "object"
     }
   },
   "required": ["publicKey"]

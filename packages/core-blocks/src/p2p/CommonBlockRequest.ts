@@ -1,8 +1,4 @@
-import {
-  IBlockLogic,
-  IBlocksModel,
-  Symbols,
-} from '@risevision/core-interfaces';
+import { IBlocksModel, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseProtobufTransportMethod,
@@ -13,6 +9,8 @@ import {
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
+import { BlocksSymbols } from '../blocksSymbols';
+import { BlockBytes } from '../logic/blockBytes';
 
 @injectable()
 // tslint:disable-next-line
@@ -34,8 +32,8 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
     namespace: 'blocks.transport',
   };
 
-  @inject(Symbols.logic.block)
-  private blockLogic: IBlockLogic;
+  @inject(BlocksSymbols.logic.blockBytes)
+  private blockBytes: BlockBytes;
 
   @inject(ModelSymbols.model)
   @named(Symbols.models.blocks)
@@ -75,7 +73,7 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
     return super.encodeResponse(
       {
         common: data.common
-          ? this.blockLogic.toProtoBuffer(data.common)
+          ? this.blockBytes.toBuffer(data.common)
           : (null as any),
       },
       req
@@ -88,7 +86,7 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
   ): Promise<{ common: SignedAndChainedBlockType }> {
     const data: any = await super.decodeResponse(res, peer);
     return {
-      common: data.common ? this.blockLogic.fromProtoBuffer(data.common) : null,
+      common: data.common ? this.blockBytes.fromBuffer(data.common) : null,
     };
   }
 }

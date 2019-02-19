@@ -1,3 +1,4 @@
+import { DeprecatedAPIError } from '@risevision/core-apis';
 import { Sequence } from '@risevision/core-helpers';
 import {
   IBlockLogic,
@@ -5,6 +6,7 @@ import {
   IBlocksModel,
   IBlocksModule,
   ISystemModule,
+  ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
   Symbols,
@@ -20,8 +22,10 @@ import {
   ValidateSchema,
   WrapInDBSequence,
 } from '@risevision/core-utils';
-import { inject, injectable, named, postConstruct } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';
+import { Op } from 'sequelize';
+import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import { BlocksSymbols } from '../blocksSymbols';
 
@@ -43,6 +47,8 @@ export class BlocksAPI {
   // Helpers
   @inject(Symbols.generic.constants)
   private constants: ConstantsType;
+  @inject(Symbols.helpers.timeToEpoch)
+  private epochConverter: ITimeToEpoch;
 
   // Logic
   @inject(Symbols.logic.blockReward)
@@ -93,6 +99,7 @@ export class BlocksAPI {
       limit: filters.limit || 100,
       offset: filters.offset || 0,
       order: orderBy,
+      raw: true,
       where: whereClause,
     });
     // attach transactions and assets with it.
@@ -100,6 +107,7 @@ export class BlocksAPI {
       blocks.map((b) =>
         this.TransactionsModel.findAll({
           order: [['rowId', 'asc']],
+          raw: true,
           where: { blockId: b.id },
         })
           .then((txs) => {
@@ -113,6 +121,47 @@ export class BlocksAPI {
     return {
       blocks: blocks.map((b) => this.BlocksModel.toStringBlockType(b)),
       count,
+    };
+  }
+
+  @Get('/rewards')
+  @ValidateSchema()
+  public async getRewards(@SchemaValid(blocksSchema.getRewards, {
+    castNumbers: true,
+  })
+  @QueryParams()
+  filter: {
+    generator: string & As<'publicKey'>;
+    from: number;
+    to: number;
+  }) {
+    const from = this.epochConverter.getTime(filter.from * 1000);
+    const to = this.epochConverter.getTime(filter.to * 1000);
+
+    if (from > to || from < 0) {
+      throw new HTTPError('From/To params are invalid', 500);
+    }
+    // tslint:disable-next-line
+    const res = await this.BlocksModel.findAndCountAll({
+      attributes: ['totalFee', 'reward'],
+      raw: true,
+      where: {
+        generatorPublicKey: Buffer.from(filter.generator, 'hex'),
+        timestamp: {
+          [Op.gte]: from,
+          [Op.lt]: to,
+        },
+      },
+    });
+
+    return {
+      fees: res.rows
+        .map((a) => BigInt(a.totalFee))
+        .reduceRight((a, b) => a + b, 0n),
+      rewards: res.rows
+        .map((a) => BigInt(a.reward))
+        .reduceRight((a, b) => a + b, 0n),
+      totalBlocks: res.count,
     };
   }
 
@@ -142,8 +191,9 @@ export class BlocksAPI {
   }
 
   @Get('/getBroadhash')
-  public async getBroadHash() {
-    return { broadhash: await this.systemModule.getBroadhash() };
+  public getBroadHash() {
+    const lastBlock = this.blocksModule.lastBlock;
+    return { broadhash: lastBlock.id };
   }
 
   @Get('/getEpoch')
@@ -212,10 +262,10 @@ export class BlocksAPI {
   }
 
   @Get('/getStatus')
-  public async getStatus() {
+  public getStatus() {
     const lastBlock = this.blocksModule.lastBlock;
     return {
-      broadhash: await this.systemModule.getBroadhash(),
+      broadhash: lastBlock.id,
       epoch: this.constants.epochTime,
       fee: this.systemModule.getFees(lastBlock.height).fees.send.toString(),
       height: lastBlock.height,
@@ -224,17 +274,5 @@ export class BlocksAPI {
       reward: this.blockRewardLogic.calcReward(lastBlock.height).toString(),
       supply: this.blockRewardLogic.calcSupply(lastBlock.height).toString(),
     };
-  }
-
-  @postConstruct()
-  private postConstruct() {
-    blocksSchema.getBlocks.properties.totalAmount.maximum = parseInt(
-      this.constants.totalAmount,
-      10
-    );
-    blocksSchema.getBlocks.properties.totalFee.maximum = parseInt(
-      this.constants.totalAmount,
-      10
-    );
   }
 }

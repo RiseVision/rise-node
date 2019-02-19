@@ -1,4 +1,5 @@
 import {
+  Address,
   ITransportTransaction,
   publicKey,
   TransactionType,
@@ -27,23 +28,21 @@ export class ITransactionsModel<Asset = any> extends IBaseModel<
 
   public timestamp: number;
 
-  public senderPublicKey: Buffer;
+  public senderPubData: Buffer;
 
-  public senderId: string;
+  public senderId: Address;
 
-  public recipientId: string;
+  public recipientId: Address;
 
   public amount: bigint;
 
   public fee: bigint;
-  public signature: Buffer;
-  public signSignature: Buffer;
-
-  public requesterPublicKey: Buffer;
 
   public asset: Asset;
 
   public signatures: Buffer[];
+
+  public version: number;
 
   public toTransport(): ITransportTransaction<Asset> {
     return null;

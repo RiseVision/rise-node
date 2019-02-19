@@ -2,7 +2,7 @@ import { APISymbols } from '@risevision/core-apis';
 import { IAccountsModel, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, ConstantsType } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -11,6 +11,7 @@ import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import 'reflect-metadata';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import * as z_schema from 'z-schema';
 import {
   AccountsAPI,
   AccountsModule,
@@ -32,9 +33,15 @@ describe('apis/accountsAPI', () => {
       'core',
       'core-helpers',
       'core-crypto',
+      'core-blocks',
+      'core-transactions',
     ]);
 
     instance = container.getNamed(APISymbols.class, AccountsSymbols.api);
+    z_schema.registerFormat('address', (str: string) => {
+      // tslint:disable-next-line
+      return /[0-9]{1,20}R$/.test(str);
+    });
   });
 
   afterEach(() => {
@@ -45,9 +52,6 @@ describe('apis/accountsAPI', () => {
     it('should validate schema', async () => {
       await expect(instance.getAccount({ address: 'meow' })).rejectedWith(
         "address - Object didn't pass"
-      );
-      await expect(instance.getAccount({ publicKey: 'meow' })).rejectedWith(
-        "publicKey - Object didn't pass"
       );
       await expect(instance.getAccount({} as any)).rejectedWith(
         'Missing required property: address or publicKey'
@@ -60,16 +64,6 @@ describe('apis/accountsAPI', () => {
       ).rejectedWith('Additional properties not allowed: extra');
     });
 
-    it('should validate against generated address if both pubKey and address are provided', async () => {
-      await expect(
-        instance.getAccount({
-          address: '1R',
-          publicKey:
-            '69bcf81be8a34393507d3d371c551325a8d48f6e92284633bd7043030f5c6a26',
-        })
-      ).rejectedWith('Account publicKey does not match address');
-    });
-
     it('should query accountsModule', async () => {
       const accModule = container.get<AccountsModule>(AccountsSymbols.module);
       const stub = sandbox.stub(accModule, 'getAccount').resolves(null);
@@ -80,22 +74,6 @@ describe('apis/accountsAPI', () => {
       expect(stub.calledOnce).is.true;
       expect(stub.firstCall.args[0]).deep.eq({ address: '1R' });
       stub.resetHistory();
-
-      // It should also query by calculated address
-      await expect(
-        instance.getAccount({
-          publicKey:
-            '69bcf81be8a34393507d3d371c551325a8d48f6e92284633bd7043030f5c6a26',
-        })
-      ).rejectedWith('Account not found');
-      expect(stub.calledOnce).is.true;
-      expect(stub.firstCall.args[0]).deep.eq({
-        address: '4736561281125553123R',
-        publicKey: Buffer.from(
-          '69bcf81be8a34393507d3d371c551325a8d48f6e92284633bd7043030f5c6a26',
-          'hex'
-        ),
-      });
     });
 
     it('should applyFilter for return response', async () => {
@@ -129,7 +107,6 @@ describe('apis/accountsAPI', () => {
           address: '1R',
           balance: '10',
           meow: true,
-          publicKey: 'hey',
           unconfirmedBalance: '11',
         },
       });
@@ -162,38 +139,6 @@ describe('apis/accountsAPI', () => {
       const accModule = container.get<AccountsModule>(AccountsSymbols.module);
       sandbox.stub(accModule, 'getAccount').rejects(new Error('hey'));
       await expect(instance.getBalance({ address: '1R' })).to.rejectedWith(
-        'hey'
-      );
-    });
-  });
-  describe('getPublicKey', () => {
-    it('should reject if input does not pass validation schema', async () => {
-      await expect(instance.getPublickey({ address: 'meow' })).to.rejectedWith(
-        "address - Object didn't pass validation"
-      );
-    });
-    it('should query accountsModule and return hexPublicKey', async () => {
-      const accModule = container.get<AccountsModule>(AccountsSymbols.module);
-      const AccountsModel = container.getNamed<any>(
-        ModelSymbols.model,
-        AccountsSymbols.model
-      );
-      const stub = sandbox.stub(accModule, 'getAccount').resolves(
-        new AccountsModel({
-          publicKey: Buffer.alloc(32).fill(0xaa),
-        })
-      );
-
-      expect(await instance.getPublickey({ address: '1R' })).deep.eq({
-        publicKey:
-          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      });
-      expect(stub.calledWith({ address: '1R' })).true;
-    });
-    it('should throw if accountsModule throws', async () => {
-      const accModule = container.get<AccountsModule>(AccountsSymbols.module);
-      sandbox.stub(accModule, 'getAccount').rejects(new Error('hey'));
-      await expect(instance.getPublickey({ address: '1R' })).to.rejectedWith(
         'hey'
       );
     });
@@ -255,11 +200,15 @@ describe('apis/accountsAPI', () => {
     });
     it('should remap getAccountsResult properly', async () => {
       getAccountsStub.resolves([
-        new AccountsModel({ address: '1', balance: 10, u_balance: 11 } as any),
+        new AccountsModel({
+          address: '1',
+          balance: 10n,
+          u_balance: 11n,
+        } as any),
         new AccountsModel({
           address: '2',
           balance: 12n,
-          publicKey: Buffer.alloc(32).fill(0xab),
+          // publicKey: Buffer.alloc(32).fill(0xab),
         }),
       ]);
       const res = await instance.topAccounts({});
@@ -269,8 +218,8 @@ describe('apis/accountsAPI', () => {
           {
             address: '2',
             balance: '12',
-            publicKey:
-              'abababababababababababababababababababababababababababababababab',
+            // publicKey:
+            //   'abababababababababababababababababababababababababababababababab',
           },
         ],
       });

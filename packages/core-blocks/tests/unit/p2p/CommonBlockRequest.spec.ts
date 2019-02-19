@@ -91,8 +91,9 @@ describe('apis/requests/CommonBlockRequest', () => {
     it('should return proper encoded data', async () => {
       const block = createFakeBlock(container);
       sequelizeQueryStub.resolves(block);
+
       const res = await createRequest({ ids: '1,2,3' });
-      expect(res).deep.eq({ common: { ...block, relays: 1 } });
+      expect(res).deep.eq({ common: { ...block } });
     });
   });
 });

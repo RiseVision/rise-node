@@ -3,18 +3,22 @@ import {
   AccountFilterData,
   IAccountsModel,
   IAccountsModule,
+  IIdsHandler,
+  Symbols,
 } from '@risevision/core-interfaces';
 import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import { DBOp, IBaseTransaction } from '@risevision/core-types';
+import { Address, DBOp, IBaseTransaction } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { AccountLogic } from '../logic';
 import { AccountsSymbols } from '../symbols';
 
 @injectable()
 export class AccountsModule implements IAccountsModule {
-  // TODO: migrate to IAccountLogic
   @inject(AccountsSymbols.logic)
   private accountLogic: AccountLogic;
+
+  @inject(Symbols.helpers.idsHandler)
+  private idsHandler: IIdsHandler;
 
   @inject(ModelSymbols.helpers.db)
   private dbHelper: DBHelper;
@@ -23,15 +27,7 @@ export class AccountsModule implements IAccountsModule {
   @named(AccountsSymbols.model)
   private AccountsModel: typeof IAccountsModel;
 
-  public getAccount(
-    filter: AccountFilterData & { publicKey?: Buffer }
-  ): Promise<IAccountsModel> {
-    if (filter.publicKey) {
-      filter.address = this.accountLogic.generateAddressByPublicKey(
-        filter.publicKey
-      );
-      delete filter.publicKey;
-    }
+  public getAccount(filter: AccountFilterData): Promise<IAccountsModel> {
     return this.accountLogic.get(filter);
   }
 
@@ -39,27 +35,12 @@ export class AccountsModule implements IAccountsModule {
     return this.accountLogic.getAll(filter);
   }
 
-  public unfoldSenders(
-    txs: Array<IBaseTransaction<any>>
-  ): Array<{ publicKey: Buffer; address: string }> {
-    const allSenders: Array<{ publicKey: Buffer; address: string }> = [];
+  public unfoldSenders(txs: Array<IBaseTransaction<any>>): Address[] {
+    const allSenders: Address[] = [];
     txs.forEach((tx) => {
-      if (!allSenders.find((item) => item.address === tx.senderId)) {
-        allSenders.push({
-          address: tx.senderId,
-          publicKey: tx.senderPublicKey,
-        });
-      }
-      if (tx.requesterPublicKey) {
-        const requesterAddress = this.accountLogic.generateAddressByPublicKey(
-          tx.requesterPublicKey
-        );
-        if (!allSenders.find((item) => item.address === requesterAddress)) {
-          allSenders.push({
-            address: requesterAddress,
-            publicKey: tx.requesterPublicKey,
-          });
-        }
+      const senderId = this.idsHandler.addressFromPubData(tx.senderPubData);
+      if (!allSenders.find((item) => item === senderId)) {
+        allSenders.push(senderId);
       }
     });
     return allSenders;
@@ -74,7 +55,7 @@ export class AccountsModule implements IAccountsModule {
     const allSenders = this.unfoldSenders(txs);
 
     const senderAccounts = await this.AccountsModel.findAll({
-      where: { address: allSenders.map((s) => s.address) },
+      where: { address: allSenders },
     });
 
     const sendersMap: { [address: string]: IAccountsModel } = {};
@@ -92,71 +73,31 @@ export class AccountsModule implements IAccountsModule {
     const allSenders = this.unfoldSenders(txs);
 
     await Promise.all(
-      allSenders.map(async ({ address, publicKey }) => {
+      allSenders.map(async (address) => {
         if (!accMap[address]) {
           throw new Error(`Account ${address} not found in db.`);
         }
-        if (!accMap[address].publicKey) {
-          accMap[address] = await this.assignPublicKeyToAccount({ publicKey });
-        }
-        // sanity checks. A transaction could be broadcasted
         if (accMap[address].address !== address) {
           throw new Error(`Stealing attempt type.1 for ${address}`);
-        }
-        if (!accMap[address].publicKey.equals(publicKey)) {
-          throw new Error(`Stealing attempt type.2 for ${address}`);
         }
       })
     );
   }
 
-  /**
-   * Sets some data to specific account
-   */
-  // tslint:disable-next-line max-line-length
-  public async assignPublicKeyToAccount(opts: {
-    address?: string;
-    publicKey: Buffer;
-  }): Promise<IAccountsModel> {
-    const { address, publicKey } = opts;
-    if (!publicKey) {
-      throw new Error(`Missing publicKey for ${address}`);
-    }
-    const data = this.fixAndCheckInputParams({ address, publicKey });
-    if (data.address !== address && address) {
-      throw new Error(
-        `Attempting to assign publicKey to non correct address ${
-          data.address
-        } != ${address}`
-      );
-    }
-    await this.accountLogic.set(data.address, { publicKey: data.publicKey });
-    return this.accountLogic.get({ address: data.address });
-  }
-
-  public mergeAccountAndGetOPs(diff: AccountDiffType): Array<DBOp<any>> {
-    diff = this.fixAndCheckInputParams(diff);
-    const { address } = diff;
-    delete diff.address;
-    return this.accountLogic.merge(address, diff);
-  }
-
-  public generateAddressByPublicKey(pk: Buffer) {
-    return this.accountLogic.generateAddressByPublicKey(pk);
+  public generateAddressByPubData(pk: Buffer) {
+    return this.accountLogic.generateAddressFromPubData(pk);
   }
 
   private fixAndCheckInputParams<
-    T extends { address?: string; publicKey?: Buffer } = any
+    T extends { address?: string; pubData?: Buffer } = any
   >(what: T): T & { address: string } {
-    if (!what.address && !what.publicKey) {
+    if (!what.address && !what.pubData) {
       throw new Error('Missing address and public key');
     }
     // We calculate address in the case it was not provided or
     // in case publicKey was provided (even if address was provided for security reasons)
-    if (what.publicKey || !what.address) {
-      what.address = this.accountLogic.generateAddressByPublicKey(
-        what.publicKey
-      );
+    if (what.pubData || !what.address) {
+      what.address = this.accountLogic.generateAddressFromPubData(what.pubData);
     }
     return what as any;
   }

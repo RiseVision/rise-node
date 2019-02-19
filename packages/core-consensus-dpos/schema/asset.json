@@ -5,7 +5,11 @@
     "username": {
       "type": "string",
       "format": "username"
+    },
+    "forgingPK": {
+      "type": "object",
+      "format": "publicKeyBuf"
     }
   },
-  "required": ["username"]
+  "required": ["forgingPK"]
 }

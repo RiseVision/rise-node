@@ -1,31 +1,22 @@
-import { address, publicKey } from '@risevision/core-types';
+import { Address } from '@risevision/core-types';
 import { IBaseModel } from './IBaseModel';
 
 export class IAccountsModel extends IBaseModel<IAccountsModel> {
   // public static searchDelegate(q: string, limit: number, orderBy: string, orderHow: 'ASC' | 'DESC' = 'ASC'): string {
   //   throw new Error('NotImplementedException');
   // }
-
-  public static createBulkAccountsSQL(addresses: address[]): string {
+  public static createBulkAccountsSQL(addresses: string[]): string {
     throw new Error('NotImplementedException');
   }
 
   public static restoreUnconfirmedEntries(): Promise<void> {
     throw new Error('NotImplementedException');
   }
-  public address: string;
-  public publicKey: Buffer;
+  public address: Address;
   public balance: bigint;
-  public blockId: string;
-  public producedblocks: number;
-  public missedblocks: number;
-  public fees: bigint;
-  public rewards: bigint;
   public virgin: 0 | 1;
   // tslint:disable-next-line
   public u_balance: bigint;
-
-  public readonly hexPublicKey: publicKey;
 
   // public isMultisignature(): boolean {
   //   return null;

@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target":                       "esnext",
+    "module":                       "commonjs",
+    "emitDecoratorMetadata":        true,
+    "experimentalDecorators":       true,
+    "allowJs":                      false,
+    "moduleResolution":             "node",
+    "outDir":                       "dist",
+    "baseUrl":                      ".",
+    "declaration":                  true,
+    "allowSyntheticDefaultImports": true,
+    "inlineSourceMap":              true,
+    "alwaysStrict":                 true,
+    "inlineSources":                true,
+    "lib":                          [
+      "dom",
+      "es7",
+      "es2015",
+      "esnext.bigint"
+    ],
+    "paths": {
+      "@risevision/core-accounts": ["./packages/core-accounts/*"],
+      "@risevision/core-apis": ["./packages/core-apis/*"],
+      "@risevision/core-blocks": ["./packages/core-blocks/*"],
+      "@risevision/core-consensus-dpos": ["./packages/core-consensus-dpos/*"],
+      "@risevision/core-crypto": ["./packages/core-crypto/*"],
+      "@risevision/core-exceptions": ["./packages/core-exceptions/*"],
+      "@risevision/core-helpers": ["./packages/core-helpers/*"],
+      "@risevision/core-interfaces": ["./packages/core-interfaces/*"],
+      "@risevision/core-launchpad": ["./packages/core-launchpad/*"],
+      "@risevision/core-models": ["./packages/core-models/*"],
+      "@risevision/core-p2p": ["./packages/core-p2p/*"],
+      "@risevision/core-secondsignature": ["./packages/core-secondsignature/*"],
+      "@risevision/core-transactions": ["./packages/core-transactions/*"],
+      "@risevision/core-types": ["./packages/core-types/*"],
+      "@risevision/core-utils": ["./packages/core-utils/*"]
+    }
+  },
+  "exclude":         [
+    "tests",
+    "public",
+    "dist",
+    "coverage",
+    "node_modules"
+  ]
+}

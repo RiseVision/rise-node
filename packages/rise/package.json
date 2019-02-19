@@ -4,35 +4,45 @@
     "module": true
   },
   "version": "1.0.0",
-  "description": "",
+  "description": "RISE Node Core: Migration Module",
   "main": "dist/index.js",
   "scripts": {
     "transpile": "shx rm -rf dist; tsc",
+    "test-unit": "echo ''",
     "start:devnet": "rise-launchpad --net devnet",
     "start:mainnet": "rise-launchpad --net mainnet"
   },
   "types": "dist/index.d.ts",
-  "author": "",
-  "license": "ISC",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
   "dependencies": {
-    "@risevision/core-consensus-dpos": "^1.0.0",
-    "@risevision/core-p2p": "^1.0.0",
-    "@risevision/core-accounts": "^1.0.0",
-    "@risevision/core-apis": "^1.0.0",
-    "@risevision/core-exceptions": "^1.0.0",
-    "@risevision/core-helpers": "^1.0.0",
+    "@risevision/core": "^1.0.0",
+    "@risevision/core-blocks": "^1.0.0",
     "@risevision/core-crypto": "^1.0.0",
+    "@risevision/core-consensus-dpos": "^1.0.0",
+    "@risevision/core-exceptions": "^1.0.0",
     "@risevision/core-interfaces": "^1.0.0",
-    "@risevision/core-types": "^1.0.0",
-    "@risevision/core-models": "^1.0.0",
-    "@risevision/core-transactions": "^1.0.0",
-    "@risevision/core-multisignature": "^1.0.0",
-    "@risevision/core-secondsignature": "^1.0.0",
     "@risevision/core-launchpad": "^1.0.0",
-    "require-json5": "=1.0.2"
+    "@risevision/core-models": "^1.0.0",
+    "@risevision/core-p2p": "^1.0.0",
+    "@risevision/core-secondsignature": "^1.0.0",
+    "@risevision/core-transactions": "^1.0.0",
+    "@risevision/core-types": "^1.0.0",
+    "@risevision/core-utils": "^1.0.0",
+    "bech32-buffer": "^0.1.2",
+    "bigint-buffer": "^1.1.2",
+    "bytebuffer": "=5.0.1",
+    "dpos-offline": "=2.0.5",
+    "inversify": "5.0.1",
+    "lodash": "4.17.11",
+    "mangiafuoco": "1.2.3",
+    "sequelize": "4.42.0",
+    "sequelize-typescript": "0.6.6",
+    "supersha": "0.0.1",
+    "z-schema": "3.24.2"
   },
   "devDependencies": {
     "shx": "=0.3.2",
-    "typescript": "=3.2.0-rc"
+    "typescript": "3.2.2"
   }
 }

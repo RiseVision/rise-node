@@ -5,10 +5,11 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
-import { BlocksConstantsType } from './blocksConstants';
+import { BlocksConstantsType, constants } from './blocksConstants';
 import { BlocksSymbols } from './blocksSymbols';
 import { BlockLoader } from './hooks/';
 import { BlockLogic, BlockRewardLogic } from './logic/';
+import { BlockBytes } from './logic/blockBytes';
 import { BlocksModel } from './models/BlocksModel';
 import {
   BlocksModule,
@@ -27,22 +28,7 @@ import { BlocksP2P } from './p2p/';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
-  public constants: BlocksConstantsType = {
-    blocks: {
-      maxAmount: 100000000,
-      maxPayloadLength: 1024 * 1024,
-      maxTxsPerBlock: 25,
-      receiptTimeOut: 60,
-      rewards: [
-        {
-          fromHeight: 1,
-          reward: '0',
-        },
-      ],
-      slotWindow: 5,
-      targetTime: 30,
-    },
-  };
+  public constants: BlocksConstantsType = constants;
 
   public addElementsToContainer(): void {
     this.container
@@ -108,6 +94,11 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .whenTargetNamed(BlocksSymbols.p2p.getHeight);
 
     this.container
+      .bind(BlocksSymbols.logic.blockBytes)
+      .to(BlockBytes)
+      .inSingletonScope();
+
+    this.container
       .bind(BlocksSymbols.__internals.mainP2P)
       .to(BlocksP2P)
       .inSingletonScope();
@@ -115,6 +106,10 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .bind(BlocksSymbols.__internals.loader)
       .to(BlockLoader)
       .inSingletonScope();
+
+    this.container
+      .bind(BlocksSymbols.constants)
+      .toConstantValue(this.constants);
   }
 
   public async initAppElements(): Promise<void> {
@@ -124,6 +119,9 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
     await this.container
       .get<BlockLoader>(BlocksSymbols.__internals.loader)
       .hookMethods();
+    await this.container
+      .get<BlocksModuleVerify>(BlocksSymbols.modules.verify)
+      .hookMethods();
   }
 
   public async teardown(): Promise<void> {
@@ -132,6 +130,9 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .unHook();
     await this.container
       .get<BlockLoader>(BlocksSymbols.__internals.loader)
+      .unHook();
+    await this.container
+      .get<BlocksModuleVerify>(BlocksSymbols.modules.verify)
       .unHook();
   }
 

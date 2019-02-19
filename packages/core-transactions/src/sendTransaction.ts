@@ -7,17 +7,24 @@ import {
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
+  DBCreateOp,
   DBOp,
   IBaseTransaction,
   SignedBlockType,
-  TransactionType,
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { BaseTx } from './BaseTx';
 import { SendTxApplyFilter, SendTxUndoFilter } from './hooks/filters';
+import { SendTxAssetModel } from './models';
+import { TXSymbols } from './txSymbols';
+
+// tslint:disable-next-line
+export type SendTxAsset<T = Buffer> = {
+  data: T;
+};
 
 @injectable()
-export class SendTransaction extends BaseTx<void, null> {
+export class SendTransaction extends BaseTx<SendTxAsset, SendTxAssetModel> {
   @inject(Symbols.modules.accounts)
   private accountsModule: IAccountsModule;
   @inject(Symbols.logic.account)
@@ -30,20 +37,32 @@ export class SendTransaction extends BaseTx<void, null> {
   @named(Symbols.models.accounts)
   private AccountsModel: typeof IAccountsModel;
 
-  constructor() {
-    super(TransactionType.SEND);
+  @inject(ModelSymbols.model)
+  @named(TXSymbols.models.sendTxAsset)
+  private SendTxAssetModel: typeof SendTxAssetModel;
+
+  public assetBytes(tx: IBaseTransaction<SendTxAsset>): Buffer {
+    if (!tx.asset || !tx.asset.data) {
+      return Buffer.alloc(0);
+    }
+    return tx.asset.data;
   }
 
-  public calculateFee(
-    tx: IBaseTransaction<void, bigint>,
+  public calculateMinFee(
+    tx: IBaseTransaction<SendTxAsset, bigint>,
     sender: IAccountsModel,
     height: number
   ): bigint {
-    return this.systemModule.getFees(height).fees.send;
+    const fees = this.systemModule.getFees(height).fees;
+    return (
+      fees.send +
+      BigInt(tx.asset && tx.asset.data ? tx.asset.data.length : 0) *
+        fees.sendDataMultiplier
+    );
   }
 
   public async verify(
-    tx: IBaseTransaction<void, bigint>,
+    tx: IBaseTransaction<SendTxAsset, bigint>,
     sender: IAccountsModel
   ): Promise<void> {
     if (!tx.recipientId) {
@@ -53,19 +72,22 @@ export class SendTransaction extends BaseTx<void, null> {
     if (tx.amount <= 0) {
       throw new Error('Invalid transaction amount');
     }
+
+    if (tx.asset && tx.asset.data && tx.asset.data.length > 128) {
+      throw new Error('Cannot send more than 128bytes in data field');
+    }
   }
 
   public async apply(
-    tx: IBaseTransaction<void>,
+    tx: IBaseTransaction<SendTxAsset>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
     return await this.hookSystem.apply_filters(
       SendTxApplyFilter.name,
       [
-        ...this.accountLogic.merge(tx.recipientId, {
+        ...this.accountLogic.mergeBalanceDiff(tx.recipientId, {
           balance: BigInt(tx.amount),
-          blockId: block.id,
           // round    : this.roundsLogic.calcRound(block.height),
           u_balance: BigInt(tx.amount),
         }),
@@ -78,16 +100,15 @@ export class SendTransaction extends BaseTx<void, null> {
 
   // tslint:disable-next-line max-line-length
   public async undo(
-    tx: IBaseTransaction<void>,
+    tx: IBaseTransaction<SendTxAsset>,
     block: SignedBlockType,
     sender: IAccountsModel
   ): Promise<Array<DBOp<any>>> {
     return await this.hookSystem.apply_filters(
       SendTxUndoFilter.name,
       [
-        ...this.accountLogic.merge(tx.recipientId, {
+        ...this.accountLogic.mergeBalanceDiff(tx.recipientId, {
           balance: -BigInt(tx.amount),
-          blockId: block.id,
           // round    : this.roundsLogic.calcRound(block.height),
           u_balance: -BigInt(tx.amount),
         }),
@@ -99,13 +120,45 @@ export class SendTransaction extends BaseTx<void, null> {
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<void, bigint>
-  ): IBaseTransaction<void, bigint> {
-    return tx;
+    tx: IBaseTransaction<SendTxAsset<string | Buffer>, bigint>
+  ): IBaseTransaction<SendTxAsset, bigint> {
+    if (tx.asset && typeof tx.asset.data === 'string') {
+      tx.asset.data = Buffer.from(tx.asset.data, 'utf8');
+    }
+    return tx as IBaseTransaction<SendTxAsset>;
   }
 
-  // tslint:disable-next-line max-line-length
-  public dbSave(tx: IBaseTransaction<void> & { senderId: string }) {
-    return null;
+  public async attachAssets(
+    txs: Array<IBaseTransaction<SendTxAsset>>
+  ): Promise<void> {
+    const r =
+      (await this.SendTxAssetModel.findAll({
+        raw: true,
+        where: {
+          transactionId: txs.map((t) => t.id),
+        },
+      })) || [];
+    const byId: { [id: string]: IBaseTransaction<SendTxAsset> } = {};
+    txs.forEach((t) => (byId[t.id] = t));
+
+    for (const m of r) {
+      byId[m.transactionId].asset = {
+        data: m.data,
+      };
+    }
+  }
+
+  public dbSave(tx: IBaseTransaction<SendTxAsset>) {
+    if (!tx.asset || !tx.asset.data) {
+      return null;
+    }
+    return {
+      model: this.SendTxAssetModel,
+      type: 'create',
+      values: {
+        data: tx.asset && tx.asset.data ? tx.asset.data : null,
+        transactionId: tx.id,
+      },
+    } as DBCreateOp<SendTxAssetModel>;
   }
 }
