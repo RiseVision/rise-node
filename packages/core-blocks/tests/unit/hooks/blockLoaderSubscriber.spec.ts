@@ -1,7 +1,6 @@
 import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { Peer } from '@risevision/core-p2p';
-import * as utils from '@risevision/core-utils';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -72,23 +71,13 @@ describe('blocks/hooks/loader', () => {
   });
 
   describe('syncWithPeer', () => {
-    it('waits 1000ms before throwing when no available peers', async () => {
-      const waitStub = sandbox.stub(utils, 'wait').resolves();
-
-      const p = syncWithPeer(async () => undefined);
-      await expect(p).to.be.rejectedWith('No random peer to sync with');
-      expect(waitStub.calledOnceWith(1000)).to.be.true;
-    });
-
     it('should skip common block calls for genesis block', async () => {
       blocksModule.lastBlock = { height: 1, id: '1' } as any;
       loadBlocksFromPeerStub.callsFake(async () => {
         blocksModule.lastBlock = createFakeBlock(container);
       });
 
-      const inSyncWithPeer = await syncWithPeer(async () => {
-        return { height: 2 } as any;
-      });
+      const inSyncWithPeer = await syncWithPeer({ height: 2 } as any);
 
       expect(getCommonBlockStub.notCalled).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
@@ -110,9 +99,7 @@ describe('blocks/hooks/loader', () => {
         });
       });
 
-      const inSyncWithPeer = await syncWithPeer(async () => {
-        return { height: 3 } as any;
-      });
+      const inSyncWithPeer = await syncWithPeer({ height: 3 } as any);
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
@@ -130,9 +117,7 @@ describe('blocks/hooks/loader', () => {
       });
       loadBlocksFromPeerStub.resolves();
 
-      const inSyncWithPeer = await syncWithPeer(async () => {
-        return { height: 2 } as any;
-      });
+      const inSyncWithPeer = await syncWithPeer({ height: 2 } as any);
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
@@ -156,9 +141,7 @@ describe('blocks/hooks/loader', () => {
         }
       });
 
-      const inSyncWithPeer = await syncWithPeer(async () => {
-        return { height: 2 } as any;
-      });
+      const inSyncWithPeer = await syncWithPeer({ height: 2 } as any);
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
@@ -180,9 +163,7 @@ describe('blocks/hooks/loader', () => {
         });
       });
 
-      const inSyncWithPeer = await syncWithPeer(async () => {
-        return { height: 5 } as any;
-      });
+      const inSyncWithPeer = await syncWithPeer({ height: 5 } as any);
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
@@ -219,9 +200,7 @@ describe('blocks/hooks/loader', () => {
         }
       });
 
-      const inSyncWithPeer = await syncWithPeer(async () => {
-        return { height: 6 } as any;
-      });
+      const inSyncWithPeer = await syncWithPeer({ height: 6 } as any);
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.calledThrice).to.be.true;

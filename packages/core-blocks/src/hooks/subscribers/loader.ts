@@ -7,7 +7,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { IPeersModule, p2pSymbols, Peer } from '@risevision/core-p2p';
-import { wait, WrapInDefaultSequence } from '@risevision/core-utils';
+import { WrapInDefaultSequence } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import {
   OnWPAction,
@@ -104,13 +104,23 @@ export class BlockLoader extends Extendable {
     peerProvider: () => Promise<Peer>
   ): Promise<void> {
     try {
-      let inSyncWithNetwork;
-      do {
-        inSyncWithNetwork = await promiseRetry(
-          (retry) => this.syncWithPeer(peerProvider).catch(retry),
-          { retries: 3, maxTimeout: 50000 }
-        );
-      } while (!inSyncWithNetwork);
+      const retryOpts = {
+        maxTimeout: 50000,
+        retries: 3,
+      };
+
+      let inSyncWithNetwork = false;
+      while (!inSyncWithNetwork) {
+        inSyncWithNetwork = await promiseRetry(async (retry) => {
+          const syncPeer = await peerProvider();
+          if (typeof syncPeer === 'undefined') {
+            // This could happen when we received a block but we did not get the updated peer list.
+            return retry(new Error('No random peer to sync with'));
+          }
+
+          return this.syncWithPeer(syncPeer).catch(retry);
+        }, retryOpts);
+      }
     } catch (err) {
       this.logger.warn(
         'Something went wrong when trying to sync with network',
@@ -119,17 +129,8 @@ export class BlockLoader extends Extendable {
     }
   }
 
-  private async syncWithPeer(
-    peerProvider: () => Promise<Peer>
-  ): Promise<boolean> {
-    const syncPeer = await peerProvider();
+  private async syncWithPeer(syncPeer: Peer): Promise<boolean> {
     let lastBlock = this.blocksModule.lastBlock;
-
-    if (typeof syncPeer === 'undefined') {
-      await wait(1000);
-      // This could happen when we received a block but we did not get the updated peer list.
-      throw new Error('No random peer to sync with');
-    }
 
     if (lastBlock.height !== 1) {
       this.logger.info(`Looking for common block with: ${syncPeer.string}`);
