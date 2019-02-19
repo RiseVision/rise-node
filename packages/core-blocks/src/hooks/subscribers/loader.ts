@@ -144,8 +144,7 @@ export class BlockLoader extends Extendable {
       // Rollback local chain to last common block with peer if we appear to be on a fork
       if (
         randomPeer.height > lastBlock.height &&
-        lastBlock.height > commonBlock.height &&
-        this.appStateLogic.getComputed('node.poorConsensus')
+        lastBlock.height > commonBlock.height
       ) {
         try {
           while (lastBlock.height > commonBlock.height) {
