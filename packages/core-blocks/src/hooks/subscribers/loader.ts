@@ -94,56 +94,60 @@ export class BlockLoader extends Extendable {
   private async sync(peerProvider: () => Promise<Peer>) {
     this.logger.info('Starting block sync');
 
-    await this.loadBlocksFromNetwork(peerProvider);
+    await this.syncWithNetwork(peerProvider);
   }
 
   /**
    * Loads blocks from the network
    */
-  private async loadBlocksFromNetwork(peerProvider: () => Promise<Peer>) {
-    let loaded = false;
-    do {
-      loaded = await promiseRetry(
-        (retry) => this.innerLoad(peerProvider).catch(retry),
-        { retries: 3, maxTimeout: 50000 }
-      ).catch((e) => {
-        this.logger.warn(
-          'Something went wrong when trying to sync block from network',
-          e
+  private async syncWithNetwork(
+    peerProvider: () => Promise<Peer>
+  ): Promise<void> {
+    try {
+      let inSyncWithNetwork;
+      do {
+        inSyncWithNetwork = await promiseRetry(
+          (retry) => this.syncWithPeer(peerProvider).catch(retry),
+          { retries: 3, maxTimeout: 50000 }
         );
-        return true;
-      });
-    } while (!loaded);
+      } while (!inSyncWithNetwork);
+    } catch (err) {
+      this.logger.warn(
+        'Something went wrong when trying to sync with network',
+        err
+      );
+    }
   }
 
-  private async innerLoad(peerProvider: () => Promise<Peer>) {
-    let loaded = false;
-
-    const randomPeer = await peerProvider();
+  private async syncWithPeer(
+    peerProvider: () => Promise<Peer>
+  ): Promise<boolean> {
+    const syncPeer = await peerProvider();
     let lastBlock = this.blocksModule.lastBlock;
-    if (typeof randomPeer === 'undefined') {
+
+    if (typeof syncPeer === 'undefined') {
       await wait(1000);
       // This could happen when we received a block but we did not get the updated peer list.
-      throw new Error('No random peer');
+      throw new Error('No random peer to sync with');
     }
 
     if (lastBlock.height !== 1) {
-      this.logger.info(`Looking for common block with: ${randomPeer.string}`);
+      this.logger.info(`Looking for common block with: ${syncPeer.string}`);
       let commonBlock;
       try {
         commonBlock = await this.blocksModuleProcess.getCommonBlock(
-          randomPeer,
+          syncPeer,
           lastBlock.height
         );
       } catch (err) {
         this.logger.error(
-          `Failed to find common block with: ${randomPeer.string}`
+          `Failed to find common block with: ${syncPeer.string}`
         );
         throw err;
       }
       // Rollback local chain to last common block with peer if we appear to be on a fork
       if (
-        randomPeer.height > lastBlock.height &&
+        syncPeer.height > lastBlock.height &&
         lastBlock.height > commonBlock.height
       ) {
         try {
@@ -157,19 +161,19 @@ export class BlockLoader extends Extendable {
         }
       }
     }
-    // Now that we know that peer is reliable we can sync blocks with him!!
-    // this.blocksToSync = randomPeer.height;
-    try {
-      const lastValidBlock = await this.blocksModuleProcess.loadBlocksFromPeer(
-        randomPeer
-      );
 
-      loaded = lastValidBlock.id === lastBlock.id;
+    // Fetch new blocks from peer
+    const prevBlock = lastBlock;
+    try {
+      await this.blocksModuleProcess.loadBlocksFromPeer(syncPeer);
     } catch (err) {
       this.logger.error(err.toString());
-      this.logger.error('Failed to load blocks from: ' + randomPeer.string);
+      this.logger.error('Failed to load blocks from: ' + syncPeer.string);
       throw err;
     }
-    return loaded;
+    lastBlock = this.blocksModule.lastBlock;
+    const inSyncWithPeer =
+      lastBlock.height >= syncPeer.height || prevBlock.id === lastBlock.id;
+    return inSyncWithPeer;
   }
 }
