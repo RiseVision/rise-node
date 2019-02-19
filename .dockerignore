@@ -13,6 +13,9 @@ backup.tar
 blockchain.db.gz
 dapps
 dist
+docker/compose
+docker/files
+docker/scripts
 docs
 logs
 node_modules

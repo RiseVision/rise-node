@@ -1,10 +1,10 @@
 version: "3"
 services:
 
-  rise-arm:
+  rise:
     build:
-      context: .
-      dockerfile: Dockerfile.arm
+      context: ../../
+      dockerfile: ./docker/files/Dockerfile
     depends_on:
       - redis
       - postgres
@@ -17,13 +17,15 @@ services:
     restart: on-failure
 
   redis:
-    image: arm32v6/redis:5-alpine
+    image: redis:5-alpine
     networks:
       - overlay
     restart: on-failure
 
   postgres:
-    image: arm32v6/postgres:11-alpine
+    build:
+      context: ../../
+      dockerfile: ./docker/files/Dockerfile.postgres
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: rise

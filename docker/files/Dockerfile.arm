@@ -33,7 +33,6 @@ COPY --chown=rise ./packages/core-helpers/package.json ./packages/core-helpers/p
 COPY --chown=rise ./packages/core-interfaces/package.json ./packages/core-interfaces/package.json
 COPY --chown=rise ./packages/core-launchpad/package.json ./packages/core-launchpad/package.json
 COPY --chown=rise ./packages/core-models/package.json ./packages/core-models/package.json
-COPY --chown=rise ./packages/core-multisignature/package.json ./packages/core-multisignature/package.json
 COPY --chown=rise ./packages/core-p2p/package.json ./packages/core-p2p/package.json
 COPY --chown=rise ./packages/core-secondsignature/package.json ./packages/core-secondsignature/package.json
 COPY --chown=rise ./packages/core-transactions/package.json ./packages/core-transactions/package.json
@@ -46,7 +45,8 @@ COPY --chown=rise ./lerna.json ./lerna.json
 
 COPY --chown=rise . .
 RUN ./node_modules/.bin/lerna run transpile && \
-    ./node_modules/.bin/lerna bootstrap
+    ./node_modules/.bin/lerna bootstrap && \
+    ./node_modules/.bin/lerna link
 
 RUN mkdir /home/rise/logs && ln -s /home/rise/logs ./packages/rise/logs
 COPY --chown=rise ./docker/node_config.json /home/rise/config.json
