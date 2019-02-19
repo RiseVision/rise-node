@@ -1,0 +1,102 @@
+#!/bin/bash
+
+set -e
+
+REPOSITORY=""
+
+if ! [ -x "$(command -v docker)" ]; then
+    echo "Please install docker"
+    exit 1
+fi
+
+ID=$(date +%s)
+DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+ROOT=$(dirname $(dirname $DIR))
+
+pushd $ROOT > /dev/null
+trap "popd > /dev/null" EXIT
+
+VERSION=$(node -e "console.log(require('./package.json').version)")
+
+add_qemu_deps() {
+    DEP_LOC=/usr/bin/qemu-arm-static
+    DOCKER_DEP_LOC=$ROOT/docker/qemu-arm-static
+
+    if [ ! -f "$DOCKER_DEP_LOC" ]; then
+        if [ ! -f "$DEP_LOC" ]; then
+            echo "Installing $(basename "$DEP_LOC")..."
+            QEMU_BINS_CONTAINER=$(docker create -it jpopesculian/qemu-user-static-bins:latest)
+            sudo docker cp $QEMU_BINS_CONTAINER:/usr/bin/qemu-arm-static /usr/bin/qemu-arm-static
+            docker rm $QEMU_BINS_CONTAINER 2&> /dev/null
+            sudo docker run --rm --privileged multiarch/qemu-user-static:register --reset
+            echo "Done!"
+        fi
+        if [ ! -f "$DEP_LOC" ]; then
+            echo "Failed to install 'qemu-user-static' bins! Necessary for ARM builds."
+            exit 1
+        fi
+        echo "Copying $DEP_LOC -> $DOCKER_DEP_LOC"
+        cp "$DEP_LOC" "$DOCKER_DEP_LOC"
+    fi
+
+    if [[ ! -x "$DOCKER_DEP_LOC" ]]; then
+        echo "$(basename $DOCKER_DEP_LOC) not executable! Please grant permissions:"
+        (set -x; sudo chmod +x "$DOCKER_DEP_LOC")
+    fi
+}
+
+construct_version() {
+    result=""
+    for field in $(seq 1 $1)
+    do
+        result="$result.$(cut -d '.' -f$field <<< $VERSION)"
+    done
+    echo ${result:1}
+}
+
+build_and_push_image() {
+    name=$1
+    file=$2
+    prefix=$3
+    versions=$4
+    extra_flags=$5
+    tag="${name}:${prefix}${ID}"
+
+    pushd $(dirname $file) > /dev/null
+
+    docker build -t $tag -f $(basename $file) $extra_flags $ROOT
+
+    if [ "$REPOSITORY" != "" ]; then
+        latest_tag="$REPOSITORY/$name:${prefix}latest"
+
+        docker tag $tag $latest_tag
+        docker push $latest_tag
+
+        if [ "$versions" = true ] ; then
+            for num_field in $(seq 1 3)
+            do
+                version=$(construct_version $num_field)
+                version_tag="$REPOSITORY/$name:${prefix}v$version"
+                docker tag $tag $version_tag
+                docker push $version_tag
+            done
+        fi
+    fi
+
+    popd > /dev/null
+}
+
+add_qemu_deps
+
+build_and_push_image rise-node-priv ./docker/files/Dockerfile "" true
+build_and_push_image rise-node-priv ./docker/files/Dockerfile.arm arm- true
+
+build_and_push_image rise-node-priv_postgres ./docker/files/Dockerfile.postgres \
+    "mainnet-" false "--no-cache --build-arg NETWORK=mainnet"
+build_and_push_image rise-node-priv_postgres ./docker/files/Dockerfile.postgres.arm \
+    "arm-mainnet-" false "--no-cache --build-arg NETWORK=mainnet"
+
+build_and_push_image rise-node-priv_postgres ./docker/files/Dockerfile.postgres \
+    "testnet-" false "--no-cache --build-arg NETWORK=testnet"
+build_and_push_image rise-node-priv_postgres ./docker/files/Dockerfile.postgres.arm \
+    "arm-testnet-" false "--no-cache --build-arg NETWORK=testnet"

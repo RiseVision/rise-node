@@ -25,5 +25,6 @@ backup.tar
 blockchain.db.gz
 dist/
 .nyc_output/
+docker/qemu-arm-static
 yarn-error.log
 coverage
