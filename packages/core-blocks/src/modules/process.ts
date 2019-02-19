@@ -116,17 +116,14 @@ export class BlocksModuleProcess {
 
   /**
    * Performs chain comparison with remote peer
-   * WARNING: Can trigger chain recovery
    * @param {Peer} peer
    * @param {number} height
-   * @return {Promise<void>}
+   * @return {Promise}
    */
-  // FIXME Void return for recoverChain
-  // tslint:disable-next-line max-line-length
   public async getCommonBlock(
     peer: Peer,
     height: number
-  ): Promise<{ id: string; previousBlock: string; height: number } | void> {
+  ): Promise<{ id: string; previousBlock: string; height: number }> {
     const { ids } = await this.blocksUtilsModule.getIdSequence(height);
 
     const commonResp = await peer.makeRequest(this.commonBlockRequest, {
@@ -134,19 +131,15 @@ export class BlocksModuleProcess {
     });
 
     if (!commonResp || !commonResp.common) {
-      if (this.appStateLogic.getComputed('node.poorConsensus')) {
-        return this.blocksChainModule.recoverChain();
-      } else {
-        throw new Error(
-          `Chain comparison failed with peer ${
-            peer.string
-          } using ids: ${ids.join(', ')}`
-        );
-      }
+      throw new Error(
+        `Chain comparison failed with peer ${peer.string} using ids: ${ids.join(
+          ', '
+        )}`
+      );
     }
 
     if (!this.schema.validate(commonResp.common, schema.getCommonBlock)) {
-      throw new Error('Cannot validate commonblock response');
+      throw new Error('Cannot validate CommonBlock response');
     }
 
     // Check that block with ID, previousBlock and height exists in database
@@ -159,22 +152,11 @@ export class BlocksModuleProcess {
     });
 
     if (matchingCount === 0) {
-      // Block does not exist  - comparison failed.
-      if (this.appStateLogic.getComputed('node.poorConsensus')) {
-        return this.blocksChainModule.recoverChain();
-      } else {
-        throw new Error(
-          `Chain comparison failed with peer: ${
-            peer.string
-          } using block ${JSON.stringify(commonResp.common)}`
-        );
-      }
-    } else if (
-      peer.height > height &&
-      commonResp.common.height < height &&
-      this.appStateLogic.getComputed('node.poorConsensus')
-    ) {
-      return this.blocksChainModule.recoverChain();
+      throw new Error(
+        `Chain comparison failed with peer: ${
+          peer.string
+        } using block ${JSON.stringify(commonResp.common)}`
+      );
     }
 
     return commonResp.common;
