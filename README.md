@@ -125,10 +125,10 @@ To build the node from source, please check your system for the following
 * [`git`](https://git-scm.com/)
 
 The RISE node also uses [`lerna`](https://github.com/lerna/lerna) to handle submodules and
-their dependencies. After making sure the above are installed, you can install `lerna` by running (may require `sudo`)
+their dependencies. After making sure the above are installed, you can install `lerna` by running the following (may require `sudo`)
 
 ```bash
-yarn global install lerna
+yarn global add lerna
 ```
 
 ### Installation
@@ -145,10 +145,22 @@ Enter the installation directory
 cd rise-node
 ```
 
-Install dependencies and link packages
+Install node modules
 
 ```bash
-lerna bootstrap && lerna link
+yarn install && lerna bootstrap
+```
+
+Compile TypeScript
+
+```bash
+yarn transpile
+```
+
+Link compiled packages
+
+```bash
+lerna link
 ```
 
 ### Starting the node
@@ -177,13 +189,18 @@ And edit the configuration. A basic sample is below, but review the [developer d
     }
   }
 }
+```
 
+Add `logs` directory
+
+```bash
+mkdir packages/rise/logs && ln -s packages/rise/logs logs
 ```
 
 Run the node (change `mainnet` to `testnet` to run the node on the testnet)
 
 ```bash
-lerna run start:mainnet --stream --no-prefix -- -e ../../node_config.json
+lerna run start:mainnet --stream --no-prefix -- -e ../../../node_config.json
 ```
 
 ## Starting with docker
