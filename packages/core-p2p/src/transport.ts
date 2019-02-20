@@ -1,4 +1,7 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  AppConfig,
+  BasePeerType,
   IAppState,
   IBlocksModel,
   IBlocksModule,
@@ -7,16 +10,11 @@ import {
   ISequence,
   ISystemModule,
   ITransactionsModel,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import {
-  AppConfig,
-  BasePeerType,
   PeerHeaders,
   PeerRequestOptions,
   PeerState,
   PeerType,
+  Symbols,
 } from '@risevision/core-types';
 import { cbToPromise } from '@risevision/core-utils';
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';

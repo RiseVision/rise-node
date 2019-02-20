@@ -1,5 +1,4 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
-import { publicKey } from '@risevision/core-types';
+import { IAccountsModel, publicKey } from '@risevision/core-types';
 import * as sequelize from 'sequelize';
 import { Column, DataType, DefaultScope } from 'sequelize-typescript';
 import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';

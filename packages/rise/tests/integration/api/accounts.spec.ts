@@ -1,9 +1,9 @@
 import {
+  AppConfig,
   IAccountsModule,
   ISystemModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { AppConfig } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline';
 import * as supertest from 'supertest';

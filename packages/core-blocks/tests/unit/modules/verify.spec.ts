@@ -1,4 +1,13 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
+import { TXBytes } from '@risevision/core-transactions';
 import {
+  createRandomTransactions,
+  toNativeTx,
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import {
+  ForkType,
   IAccountsModel,
   IAccountsModule,
   IBlockLogic,
@@ -8,17 +17,9 @@ import {
   IIdsHandler,
   ITransactionLogic,
   ITransactionsModule,
+  SignedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { TXSymbols } from '@risevision/core-transactions';
-import { TXBytes } from '@risevision/core-transactions';
-import {
-  createRandomTransactions,
-  toNativeTx,
-} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { ForkType, SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

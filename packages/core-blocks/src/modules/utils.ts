@@ -1,3 +1,4 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModel,
   IBlockLogic,
@@ -7,10 +8,9 @@ import {
   ISequence,
   ITransactionLogic,
   ITransactionsModel,
+  SignedAndChainedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import {
   BlockProgressLogger,
   catchToLoggerAndRemapError,

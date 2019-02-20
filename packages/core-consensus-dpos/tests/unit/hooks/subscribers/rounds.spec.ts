@@ -1,9 +1,8 @@
 import { SnapshotBlocksCountFilter } from '@risevision/core';
 import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
 import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

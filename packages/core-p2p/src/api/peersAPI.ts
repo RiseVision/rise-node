@@ -1,5 +1,9 @@
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { AppConfig, PeerState } from '@risevision/core-types';
+import {
+  AppConfig,
+  ISystemModule,
+  PeerState,
+  Symbols,
+} from '@risevision/core-types';
 import {
   HTTPError,
   IoCSymbol,

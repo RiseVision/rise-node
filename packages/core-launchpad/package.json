@@ -16,7 +16,6 @@
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "dependencies": {
-    "@risevision/core-interfaces": "^1.0.0",
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
     "app-module-path": "2.2.0",

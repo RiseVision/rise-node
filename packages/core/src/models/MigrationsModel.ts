@@ -1,4 +1,4 @@
-import { IMigrationsModel } from '@risevision/core-interfaces';
+import { IMigrationsModel } from '@risevision/core-types';
 import { Column, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'migrations' })

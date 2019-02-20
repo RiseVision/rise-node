@@ -1,4 +1,4 @@
-import { Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-types';
 
 export const LaunchpadSymbols = {
   appConfig: Symbols.generic.appConfig,

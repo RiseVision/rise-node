@@ -1,7 +1,7 @@
 // tslint:disable object-literal-sort-keys
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { p2pSymbols } from '@risevision/core-p2p';
+import { Symbols } from '@risevision/core-types';
 import { HTTPError } from '@risevision/core-utils';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';

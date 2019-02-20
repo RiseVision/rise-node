@@ -1,9 +1,9 @@
 import {
+  IBaseTransaction,
   IInnerTXQueue,
   ListingOptions,
   QueueEntry,
-} from '@risevision/core-interfaces';
-import { IBaseTransaction } from '@risevision/core-types';
+} from '@risevision/core-types';
 
 export class InnerTXQueue<T extends { receivedAt: Date } = { receivedAt: Date }>
   implements IInnerTXQueue<T> {

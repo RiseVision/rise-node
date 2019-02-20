@@ -27,7 +27,6 @@
       "@risevision/core-crypto": ["./packages/core-crypto/*"],
       "@risevision/core-exceptions": ["./packages/core-exceptions/*"],
       "@risevision/core-helpers": ["./packages/core-helpers/*"],
-      "@risevision/core-interfaces": ["./packages/core-interfaces/*"],
       "@risevision/core-launchpad": ["./packages/core-launchpad/*"],
       "@risevision/core-models": ["./packages/core-models/*"],
       "@risevision/core-p2p": ["./packages/core-p2p/*"],

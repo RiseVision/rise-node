@@ -1,4 +1,4 @@
-import { ForkType, SignedBlockType } from '@risevision/core-types';
+import { ForkType, SignedBlockType } from '../../types';
 
 export interface IForkModule {
   /**

@@ -1,8 +1,12 @@
 import { SystemModule } from '@risevision/core';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { BasePeerType, PeerState } from '@risevision/core-types';
+import {
+  BasePeerType,
+  ISystemModule,
+  PeerState,
+  Symbols,
+} from '@risevision/core-types';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { expect } from 'chai';
 import 'chai-as-promised';

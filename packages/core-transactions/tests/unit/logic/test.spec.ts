@@ -1,7 +1,11 @@
 // tslint:disable object-literal-sort-keys max-line-length
-import { IIdsHandler, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { Address, IBaseTransaction } from '@risevision/core-types';
+import {
+  Address,
+  IBaseTransaction,
+  IIdsHandler,
+  Symbols,
+} from '@risevision/core-types';
 import { expect } from 'chai';
 import { RiseV2 } from 'dpos-offline';
 import { Container } from 'inversify';

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { IAccountsModel } from '@risevision/core-interfaces';
+import { IAccountsModel } from '@risevision/core-types';
 import {
   Column,
   DataType,

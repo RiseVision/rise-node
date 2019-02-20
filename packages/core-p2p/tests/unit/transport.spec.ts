@@ -1,8 +1,7 @@
 import { SystemModule } from '@risevision/core';
 import { AppState, JobsQueue, Sequence } from '@risevision/core-helpers';
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { PeerState } from '@risevision/core-types';
+import { IBlocksModule, PeerState, Symbols } from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';

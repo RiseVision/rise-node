@@ -1,19 +1,17 @@
 import { PrivateApisGuard } from '@risevision/core-apis';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModel,
   IAccountsModule,
+  IBaseTransaction,
   IBlocksModule,
   ISystemModule,
   ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import {
-  IBaseTransaction,
   ITransportTransaction,
+  Symbols,
 } from '@risevision/core-types';
 import {
   assertValidSchema,

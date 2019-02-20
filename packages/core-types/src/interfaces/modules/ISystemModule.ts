@@ -1,5 +1,6 @@
-import { PeerHeaders, SignedAndChainedBlockType } from '@risevision/core-types';
 import * as crypto from 'crypto';
+
+import { PeerHeaders, SignedAndChainedBlockType } from '../../types';
 import { IModule } from './IModule';
 
 export interface ISystemModule extends IModule {

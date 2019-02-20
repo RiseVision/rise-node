@@ -19,7 +19,6 @@
       <excludeFolder url="file://$MODULE_DIR$/packages/core-consensus-dpos/dist" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core-exceptions/dist" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core-helpers/dist" />
-      <excludeFolder url="file://$MODULE_DIR$/packages/core-interfaces/dist" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core-launchpad/dist" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core-models/dist" />
       <excludeFolder url="file://$MODULE_DIR$/packages/core-multisignature/dist" />

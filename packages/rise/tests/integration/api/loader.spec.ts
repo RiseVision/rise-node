@@ -1,6 +1,5 @@
 import { BlocksModule } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';

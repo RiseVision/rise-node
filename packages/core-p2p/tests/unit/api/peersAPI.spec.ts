@@ -1,7 +1,6 @@
 import { APISymbols } from '@risevision/core-apis';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { PeerState } from '@risevision/core-types';
+import { ISystemModule, PeerState, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';

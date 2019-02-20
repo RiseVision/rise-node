@@ -1,12 +1,14 @@
-import { IAccountLogic, ICrypto, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   Address,
   ConstantsType,
   DBCreateOp,
+  IAccountLogic,
   IBaseTransaction,
+  ICrypto,
   IKeypair,
+  Symbols,
 } from '@risevision/core-types';
 import * as ByteBuffer from 'bytebuffer';
 import * as chai from 'chai';

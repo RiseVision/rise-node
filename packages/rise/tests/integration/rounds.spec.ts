@@ -12,7 +12,6 @@ import {
   RoundsModule,
 } from '@risevision/core-consensus-dpos';
 import { Crypto } from '@risevision/core-crypto';
-import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   TransactionLogic,
@@ -20,6 +19,7 @@ import {
   TransactionsModule,
   TXSymbols,
 } from '@risevision/core-transactions';
+import { Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

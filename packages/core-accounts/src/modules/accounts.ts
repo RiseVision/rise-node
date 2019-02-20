@@ -1,13 +1,15 @@
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
 import {
   AccountDiffType,
   AccountFilterData,
+  Address,
+  DBOp,
   IAccountsModel,
   IAccountsModule,
+  IBaseTransaction,
   IIdsHandler,
   Symbols,
-} from '@risevision/core-interfaces';
-import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import { Address, DBOp, IBaseTransaction } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { AccountLogic } from '../logic';
 import { AccountsSymbols } from '../symbols';

@@ -1,6 +1,6 @@
-import { IBlocksModel } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
+import { IBlocksModel } from '@risevision/core-types';
 import { expect } from 'chai';
 import { Container } from 'inversify';
 import { BlocksSymbols } from '../../../src/';

@@ -8,13 +8,14 @@ import {
   VerifyBlock,
   VerifyReceipt,
 } from '@risevision/core-blocks';
-import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   DBOp,
+  ILogger,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';

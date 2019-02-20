@@ -1,6 +1,5 @@
 import { BlocksModule } from '@risevision/core-blocks';
 import { Crypto } from '@risevision/core-crypto';
-import { ITransactionLogic, Symbols } from '@risevision/core-interfaces';
 import {
   MultisigSymbols,
   PostSignaturesRequest,
@@ -8,6 +7,7 @@ import {
 import { p2pSymbols } from '@risevision/core-p2p';
 import { PoolManager, TXSymbols } from '@risevision/core-transactions';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { ITransactionLogic, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import { LiskWallet } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';

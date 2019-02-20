@@ -1,5 +1,4 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
-import { SignedBlockType } from '@risevision/core-types';
+import { IAccountsModel, SignedBlockType } from '@risevision/core-types';
 import {
   ActionFilterDecoratorType,
   createFilterDecorator as createFilter,

@@ -1,4 +1,7 @@
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  DBOp,
   IAccountsModel,
   IAccountsModule,
   IBlockLogic,
@@ -10,14 +13,9 @@ import {
   ITransactionLogic,
   ITransactionPool,
   ITransactionsModel,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
-import { ModelSymbols } from '@risevision/core-models';
-import {
-  DBOp,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
   TransactionType,
 } from '@risevision/core-types';
 import {

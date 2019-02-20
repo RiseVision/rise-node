@@ -1,6 +1,11 @@
+import { ModelSymbols } from '@risevision/core-models';
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
+  DBBulkCreateOp,
+  DBOp,
   IAccountLogic,
   IAccountsModel,
+  IBaseTransaction,
   IBaseTransactionType,
   ICrypto,
   IIdsHandler,
@@ -8,17 +13,10 @@ import {
   ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
-import {
-  DBBulkCreateOp,
-  DBOp,
-  IBaseTransaction,
   ITransportTransaction,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { inject, injectable, named } from 'inversify';

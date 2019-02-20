@@ -1,12 +1,14 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  AppConfig,
   IAppState,
   ILogger,
   IPeersModel,
   ISystemModule,
+  PeerState,
+  PeerType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, PeerState, PeerType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';

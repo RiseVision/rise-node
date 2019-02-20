@@ -4,11 +4,11 @@ import {
   ExceptionsManager,
   ExceptionSymbols,
 } from '@risevision/core-exceptions';
-import { IBaseTransactionType, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
 import { TXSymbols } from '@risevision/core-transactions';
+import { IBaseTransactionType, Symbols } from '@risevision/core-types';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';

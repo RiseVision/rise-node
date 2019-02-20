@@ -1,4 +1,3 @@
-import { IBlocksModel, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseProtobufTransportMethod,
@@ -6,7 +5,11 @@ import {
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  IBlocksModel,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';

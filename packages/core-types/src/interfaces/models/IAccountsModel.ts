@@ -1,4 +1,4 @@
-import { Address } from '@risevision/core-types';
+import { Address } from '../../types';
 import { IBaseModel } from './IBaseModel';
 
 export class IAccountsModel extends IBaseModel<IAccountsModel> {

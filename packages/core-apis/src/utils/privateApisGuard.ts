@@ -1,4 +1,4 @@
-import { Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-types';
 import { checkIpInList, HTTPError, IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';

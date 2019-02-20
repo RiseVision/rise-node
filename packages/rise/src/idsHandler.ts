@@ -1,5 +1,4 @@
-import { IIdsHandler } from '@risevision/core-interfaces';
-import { Address } from '@risevision/core-types';
+import { Address, IIdsHandler } from '@risevision/core-types';
 import * as bech32 from 'bech32-buffer';
 import { toBigIntBE, toBufferBE } from 'bigint-buffer';
 import { RiseV2 } from 'dpos-offline';

@@ -1,11 +1,11 @@
+import { IPeersModule } from '@risevision/core-p2p';
 import {
   IBlocksModule,
   ILogger,
   ITimeToEpoch,
+  SignedAndChainedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { IPeersModule } from '@risevision/core-p2p';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';

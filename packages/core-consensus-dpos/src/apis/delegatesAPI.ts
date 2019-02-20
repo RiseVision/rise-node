@@ -4,17 +4,18 @@ import {
   PrivateApisGuard,
 } from '@risevision/core-apis';
 import { BlocksAPI, BlocksSymbols } from '@risevision/core-blocks';
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  ConstantsType,
   IAccountsModule,
   IBlocksModel,
   IBlocksModule,
   ICrypto,
   ISystemModule,
   ITransactionsModel,
+  publicKey,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, publicKey } from '@risevision/core-types';
+} from '@risevision/core-types';
 import {
   HTTPError,
   IoCSymbol,

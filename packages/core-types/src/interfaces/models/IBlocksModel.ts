@@ -1,4 +1,4 @@
-import { SignedBlockType } from '@risevision/core-types';
+import { SignedBlockType } from '../../types';
 import { IBlocksModule } from '../modules';
 import { IBaseModel } from './IBaseModel';
 import { ITransactionsModel } from './ITransactionsModel';

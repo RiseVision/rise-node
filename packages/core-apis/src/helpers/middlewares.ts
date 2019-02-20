@@ -1,4 +1,4 @@
-import { ILogger } from '@risevision/core-interfaces';
+import { ILogger } from '@risevision/core-types';
 import { NextFunction, Request, Response } from 'express';
 
 export const middleware = {

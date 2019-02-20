@@ -1,19 +1,17 @@
+import { DBHelper, ModelSymbols } from '@risevision/core-models';
+import { PeersModule } from '@risevision/core-p2p';
 import {
   IAccountsModel,
   IAccountsModule,
+  IBaseTransaction,
   ILogger,
   ISequence,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { DBHelper, ModelSymbols } from '@risevision/core-models';
-import { PeersModule } from '@risevision/core-p2p';
-import {
-  IBaseTransaction,
   PeerType,
   SignedAndChainedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { WrapInBalanceSequence } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';

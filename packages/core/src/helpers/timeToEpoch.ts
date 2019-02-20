@@ -1,5 +1,4 @@
-import { ITimeToEpoch, Symbols } from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, ITimeToEpoch, Symbols } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 
 @injectable()

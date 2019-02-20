@@ -1,4 +1,4 @@
-import { ILogger, Symbols } from '@risevision/core-interfaces';
+import { ILogger, Symbols } from '@risevision/core-types';
 import * as express from 'express';
 import {
   Application,

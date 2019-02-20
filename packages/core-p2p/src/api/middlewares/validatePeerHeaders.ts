@@ -1,5 +1,4 @@
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { BasePeerType } from '@risevision/core-types';
+import { BasePeerType, ISystemModule, Symbols } from '@risevision/core-types';
 import {
   castFieldsToNumberUsingSchema,
   IoCSymbol,

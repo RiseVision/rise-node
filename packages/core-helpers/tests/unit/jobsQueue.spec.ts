@@ -1,4 +1,4 @@
-import { IJobsQueue } from '@risevision/core-interfaces';
+import { IJobsQueue } from '@risevision/core-types';
 import { expect } from 'chai';
 import 'reflect-metadata';
 import * as sinon from 'sinon';

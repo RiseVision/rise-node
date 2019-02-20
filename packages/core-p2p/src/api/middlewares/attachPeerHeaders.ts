@@ -1,4 +1,4 @@
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { ISystemModule, Symbols } from '@risevision/core-types';
 import { IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';

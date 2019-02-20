@@ -1,16 +1,16 @@
 import { FilterAPIGetAccount } from '@risevision/core-accounts';
 import {
-  ICrypto,
-  ITransactionLogic,
-  Symbols,
-} from '@risevision/core-interfaces';
-import {
   TXBytes,
   TxLogicStaticCheck,
   TxSignatureVerify,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { IBaseTransaction } from '@risevision/core-types';
+import {
+  IBaseTransaction,
+  ICrypto,
+  ITransactionLogic,
+  Symbols,
+} from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { AccountsModelWith2ndSign } from '../AccountsModelWith2ndSign';

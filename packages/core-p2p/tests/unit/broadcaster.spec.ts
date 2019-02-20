@@ -1,6 +1,5 @@
-import { IJobsQueue, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, IJobsQueue, Symbols } from '@risevision/core-types';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { expect } from 'chai';
 import { Container } from 'inversify';

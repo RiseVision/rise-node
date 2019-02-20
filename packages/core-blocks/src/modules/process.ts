@@ -1,27 +1,25 @@
+import { ModelSymbols } from '@risevision/core-models';
+import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
 import {
+  BasePeerType,
+  ForkType,
   IAccountsModule,
   IAppState,
+  IBaseTransaction,
   IBlockLogic,
   IBlocksModel,
   IBlocksModule,
   IForkModule,
+  IKeypair,
   ILogger,
   ISequence,
   ITransactionLogic,
   ITransactionPool,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
-import {
-  BasePeerType,
-  ForkType,
-  IBaseTransaction,
-  IKeypair,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import {
   WrapInDBSequence,

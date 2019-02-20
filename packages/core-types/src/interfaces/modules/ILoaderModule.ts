@@ -1,4 +1,4 @@
-import { PeerType } from '@risevision/core-types';
+import { PeerType } from '../../types';
 
 export interface ILoaderModule {
   readonly isSyncing: boolean;

@@ -1,6 +1,5 @@
-import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
-import { publicKey } from '@risevision/core-types';
+import { ITransactionsModel, publicKey, Symbols } from '@risevision/core-types';
 import {
   BelongsTo,
   Column,

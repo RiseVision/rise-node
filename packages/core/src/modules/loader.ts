@@ -4,7 +4,10 @@ import {
   BlocksModuleProcess,
   BlocksSymbols,
 } from '@risevision/core-blocks';
+import { ModelSymbols } from '@risevision/core-models';
+import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
 import {
+  AppConfig,
   IAccountLogic,
   IAccountsModel,
   IAppState,
@@ -16,11 +19,9 @@ import {
   ISequence,
   ISystemModule,
   ITransactionLogic,
+  SignedAndChainedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
-import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { logOnly } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';

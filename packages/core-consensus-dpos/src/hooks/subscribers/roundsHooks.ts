@@ -3,12 +3,13 @@ import {
   SnapshotBlocksCountFilter,
 } from '@risevision/core';
 import { ApplyBlockDBOps, RollbackBlockDBOps } from '@risevision/core-blocks';
-import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   AppConfig,
   DBOp,
+  ILogger,
   SignedAndChainedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import * as fs from 'fs';

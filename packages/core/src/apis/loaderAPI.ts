@@ -1,12 +1,12 @@
 import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
 import {
+  ConstantsType,
   IAppState,
   IBlocksModule,
   ILoaderModule,
   ISystemModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { IoCSymbol } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController } from 'routing-controllers';

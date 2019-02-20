@@ -1,3 +1,5 @@
+import { Overwrite } from 'utility-types';
+
 import {
   BlockType,
   DBOp,
@@ -5,8 +7,7 @@ import {
   IKeypair,
   SignedAndChainedBlockType,
   SignedBlockType,
-} from '@risevision/core-types';
-import { Overwrite } from 'utility-types';
+} from '../../types';
 import { IBlocksModel } from '../models';
 
 export interface IBlockLogic {

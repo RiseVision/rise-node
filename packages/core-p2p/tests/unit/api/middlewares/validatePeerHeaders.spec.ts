@@ -1,5 +1,5 @@
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ISystemModule, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';

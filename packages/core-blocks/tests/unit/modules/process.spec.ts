@@ -1,3 +1,10 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { TransactionPool } from '@risevision/core-transactions';
+import {
+  createRandomTransactions,
+  toNativeTx,
+} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
   IAccountsModel,
   IAccountsModule,
@@ -6,14 +13,7 @@ import {
   ITransactionLogic,
   ITransactionsModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { TransactionPool } from '@risevision/core-transactions';
-import {
-  createRandomTransactions,
-  toNativeTx,
-} from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+} from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

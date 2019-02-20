@@ -1,4 +1,4 @@
-import { IKeypair } from '@risevision/core-types';
+import { IKeypair } from '../../types';
 
 export interface ICrypto {
   makeKeyPair(hash: Buffer): IKeypair;

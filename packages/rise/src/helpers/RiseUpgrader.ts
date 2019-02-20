@@ -6,8 +6,7 @@ import {
   OnPostApplyBlock,
 } from '@risevision/core-blocks';
 import { dPoSSymbols, RoundChanges } from '@risevision/core-consensus-dpos';
-import { Symbols } from '@risevision/core-interfaces';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { SignedAndChainedBlockType, Symbols } from '@risevision/core-types';
 import { Container, decorate, inject, injectable, interfaces } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import Newable = interfaces.Newable;

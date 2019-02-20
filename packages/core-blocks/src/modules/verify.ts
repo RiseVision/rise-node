@@ -1,4 +1,6 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  ForkType,
   IAccountsModel,
   IAccountsModule,
   IBlockLogic,
@@ -12,10 +14,9 @@ import {
   ITransactionPool,
   ITransactionsModule,
   ITXBytes,
+  SignedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { ForkType, SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { decorate, inject, injectable, named } from 'inversify';
 import {

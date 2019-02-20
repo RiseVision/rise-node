@@ -1,5 +1,5 @@
-import { ITransactionLogic } from '@risevision/core-interfaces';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
+import { ITransactionLogic } from '@risevision/core-types';
 import { expect } from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';

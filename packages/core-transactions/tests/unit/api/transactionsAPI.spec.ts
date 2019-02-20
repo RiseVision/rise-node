@@ -9,16 +9,14 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as uuid from 'uuid';
 import { APISymbols } from '../../../../core-apis/src/helpers';
-import { Symbols } from '../../../../core-interfaces/src';
-import { ITransactionsModel } from '../../../../core-interfaces/src/models';
-import {
-  IAccountsModule,
-  IBlocksModule,
-} from '../../../../core-interfaces/src/modules';
 import { ModelSymbols } from '../../../../core-models/src/helpers';
 import {
+  IAccountsModule,
   IBaseTransaction,
+  IBlocksModule,
+  ITransactionsModel,
   ITransportTransaction,
+  Symbols,
 } from '../../../../core-types/src';
 import {
   TransactionLogic,

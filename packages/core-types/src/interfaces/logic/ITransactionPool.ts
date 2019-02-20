@@ -1,4 +1,5 @@
-import { IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction } from '../../types';
+
 export type QueueType = 'queued' | 'pending' | 'ready' | 'unconfirmed';
 // tslint:disable interface-name
 export interface QueueEntry<T extends { receivedAt: Date }> {

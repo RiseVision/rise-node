@@ -1,8 +1,8 @@
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   ProtoIdentifier,
 } from '@risevision/core-p2p';
+import { IBlocksModule, Symbols } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 
 @injectable()

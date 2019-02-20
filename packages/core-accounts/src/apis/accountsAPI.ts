@@ -1,16 +1,14 @@
 import { CoreSymbols } from '@risevision/core';
 import { DeprecatedAPIError } from '@risevision/core-apis';
 import { toTransportable } from '@risevision/core-helpers';
-import {
-  IAccountsModel,
-  IAccountsModule,
-  ISystemModule,
-} from '@risevision/core-interfaces';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import {
   AppConfig,
   ConstantsType,
   FieldsInModel,
+  IAccountsModel,
+  IAccountsModule,
+  ISystemModule,
 } from '@risevision/core-types';
 import {
   HTTPError,
