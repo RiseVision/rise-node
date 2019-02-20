@@ -59,7 +59,7 @@ cd $HOME/rise
 Download the latest snapshot (see [quick start above](#quick-start-installation) about setting your `NETWORK` environment variable if errors occur)
 
 ```bash
-wget https://downloads.rise.vision/snapshots/${NETWORK?}/latest -O latestsnap.gz
+TODO wget https://downloads.rise.vision/snapshots/${NETWORK?}/latest -O latestsnap.gz
 ```
 
 Restore snapshot using the node manager
@@ -121,9 +121,8 @@ See help for more commands and usage
 To build the node from source, please check your system for the following
 
 * [`Node.js`](https://nodejs.org/en/) version 10 or higher
-* [`yarn`]((https://nodejs.org/en/://yarnpkg.com/en/)
+* [`yarn`](https://nodejs.org/en/://yarnpkg.com/en/)
 * [`git`](https://git-scm.com/)
-* [`lerna`]
 
 The RISE node also uses [`lerna`](https://github.com/lerna/lerna) to handle submodules and
 their dependencies. After making sure the above are installed, you can install `lerna` by running (may require `sudo`)
