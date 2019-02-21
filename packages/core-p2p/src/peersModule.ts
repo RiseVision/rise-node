@@ -153,7 +153,7 @@ export class PeersModule implements IPeersModule {
   }
 
   /**
-   * Remove a peer from the list if its not one from config files
+   * Remove a peer from the list
    */
   public remove(peerIP: string, port: number): boolean {
     const removed = this.peersLogic.remove({ ip: peerIP, port });
