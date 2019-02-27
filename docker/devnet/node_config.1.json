@@ -26,7 +26,7 @@
   "peers": {
     "enabled": true,
     "trustProxy": false,
-    "seeds": ["172.16.238.102"],
+    "seeds": ["rise_2:5555"],
     "access": {
       "blackList": []
     },

@@ -10,6 +10,8 @@ services:
       - postgres_1
     ports:
       - '127.0.0.1:5501:5555'
+    expose:
+      - "5555"
     networks:
       overlay:
         ipv4_address: 172.16.238.101
@@ -47,6 +49,8 @@ services:
       - postgres_1
     ports:
       - '127.0.0.1:5502:5555'
+    expose:
+      - "5555"
     networks:
       overlay:
         ipv4_address: 172.16.238.102
