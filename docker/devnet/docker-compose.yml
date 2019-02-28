@@ -4,7 +4,7 @@ services:
   rise_1:
     build:
       context: ../../
-      dockerfile: ./docker/files/Dockerfile
+      dockerfile: ./docker/devnet/Dockerfile
     depends_on:
       - redis_1
       - postgres_1
@@ -18,8 +18,17 @@ services:
     environment:
       NETWORK: devnet
     volumes:
+      # config
       - ./node_config.1.json:/home/rise/config.json
+      # root
+      - ../../node_modules:/home/rise/rise-node/node_modules
+      - ../../package.json:/home/rise/rise-node/package.json
+      - ../../lerna.json:/home/rise/rise-node/lerna.json
+      - ../../yarn.lock:/home/rise/rise-node/yarn.lock
+      - ../../packages:/home/rise/rise-node/packages
     restart: on-failure
+#    stdin_open: true
+#    tty: true
 
   redis_1:
     image: redis:5-alpine
@@ -43,7 +52,7 @@ services:
   rise_2:
     build:
       context: ../../
-      dockerfile: ./docker/files/Dockerfile
+      dockerfile: ./docker/devnet/Dockerfile
     depends_on:
       - redis_1
       - postgres_1
@@ -57,7 +66,14 @@ services:
     environment:
       NETWORK: devnet
     volumes:
+      # config
       - ./node_config.2.json:/home/rise/config.json
+      # root
+      - ../../node_modules:/home/rise/rise-node/node_modules
+      - ../../package.json:/home/rise/rise-node/package.json
+      - ../../lerna.json:/home/rise/rise-node/lerna.json
+      - ../../yarn.lock:/home/rise/rise-node/yarn.lock
+      - ../../packages:/home/rise/rise-node/packages
     restart: on-failure
 
   redis_2:
