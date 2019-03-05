@@ -26,7 +26,7 @@ EXPOSE 5555
 #	-e /home/rise/config.json
 
 # skip rebuilding
-CMD npx lerna run start:$NETWORK --stream --no-prefix -- \
+CMD npx lerna run debug:$NETWORK --stream --no-prefix -- \
 	-e /home/rise/config.json
 
 # debug

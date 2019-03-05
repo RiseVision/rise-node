@@ -10,7 +10,8 @@
     "transpile": "shx rm -rf dist; tsc",
     "test-unit": "echo ''",
     "start:devnet": "rise-launchpad --net devnet",
-    "start:mainnet": "rise-launchpad --net mainnet"
+    "start:mainnet": "rise-launchpad --net mainnet",
+    "debug:devnet": "node --inspect=0.0.0.0 ../../packages/core-launchpad/dist/app.js --net devnet"
   },
   "types": "dist/index.d.ts",
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
