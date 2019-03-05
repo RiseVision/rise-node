@@ -9,7 +9,8 @@ services:
       - redis_1
       - postgres_1
     ports:
-      - '127.0.0.1:5501:5555'
+      - '5501:5555'
+      - '9201:9229'
     expose:
       - "5555"
     networks:
@@ -57,7 +58,8 @@ services:
       - redis_1
       - postgres_1
     ports:
-      - '127.0.0.1:5502:5555'
+      - '5502:5555'
+      - '9202:9229'
     expose:
       - "5555"
     networks:
