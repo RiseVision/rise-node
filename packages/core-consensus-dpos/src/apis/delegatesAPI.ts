@@ -1,6 +1,7 @@
 import {
   APISymbols,
   DeprecatedAPIError,
+  HTTPError,
   PrivateApisGuard,
 } from '@risevision/core-apis';
 import { BlocksAPI, BlocksSymbols } from '@risevision/core-blocks';
@@ -16,7 +17,6 @@ import {
 import { ModelSymbols } from '@risevision/core-models';
 import { ConstantsType, publicKey } from '@risevision/core-types';
 import {
-  HTTPError,
   IoCSymbol,
   OrderBy,
   SchemaValid,

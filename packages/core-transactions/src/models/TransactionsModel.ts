@@ -1,4 +1,3 @@
-import { toTransportable } from '@risevision/core-helpers';
 import {
   IBlocksModule,
   ITransactionsModel,
@@ -11,6 +10,7 @@ import {
   ITransportTransaction,
   TransactionType,
 } from '@risevision/core-types';
+import { toTransportable } from '@risevision/core-utils';
 import {
   Column,
   DataType,

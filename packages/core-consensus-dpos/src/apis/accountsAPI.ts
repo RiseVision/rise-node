@@ -6,12 +6,7 @@ import {
   Symbols,
 } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import {
-  HTTPError,
-  IoCSymbol,
-  SchemaValid,
-  ValidateSchema,
-} from '@risevision/core-utils';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import {
   Get,

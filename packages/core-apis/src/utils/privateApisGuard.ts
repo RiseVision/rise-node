@@ -1,8 +1,9 @@
 import { Symbols } from '@risevision/core-interfaces';
-import { checkIpInList, HTTPError, IoCSymbol } from '@risevision/core-utils';
+import { checkIpInList, IoCSymbol } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { ExpressMiddlewareInterface, Middleware } from 'routing-controllers';
+import { HTTPError } from '../errors';
 import { APIConfig, APISymbols } from '../helpers/';
 
 @Middleware({ type: 'before' })
