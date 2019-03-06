@@ -1,8 +1,7 @@
 import { ExceptionsManager } from '@risevision/core-exceptions';
-import { ICrypto } from '@risevision/core-interfaces';
 import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
 import { TXBytes } from '@risevision/core-transactions';
-import { IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction, ICrypto } from '@risevision/core-types';
 import * as assert from 'assert';
 import * as supersha from 'supersha';
 

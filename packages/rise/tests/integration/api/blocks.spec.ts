@@ -1,5 +1,5 @@
 import { BlocksModule } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';

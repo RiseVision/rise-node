@@ -1,5 +1,4 @@
-import { IPeersModel } from '@risevision/core-interfaces';
-import { PeerState } from '@risevision/core-types';
+import { IPeersModel, PeerState } from '@risevision/core-types';
 import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'peers' })

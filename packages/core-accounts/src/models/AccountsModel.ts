@@ -1,6 +1,5 @@
 // tslint:disable
-import { publicKey, Address } from '@risevision/core-types';
-import { IAccountsModel } from '@risevision/core-interfaces';
+import { Address, IAccountsModel, publicKey } from '@risevision/core-types';
 import * as pgp from 'pg-promise';
 import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';

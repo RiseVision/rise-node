@@ -6,16 +6,16 @@ import initializer from '../common/init';
 
 import { APIConfig, APISymbols } from '@risevision/core-apis';
 import {
-  IBlocksModule,
-  ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import {
   PoolManager,
   TransactionPool,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { TransactionType } from '@risevision/core-types';
+import {
+  IBlocksModule,
+  ITransactionsModule,
+  Symbols,
+  TransactionType,
+} from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import {

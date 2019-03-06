@@ -1,4 +1,4 @@
-import { ILogger } from '@risevision/core-interfaces';
+import { ILogger } from '@risevision/core-types';
 
 export class BlockProgressLogger {
   private target: number;

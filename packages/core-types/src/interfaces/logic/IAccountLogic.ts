@@ -1,7 +1,8 @@
-import { Address, DBOp } from '@risevision/core-types';
 import { WhereLogic } from 'sequelize';
 import { As } from 'type-tagger';
 import { Omit } from 'utility-types';
+
+import { Address, DBOp } from '../../types';
 import { IAccountsModel } from '../models';
 
 // tslint:disable-next-line

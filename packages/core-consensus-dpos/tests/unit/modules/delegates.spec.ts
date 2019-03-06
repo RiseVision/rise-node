@@ -5,15 +5,16 @@ import {
   BlocksConstantsType,
   BlocksSymbols,
 } from '@risevision/core-blocks';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  ConstantsType,
   IAccountsModule,
   IBlocksModel,
   IBlocksModule,
+  SignedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

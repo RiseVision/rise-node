@@ -1,8 +1,9 @@
-import { ICrypto, Symbols } from '@risevision/core-interfaces';
 import {
   IBaseTransaction,
+  ICrypto,
   IKeypair,
   SignedAndChainedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import { Container } from 'inversify';

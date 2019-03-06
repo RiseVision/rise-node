@@ -1,3 +1,4 @@
+import { IPeersModule, p2pSymbols, Peer } from '@risevision/core-p2p';
 import {
   IAccountsModule,
   IAppState,
@@ -5,10 +6,9 @@ import {
   ILogger,
   ISequence,
   ITimeToEpoch,
+  SignedAndChainedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { IPeersModule, p2pSymbols, Peer } from '@risevision/core-p2p';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { WrapInDefaultSequence } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import {

@@ -1,8 +1,8 @@
 import { APISymbols } from '@risevision/core-apis';
-import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
+import { Symbols } from '@risevision/core-types';
 import { TransactionsAPI } from './api';
 import { TXLoader } from './loader';
 import { SendTxAssetModel, TransactionsModel } from './models';

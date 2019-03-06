@@ -1,18 +1,3 @@
-import {
-  IAccountsModule,
-  IAppState,
-  IBlockLogic,
-  IBlocksModel,
-  IBlocksModule,
-  IForkModule,
-  ILogger,
-  ISequence,
-  ITransactionLogic,
-  ITransactionPool,
-  ITransactionsModel,
-  ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   IPeersModule,
@@ -23,10 +8,23 @@ import {
 import {
   BasePeerType,
   ForkType,
+  IAccountsModule,
+  IAppState,
   IBaseTransaction,
+  IBlockLogic,
+  IBlocksModel,
+  IBlocksModule,
+  IForkModule,
   IKeypair,
+  ILogger,
+  ISequence,
+  ITransactionLogic,
+  ITransactionPool,
+  ITransactionsModel,
+  ITransactionsModule,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import {
   WrapInDBSequence,

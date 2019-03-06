@@ -1,5 +1,4 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
-import { IBaseTransaction } from '@risevision/core-types';
+import { IAccountsModel, IBaseTransaction } from '@risevision/core-types';
 import {
   ActionFilterDecoratorType,
   createActionDecorator as createAction,

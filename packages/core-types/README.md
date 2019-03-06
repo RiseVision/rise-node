@@ -1,5 +1,3 @@
 # RISE Node Core: Types
 
-TypeScript Type definitions for various parts of the RISE node core
-
-
+TypeScript type and interface definitions for various parts of the RISE node core

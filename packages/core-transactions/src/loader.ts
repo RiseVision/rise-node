@@ -1,9 +1,5 @@
-import {
-  ILogger,
-  ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { p2pSymbols, Peer } from '@risevision/core-p2p';
+import { ILogger, ITransactionsModule, Symbols } from '@risevision/core-types';
 import { decorate, inject, injectable, named } from 'inversify';
 import {
   OnWPAction,

@@ -1,5 +1,5 @@
 // tslint:disable no-console object-literal-sort-keys
-import { ILogger } from '@risevision/core-interfaces';
+import { ILogger } from '@risevision/core-types';
 import * as CircularJSON from 'circular-json';
 import 'colors';
 import * as fs from 'fs';

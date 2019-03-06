@@ -1,5 +1,4 @@
-import { Symbols } from '@risevision/core-interfaces';
-import { PeerRequestOptions } from '@risevision/core-types';
+import { PeerRequestOptions, Symbols } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as querystring from 'querystring';
 import * as z_schema from 'z-schema';

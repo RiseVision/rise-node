@@ -1,6 +1,10 @@
 import { HTTPError } from '@risevision/core-apis';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
-import { AppConfig, PeerState } from '@risevision/core-types';
+import {
+  AppConfig,
+  ISystemModule,
+  PeerState,
+  Symbols,
+} from '@risevision/core-types';
 import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, QueryParams } from 'routing-controllers';

@@ -1,5 +1,6 @@
-import { DBOp, IBaseTransaction } from '@risevision/core-types';
 import { As } from 'type-tagger';
+
+import { DBOp, IBaseTransaction } from '../../types';
 import { AccountDiffType, AccountFilterData } from '../logic';
 import { IAccountsModel } from '../models';
 

@@ -1,5 +1,5 @@
 import { DeprecatedAPIError } from '@risevision/core-apis';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
+import { ISystemModule, Symbols } from '@risevision/core-types';
 import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
 import { Get, JsonController, Put, QueryParams } from 'routing-controllers';

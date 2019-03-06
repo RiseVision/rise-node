@@ -1,10 +1,6 @@
-import {
-  ISystemModule,
-  ITimeToEpoch,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { IPeersModule } from '@risevision/core-p2p';
+import { ISystemModule, ITimeToEpoch, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

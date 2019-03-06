@@ -2,11 +2,6 @@ import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
 import * as dposTXCrafter from '@risevision/core-consensus-dpos/tests/utils/tx';
 import { Crypto } from '@risevision/core-crypto';
 import {
-  IAccountsModule,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import {
   MultisignaturesModule,
   MultisigSymbols,
 } from '@risevision/core-multisignature';
@@ -21,7 +16,14 @@ import {
 } from '@risevision/core-transactions';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import * as txCrafter from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
+import {
+  ConstantsType,
+  IAccountsModule,
+  IKeypair,
+  ISystemModule,
+  publicKey,
+  Symbols,
+} from '@risevision/core-types';
 import { expect } from 'chai';
 import * as crypto from 'crypto';
 import { dposOffline } from 'dpos-offline';

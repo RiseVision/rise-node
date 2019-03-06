@@ -1,6 +1,5 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { PeersLogic } from '@risevision/core-p2p';
-import { PeerState, PeerType } from '@risevision/core-types';
+import { PeerState, PeerType, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import { createFakePeers } from '../../../../core-p2p/tests/unit/utils/fakePeersFactory';

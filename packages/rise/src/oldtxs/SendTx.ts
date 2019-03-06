@@ -1,7 +1,7 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
 import { SendTransaction, TXSymbols } from '@risevision/core-transactions';
 import {
   DBOp,
+  IAccountsModel,
   IBaseTransaction,
   SignedBlockType,
 } from '@risevision/core-types';

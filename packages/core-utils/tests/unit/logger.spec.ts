@@ -1,4 +1,4 @@
-import { ILogger } from '@risevision/core-interfaces';
+import { ILogger } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';

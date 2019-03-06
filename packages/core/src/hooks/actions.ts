@@ -1,5 +1,5 @@
-import { IBlocksModel } from '@risevision/core-interfaces';
 import { BaseModel } from '@risevision/core-models';
+import { IBlocksModel } from '@risevision/core-types';
 import {
   ActionFilterDecoratorType,
   createActionDecorator as createAction,

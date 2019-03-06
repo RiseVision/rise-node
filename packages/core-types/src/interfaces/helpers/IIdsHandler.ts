@@ -1,5 +1,7 @@
-import { Address } from '@risevision/core-types';
 import { As } from 'type-tagger';
+
+import { Address } from '../../types';
+
 /**
  * ID Handler, Produces IDs for several objects.
  */

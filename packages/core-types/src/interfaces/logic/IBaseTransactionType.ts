@@ -1,10 +1,11 @@
+import { Model } from 'sequelize-typescript';
+
 import {
   DBOp,
   IBaseTransaction,
   SignedBlockType,
   TransactionType,
-} from '@risevision/core-types';
-import { Model } from 'sequelize-typescript';
+} from '../../types';
 import { IAccountsModel } from '../models';
 
 export interface IBaseTransactionType<T, M extends Model<any>> {

@@ -1,4 +1,4 @@
-import { IAppState } from '@risevision/core-interfaces';
+import { IAppState } from '@risevision/core-types';
 import { injectable } from 'inversify';
 import * as jsonpath from 'jsonpath';
 

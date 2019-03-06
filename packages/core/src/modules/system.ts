@@ -1,14 +1,12 @@
 import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
 import {
-  IBlocksModule,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import {
   AppConfig,
   ConstantsType,
+  IBlocksModule,
+  ISystemModule,
   PeerHeaders,
   SignedAndChainedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';

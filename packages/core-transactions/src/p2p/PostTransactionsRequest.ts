@@ -1,11 +1,10 @@
-import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction, Symbols } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
 import { TransactionLogic } from '../TransactionLogic';

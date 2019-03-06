@@ -1,5 +1,5 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import { Container } from 'inversify';
 import * as sinon from 'sinon';

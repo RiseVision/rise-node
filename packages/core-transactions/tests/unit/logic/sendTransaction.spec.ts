@@ -7,13 +7,16 @@ import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
 import { SinonSandbox, SinonStub } from 'sinon';
-import { Symbols } from '../../../../core-interfaces/src';
-import { IAccountLogic } from '../../../../core-interfaces/src/logic';
-import { IAccountsModel } from '../../../../core-interfaces/src/models';
-import { ISystemModule } from '../../../../core-interfaces/src/modules';
 import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '../../../../core-models/src/helpers';
-import { DBUpsertOp, IBaseTransaction } from '../../../../core-types/src';
+import {
+  DBUpsertOp,
+  IAccountLogic,
+  IAccountsModel,
+  IBaseTransaction,
+  ISystemModule,
+  Symbols,
+} from '../../../../core-types/src';
 import { SendTxApplyFilter, SendTxUndoFilter, TXSymbols } from '../../../src';
 import { SendTransaction } from '../../../src/sendTransaction';
 import { createSendTransaction, toNativeTx } from '../utils/txCrafter';

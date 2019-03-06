@@ -3,8 +3,7 @@ import {
   BlocksModule,
   BlocksSymbols,
 } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, Symbols } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { DposConstantsType } from './constants';
 import { DposV2Helper } from './dposV2Helper';

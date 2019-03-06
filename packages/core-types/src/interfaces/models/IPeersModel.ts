@@ -1,4 +1,4 @@
-import { PeerState } from '@risevision/core-types';
+import { PeerState } from '../../types';
 import { IBaseModel } from './IBaseModel';
 
 export class IPeersModel extends IBaseModel<IPeersModel> {

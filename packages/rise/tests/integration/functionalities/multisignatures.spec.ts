@@ -5,7 +5,6 @@ import {
   BlocksModuleChain,
   BlocksSymbols,
 } from '@risevision/core-blocks';
-import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
 import {
@@ -20,6 +19,7 @@ import {
   TransactionsModule,
   TXSymbols,
 } from '@risevision/core-transactions';
+import { IAccountsModule, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

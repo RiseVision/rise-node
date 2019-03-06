@@ -1,6 +1,5 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, Symbols } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { ExceptionModel } from './ExceptionModel';
 import { ExceptionSymbols } from './symbols';

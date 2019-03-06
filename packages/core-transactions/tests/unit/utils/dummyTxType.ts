@@ -1,5 +1,8 @@
-import { IAccountsModel } from '../../../../core-interfaces/src/models';
-import { DBOp, IBaseTransaction } from '../../../../core-types/src';
+import {
+  DBOp,
+  IAccountsModel,
+  IBaseTransaction,
+} from '../../../../core-types/src';
 import { BaseTx } from '../../../src';
 
 export class DummyTxType extends BaseTx<void, any> {

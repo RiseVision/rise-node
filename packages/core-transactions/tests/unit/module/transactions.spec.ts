@@ -1,11 +1,11 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModel,
   IAccountsModule,
   IDBHelper,
   ITransactionLogic,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

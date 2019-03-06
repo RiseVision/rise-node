@@ -1,9 +1,3 @@
-import {
-  IAccountsModel,
-  IAccountsModule,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseTx,
@@ -13,8 +7,12 @@ import {
 import {
   DBCreateOp,
   DBOp,
+  IAccountsModel,
+  IAccountsModule,
   IBaseTransaction,
+  ISystemModule,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';

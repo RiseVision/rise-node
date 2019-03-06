@@ -1,6 +1,10 @@
-import { ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { IBroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  ILogger,
+  ISystemModule,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { logOnly } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';

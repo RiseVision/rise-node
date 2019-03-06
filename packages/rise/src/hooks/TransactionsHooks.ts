@@ -1,10 +1,9 @@
-import { ICrypto, Symbols } from '@risevision/core-interfaces';
 import {
   TXBytes,
   TxSignatureVerify,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction, ICrypto, Symbols } from '@risevision/core-types';
 import * as assert from 'assert';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';

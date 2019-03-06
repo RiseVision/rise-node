@@ -1,5 +1,5 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
+import { Symbols } from '@risevision/core-types';
 import { Column, ForeignKey, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'mem_accounts2u_delegates' })

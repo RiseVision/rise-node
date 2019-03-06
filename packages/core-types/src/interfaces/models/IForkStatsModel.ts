@@ -1,4 +1,4 @@
-import { ForkType } from '@risevision/core-types';
+import { ForkType } from '../../types';
 import { IBaseModel } from './IBaseModel';
 
 export class IForkStatsModel extends IBaseModel<IForkStatsModel> {

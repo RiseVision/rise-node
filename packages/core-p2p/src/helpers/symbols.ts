@@ -1,4 +1,4 @@
-import { Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-types';
 // tslint:disable object-literal-sort-keys
 
 export const p2pSymbols = {

@@ -36,9 +36,8 @@ import {
 import { wait } from '@risevision/core-utils';
 import { AccountsModule, AccountsSymbols } from '@risevision/core-accounts';
 import { SystemModule } from '@risevision/core';
-import { IBytesBlock } from '@risevision/core-types';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
+import { IBytesBlock, IAccountsModule, Symbols } from '@risevision/core-types';
 import { TransportModule } from '@risevision/core-p2p';
 import { Crypto } from '@risevision/core-crypto';
 import { p2pSymbols } from '@risevision/core-p2p';

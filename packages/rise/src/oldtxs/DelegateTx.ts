@@ -3,17 +3,15 @@ import {
   DelegatesModel,
   dPoSSymbols,
 } from '@risevision/core-consensus-dpos';
-import {
-  IAccountsModel,
-  IAccountsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   DBCreateOp,
   DBOp,
+  IAccountsModel,
+  IAccountsModule,
   IBaseTransaction,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';

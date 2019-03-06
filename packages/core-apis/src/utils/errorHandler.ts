@@ -1,4 +1,4 @@
-import { ILogger, Symbols } from '@risevision/core-interfaces';
+import { ILogger, Symbols } from '@risevision/core-types';
 import { IoCSymbol } from '@risevision/core-utils';
 import express from 'express';
 import { inject, injectable } from 'inversify';

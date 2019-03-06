@@ -1,10 +1,10 @@
 import {
   Address,
+  IBaseTransaction,
   ITransportTransaction,
   publicKey,
   TransactionType,
-} from '@risevision/core-types';
-import { IBaseTransaction } from '../../../core-types/dist';
+} from '../../types';
 import { IBlocksModule } from '../modules';
 import { IBaseModel } from './IBaseModel';
 

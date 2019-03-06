@@ -10,8 +10,7 @@
 // import { TransactionPool } from '../../src';
 // import { IBaseTransaction } from '../../../core-types/src';
 // import { createContainer } from '../../../core-launchpad/tests/utils/createContainer';
-// import { Symbols } from '../../../core-interfaces/src';
-// import { IJobsQueue } from '../../../core-interfaces/src/helpers';
+// import { IJobsQueue, Symbols } from '../../../core-types/src';
 //
 // chai.use(chaiAsPromised);
 // chai.use(assertArrays);

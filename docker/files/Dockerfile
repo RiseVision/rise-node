@@ -28,7 +28,6 @@ COPY --chown=rise ./packages/core-consensus-dpos/package.json ./packages/core-co
 COPY --chown=rise ./packages/core-crypto/package.json ./packages/core-crypto/package.json
 COPY --chown=rise ./packages/core-exceptions/package.json ./packages/core-exceptions/package.json
 COPY --chown=rise ./packages/core-helpers/package.json ./packages/core-helpers/package.json
-COPY --chown=rise ./packages/core-interfaces/package.json ./packages/core-interfaces/package.json
 COPY --chown=rise ./packages/core-launchpad/package.json ./packages/core-launchpad/package.json
 COPY --chown=rise ./packages/core-models/package.json ./packages/core-models/package.json
 COPY --chown=rise ./packages/core-p2p/package.json ./packages/core-p2p/package.json

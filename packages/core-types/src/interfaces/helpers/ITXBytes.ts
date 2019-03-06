@@ -1,4 +1,4 @@
-import { IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction } from '../../types';
 
 export interface ITXBytes {
   fullBytes(tx: IBaseTransaction<any, bigint>): Buffer;

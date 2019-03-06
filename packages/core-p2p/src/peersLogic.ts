@@ -1,9 +1,11 @@
-import { ILogger, ISystemModule, Symbols } from '@risevision/core-interfaces';
 import {
   AppConfig,
   BasePeerType,
+  ILogger,
+  ISystemModule,
   PeerState,
   PeerType,
+  Symbols,
 } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as ip from 'ip';

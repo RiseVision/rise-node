@@ -3,7 +3,7 @@ import {
   ITransactionLogic,
   ITransactionPool,
   Symbols,
-} from '@risevision/core-interfaces';
+} from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import { TXAppConfig } from './helpers/appconfig';
 import { InnerTXQueue } from './poolTXsQueue';

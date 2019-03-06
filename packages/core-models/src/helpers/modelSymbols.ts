@@ -1,5 +1,5 @@
 // tslint:disable object-literal-sort-keys
-import { Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-types';
 
 export const ModelSymbols = {
   model: Symbol.for('models.model'),

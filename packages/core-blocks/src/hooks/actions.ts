@@ -1,7 +1,7 @@
 // ### Chain module hooks
-import { IBlocksModel } from '@risevision/core-interfaces';
 import {
   IBaseTransaction,
+  IBlocksModel,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';

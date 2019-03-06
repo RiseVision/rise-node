@@ -1,7 +1,7 @@
 import { APISymbols } from '@risevision/core-apis';
-import { IInfoModel, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ICoreModuleWithModels, ModelSymbols } from '@risevision/core-models';
+import { IInfoModel, Symbols } from '@risevision/core-types';
 import * as _ from 'lodash';
 import { sort } from 'semver';
 import * as uuid from 'uuid';

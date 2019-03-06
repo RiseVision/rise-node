@@ -1,7 +1,10 @@
 import { AccountsSymbols } from '@risevision/core-accounts';
 import { BlocksModel, BlocksSymbols } from '@risevision/core-blocks';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
 import {
   AccountFilterData,
+  Address,
   IAccountsModule,
   IAppState,
   IBlockReward,
@@ -9,11 +12,10 @@ import {
   ILogger,
   ITransactionsModel,
   ITransactionsModule,
+  publicKey,
+  SignedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { TXSymbols } from '@risevision/core-transactions';
-import { Address, publicKey, SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
 import { Op } from 'sequelize';

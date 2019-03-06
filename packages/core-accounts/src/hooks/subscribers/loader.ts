@@ -1,6 +1,6 @@
 import { OnCheckIntegrity, RecreateAccountsTables } from '@risevision/core';
-import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
+import { ILogger, Symbols } from '@risevision/core-types';
 import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import * as fs from 'fs';
 import { decorate, inject, injectable, named } from 'inversify';

@@ -1,6 +1,5 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, Symbols } from '@risevision/core-types';
 import { loggerCreator, z_schema } from '@risevision/core-utils';
 import { CommanderStatic } from 'commander';
 import { AppState } from './appState';

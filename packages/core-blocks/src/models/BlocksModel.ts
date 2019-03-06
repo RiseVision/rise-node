@@ -1,6 +1,9 @@
-import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
-import { SignedBlockType } from '@risevision/core-types';
+import {
+  ITransactionsModel,
+  SignedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { toTransportable } from '@risevision/core-utils';
 import * as _ from 'lodash';
 import {

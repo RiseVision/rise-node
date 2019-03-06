@@ -17,7 +17,6 @@ import {
 } from '@risevision/core-blocks';
 import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
 import { Crypto } from '@risevision/core-crypto';
-import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { AccountsModelWithMultisig } from '@risevision/core-multisignature';
 import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
@@ -29,7 +28,11 @@ import {
 } from '@risevision/core-transactions';
 import { poolProcess } from '@risevision/core-transactions/tests/integration/utils';
 import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  IAccountsModule,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { LiskWallet } from 'dpos-offline';
 import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
 import {

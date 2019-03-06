@@ -1,4 +1,4 @@
-import { BasePeerType, IBaseTransaction } from '@risevision/core-types';
+import { BasePeerType, IBaseTransaction } from '../../types';
 import { IAccountsModel } from '../models';
 
 export interface ITransactionsModule {

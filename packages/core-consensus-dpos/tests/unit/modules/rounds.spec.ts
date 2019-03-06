@@ -1,15 +1,15 @@
 import { BlocksSymbols } from '@risevision/core-blocks';
 import { createFakeBlock } from '@risevision/core-blocks/tests/unit/utils/createFakeBlocks';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModule,
   IAppState,
   IBlocksModel,
   IDBHelper,
+  SignedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';
 import { expect } from 'chai';
