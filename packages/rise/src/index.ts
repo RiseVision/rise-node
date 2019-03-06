@@ -140,16 +140,6 @@ export class CoreModule extends BaseCoreModule<any> {
       tx.type = type;
       toSet[type] = tx;
     }
-
-    // Register schema validators
-    z_schema.registerFormat('txId', (value: string) => {
-      return /^[0-9]+$/.test(value);
-    });
-
-    z_schema.registerFormat('address', (str: string) => {
-      // tslint:disable-next-line
-      return /^[0-9]{1,20}R/.test(str);
-    });
   }
 
   public async preBoot() {
