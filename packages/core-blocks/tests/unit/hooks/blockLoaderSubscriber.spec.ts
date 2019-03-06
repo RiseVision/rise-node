@@ -1,6 +1,12 @@
-import { IBlocksModule, Symbols } from '@risevision/core-interfaces';
+import {
+  IAccountsModule,
+  IBlocksModule,
+  ILogger,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { Peer } from '@risevision/core-p2p';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -28,7 +34,8 @@ describe('blocks/hooks/loader', () => {
   let getCommonBlockStub: SinonStub;
   let deleteLastBlockStub: SinonStub;
   let loadBlocksFromPeerStub: SinonStub;
-  let syncWithPeer: (peerProvider: () => Promise<Peer>) => Promise<void>;
+  let txAccountsStub: SinonStub;
+  let applyBlockStub: SinonStub;
   let hookSystem: WordPressHookSystem;
   beforeEach(async () => {
     sandbox = sinon.createSandbox();
@@ -43,11 +50,21 @@ describe('blocks/hooks/loader', () => {
     hookSystem = new WordPressHookSystem(new InMemoryFilterModel());
     instance = container.get(BlocksSymbols.__internals.loader);
     blocksModule = container.get(Symbols.modules.blocks);
+
+    // de-register current hooks and register a new hookSystem to isolate tests.
+    await instance.unHook();
+    instance.hookSystem = hookSystem;
+    delete instance.__wpuid;
+    await instance.hookMethods();
+
     const blocksModuleProcess: BlocksModuleProcess = container.get(
       BlocksSymbols.modules.process
     );
     const blocksChainModule: BlocksModuleChain = container.get(
       BlocksSymbols.modules.chain
+    );
+    const accountsModule: IAccountsModule = container.get(
+      Symbols.modules.accounts
     );
 
     getCommonBlockStub = sandbox.stub(blocksModuleProcess, 'getCommonBlock');
@@ -56,14 +73,8 @@ describe('blocks/hooks/loader', () => {
       blocksModuleProcess,
       'loadBlocksFromPeer'
     );
-
-    // de-register current hooks and register a new hookSystem to isolate tests.
-    await instance.unHook();
-    instance.hookSystem = hookSystem;
-    delete instance.__wpuid;
-    await instance.hookMethods();
-
-    syncWithPeer = (instance as any).syncWithPeer.bind(instance);
+    txAccountsStub = sandbox.stub(accountsModule, 'txAccounts');
+    applyBlockStub = sandbox.stub(blocksChainModule, 'applyBlock');
   });
 
   afterEach(() => {
@@ -71,19 +82,34 @@ describe('blocks/hooks/loader', () => {
   });
 
   describe('syncWithPeer', () => {
+    let syncWithPeer: (
+      syncPeer: Peer,
+      chainBackup: SignedAndChainedBlockType[]
+    ) => Promise<void>;
+    let chainBackup: SignedAndChainedBlockType[];
+
+    beforeEach(() => {
+      syncWithPeer = (instance as any).syncWithPeer.bind(instance);
+      chainBackup = [];
+    });
+
     it('should skip common block calls for genesis block', async () => {
       blocksModule.lastBlock = { height: 1, id: '1' } as any;
       loadBlocksFromPeerStub.callsFake(async () => {
         blocksModule.lastBlock = createFakeBlock(container);
       });
 
-      const inSyncWithPeer = await syncWithPeer({ height: 2 } as any);
+      const inSyncWithPeer = await syncWithPeer(
+        { height: 2 } as any,
+        chainBackup
+      );
 
       expect(getCommonBlockStub.notCalled).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
       expect(loadBlocksFromPeerStub.calledOnce).to.be.true;
       expect(inSyncWithPeer).to.be.true;
       expect(blocksModule.lastBlock.height).to.eq(2);
+      expect(chainBackup).to.be.empty;
     });
 
     it('should return true when peer returns more blocks', async () => {
@@ -99,13 +125,17 @@ describe('blocks/hooks/loader', () => {
         });
       });
 
-      const inSyncWithPeer = await syncWithPeer({ height: 3 } as any);
+      const inSyncWithPeer = await syncWithPeer(
+        { height: 3 } as any,
+        chainBackup
+      );
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
       expect(loadBlocksFromPeerStub.calledOnce).to.be.true;
       expect(inSyncWithPeer).to.be.true;
       expect(blocksModule.lastBlock.height).to.eq(3);
+      expect(chainBackup).to.be.empty;
     });
 
     it("should return true when peer doesn't send newer blocks", async () => {
@@ -117,13 +147,17 @@ describe('blocks/hooks/loader', () => {
       });
       loadBlocksFromPeerStub.resolves();
 
-      const inSyncWithPeer = await syncWithPeer({ height: 2 } as any);
+      const inSyncWithPeer = await syncWithPeer(
+        { height: 2 } as any,
+        chainBackup
+      );
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
       expect(loadBlocksFromPeerStub.calledOnce).to.be.true;
       expect(inSyncWithPeer).to.be.true;
       expect(blocksModule.lastBlock.height).to.eq(2);
+      expect(chainBackup).to.be.empty;
     });
 
     it('should return true when peer sends more blocks than what we knew of', async () => {
@@ -141,13 +175,17 @@ describe('blocks/hooks/loader', () => {
         }
       });
 
-      const inSyncWithPeer = await syncWithPeer({ height: 2 } as any);
+      const inSyncWithPeer = await syncWithPeer(
+        { height: 2 } as any,
+        chainBackup
+      );
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
       expect(loadBlocksFromPeerStub.calledOnce).to.be.true;
       expect(inSyncWithPeer).to.be.true;
       expect(blocksModule.lastBlock.height).to.eq(6);
+      expect(chainBackup).to.be.empty;
     });
 
     it('should return false when we need to download more blocks', async () => {
@@ -163,13 +201,17 @@ describe('blocks/hooks/loader', () => {
         });
       });
 
-      const inSyncWithPeer = await syncWithPeer({ height: 5 } as any);
+      const inSyncWithPeer = await syncWithPeer(
+        { height: 5 } as any,
+        chainBackup
+      );
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.notCalled).to.be.true;
       expect(loadBlocksFromPeerStub.calledOnce).to.be.true;
       expect(inSyncWithPeer).to.be.false;
       expect(blocksModule.lastBlock.height).to.eq(3);
+      expect(chainBackup).to.be.empty;
     });
 
     it('should rollback local chain when peer on different fork', async () => {
@@ -181,6 +223,9 @@ describe('blocks/hooks/loader', () => {
         });
         localChain.push(blocksModule.lastBlock);
       }
+      const expectedChainBackup = localChain.slice(1);
+      expectedChainBackup.reverse();
+
       getCommonBlockStub.resolves({
         height: localChain[0].height,
         id: localChain[0].id,
@@ -200,13 +245,108 @@ describe('blocks/hooks/loader', () => {
         }
       });
 
-      const inSyncWithPeer = await syncWithPeer({ height: 6 } as any);
+      const inSyncWithPeer = await syncWithPeer(
+        { height: 6 } as any,
+        chainBackup
+      );
 
       expect(getCommonBlockStub.calledOnce).to.be.true;
       expect(deleteLastBlockStub.calledThrice).to.be.true;
       expect(loadBlocksFromPeerStub.calledOnce).to.be.true;
       expect(inSyncWithPeer).to.be.true;
       expect(blocksModule.lastBlock.height).to.eq(6);
+      expect(chainBackup).to.deep.equal(expectedChainBackup);
+    });
+  });
+
+  describe('syncWithNetwork', () => {
+    let syncWithNetwork: (peerProvider: () => Promise<Peer>) => Promise<void>;
+    let syncWithPeerStub: SinonStub;
+
+    beforeEach(() => {
+      // Disable the retrying logic
+      sandbox.stub(instance as any, 'promiseRetry').value((fn: any) => {
+        const retry = (err) => Promise.reject(err);
+        return fn(retry, 1);
+      });
+
+      syncWithPeerStub = sandbox.stub(instance as any, 'syncWithPeer');
+      syncWithNetwork = (instance as any).syncWithNetwork.bind(instance);
+    });
+
+    it('should warn about failure when no peers available', async () => {
+      const logger: ILogger = container.get(Symbols.helpers.logger);
+      const warnStub = sandbox.stub(logger, 'warn');
+
+      const p = syncWithNetwork(async () => undefined);
+      await expect(p).to.be.fulfilled;
+      expect(warnStub.calledOnce).to.be.true;
+      expect(syncWithPeerStub.notCalled).to.be.true;
+    });
+
+    it('should warn about failure when sync fails', async () => {
+      const logger: ILogger = container.get(Symbols.helpers.logger);
+      const warnStub = sandbox.stub(logger, 'warn');
+      syncWithPeerStub.rejects();
+
+      const p = syncWithNetwork(async () => {
+        return { height: 1 } as any;
+      });
+      await expect(p).to.be.fulfilled;
+      expect(syncWithPeerStub.calledOnce).to.be.true;
+      expect(warnStub.calledOnce).to.be.true;
+    });
+
+    it('should restore pre-sync backup for bad fork', async () => {
+      blocksModule.lastBlock = createFakeBlock(container);
+      const localChain = [blocksModule.lastBlock];
+      for (let i = 0; i < 4; i++) {
+        blocksModule.lastBlock = createFakeBlock(container, {
+          previousBlock: blocksModule.lastBlock,
+        });
+        localChain.push(blocksModule.lastBlock);
+      }
+      const expectedLocalChain = localChain.slice();
+
+      syncWithPeerStub.callsFake(
+        async (peer, chainBackup): Promise<boolean> => {
+          // Simulate rollback
+          while (localChain.length > 1) {
+            chainBackup.push(localChain.pop());
+            blocksModule.lastBlock = localChain[localChain.length - 1];
+          }
+
+          // Simulate downloading new chain
+          for (let i = 0; i < 3; i++) {
+            blocksModule.lastBlock = createFakeBlock(container, {
+              previousBlock: blocksModule.lastBlock,
+            });
+            localChain.push(blocksModule.lastBlock);
+          }
+
+          return true;
+        }
+      );
+      deleteLastBlockStub.callsFake(async () => {
+        localChain.pop();
+        blocksModule.lastBlock = localChain[localChain.length - 1];
+        return blocksModule.lastBlock;
+      });
+      txAccountsStub.resolves({});
+      applyBlockStub.callsFake(async (block) => {
+        localChain.push(block);
+        blocksModule.lastBlock = localChain[localChain.length - 1];
+      });
+
+      const p = syncWithNetwork(async () => {
+        return { height: 4 } as any;
+      });
+      await expect(p).to.be.fulfilled;
+
+      expect(deleteLastBlockStub.callCount).to.equal(3);
+      expect(txAccountsStub.callCount).to.equal(4);
+      expect(applyBlockStub.callCount).to.equal(4);
+      expect(localChain).to.deep.equal(expectedLocalChain);
     });
   });
 });
