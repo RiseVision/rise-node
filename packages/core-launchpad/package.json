@@ -17,6 +17,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@risevision/core-types": "^1.0.0",
+    "@risevision/core-helpers": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
     "app-module-path": "2.2.0",
     "async-exit-hook": "^2.0.1",

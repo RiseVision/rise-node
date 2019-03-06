@@ -1,6 +1,7 @@
 // tslint:disable no-console no-var-requires
 import { AppConfig } from '@risevision/core-types';
-import { loggerCreator, promiseToCB } from '@risevision/core-utils';
+import { promiseToCB } from '@risevision/core-utils';
+import { loggerCreator } from '@risevision/core-helpers';
 import * as appModulePath from 'app-module-path';
 import * as exitHook from 'async-exit-hook';
 import * as program from 'commander';
