@@ -1,0 +1,101 @@
+version: '3'
+services:
+  # ----- NODE 1
+  rise_1:
+    build:
+      context: ../../
+      dockerfile: ./docker/devnet/Dockerfile
+    depends_on:
+      - redis_1
+      - postgres_1
+    ports:
+      - '127.0.0.1:5501:5555'
+    expose:
+      - "5555"
+    networks:
+      overlay:
+        ipv4_address: 172.16.238.101
+    environment:
+      NETWORK: devnet
+    volumes:
+      # config
+      - ./node_config.1.json:/home/rise/config.json
+      # root
+      - ../../node_modules:/home/rise/rise-node/node_modules
+      - ../../package.json:/home/rise/rise-node/package.json
+      - ../../lerna.json:/home/rise/rise-node/lerna.json
+      - ../../yarn.lock:/home/rise/rise-node/yarn.lock
+      - ../../packages:/home/rise/rise-node/packages
+    restart: on-failure
+#    stdin_open: true
+#    tty: true
+
+  redis_1:
+    image: redis:5-alpine
+    networks:
+      - overlay
+    restart: on-failure
+
+  postgres_1:
+    build:
+      context: ../../
+      dockerfile: ./docker/files/Dockerfile.postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: rise
+      POSTGRES_DB: rise_db
+    networks:
+      - overlay
+    restart: on-failure
+
+  # ----- NODE 2
+  rise_2:
+    build:
+      context: ../../
+      dockerfile: ./docker/devnet/Dockerfile
+    depends_on:
+      - redis_1
+      - postgres_1
+    ports:
+      - '127.0.0.1:5502:5555'
+    expose:
+      - "5555"
+    networks:
+      overlay:
+        ipv4_address: 172.16.238.102
+    environment:
+      NETWORK: devnet
+    volumes:
+      # config
+      - ./node_config.2.json:/home/rise/config.json
+      # root
+      - ../../node_modules:/home/rise/rise-node/node_modules
+      - ../../package.json:/home/rise/rise-node/package.json
+      - ../../lerna.json:/home/rise/rise-node/lerna.json
+      - ../../yarn.lock:/home/rise/rise-node/yarn.lock
+      - ../../packages:/home/rise/rise-node/packages
+    restart: on-failure
+
+  redis_2:
+    image: redis:5-alpine
+    networks:
+      - overlay
+    restart: on-failure
+
+  postgres_2:
+    build:
+      context: ../../
+      dockerfile: ./docker/files/Dockerfile.postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: rise
+      POSTGRES_DB: rise_db
+    networks:
+      - overlay
+    restart: on-failure
+
+networks:
+  overlay:
+    ipam:
+      config:
+        - subnet: 172.16.238.0/24

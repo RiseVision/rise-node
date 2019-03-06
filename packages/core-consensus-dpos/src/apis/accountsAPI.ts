@@ -1,17 +1,12 @@
 import { AccountsSymbols } from '@risevision/core-accounts';
-import { DeprecatedAPIError } from '@risevision/core-apis';
+import { DeprecatedAPIError, HTTPError } from '@risevision/core-apis';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModule,
   ISystemModule,
   Symbols,
 } from '@risevision/core-types';
-import {
-  HTTPError,
-  IoCSymbol,
-  SchemaValid,
-  ValidateSchema,
-} from '@risevision/core-utils';
+import { IoCSymbol, SchemaValid, ValidateSchema } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import {
   Get,

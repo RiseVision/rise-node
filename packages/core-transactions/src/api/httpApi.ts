@@ -1,4 +1,4 @@
-import { PrivateApisGuard } from '@risevision/core-apis';
+import { HTTPError, PrivateApisGuard } from '@risevision/core-apis';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModel,
@@ -16,7 +16,6 @@ import {
 import {
   assertValidSchema,
   castFieldsToNumberUsingSchema,
-  HTTPError,
   IoCSymbol,
   removeEmptyObjKeys,
   SchemaValid,

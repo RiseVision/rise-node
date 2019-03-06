@@ -5,7 +5,6 @@ import {
 } from '@risevision/core-utils';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
-import { ExpressMiddlewareInterface } from 'routing-controllers';
 import * as z_schema from 'z-schema';
 import { PeersLogic, PeersModule } from '../../';
 import { p2pSymbols } from '../../helpers';
@@ -80,7 +79,8 @@ export class ValidatePeerHeaders implements ITransportMiddleware {
   }
 
   private removePeer(request: express.Request) {
-    this.peersLogic.remove(this.computeBasePeerType(request));
+    const peer = this.computeBasePeerType(request);
+    this.peersModule.remove(peer.ip, peer.port);
   }
 
   private computeBasePeerType(request: express.Request): BasePeerType {

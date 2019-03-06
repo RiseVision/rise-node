@@ -1,11 +1,12 @@
 import { ILogger, Symbols } from '@risevision/core-types';
-import { HTTPError, IoCSymbol } from '@risevision/core-utils';
+import { IoCSymbol } from '@risevision/core-utils';
 import express from 'express';
 import { inject, injectable } from 'inversify';
 import {
   ExpressErrorMiddlewareInterface,
   Middleware,
 } from 'routing-controllers';
+import { HTTPError } from '../errors';
 import { APISymbols } from '../helpers';
 
 @IoCSymbol(APISymbols.errorHandler)

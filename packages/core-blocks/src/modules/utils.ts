@@ -11,14 +11,11 @@ import {
   SignedAndChainedBlockType,
   Symbols,
 } from '@risevision/core-types';
-import {
-  BlockProgressLogger,
-  catchToLoggerAndRemapError,
-  logspace,
-} from '@risevision/core-utils';
+import { catchToLoggerAndRemapError, logspace } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import { range, uniq } from 'lodash';
 import { Op } from 'sequelize';
+import { BlockProgressLogger } from '../helpers';
 
 @injectable()
 export class BlocksModuleUtils {

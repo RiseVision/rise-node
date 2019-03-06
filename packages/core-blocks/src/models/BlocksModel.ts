@@ -1,10 +1,10 @@
-import { toTransportable } from '@risevision/core-helpers';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   ITransactionsModel,
   SignedBlockType,
   Symbols,
 } from '@risevision/core-types';
+import { toTransportable } from '@risevision/core-utils';
 import * as _ from 'lodash';
 import {
   Column,

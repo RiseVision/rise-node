@@ -1,9 +1,9 @@
+import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
-import { BlockProgressLogger } from '../../src/';
-import { LoggerStub } from './stubs';
+import { BlockProgressLogger } from '../../../src/helpers';
 
 // tslint:disable no-var-requires no-string-literal no-unused-expression
 const assertArrays = require('chai-arrays');

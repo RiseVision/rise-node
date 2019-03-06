@@ -1,4 +1,3 @@
-import { toTransportable } from '@risevision/core-helpers';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   Address,
@@ -9,6 +8,7 @@ import {
   Symbols,
   TransactionType,
 } from '@risevision/core-types';
+import { toTransportable } from '@risevision/core-utils';
 import {
   Column,
   DataType,

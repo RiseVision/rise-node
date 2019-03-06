@@ -1,5 +1,10 @@
 import { ModelSymbols } from '@risevision/core-models';
-import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
+import {
+  IPeersModule,
+  p2pSymbols,
+  Peer,
+  PeersLogic,
+} from '@risevision/core-p2p';
 import {
   BasePeerType,
   ForkType,
@@ -83,6 +88,8 @@ export class BlocksModuleProcess {
   private blocksUtilsModule: BlocksModuleUtils;
   @inject(BlocksSymbols.modules.verify)
   private blocksVerifyModule: BlocksModuleVerify;
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
   @inject(Symbols.modules.fork)
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
@@ -289,6 +296,7 @@ export class BlocksModuleProcess {
           id: block.id,
           module: 'blocks',
         });
+        this.peersModule.remove(peer.ip, peer.port);
         throw err;
       }
     }

@@ -1,4 +1,4 @@
-import { DeprecatedAPIError } from '@risevision/core-apis';
+import { DeprecatedAPIError, HTTPError } from '@risevision/core-apis';
 import { Sequence } from '@risevision/core-helpers';
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
@@ -15,7 +15,6 @@ import {
   Symbols,
 } from '@risevision/core-types';
 import {
-  HTTPError,
   IoCSymbol,
   removeEmptyObjKeys,
   SchemaValid,
