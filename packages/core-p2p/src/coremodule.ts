@@ -1,7 +1,6 @@
 import { APISymbols, middleware } from '@risevision/core-apis';
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { BasePeerType, Symbols } from '@risevision/core-types';
+import { BaseCoreModule, BasePeerType, Symbols } from '@risevision/core-types';
 import { cbToPromise } from '@risevision/core-utils';
 import * as bodyParser from 'body-parser';
 import { CommanderStatic } from 'commander';

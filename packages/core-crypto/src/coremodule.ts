@@ -1,5 +1,4 @@
-import { BaseCoreModule } from '@risevision/core-launchpad';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, BaseCoreModule } from '@risevision/core-types';
 import { Crypto } from './crypto_sodium_native';
 import { CryptoSymbols } from './cryptoSymbols';
 

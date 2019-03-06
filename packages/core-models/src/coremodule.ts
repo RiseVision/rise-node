@@ -1,4 +1,4 @@
-import { BaseCoreModule } from '@risevision/core-launchpad';
+import { BaseCoreModule } from '@risevision/core-types';
 import * as cls from 'cls-hooked';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -1,7 +1,7 @@
+import { ICoreModule } from '@risevision/core-types';
 import DAG from 'dag-map';
 import * as findPkg from 'find-pkg';
 import * as path from 'path';
-import { ICoreModule } from './module';
 
 export function checkIsModule(packageJSONPath: string) {
   const packageJson = require(packageJSONPath);

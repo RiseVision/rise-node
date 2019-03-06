@@ -1,5 +1,6 @@
 export * from './IAccountsModule';
 export * from './IBlocksModule';
+export * from './ICoreModule';
 export * from './IForkModule';
 export * from './ILoaderModule';
 export * from './IModule';

@@ -7,6 +7,7 @@ import {
   ConstantsType,
   IBaseTransactionType,
   IBlockLogic,
+  ICoreModule,
   SignedAndChainedBlockType,
   Symbols,
 } from '@risevision/core-types';
@@ -19,7 +20,7 @@ import * as path from 'path';
 import { Sequelize } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { LoggerStub } from '../../../../core-utils/tests/unit/stubs';
-import { ICoreModule, LaunchpadSymbols } from '../../../src';
+import { LaunchpadSymbols } from '../../../src';
 import {
   loadCoreSortedModules,
   resolveModule,

@@ -1,12 +1,11 @@
 import { APISymbols } from '@risevision/core-apis';
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import {
   ICoreModuleWithModels,
   ModelSymbols,
   utils,
 } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { Symbols } from '@risevision/core-types';
+import { BaseCoreModule, Symbols } from '@risevision/core-types';
 import { AccountsModelWith2ndSign } from './AccountsModelWith2ndSign';
 import { SignHooksListener } from './hooks/hooksListener';
 import { SecondSignatureTransaction } from './secondSignature';
