@@ -1,7 +1,11 @@
-## Rise-node version 1.2.0
+## Rise-node version 2.x
 
 # RISE
-[![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=development)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development)
+[![Build Status](https://travis-ci.org/RiseVision/rise-node.svg?branch=lerna)](https://travis-ci.org/RiseVision/rise-node) [![Coverage Status](https://coveralls.io/repos/github/RiseVision/rise-node/badge.svg?branch=development)](https://coveralls.io/github/RiseVision/rise-node?branch=development)
+
+# WARNING
+
+Please refer to `master` branch for instructions. This branch is for active development purposes only.
 
 ## Installation
 
@@ -223,22 +227,6 @@ And run the following to build / pull the necessary images and start the node
 docker-compose up
 ```
 
-## Authors
-
-- Andrea B. <vekexasia+crypto@gmail.com>
-- Jan <lepetitjan@icloud.com>
-- Mariusz Serek <mariusz@serek.net>
-- Goldeneye (Shift Team)
-- Ralfs (Shift Team)
-- Joey <shiftcurrency@gmail.com>
-- Boris Povod <boris@crypti.me>
-- Pavel Nekrasov <landgraf.paul@gmail.com>
-- Sebastian Stupurac <stupurac.sebastian@gmail.com>
-- Oliver Beddows <oliver@lightcurve.io>
-- Isabella Dell <isabella@lightcurve.io>
-- Marius Serek <mariusz@serek.net>
-- Maciej Baj <maciej@lightcurve.io>
-
 ## License
 
 Copyright © 2017 Rise<br>
@@ -255,7 +243,7 @@ You should have received a copy of the [GNU General Public License](https://gith
 
 This program also incorporates work previously released with lisk `0.7.0` (and earlier) versions under the [MIT License](https://opensource.org/licenses/MIT). To comply with the requirements of that license, the following permission notice, applicable to those parts of the code only, is included below:
 
-Copyright © 2017 Rise<br>
+Copyright © 2017-2019 Rise<br>
 Copyright © 2016-2017 Shift<br>
 Copyright © 2016-2017 Lisk Foundation<br>  
 Copyright © 2015 Crypti
