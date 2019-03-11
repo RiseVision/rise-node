@@ -1,11 +1,11 @@
-import { BaseCoreModule } from '@risevision/core-launchpad';
-import { AppConfig, Symbols } from '@risevision/core-types';
-import { loggerCreator, z_schema } from '@risevision/core-utils';
+import { AppConfig, BaseCoreModule, Symbols } from '@risevision/core-types';
 import { CommanderStatic } from 'commander';
 import { AppState } from './appState';
 import { HelpersSymbols } from './helpersSymbols';
 import { JobsQueue } from './jobsQueue';
+import { loggerCreator } from './loggerCreator';
 import { Sequence } from './sequence';
+import { z_schema } from './z_schema';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};

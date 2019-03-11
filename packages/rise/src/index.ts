@@ -4,11 +4,14 @@ import {
   ExceptionsManager,
   ExceptionSymbols,
 } from '@risevision/core-exceptions';
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
 import { TXSymbols } from '@risevision/core-transactions';
-import { IBaseTransactionType, Symbols } from '@risevision/core-types';
+import {
+  BaseCoreModule,
+  IBaseTransactionType,
+  Symbols,
+} from '@risevision/core-types';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
@@ -137,16 +140,6 @@ export class CoreModule extends BaseCoreModule<any> {
       tx.type = type;
       toSet[type] = tx;
     }
-
-    // Register schema validators
-    z_schema.registerFormat('txId', (value: string) => {
-      return /^[0-9]+$/.test(value);
-    });
-
-    z_schema.registerFormat('address', (str: string) => {
-      // tslint:disable-next-line
-      return /^[0-9]{1,20}R/.test(str);
-    });
   }
 
   public async preBoot() {

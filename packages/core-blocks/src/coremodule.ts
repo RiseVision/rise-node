@@ -1,9 +1,9 @@
 import { APISymbols } from '@risevision/core-apis';
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import {
   AppConfig,
+  BaseCoreModule,
   SignedAndChainedBlockType,
   Symbols,
 } from '@risevision/core-types';

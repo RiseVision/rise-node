@@ -1,12 +1,11 @@
 import { APISymbols } from '@risevision/core-apis';
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import {
   ICoreModuleWithModels,
   ModelSymbols,
   utils,
 } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { IModule, Symbols } from '@risevision/core-types';
+import { BaseCoreModule, IModule, Symbols } from '@risevision/core-types';
 import { CommanderStatic } from 'commander';
 import { AccountsAPI, DelegatesAPI } from './apis';
 import {

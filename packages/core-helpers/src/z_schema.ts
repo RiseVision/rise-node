@@ -80,6 +80,15 @@ z_schema.registerFormat('version', (str: string) =>
   /^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})(-?[a-z]{1})?$/g.test(str)
 );
 
+z_schema.registerFormat('txId', (value: string) => {
+  return /^[0-9]+$/.test(value);
+});
+
+z_schema.registerFormat('address', (str: string) => {
+  // tslint:disable-next-line
+  return /^[0-9]{1,20}R/.test(str);
+});
+
 // var registeredFormats = z_schema.getRegisteredFormats();
 // console.log(registeredFormats);
 

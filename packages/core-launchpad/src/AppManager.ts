@@ -1,5 +1,6 @@
 import {
   AppConfig,
+  ICoreModule,
   ILogger,
   SignedAndChainedBlockType,
   Symbols,
@@ -10,7 +11,6 @@ import * as pg from 'pg';
 import 'reflect-metadata';
 import { OnFinishBoot, OnInitContainer } from './hooks';
 import { LaunchpadSymbols } from './launchpadSymbols';
-import { ICoreModule } from './module';
 
 export class AppManager {
   public container: Container = new Container();

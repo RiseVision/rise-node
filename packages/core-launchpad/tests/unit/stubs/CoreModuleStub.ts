@@ -1,5 +1,5 @@
+import { BaseCoreModule } from '@risevision/core-types';
 import { StubbedInstance } from '../../../../core-utils/tests/unit/stubs';
-import { BaseCoreModule } from '../../../src';
 // tslint:disable max-classes-per-file
 export class Meow extends BaseCoreModule {
   public configSchema: any;

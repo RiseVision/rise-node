@@ -1,6 +1,11 @@
-import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { ILogger, IMigrationsModel, Symbols } from '@risevision/core-types';
+import {
+  ICoreModule,
+  ILogger,
+  IMigrationsModel,
+  Symbols,
+} from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as path from 'path';

@@ -1,5 +1,5 @@
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
+import { BaseCoreModule } from '@risevision/core-types';
 import { ExceptionsManager } from './exceptionManager';
 import { ExceptionModel } from './ExceptionModel';
 import { ExceptionSymbols } from './symbols';
