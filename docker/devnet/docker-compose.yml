@@ -9,7 +9,11 @@ services:
       - redis_1
       - postgres_1
     ports:
+      # rise node
       - '5501:5555'
+      # rise rest api
+      - '8010:8080'
+      # node inspector
       - '9201:9229'
     expose:
       - "5555"
@@ -58,7 +62,9 @@ services:
       - redis_1
       - postgres_1
     ports:
+      # rise node
       - '5502:5555'
+      # node inspector
       - '9202:9229'
     expose:
       - "5555"

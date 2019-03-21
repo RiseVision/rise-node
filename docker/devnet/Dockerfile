@@ -7,16 +7,13 @@ RUN apk --update add --no-cache --virtual .gyp \
         g++ \
         libtool \
         make \
-        python
+        python \
+        postgresql-dev
 
-RUN apk --update add --no-cache postgresql-dev
-
-RUN adduser -D rise
-USER rise
-
+RUN mkdir -p /home/rise/rise-node
+RUN mkdir /home/rise/logs
 WORKDIR /home/rise/rise-node
 
-RUN mkdir /home/rise/logs
 ENV NETWORK="mainnet"
 EXPOSE 5555
 
