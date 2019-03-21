@@ -18,11 +18,9 @@ ENV NETWORK="mainnet"
 EXPOSE 5555
 
 # rebuild native modules
-#CMD npm rebuild \
-#	&& npx lerna run start:$NETWORK --stream --no-prefix -- \
-#	-e /home/rise/config.json
+# uncomment and run once
+#RUN npm rebuild
 
-# skip rebuilding
 CMD npx lerna run debug:$NETWORK --stream --no-prefix -- \
 	-e /home/rise/config.json
 
