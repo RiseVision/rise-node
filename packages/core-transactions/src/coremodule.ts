@@ -3,6 +3,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { BaseCoreModule, Symbols } from '@risevision/core-types';
 import { TransactionsAPI } from './api';
+import { constants } from './helpers';
 import { TXLoader } from './loader';
 import { SendTxAssetModel, TransactionsModel } from './models';
 import { GetTransactionsRequest, PostTransactionsRequest } from './p2p';
@@ -20,7 +21,7 @@ const schema = require('../schema/config.json');
 
 export class CoreModule extends BaseCoreModule {
   public configSchema = schema;
-  public constants = {};
+  public constants = constants;
 
   public addElementsToContainer(): void {
     this.container

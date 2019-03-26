@@ -470,6 +470,7 @@ describe('logic/transactions/delegate', () => {
       expect(createOp.values).is.deep.eq({
         transactionId: tx.id,
         username: tx.asset.delegate.username,
+        forgingPK: tx.senderPubData,
       });
     });
   });

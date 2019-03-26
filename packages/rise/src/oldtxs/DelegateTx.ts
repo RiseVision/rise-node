@@ -5,6 +5,7 @@ import {
 } from '@risevision/core-consensus-dpos';
 import { ModelSymbols } from '@risevision/core-models';
 import {
+  Address,
   DBCreateOp,
   DBOp,
   IAccountsModel,
@@ -60,17 +61,25 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
   public readAsset(
     bytes: Buffer
   ): { consumedBytes: number; asset: DelegateAsset } {
-    const username = bytes
-      .slice(0, bytes.length - Math.floor(bytes.length / 64) * 64)
-      .toString('utf8');
+    const consumedBytes = bytes.length - Math.floor(bytes.length / 64) * 64;
+    const username = bytes.slice(0, consumedBytes).toString('utf8');
     return {
       asset: {
         delegate: {
           username,
         },
       },
-      consumedBytes: 1,
+      consumedBytes,
     };
+  }
+
+  public fromBytes(buff: Buffer): IBaseTransaction<DelegateAsset, bigint> {
+    const tx = super.fromBytes(buff);
+    if (tx.recipientId !== '0R') {
+      throw new Error('Invalid recipient');
+    }
+    delete tx.recipientId;
+    return tx;
   }
 
   public async verify(

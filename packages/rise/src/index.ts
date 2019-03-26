@@ -4,18 +4,16 @@ import {
   ExceptionsManager,
   ExceptionSymbols,
 } from '@risevision/core-exceptions';
+import { IBaseTransactionType, Symbols } from '@risevision/core-interfaces';
+import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
 import { TXSymbols } from '@risevision/core-transactions';
-import {
-  BaseCoreModule,
-  IBaseTransactionType,
-  Symbols,
-} from '@risevision/core-types';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
 import { RiseUpgrader } from './helpers';
+import { TransactionsHooks } from './hooks';
 import { RiseIdsHandler } from './idsHandler';
 import { RiseBlockBytes } from './logic';
 import { OldVoteTxModel } from './models';
@@ -56,6 +54,11 @@ export class CoreModule extends BaseCoreModule<any> {
   }
 
   public addElementsToContainer() {
+    this.container
+      .bind(RISESymbols.hooks.txHooks)
+      .to(TransactionsHooks)
+      .inSingletonScope();
+
     this.container
       .bind(RISESymbols.helpers.constants)
       .toConstantValue(this.constants);
@@ -140,6 +143,26 @@ export class CoreModule extends BaseCoreModule<any> {
       tx.type = type;
       toSet[type] = tx;
     }
+
+    // Register schema validators
+    z_schema.registerFormat('txId', (value: string) => {
+      return /^[0-9]+$/.test(value);
+    });
+
+    z_schema.registerFormat('address', (str: string) => {
+      // tslint:disable-next-line
+      return /^(([0-9]{1,20}R)|(rise1[a-z0-9]+))$/.test(str);
+    });
+
+    await this.container
+      .get<TransactionsHooks>(RISESymbols.hooks.txHooks)
+      .hookMethods();
+  }
+
+  public async teardown() {
+    await this.container
+      .get<TransactionsHooks>(RISESymbols.hooks.txHooks)
+      .unHook();
   }
 
   public async preBoot() {

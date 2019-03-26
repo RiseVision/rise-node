@@ -3,6 +3,9 @@ export const RISESymbols = {
     constants: Symbol.for('risemodule.helpers.constants'),
     upgrader: Symbol.for('risemodule.helpers.upgrader'),
   },
+  hooks: {
+    txHooks: Symbol.for('risemodule.hooks.txhooks'),
+  },
   models: {
     oldVotesModel: Symbol.for('risemodule.models.oldVotesModel'),
   },

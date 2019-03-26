@@ -1,10 +1,7 @@
-import { OnPostApplyBlock } from '@risevision/core-blocks';
+import { OnDestroyBlock, OnPostApplyBlock } from '@risevision/core-blocks';
+import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { IPeersModule } from '@risevision/core-p2p';
-import {
-  ISystemModule,
-  SignedAndChainedBlockType,
-  Symbols,
-} from '@risevision/core-types';
+import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 
@@ -27,6 +24,15 @@ export class BlockMonitor extends Extendable {
     broadcast: boolean
   ) {
     await this.systemModule.update(block);
+    this.peersModule.updateConsensus();
+  }
+
+  @OnDestroyBlock(1000)
+  public async onDestroyBlock(
+    ignored: SignedAndChainedBlockType,
+    newLastBlock: SignedAndChainedBlockType
+  ) {
+    await this.systemModule.update(newLastBlock);
     this.peersModule.updateConsensus();
   }
 }

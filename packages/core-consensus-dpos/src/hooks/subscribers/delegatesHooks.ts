@@ -153,18 +153,24 @@ export class DelegatesHooks extends Extendable {
     dbOP: Array<DBOp<any>>,
     block: SignedAndChainedBlockType
   ) {
-    await this.delegatesModule.onBlockChanged('forward', block.height);
-    return dbOP;
+    return dbOP.concat(
+      ...(await this.delegatesModule.onBlockChanged('forward', block.height))
+    );
   }
 
   @RollbackBlockDBOps()
+  // tslint:disable-next-line
   private async onRollbackBlockDBOpsFilter(
     dbOP: Array<DBOp<any>>,
     block: SignedAndChainedBlockType,
     prevBlock: SignedAndChainedBlockType
   ) {
-    await this.delegatesModule.onBlockChanged('backward', prevBlock.height);
-    return dbOP;
+    return dbOP.concat(
+      ...(await this.delegatesModule.onBlockChanged(
+        'backward',
+        prevBlock.height
+      ))
+    );
   }
 
   @RecreateAccountsTables()

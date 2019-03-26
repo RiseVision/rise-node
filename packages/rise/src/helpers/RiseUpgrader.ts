@@ -57,7 +57,10 @@ export class RiseUpgrader extends Extendable {
    * @codesample actionHookApply
    */
   @OnDestroyBlock()
-  public onDestroyBlock(block: SignedAndChainedBlockType) {
+  public onDestroyBlock(
+    block: SignedAndChainedBlockType,
+    newLastBlock: SignedAndChainedBlockType
+  ) {
     const prev = block.height;
 
     const dposFeesSwitchHeight = this.riseContants['@risevision/rise']

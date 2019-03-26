@@ -27,7 +27,7 @@ export const TxSignatureVerify = createAction<
     sender?: IAccountsModel,
     height?: number
   ) => Promise<void>
->('core-transactions/txlogic/verify/tx');
+>('core-transactions/txlogic/verify/tx/signature');
 
 export const OnNewUnconfirmedTransation = createAction<
   (tx: IBaseTransaction<any, bigint>, broadcast?: boolean) => Promise<void>

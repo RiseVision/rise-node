@@ -249,9 +249,7 @@ export class BlocksModuleChain {
     // Prevent shutdown during database writes.
     this.isProcessing = true;
 
-    // Find all transactions that are in unconfirmedstate && that are overlapping
-    // Overlapping txs are txs that have same sender of at least one of the tx
-    // in the block but are NOT in the block.
+    // Find all transactions that are in unconfirmedstate && that are not included in block
     // Overlapping txs needs to be undoUnconfirmed since they could eventually exclude a tx
     // bundled within a block
     const allUnconfirmedTxs = this.txPool.unconfirmed.txList({});
@@ -259,7 +257,7 @@ export class BlocksModuleChain {
     const overlappingTXs = allUnconfirmedTxs.filter((tx) => {
       const exists =
         bs(allBlockTXIds, tx.id, (a, b) => a.localeCompare(b)) >= 0;
-      return !exists && typeof accountsMap[tx.senderId] !== 'undefined';
+      return !exists;
     });
     // Start atomic block saving.
 
@@ -277,7 +275,8 @@ export class BlocksModuleChain {
       ops.push(
         ...(await this.transactionLogic.undoUnconfirmed(
           overTX,
-          accountsMap[overTX.senderId]
+          accountsMap[overTX.senderId] ||
+            (await this.accountsModule.getAccount({ address: overTX.senderId }))
         ))
       );
     }
@@ -475,6 +474,7 @@ export class BlocksModuleChain {
       await this.hookSystem.do_action(
         OnDestroyBlock.name,
         this.blocksModule.lastBlock,
+        previousBlock,
         dbTX
       );
     });

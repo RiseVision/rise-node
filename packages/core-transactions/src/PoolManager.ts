@@ -104,7 +104,7 @@ export class PoolManager {
     const bundledTxs = await this.pool.queued.list({
       limit: this.config.transactions.bundleLimit,
       sortFn: (a, b) =>
-        b.payload.receivedAt.getTime() - a.payload.receivedAt.getTime(),
+        a.payload.receivedAt.getTime() - b.payload.receivedAt.getTime(),
     });
 
     const accMap = await this.accountsModule.txAccounts(

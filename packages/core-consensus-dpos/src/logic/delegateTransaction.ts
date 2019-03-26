@@ -16,6 +16,8 @@ import {
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
+import * as sequelize from 'sequelize';
+import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
@@ -65,6 +67,15 @@ export class RegisterDelegateTransaction extends BaseTx<
     return this.systemModule.getFees(height).fees.delegate;
   }
 
+  public fromBytes(buff: Buffer): IBaseTransaction<DelegateAsset, bigint> {
+    const tx = super.fromBytes(buff);
+    if (tx.recipientId !== '0R') {
+      throw new Error('Invalid recipient');
+    }
+    delete tx.recipientId;
+    return tx;
+  }
+
   public assetBytes(tx: IBaseTransaction<DelegateAsset>): Buffer {
     return Buffer.concat([
       tx.asset.delegate.forgingPK,
@@ -74,7 +85,8 @@ export class RegisterDelegateTransaction extends BaseTx<
 
   public readAssetFromBytes(bytes: Buffer): DelegateAsset {
     const forgingPK = bytes.slice(0, 32) as Buffer & As<'publicKey'>;
-    const username = bytes.slice(32).toString('utf8');
+    const username =
+      bytes.length === 32 ? null : bytes.slice(32).toString('utf8');
 
     return {
       delegate: {
@@ -163,6 +175,13 @@ export class RegisterDelegateTransaction extends BaseTx<
 
     if (tx.asset.delegate.forgingPK.length !== 32) {
       throw new Error('ForgingPK is not 32bytes long');
+    }
+
+    const pubKeyConflict = await this.accountsModule.getAccount({
+      forgingPK: tx.asset.delegate.forgingPK,
+    });
+    if (pubKeyConflict) {
+      throw new Error('Forging Public Key already exists');
     }
   }
 
@@ -254,26 +273,20 @@ export class RegisterDelegateTransaction extends BaseTx<
         },
       ];
     } else {
-      // We need to rollback to previous forging Public Key
-      // We first find the most recent tx of this type and this sender
-      // we then query the delegatesModel to get the old publicKey.
-      const { id } = await this.TransactionsModel.findOne({
-        attributes: ['id'],
-        limit: 1,
-        order: [['height', 'desc']],
-        where: {
-          id: { $not: tx.id },
-          senderId: sender.address,
-          type: this.type,
-        },
+      const res = await this.DelegatesModel.findOne({
+        include: [
+          {
+            model: this.TransactionsModel,
+            required: true,
+            where: {
+              id: { $not: tx.id },
+              senderId: sender.address,
+            },
+          },
+        ],
+        order: [sequelize.literal('"tx"."height" DESC')],
       });
-      const dm = await this.DelegatesModel.findOne({
-        where: {
-          transactionId: id,
-        },
-      });
-
-      sender.applyValues({ forgingPK: dm.forgingPK });
+      sender.applyValues({ forgingPK: res.forgingPK });
       return [
         {
           model: this.AccountsModel,
@@ -282,7 +295,7 @@ export class RegisterDelegateTransaction extends BaseTx<
           },
           type: 'update',
           values: {
-            forgingPK: dm.forgingPK,
+            forgingPK: res.forgingPK,
           },
         },
       ];
@@ -373,13 +386,17 @@ export class RegisterDelegateTransaction extends BaseTx<
   public dbSave(
     tx: IBaseTransaction<DelegateAsset>
   ): DBCreateOp<DelegatesModel> {
+    const values: FilteredModelAttributes<DelegatesModel> = {
+      forgingPK: tx.asset.delegate.forgingPK,
+      transactionId: tx.id,
+    };
+    if (this.isTxFirstRegistration(tx)) {
+      values.username = tx.asset.delegate.username;
+    }
     return {
       model: this.DelegatesModel,
       type: 'create',
-      values: {
-        transactionId: tx.id,
-        username: tx.asset.delegate.username,
-      },
+      values,
     };
   }
 

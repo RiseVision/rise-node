@@ -35,5 +35,5 @@ export class DelegatesModel extends BaseModel<DelegatesModel> {
       Symbols.models.transactions
     )
   )
-  private tx: ITransactionsModel;
+  public tx: ITransactionsModel;
 }

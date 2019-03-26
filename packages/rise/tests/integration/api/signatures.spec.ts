@@ -12,7 +12,7 @@ describe('api/signatures', () => {
     checkReturnObjKeyVal('fromHeight', 1, '/api/signatures/fee');
     checkReturnObjKeyVal('toHeight', null, '/api/signatures/fee');
     checkReturnObjKeyVal('height', 2, '/api/signatures/fee');
-    checkReturnObjKeyVal('fee', 500000000, '/api/signatures/fee');
+    checkReturnObjKeyVal('fee', '500000000', '/api/signatures/fee');
   });
 
   describe('[PUT] /', () => {

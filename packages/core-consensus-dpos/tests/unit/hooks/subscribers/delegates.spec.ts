@@ -211,7 +211,7 @@ describe('hooks/subscribers/delegates', () => {
   describe('applyBlock', () => {
     let dmStub: SinonStub;
     beforeEach(() => {
-      dmStub = sandbox.stub(delegatesModule, 'onBlockChanged');
+      dmStub = sandbox.stub(delegatesModule, 'onBlockChanged').resolves([]);
     });
     it('should run delegatesModuleCode for forward round change', async () => {
       const r = await wphooksystem.apply_filters(ApplyBlockDBOps.name, ['a'], {

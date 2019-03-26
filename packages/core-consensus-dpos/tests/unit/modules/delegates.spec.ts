@@ -191,7 +191,7 @@ describe('modules/delegates', () => {
       }));
       getKeysSortByVoteStub = sandbox.stub(
         instance as any,
-        'getFilteredDelegatesSortedByVote'
+        'getFilteredDelegatesSortedByVoteForForging'
       );
       getKeysSortByVoteStub.resolves(keys);
       keysCopy = keys.slice();
@@ -203,7 +203,7 @@ describe('modules/delegates', () => {
       sha256Spy.restore();
     });
 
-    it('should call getKeysSortByVote', async () => {
+    it('should call getFilteredDelegatesSortedByVoteForForging', async () => {
       await instance.generateDelegateList(height);
       expect(getKeysSortByVoteStub.calledOnce).to.be.true;
     });
@@ -604,6 +604,7 @@ describe('modules/delegates', () => {
         attributes: [
           'address',
           'cmb',
+          'forgingPK',
           'username',
           'vote',
           'votesWeight',
@@ -677,7 +678,7 @@ describe('modules/delegates', () => {
       });
       getKeysSortByVoteStub = sandbox.stub(
         instance as any,
-        'getFilteredDelegatesSortedByVote'
+        'getFilteredDelegatesSortedByVoteForForging'
       );
       getKeysSortByVoteStub.resolves(keys);
       // roundsLogic.stubs.calcRound.returns(123);
@@ -847,22 +848,22 @@ describe('modules/delegates', () => {
 
   describe('onBlockChanged', () => {
     let delegatesRoundModel: typeof DelegatesRoundModel;
-    let stubs: { destroy: SinonStub; findOne: SinonStub; create: SinonStub };
+    let stubs: { destroy: SinonStub; findOne: SinonStub; upsert: SinonStub };
     beforeEach(() => {
       delegatesRoundModel = container.getNamed(
         ModelSymbols.model,
         dPoSSymbols.models.delegatesRound
       );
       stubs = {
-        create: sandbox.stub(delegatesRoundModel, 'create'),
-        destroy: sandbox.stub(delegatesRoundModel, 'destroy'),
-        findOne: sandbox.stub(delegatesRoundModel, 'findOne'),
+        destroy: sandbox.stub(delegatesRoundModel, 'destroy').resolves({}),
+        findOne: sandbox.stub(delegatesRoundModel, 'findOne').resolves({}),
+        upsert: sandbox.stub(delegatesRoundModel, 'upsert').resolves({}),
       };
     });
     it('should do nothing if no round change, backward or forward', async () => {
       await instance.onBlockChanged('forward', 30);
       await instance.onBlockChanged('backward', 30);
-      expect(stubs.create.called).false;
+      expect(stubs.upsert.called).false;
       expect(stubs.destroy.called).false;
       expect(stubs.findOne.called).false;
     });
@@ -883,7 +884,7 @@ describe('modules/delegates', () => {
       ];
       await instance.onBlockChanged('forward', 101 * 20 + 1);
       expect(
-        stubs.create.calledWith({
+        stubs.upsert.calledWith({
           list: [Buffer.alloc(1).fill(0xa), Buffer.alloc(2).fill(0xb)],
           round: 20,
         })
@@ -892,26 +893,19 @@ describe('modules/delegates', () => {
     it('should delete listCache [+1] if backward', async () => {
       (instance as any).delegatesListCache[20] = 'a';
       (instance as any).delegatesListCache[21] = 'a';
-      await instance.onBlockChanged('backward', 101 * 20);
+      await instance.onBlockChanged('backward', 101 * 20 - 1);
       expect((instance as any).delegatesListCache).deep.eq({ 20: 'a' });
     });
-    it('should delete listCache in db if backward', async () => {
+    it('should delete listCache in db if backward - 1', async () => {
       (instance as any).delegatesListCache[20] = 'a';
       (instance as any).delegatesListCache[21] = 'a';
-      await instance.onBlockChanged('backward', 101 * 20);
-      expect(
-        stubs.destroy.calledWith({
-          where: {
-            round: { [Op.gte]: 21 },
-          },
-        })
-      ).true;
-      // calledWith does not work properly with Symbols manually checking
-      expect(stubs.destroy.firstCall.args[0].where.round[Op.gte]).eq(21);
+      const ret = await instance.onBlockChanged('backward', 101 * 20 - 1);
+      expect(ret[0].type).eq('remove');
+      expect((ret[0] as any).options.where.round[Op.gte]).eq(21);
     });
     it('should restore listCache from db if backward and no memory cache', async () => {
       stubs.findOne.resolves({ list: 'meow' });
-      await instance.onBlockChanged('backward', 101 * 20);
+      await instance.onBlockChanged('backward', 101 * 20 - 1);
       expect((instance as any).delegatesListCache).deep.eq({ 20: 'meow' });
     });
   });

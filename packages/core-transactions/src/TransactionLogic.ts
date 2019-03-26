@@ -115,7 +115,7 @@ export class TransactionLogic implements ITransactionLogic {
     // tslint:disable-next-line
     if (tx['blockId'] !== this.genesisBlock.id && sender[balanceKey] < amount) {
       throw new Error(
-        `\`Account does not have enough currency: ${sender.address} balance: ${
+        `Account does not have enough currency: ${sender.address} balance: ${
           sender[balanceKey]
         } - ${amount}\``
       );

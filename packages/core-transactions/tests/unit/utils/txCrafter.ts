@@ -1,5 +1,11 @@
 import { IBaseTransaction } from '@risevision/core-types';
-import { Address, IKeypair, RiseV2, RiseV2Transaction } from 'dpos-offline';
+import {
+  Address,
+  IKeypair,
+  RiseTransaction,
+  RiseV2,
+  RiseV2Transaction,
+} from 'dpos-offline';
 import * as uuid from 'uuid';
 
 export const createRandomTransaction = (
@@ -40,10 +46,21 @@ export const createSendTransaction = (
 
 //
 export const toNativeTx = <T = any>(
-  tx: RiseV2Transaction<any>
+  tx: RiseV2Transaction<any> | RiseTransaction<any>
 ): IBaseTransaction<T, bigint> & { senderId: string } => {
+  if (typeof (tx as any).version !== 'number') {
+    const t: RiseTransaction<any> = tx as any;
+    return {
+      ...t,
+      amount: BigInt(tx.amount),
+      fee: BigInt(tx.fee),
+      senderPubData: t.senderPublicKey,
+      signatures: [t.signature, ...(t.signatures || [])],
+      version: 0,
+    };
+  }
   return {
-    ...tx,
+    ...(tx as RiseV2Transaction<any>),
     amount: BigInt(tx.amount),
     fee: BigInt(tx.fee),
   };

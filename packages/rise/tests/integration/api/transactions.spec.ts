@@ -1,29 +1,27 @@
-import { expect } from 'chai';
-import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
-import { ITransaction } from 'dpos-offline/dist/es5/trxTypes/BaseTx';
-import * as supertest from 'supertest';
-import initializer from '../common/init';
-
-import { APIConfig, APISymbols } from '@risevision/core-apis';
+import { APIConfig } from '@risevision/core-apis';
+import {
+  IBlocksModule,
+  ITransactionsModule,
+  Symbols,
+} from '@risevision/core-interfaces';
 import {
   PoolManager,
   TransactionPool,
   TXSymbols,
 } from '@risevision/core-transactions';
-import {
-  IBlocksModule,
-  ITransactionsModule,
-  Symbols,
-  TransactionType,
-} from '@risevision/core-types';
+import { IKeypair, TransactionType } from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
-import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
+import { expect } from 'chai';
+import * as supertest from 'supertest';
+import { toNativeTx } from '../../../../core-transactions/tests/unit/utils/txCrafter';
+import initializer from '../common/init';
 import {
   createRandomAccountWithFunds,
   createRandomWallet,
-  createSecondSignTransaction,
-  createSendTransaction,
-  createVoteTransaction,
+  createSecondSignTransactionV1,
+  createSendTransactionV1,
+  createVoteTransactionV1,
+  createWalletV2,
   getRandomDelegateSecret,
   getRandomDelegateWallet,
 } from '../common/utils';
@@ -35,6 +33,9 @@ import {
   checkRequiredParam,
   checkReturnObjKeyVal,
 } from './utils';
+
+import { Rise, RiseTransaction, RiseV2 } from 'dpos-offline';
+import uuid = require('uuid');
 
 // tslint:disable no-unused-expression max-line-length no-identical-functions no-big-function object-literal-sort-keys
 describe('api/transactions', () => {
@@ -48,8 +49,8 @@ describe('api/transactions', () => {
     checkAddress('and:senderId', '/api/transactions');
     checkAddress('senderId', '/api/transactions');
 
-    checkPubKey('and:senderPublicKey', '/api/transactions');
-    checkPubKey('senderPublicKey', '/api/transactions');
+    // checkPubKey('and:senderPubData', '/api/transactions');
+    // checkPubKey('senderPubData', '/api/transactions');
 
     checkAddress('and:recipientId', '/api/transactions');
     checkAddress('recipientId', '/api/transactions');
@@ -79,7 +80,7 @@ describe('api/transactions', () => {
     checkIntParam('and:minConfirmations', '/api/transactions', { min: 0 });
     checkIntParam('minConfirmations', '/api/transactions', { min: 0 });
 
-    checkIntParam('limit', '/api/transactions', { min: 1, max: 1000 });
+    checkIntParam('limit', '/api/transactions', { min: 1, max: 200 });
     checkIntParam('offset', '/api/transactions', { min: 0 });
 
     checkEnumParam(
@@ -95,13 +96,13 @@ describe('api/transactions', () => {
       '/api/transactions'
     );
 
-    let voteTx: ITransaction<any>;
+    let voteTx: RiseTransaction<any>;
     let sendTxID: string;
-    let secondSignTx: ITransaction<any>;
+    let secondSignTx: RiseTransaction<any>;
     let onlyReceiverTxID: string;
-    let senderAccount: LiskWallet;
-    let voterAccount: LiskWallet;
-    let onlyReceiverAccount: LiskWallet;
+    let senderAccount: IKeypair;
+    let voterAccount: IKeypair;
+    let onlyReceiverAccount: IKeypair;
 
     // it makes sure to remove created transactions.
     initializer.autoRestoreEach();
@@ -115,7 +116,7 @@ describe('api/transactions', () => {
       voterAccount = randomAccount;
       sendTxID = txID;
 
-      voteTx = await createVoteTransaction(
+      voteTx = await createVoteTransactionV1(
         1,
         randomAccount,
         senderAccount.publicKey,
@@ -128,7 +129,7 @@ describe('api/transactions', () => {
       onlyReceiverTxID = ortid;
       onlyReceiverAccount = rA;
 
-      secondSignTx = await createSecondSignTransaction(
+      secondSignTx = await createSecondSignTransactionV1(
         1,
         voterAccount,
         createRandomWallet().publicKey
@@ -182,9 +183,13 @@ describe('api/transactions', () => {
           .then((resp) => {
             expect(resp.body.transactions.length).to.be.eq(1);
             expect(resp.body.transactions[0].id).to.be.eq(secondSignTx.id);
-            expect(resp.body.transactions[0].asset).to.be.deep.eq(
-              secondSignTx.asset
-            );
+            expect(resp.body.transactions[0].asset).to.be.deep.eq({
+              signature: {
+                publicKey: secondSignTx.asset.signature.publicKey.toString(
+                  'hex'
+                ),
+              },
+            });
           });
       });
       it('should filter only multiaccount tx');
@@ -193,9 +198,9 @@ describe('api/transactions', () => {
       it('should return only tx from such senderId', async () => {
         return supertest(initializer.apiExpress)
           .get(
-            `/api/transactions?senderId=${
-              voterAccount.address
-            }&orderBy=height:asc`
+            `/api/transactions?senderId=${Rise.calcAddress(
+              voterAccount.publicKey
+            )}&orderBy=height:asc`
           )
           .expect(200)
           .then((resp) => {
@@ -215,38 +220,14 @@ describe('api/transactions', () => {
       });
     });
 
-    describe('senderPublicKey', () => {
-      it('should return only tx from such senderPublicKey', async () => {
-        return supertest(initializer.apiExpress)
-          .get(`/api/transactions?senderPublicKey=${voterAccount.publicKey}`)
-          .expect(200)
-          .then((resp) => {
-            expect(resp.body.transactions.length).to.be.eq(2);
-            expect(resp.body.transactions[0].senderPublicKey).to.be.eq(
-              voterAccount.publicKey
-            );
-            expect(resp.body.transactions[1].senderPublicKey).to.be.eq(
-              voterAccount.publicKey
-            );
-          });
-      });
-      it('should return empty tx if senderPublicKey did not broadcast', async () => {
-        return supertest(initializer.apiExpress)
-          .get(
-            `/api/transactions?senderPublicKey=${
-              createRandomWallet().publicKey
-            }`
-          )
-          .expect(200)
-          .then((resp) => {
-            expect(resp.body.transactions).to.be.empty;
-          });
-      });
-    });
     describe('recipientId filter', () => {
       it('should return only tx for such recipientId', async () => {
         return supertest(initializer.apiExpress)
-          .get(`/api/transactions?recipientId=${onlyReceiverAccount.address}`)
+          .get(
+            `/api/transactions?recipientId=${Rise.calcAddress(
+              onlyReceiverAccount.publicKey
+            )}`
+          )
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions.length).to.be.eq(1);
@@ -394,9 +375,9 @@ describe('api/transactions', () => {
     describe('with some txs', () => {
       initializer.createBlocks(1, 'each');
       beforeEach(async () => {
-        const txs: Array<ITransaction<any>> = [];
+        const txs: Array<RiseTransaction<any>> = [];
         for (let i = 0; i < 5; i++) {
-          const tx = await createSendTransaction(
+          const tx = await createSendTransactionV1(
             0,
             Math.ceil(Math.random() * 100),
             getRandomDelegateWallet(),
@@ -409,7 +390,7 @@ describe('api/transactions', () => {
         >(Symbols.modules.transactions);
 
         await txModule.processIncomingTransactions(
-          txs.map((tx) => toBufferedTransaction(tx)),
+          txs.map((tx) => toNativeTx(tx)),
           null
         );
       });
@@ -444,16 +425,16 @@ describe('api/transactions', () => {
   });
 
   describe('/get', () => {
-    let tx: ITransaction;
-    let delegate1: LiskWallet;
-    let senderAccount: LiskWallet;
+    let tx: RiseTransaction<any>;
+    let delegate1: IKeypair;
+    let senderAccount: IKeypair;
     beforeEach(async () => {
       const { wallet: randomAccount } = await createRandomAccountWithFunds(
         Math.pow(10, 9)
       );
       senderAccount = randomAccount;
       delegate1 = getRandomDelegateWallet();
-      tx = await createVoteTransaction(
+      tx = await createVoteTransactionV1(
         1,
         senderAccount,
         delegate1.publicKey,
@@ -472,7 +453,7 @@ describe('api/transactions', () => {
             expect(resp.body.transaction.asset).to.haveOwnProperty('votes');
             expect(resp.body.transaction.asset.votes).to.be.an('array');
             expect(resp.body.transaction.asset.votes).to.be.deep.eq([
-              `+${delegate1.publicKey}`,
+              `+${delegate1.publicKey.toString('hex')}`,
             ]);
           });
       });
@@ -492,11 +473,13 @@ describe('api/transactions', () => {
         TXSymbols.pool
       );
 
-      const s = getRandomDelegateSecret();
+      const wallet = createWalletV2('meow');
+      await createRandomAccountWithFunds(1e10, wallet);
+
       await supertest(initializer.apiExpress)
         .post('/api/transactions')
         .send({
-          secret: s,
+          secret: 'meow',
           recipientId: createRandomWallet().address,
           amount: 10,
         })
@@ -509,13 +492,16 @@ describe('api/transactions', () => {
         });
     });
     it('should fail tx', async () => {
-      const s = getRandomDelegateSecret();
+      const secret = uuid.v4();
+      const wallet = createWalletV2(secret);
+      await createRandomAccountWithFunds(1e10, wallet);
+
       await supertest(initializer.apiExpress)
         .post('/api/transactions')
         .send({
-          secret: s,
+          secret,
           recipientId: createRandomWallet().address,
-          amount: 10999999991000000 - 1,
+          amount: 1e10 - 1,
         })
         .expect(200)
         .then((r) => {
@@ -543,16 +529,16 @@ describe('api/transactions', () => {
   });
 
   describe('/put', () => {
-    let tx: ITransaction;
-    let delegate1: LiskWallet;
-    let senderAccount: LiskWallet;
+    let tx: RiseTransaction<any>;
+    let delegate1: IKeypair;
+    let senderAccount: IKeypair;
     beforeEach(async () => {
       const { wallet: randomAccount } = await createRandomAccountWithFunds(
         Math.pow(10, 9)
       );
       senderAccount = randomAccount;
       delegate1 = getRandomDelegateWallet();
-      tx = await createVoteTransaction(
+      tx = await createVoteTransactionV1(
         1,
         senderAccount,
         delegate1.publicKey,
@@ -560,17 +546,22 @@ describe('api/transactions', () => {
       );
     });
     it('should reject voting tx', async () => {
-      const voteTX = await createVoteTransaction(
+      const voteTX = await createVoteTransactionV1(
         0,
         senderAccount,
         delegate1.publicKey,
         true,
-        { timestamp: 2 }
+        { nonce: 2 }
       );
+
+      const postableTx: any = Rise.txs.toPostable(voteTX);
+      postableTx.senderPubData = postableTx.senderPublicKey;
+      postableTx.signatures = [postableTx.signature];
+
       expect(voteTX.id).not.eq(tx.id);
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
-        .send({ transaction: voteTX })
+        .send({ transaction: postableTx })
         .expect(200, {
           success: true,
           accepted: [],
@@ -586,7 +577,7 @@ describe('api/transactions', () => {
       // Same thing if tx came from array
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
-        .send({ transactions: [voteTX] })
+        .send({ transactions: [postableTx] })
         .expect(200, {
           success: true,
           accepted: [],
@@ -600,22 +591,24 @@ describe('api/transactions', () => {
         });
     });
     it('should reject malformed Transaction', async () => {
-      const orig = await createSendTransaction(
+      const orig = await createSendTransactionV1(
         0,
         1,
         senderAccount,
-        senderAccount.address
+        Rise.calcAddress(senderAccount.publicKey)
       );
-
+      let postableTx: any = Rise.txs.toPostable(orig);
+      postableTx.senderPubData = postableTx.senderPublicKey;
+      postableTx.signatures = [postableTx.signature];
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
-        .send({ transactions: [{ ...orig, senderId: null }] })
+        .send({ transactions: [{ ...postableTx, senderId: null }] })
         .expect(200, {
           success: true,
           accepted: [],
           invalid: [
             {
-              id: orig.id,
+              id: postableTx.id,
               reason:
                 'Failed to validate transaction schema: Missing required property: senderId',
             },
@@ -624,35 +617,40 @@ describe('api/transactions', () => {
 
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
-        .send({ transactions: [{ ...orig, id: '10' }] })
+        .send({ transactions: [{ ...postableTx, id: '10' }] })
         .expect(200, {
           success: true,
           accepted: [],
           invalid: [
             {
               id: '10',
-              reason: 'Invalid transaction id',
+              reason: `Invalid transaction id - Expected ${
+                postableTx.id
+              }, Received 10`,
             },
           ],
         });
 
       // Asset validation
-      const unvoteTX = await createVoteTransaction(
+      const unvoteTX = await createVoteTransactionV1(
         0,
         senderAccount,
         delegate1.publicKey,
         false
       ); /*unvote */
+      postableTx = Rise.txs.toPostable(unvoteTX);
+      postableTx.senderPubData = postableTx.senderPublicKey;
+      postableTx.signatures = [postableTx.signature];
       (unvoteTX.asset as any).votes.push('meow');
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
-        .send({ transaction: unvoteTX })
+        .send({ transaction: postableTx })
         .expect(200, {
           success: true,
           accepted: [],
           invalid: [
             {
-              id: unvoteTX.id,
+              id: postableTx.id,
               reason:
                 'Failed to validate vote schema: String does not match pattern ^[-+]{1}[0-9a-z]{64}$: meow',
             },
@@ -660,28 +658,35 @@ describe('api/transactions', () => {
         });
     });
     it('should accept unvote transaction', async () => {
-      const unvoteTX = await createVoteTransaction(
+      const unvoteTX = await createVoteTransactionV1(
         0,
         senderAccount,
         delegate1.publicKey,
         false
       ); /*unvote */
+      const postableTx: any = Rise.txs.toPostable(unvoteTX);
+      postableTx.senderPubData = postableTx.senderPublicKey;
+      postableTx.signatures = [postableTx.signature];
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
-        .send({ transaction: unvoteTX })
-        .expect(200, { success: true, accepted: [unvoteTX.id], invalid: [] });
+        .send({ transaction: postableTx })
+        .expect(200, { success: true, accepted: [postableTx.id], invalid: [] });
     });
     it('should accept unvote tx from multiple txs', async () => {
-      const unvoteTX = await createVoteTransaction(
+      const unvoteTX = await createVoteTransactionV1(
         0,
         senderAccount,
         delegate1.publicKey,
         false
       ); /*unvote */
+
+      const postableTx: any = Rise.txs.toPostable(unvoteTX);
+      postableTx.senderPubData = postableTx.senderPublicKey;
+      postableTx.signatures = [postableTx.signature];
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
-        .send({ transactions: [unvoteTX] })
-        .expect(200, { success: true, accepted: [unvoteTX.id], invalid: [] });
+        .send({ transactions: [postableTx] })
+        .expect(200, { success: true, accepted: [postableTx.id], invalid: [] });
     });
   });
 });

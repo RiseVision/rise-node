@@ -140,7 +140,7 @@ export class TransactionsAPI {
       where,
     });
     // Reattach transactions asset
-    // await this.txLogic.attachAssets(transactions);
+    await this.txLogic.attachAssets(transactions);
 
     return {
       count,

@@ -813,7 +813,7 @@ describe('logic/transaction', () => {
       // tslint:disable-next-line
       tx.amount = 1000000n - 1n;
       await expect(instance.applyUnconfirmed(tx as any, sender)).rejectedWith(
-        'Account does not have enough currency: rise1qx0h9eama8m0v9kak8gjply3fy8mx00dqj65f9zjs30m2eq5sp6s7zaszq4 balance: 1000000 - 1000009'
+        'Account does not have enough currency: rise1qyg5qegskvaxwu8qw4n7r27jwsw2k949383zaa0fjgf340c9gn6kq82f79a balance: 1000000 - 1000009'
       );
     });
 

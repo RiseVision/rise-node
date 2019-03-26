@@ -284,6 +284,10 @@ export class LoaderModule implements ILoaderModule {
         this.logger.trace('Sync timer trigger', {
           syncing: this.isSyncing,
         });
+        if (this.getNetwork().peers.length === 0) {
+          this.logger.warn('Cannot sync due to lack of peers');
+          return;
+        }
         this.appState.set('loader.isSyncing', true);
         await this.doSync().catch(logOnly(this.logger));
         this.appState.set('loader.isSyncing', false);

@@ -2,23 +2,24 @@ import { APIConfig } from '@risevision/core-apis';
 import { BlocksModel } from '@risevision/core-blocks';
 import { DposAppConfig, Slots } from '@risevision/core-consensus-dpos';
 import { dPoSSymbols, ForgeModule } from '@risevision/core-consensus-dpos';
+import {
+  IBlocksModule,
+  ITimeToEpoch,
+  Symbols,
+} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { TransactionsModel } from '@risevision/core-transactions';
-import {
-  AppConfig,
-  IBlocksModule,
-  SignedAndChainedBlockType,
-  Symbols,
-} from '@risevision/core-types';
+import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiSorted from 'chai-sorted';
 import * as supertest from 'supertest';
+import { As } from 'type-tagger';
 import initializer from '../common/init';
 import {
   confirmTransactions,
   createRandomAccountWithFunds,
-  createSendTransaction,
-  createVoteTransaction,
+  createSendTransactionV1,
+  createVoteTransactionV1,
   createWallet,
   getRandomDelegateWallet,
 } from '../common/utils';
@@ -50,27 +51,27 @@ describe('api/delegates', () => {
     checkEnumParam(
       'orderBy',
       [
-        'approval:desc',
-        'approval:asc',
-        'productivity:desc',
-        'productivity:asc',
-        'rank:desc',
-        'rank:asc',
+        // 'approval:desc',
+        // 'approval:asc',
+        // 'productivity:desc',
+        // 'productivity:asc',
+        // 'rank:desc',
+        // 'rank:asc',
         'vote:desc',
         'vote:asc',
         'address:desc',
         'address:asc',
         'username:desc',
         'username:asc',
-        'publicKey:desc',
-        'publicKey:asc',
+        'forgingPK:desc',
+        'forgingPK:asc',
       ],
       '/api/delegates'
     );
-    checkIntParam('limit', '/api/delegates', { min: 1, max: 101 });
+    checkIntParam('limit', '/api/delegates', { min: 1 });
     checkIntParam('offset', '/api/delegates', { min: 0 });
 
-    checkReturnObjKeyVal('totalCount', 101, '/api/delegates');
+    // checkReturnObjKeyVal('totalCount', 101, '/api/delegates');
 
     it('should return delegates array', async () => {
       return supertest(initializer.apiExpress)
@@ -86,13 +87,13 @@ describe('api/delegates', () => {
     });
 
     [
-      'approval',
-      'productivity',
-      'rank',
+      // 'approval',
+      // 'productivity',
+      // 'rank',
       'vote',
       'username',
       'address',
-      'publicKey',
+      'forgingPK',
     ].forEach((sortKey: string) => {
       it('should honor orderBy ' + sortKey + ' asc param', async () => {
         return supertest(initializer.apiExpress)
@@ -154,57 +155,99 @@ describe('api/delegates', () => {
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.fee).to.be.equal(2500000000);
+          expect(response.body.fee).to.be.deep.equal('2500000000');
         });
     });
   });
 
-  describe('/forging/getForgedByAccount', () => {
+  describe('/rewards', () => {
     checkIntParam(
-      'start',
-      '/api/delegates/forging/getForgedByAccount?generatorPublicKey=b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3'
+      'from',
+      '/api/delegates/rewards?username=genesisDelegate32&from=0&to=1'
     );
     checkIntParam(
-      'end',
-      '/api/delegates/forging/getForgedByAccount?generatorPublicKey=b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3'
+      'to',
+      '/api/delegates/rewards?username=genesisDelegate32&from=0&to=1'
     );
-    checkPubKey(
-      'generatorPublicKey',
-      '/api/delegates/forging/getForgedByAccount'
-    );
+    // check(
+    //   'username',
+    //   '/api/delegates/rewards'
+    // );
 
     it('should calculate the total forged amount', async () => {
-      return supertest(initializer.apiExpress)
-        .get(
-          '/api/delegates/forging/getForgedByAccount?generatorPublicKey=b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3'
-        )
-        .expect(200)
-        .then((response) => {
-          expect(response.body.forged).to.be.equal('1500000000');
-        });
+      const now = Date.now() / 1000;
+      const thaEpoch = initializer.appManager.container.get<ITimeToEpoch>(
+        Symbols.helpers.timeToEpoch
+      );
+      return (
+        supertest(initializer.apiExpress)
+          .get(
+            `/api/delegates/rewards?username=genesisDelegate32&from=${thaEpoch.fromTimeStamp(
+              0
+            ) / 1000}&to=${now}`
+          )
+          // .expect(200)
+          .then((response) => {
+            expect(response.body).deep.eq({
+              success: true,
+              cumulative: {
+                fees: '0',
+                rewards: '1500000000',
+                totalBlocks: 1,
+              },
+              details: [
+                {
+                  forgingKey:
+                    'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
+                  fromHeight: 1,
+                  fees: '0',
+                  rewards: '1500000000',
+                  totalBlocks: 1,
+                },
+              ],
+            });
+          })
+      );
     });
 
     it('should calculate the forged amount accounting start and end', async () => {
       const start = new Date(new Date().getTime() - 1000).getTime() / 1000;
       const end = new Date().getTime() / 1000;
-      return supertest(initializer.apiExpress)
-        .get(
-          '/api/delegates/forging/getForgedByAccount?start=' +
-            start +
-            '&end=' +
-            end +
-            '&generatorPublicKey=b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3'
-        )
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.true;
-          expect(response.body.forged).to.be.equal('0');
-        });
+      return (
+        supertest(initializer.apiExpress)
+          .get(
+            '/api/delegates/rewards?from=' +
+              start +
+              '&to=' +
+              end +
+              '&username=genesisDelegate32'
+          )
+          // .expect(200)
+          .then((response) => {
+            expect(response.body.success).is.true;
+            expect(response.body.cumulative).to.deep.eq({
+              fees: '0',
+              rewards: '0',
+              totalBlocks: 0,
+            });
+            expect(response.body.details).deep.eq([
+              {
+                forgingKey:
+                  'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
+                fromHeight: 1,
+                fees: '0',
+                rewards: '0',
+                totalBlocks: 0,
+              },
+            ]);
+          })
+      );
     });
+    // TODO: Test delegate with delegate with multiple pubkeys APIs.
   });
 
   describe('/get', () => {
-    checkPubKey('publicKey', '/api/delegates/get');
+    // checkPubKey('publicKey', '/api/delegates/get');
 
     it('should return delegate object by username', async () => {
       return supertest(initializer.apiExpress)
@@ -212,52 +255,40 @@ describe('api/delegates', () => {
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.delegate).to.be.deep.equal({
-            username: 'genesisDelegate32',
-            address: '15048500907174916103R',
-            publicKey:
-              'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
-            vote: 108912391000000,
-            producedblocks: 1,
-            missedblocks: 1,
-            rank: 64,
-            approval: 0.99,
-            productivity: 50,
-            rate: 64,
-          });
-        });
-    });
-
-    it('should return delegate object by publicKey', async () => {
-      return supertest(initializer.apiExpress)
-        .get(
-          '/api/delegates/get?publicKey=eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44'
-        )
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.true;
-          expect(response.body.delegate).to.be.deep.equal({
-            username: 'genesisDelegate33',
-            address: '14851457879581478143R',
-            publicKey:
-              'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
-            vote: 108912391000000,
-            producedblocks: 1,
-            missedblocks: 1,
-            rank: 82,
-            approval: 0.99,
-            productivity: 50,
-            rate: 82,
+          expect(response.body).deep.eq({
+            success: true,
+            account: {
+              address: '15048500907174916103R',
+              balance: '108912391000000',
+              cmb: 0,
+              missedBlocks: 1,
+              producedBlocks: 1,
+              rewards: '1500000000',
+              username: 'genesisDelegate32',
+              vote: '108912391000000',
+              votesWeight: '108912391000000',
+            },
+            forgingPKs: [
+              {
+                forgingPK:
+                  'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
+                height: 1,
+              },
+            ],
+            info: {
+              approval: 0.99,
+              productivity: 50,
+              rankV1: 64,
+              rankV2: 64,
+            },
           });
         });
     });
 
     it('should throw delegate not found if delecate is not there', async () => {
       return supertest(initializer.apiExpress)
-        .get(
-          '/api/delegates/get?publicKey=77f247617346ba37b635ee13ef9ac44eec7460f47ea4df03cd28a7bc90170284'
-        ) // pk does not exist
-        .expect(200)
+        .get('/api/delegates/get?username=MEOW') // pk does not exist
+        .expect(404)
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.equal('Delegate not found');
@@ -266,39 +297,32 @@ describe('api/delegates', () => {
   });
 
   describe('/voters', () => {
-    checkPubKey('publicKey', '/api/delegates/voters');
+    it('should fail if no username is provided');
     it('should return accounts that voted for delegate', async () => {
-      const blocksModule: IBlocksModule = initializer.appManager.container.get(
-        Symbols.modules.blocks
-      );
       const { wallet: newAcc } = await createRandomAccountWithFunds(1e10);
-      await createVoteTransaction(
+      await createVoteTransactionV1(
         1,
         newAcc,
-        'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
+        Buffer.from(
+          'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
+          'hex'
+        ),
         true
       );
 
       return supertest(initializer.apiExpress)
-        .get(
-          '/api/delegates/voters?publicKey=eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44'
-        )
+        .get('/api/delegates/voters?username=genesisDelegate33')
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.accounts).to.be.deep.equal([
+          expect(response.body.voters).to.be.deep.equal([
             {
-              address: newAcc.address,
-              balance: 1e10 - 1e8 /* voting fees */,
-              publicKey: newAcc.publicKey,
-              username: null,
+              address: '14851457879581478143R',
+              balance: '108912391000000',
             },
             {
-              username: 'genesisDelegate33',
-              address: '14851457879581478143R',
-              publicKey:
-                'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
-              balance: 108912391000000,
+              address: newAcc.address,
+              balance: BigInt(1e10 - 1e8).toString(10) /* voting fees */,
             },
           ]);
         });
@@ -306,13 +330,11 @@ describe('api/delegates', () => {
 
     it('should return empty array if delegate does not exist', async () => {
       return supertest(initializer.apiExpress)
-        .get(
-          '/api/delegates/voters?publicKey=77f247617346ba37b635ee13ef9ac44eec7460f47ea4df03cd28a7bc90170284'
-        ) // pk does not exist
+        .get('/api/delegates/voters?username=test')
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.accounts).to.be.deep.equal([]);
+          expect(response.body.voters).to.be.deep.equal([]);
         });
     });
   });
@@ -332,17 +354,20 @@ describe('api/delegates', () => {
           expect(response.body.delegates).to.be.deep.equal([
             {
               username: 'genesisDelegate33',
+              cmb: 0,
               address: '14851457879581478143R',
-              publicKey:
+              forgingPK:
                 'eec7460f47ea4df03cd28a7bc9017028477f247617346ba37b635ee13ef9ac44',
-              vote: 108912391000000,
+              vote: '108912391000000',
+              votesWeight: '108912391000000',
               producedblocks: 1,
               missedblocks: 1,
-              rank: 82,
-              approval: 1.09,
-              productivity: 50,
-              register_timestamp: 0,
-              voters_cnt: 1,
+              infos: {
+                approval: 0.99,
+                productivity: 50,
+                rankV1: 82,
+                rankV2: 82,
+              },
             },
           ]);
         });
@@ -562,7 +587,7 @@ describe('api/delegates', () => {
       const secret =
         'business anchor sense reduce weird pluck result business unable dust garage gaze';
       const wallet = createWallet(secret);
-      const tx = await createSendTransaction(
+      const tx = await createSendTransactionV1(
         0,
         Math.ceil(Math.random() * 100),
         getRandomDelegateWallet(),
@@ -573,12 +598,12 @@ describe('api/delegates', () => {
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
-          publicKey: wallet.publicKey,
+          publicKey: wallet.publicKey.toString('hex'),
           secret,
         })
         .expect(200)
         .then((response) => {
-          expect(response.body.error).to.be.equal('Delegate not found');
+          expect(response.body.error).to.be.equal('Account not found');
         });
     });
   });
@@ -652,11 +677,11 @@ describe('api/delegates', () => {
         dPoSSymbols.modules.forge
       );
       forgeModule.enableForge({
-        privateKey: Buffer.from('aaaa', 'hex'),
+        privateKey: Buffer.from('aaaa', 'hex') as Buffer & As<'privateKey'>,
         publicKey: Buffer.from(
           'b7717adf51800bce03b1aebdad444220734c423f0014944bfcdb8d615641c61e',
           'hex'
-        ),
+        ) as Buffer & As<'publicKey'>,
       });
       // Key pair is valid but account does not exist
       return supertest(initializer.apiExpress)
@@ -678,7 +703,7 @@ describe('api/delegates', () => {
       const secret =
         'dust pluck sense reduce weird pluck result business unable dust sense gaze';
       const wallet = createWallet(secret);
-      const tx = await createSendTransaction(
+      const tx = await createSendTransactionV1(
         0,
         Math.ceil(Math.random() * 100),
         getRandomDelegateWallet(),
@@ -689,19 +714,19 @@ describe('api/delegates', () => {
         dPoSSymbols.modules.forge
       );
       forgeModule.enableForge({
-        privateKey: Buffer.from('aaaa', 'hex'),
-        publicKey: Buffer.from(wallet.publicKey, 'hex'),
+        privateKey: Buffer.from('aaaa', 'hex') as Buffer & As<'privateKey'>,
+        publicKey: wallet.publicKey,
       });
       // Try to disable forging on this new non-delegate account
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
-          publicKey: wallet.publicKey,
+          publicKey: wallet.publicKey.toString('hex'),
           secret,
         })
         .expect(200)
         .then((response) => {
-          expect(response.body.error).to.be.equal('Delegate not found');
+          expect(response.body.error).to.be.equal('Account not found');
         });
     });
   });

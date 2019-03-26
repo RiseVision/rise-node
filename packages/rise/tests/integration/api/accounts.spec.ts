@@ -5,17 +5,16 @@ import {
   Symbols,
 } from '@risevision/core-types';
 import { expect } from 'chai';
-import { LiskWallet } from 'dpos-offline';
+import { IKeypair, Rise } from 'dpos-offline';
 import * as supertest from 'supertest';
-import { toBufferedTransaction } from '../../../../core-transactions/tests/unit/utils/txCrafter';
+import { toNativeTx } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import initializer from '../common/init';
 import {
   confirmTransactions,
   createRandomAccountsWithFunds,
   createRandomWallet,
-  createSecondSignTransaction,
-  createSendTransaction,
-  easyCreateMultiSignAccount,
+  createSecondSignTransactionV1,
+  createSendTransactionV1,
   findDelegateByUsername,
 } from '../common/utils';
 import { checkAddress, checkIntParam, checkPubKey } from './utils';
@@ -27,7 +26,7 @@ describe('api/accounts', () => {
 
   describe('/', () => {
     checkAddress('address', '/api/accounts/');
-    checkPubKey('publicKey', '/api/accounts/');
+    // checkPubKey('publicKey', '/api/accounts/');
 
     it('should throw if no address nor pubkey is provided', async () => {
       return supertest(initializer.apiExpress)
@@ -37,20 +36,6 @@ describe('api/accounts', () => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq(
             'Missing required property: address or publicKey'
-          );
-        });
-    });
-
-    it('should throw if both address and pubkey are provided but relates to different account', async () => {
-      return supertest(initializer.apiExpress)
-        .get(
-          '/api/accounts/?publicKey=f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d&address=11316019077384178848R'
-        )
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.be.eq(
-            'Account publicKey does not match address'
           );
         });
     });
@@ -75,59 +60,41 @@ describe('api/accounts', () => {
           expect(response.body.account).to.be.deep.eq({
             address: '12333350760210376657R',
             balance: '108910891000000',
-            multisignatures: null,
-            publicKey:
-              'f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d',
+            // multisignatures: null,
+            // publicKey:
+            //   'f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d',
             secondPublicKey: null,
             secondSignature: 0,
-            u_multisignatures: null,
+            // u_multisignatures: null,
             unconfirmedBalance: '108910891000000',
-            unconfirmedSignature: 0,
-          });
-        });
-    });
-    it('should return multisig data', async () => {
-      const { wallet, keys } = await easyCreateMultiSignAccount(4, 3);
-      return supertest(initializer.apiExpress)
-        .get(`/api/accounts/?address=${wallet.address}`)
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.true;
-          expect(response.body.account).to.exist;
-          expect(response.body.account).to.be.deep.eq({
-            address: wallet.address,
-            balance: '99500000000',
-            multisignatures: keys.map((k) => k.publicKey),
-            publicKey: wallet.publicKey,
-            secondPublicKey: null,
-            secondSignature: 0,
-            u_multisignatures: keys.map((k) => k.publicKey),
-            unconfirmedBalance: '99500000000',
             unconfirmedSignature: 0,
           });
         });
     });
     it('should return second signature data', async () => {
       const [{ account }] = await createRandomAccountsWithFunds(1, 1e10);
-      const tx = await createSecondSignTransaction(
+      const tx = await createSecondSignTransactionV1(
         1,
         account,
         createRandomWallet().publicKey
       );
+      const address = Rise.calcAddress(account.publicKey);
       return supertest(initializer.apiExpress)
-        .get(`/api/accounts/?address=${account.address}`)
+        .get(`/api/accounts/?address=${address}`)
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
           expect(response.body.account).to.exist;
           expect(response.body.account).to.be.deep.eq({
-            address: account.address,
+            address,
             balance: '9500000000',
-            multisignatures: null,
-            publicKey: account.publicKey,
-            secondPublicKey: (tx.asset as any).signature.publicKey,
+            // multisignatures: null,
+            // publicKey: account.publicKey,
+            secondPublicKey: (tx.asset as any).signature.publicKey.toString(
+              'hex'
+            ),
             secondSignature: 1,
-            u_multisignatures: null,
+            // u_multisignatures: null,
             unconfirmedBalance: '9500000000',
             unconfirmedSignature: 0,
           });
@@ -174,11 +141,11 @@ describe('api/accounts', () => {
     });
   });
 
-  describe('/getPublicKey', () => {
-    checkAddress('address', '/api/accounts/getPublicKey');
+  describe('/votes', () => {
+    checkAddress('address', '/api/accounts/votes');
     it('should return error if address is not provided', async () => {
       return supertest(initializer.apiExpress)
-        .get('/api/accounts/getPublicKey')
+        .get('/api/accounts/votes')
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.false;
@@ -188,78 +155,22 @@ describe('api/accounts', () => {
         });
     });
 
-    it('should return Account not foundif account is not found', async () => {
+    it('should return empty array if account does not exists', async () => {
       return supertest(initializer.apiExpress)
-        .get('/api/accounts/getPublicKey?address=1R')
+        .get('/api/accounts/votes?address=1R')
         .expect(200)
         .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.be.eq('Account not found');
-        });
-    });
-
-    it('should return correct publicKey and unconfirmedBalance in return object', async () => {
-      return supertest(initializer.apiExpress)
-        .get('/api/accounts/getPublicKey?address=12324540900396688540R')
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.true;
-          expect(response.body.publicKey).to.be.eq(
-            '8ad68f938555337a7a2a0762d7a082eeaa1f6ed790dfafc5c1ca04e358b30900'
-          );
-        });
-    });
-  });
-
-  describe('/delegates', () => {
-    checkAddress('address', '/api/accounts/delegates');
-    it('should return error if address is not provided', async () => {
-      return supertest(initializer.apiExpress)
-        .get('/api/accounts/delegates')
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.contain(
-            'Missing required property: address'
-          );
-        });
-    });
-
-    it('should return Account not foundif account is not found', async () => {
-      return supertest(initializer.apiExpress)
-        .get('/api/accounts/delegates?address=1R')
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.false;
-          expect(response.body.error).to.be.eq('Account not found');
+          expect(response.body).deep.eq({ success: true, votes: [] });
         });
     });
 
     it('should return correct voted delegates', async () => {
       return supertest(initializer.apiExpress)
-        .get('/api/accounts/delegates?address=8832350072536010884R')
+        .get('/api/accounts/votes?address=8832350072536010884R')
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          expect(response.body.delegates).to.be.an('array');
-          expect(response.body.delegates).to.not.be.empty;
-          expect(response.body.delegates.length).to.be.eq(1);
-          expect(response.body.delegates[0].publicKey).to.be.eq(
-            'b2778387b9ee350bf5f5d770baeebcb5ce859080f6ed15f33d285fec830a0dca'
-          );
-          expect(response.body.delegates[0]).to.be.deep.eq({
-            username: 'genesisDelegate34',
-            address: '8832350072536010884R',
-            publicKey:
-              'b2778387b9ee350bf5f5d770baeebcb5ce859080f6ed15f33d285fec830a0dca',
-            vote: 108910891000000,
-            producedblocks: 0,
-            missedblocks: 1,
-            rate: 73,
-            rank: 73,
-            approval: 0.99,
-            productivity: 0,
-          });
+          expect(response.body.votes).deep.eq(['genesisDelegate34']);
         });
     });
   });
@@ -277,19 +188,20 @@ describe('api/accounts', () => {
       // Create 101 txs so that genesis1 has 101satoshi , genesis2 100 ... genesisN 101-N+1
       for (let i = 0; i < 101; i++) {
         const del = findDelegateByUsername(`genesisDelegate${i + 1}`);
-        const lw = new LiskWallet(del.secret, 'R');
+        const lw = Rise.deriveKeypair(del.secret);
         const account = await accModule.getAccount({ address: del.address });
 
-        const transaction = toBufferedTransaction(
-          await createSendTransaction(
+        const transaction = toNativeTx(
+          await createSendTransactionV1(
             0,
-            account.balance - systemModule.getFees().fees.send - (101 - i),
+            account.balance -
+              systemModule.getFees().fees.send -
+              BigInt(101 - i),
             lw,
             '1R',
-            { timestamp: i }
+            i
           )
         );
-        transaction.senderId = del.address;
         txs.push(transaction);
       }
       await confirmTransactions(txs, false);
@@ -329,7 +241,7 @@ describe('api/accounts', () => {
         const { accounts } = body;
         expect(accounts.length).to.be.eq(10);
         for (let j = 0; j < 10; j++) {
-          expect(accounts[j].balance).eq(101 - i * 10 - j);
+          expect(accounts[j].balance).eq(`${101 - i * 10 - j}`);
           expect(accounts[j].address).be.eq(
             findDelegateByUsername(`genesisDelegate${i * 10 + j + 1}`).address
           );

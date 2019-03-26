@@ -38,7 +38,10 @@ export class RiseIdsHandler implements IIdsHandler {
     if (!address) {
       return toBufferBE(0n, 8);
     }
-    if (/^[0-9]+R$/.test(address)) {
+    if (/^[0-9]+R$/i.test(address)) {
+      if (address.substring(-1) === 'r') {
+        throw new Error('Invalid address');
+      }
       const num = BigInt(address.slice(0, -1));
       if (num > maxAddress) {
         return toBufferBE(num, 16).slice(0, 8);

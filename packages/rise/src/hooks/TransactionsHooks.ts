@@ -25,9 +25,16 @@ export class TransactionsHooks extends Extendable {
     tx: IBaseTransaction<any, bigint>,
     hash: Buffer
   ): Promise<void> {
-    assert.strictEqual(
-      this.crypto.verify(hash, tx.signatures[0], tx.senderPubData),
-      true
-    );
+    if (tx.senderPubData.length === 33) {
+      assert.strictEqual(
+        this.crypto.verify(hash, tx.signatures[0], tx.senderPubData.slice(1)),
+        true
+      );
+    } else {
+      assert.strictEqual(
+        this.crypto.verify(hash, tx.signatures[0], tx.senderPubData),
+        true
+      );
+    }
   }
 }

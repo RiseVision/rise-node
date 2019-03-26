@@ -28,6 +28,30 @@ export class OldSecondSignatureTx extends OldBaseTx<
     return this.secondSignTX.assetBytes(tx);
   }
 
+  public fromBytes(
+    buff: Buffer
+  ): IBaseTransaction<SecondSignatureAsset, bigint> {
+    const tx = super.fromBytes(buff);
+    if (tx.recipientId !== '0R') {
+      throw new Error('Invalid recipient');
+    }
+    delete tx.recipientId;
+    return tx;
+  }
+
+  public readAsset(
+    bytes: Buffer
+  ): { consumedBytes: number; asset: SecondSignatureAsset } {
+    return {
+      asset: {
+        signature: {
+          publicKey: bytes.slice(0, 32),
+        },
+      },
+      consumedBytes: 32,
+    };
+  }
+
   public calculateMinFee(
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: AccountsModelWith2ndSign,
