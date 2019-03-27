@@ -6,7 +6,6 @@ import {
   BlocksSymbols,
 } from '@risevision/core-blocks';
 import {
-  AccountsModelForDPOS,
   BaseDelegateData,
   DelegatesModule,
   dPoSSymbols,
@@ -14,7 +13,6 @@ import {
   RoundsModule,
 } from '@risevision/core-consensus-dpos';
 import { Crypto } from '@risevision/core-crypto';
-import { Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   TransactionLogic,
@@ -22,12 +20,11 @@ import {
   TransactionsModule,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { IKeypair } from '@risevision/core-types';
+import { IKeypair, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { dposOffline, Rise } from 'dpos-offline';
-import * as filterObject from 'filter-object';
+import { Rise } from 'dpos-offline';
 import { Op } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import initializer from './common/init';

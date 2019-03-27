@@ -13,7 +13,7 @@ import {
   Slots,
 } from '@risevision/core-consensus-dpos';
 import { RoundLogic, RoundsLogic } from '@risevision/core-consensus-dpos';
-import { IBaseModel } from '@risevision/core-interfaces';
+import { loggerCreator } from '@risevision/core-helpers';
 import {
   AppManager,
   fetchCoreModuleImplementations,
@@ -22,10 +22,10 @@ import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, Peer } from '@risevision/core-p2p';
 import { toNativeTx } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
+  IBaseModel,
   IBaseTransaction,
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
-import { loggerCreator } from '@risevision/core-utils';
 import { expect } from 'chai';
 import { RiseTransaction, RiseV2Transaction } from 'dpos-offline';
 import 'reflect-metadata';

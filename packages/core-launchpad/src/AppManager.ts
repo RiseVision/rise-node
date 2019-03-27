@@ -1,5 +1,9 @@
-import { ILogger, Symbols } from '@risevision/core-interfaces';
-import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  AppConfig,
+  ILogger,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { Container } from 'inversify';
 import { InMemoryFilterModel, WordPressHookSystem } from 'mangiafuoco';
 import * as pg from 'pg';

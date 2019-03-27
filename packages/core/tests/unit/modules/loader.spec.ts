@@ -1,19 +1,16 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { IPeersModule, PeersLogic } from '@risevision/core-p2p';
+import { createFakePeers } from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
 import {
   IAppState,
   IBlocksModel,
   IBlocksModule,
   IJobsQueue,
   ISystemModule,
+  PeerType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { IPeersModule, PeersLogic } from '@risevision/core-p2p';
-import {
-  createFakePeer,
-  createFakePeers,
-} from '@risevision/core-p2p/tests/unit/utils/fakePeersFactory';
-import { PeerType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';

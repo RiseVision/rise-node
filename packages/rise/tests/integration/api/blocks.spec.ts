@@ -1,6 +1,6 @@
 import { BlocksModule } from '@risevision/core-blocks';
-import { toTransportable } from '@risevision/core-helpers';
-import { Symbols } from '@risevision/core-interfaces';
+import { Symbols } from '@risevision/core-types';
+import { toTransportable } from '@risevision/core-utils';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import { toNativeTx } from '../../../../core-transactions/tests/unit/utils/txCrafter';

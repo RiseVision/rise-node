@@ -3,7 +3,7 @@ import {
   BlocksModule,
   BlocksSymbols,
 } from '@risevision/core-blocks';
-import { ITimeToEpoch, Symbols } from '@risevision/core-interfaces';
+import { ITimeToEpoch, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';

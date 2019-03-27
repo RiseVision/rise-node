@@ -1,9 +1,4 @@
 import { DelegateAsset, VoteAsset } from '@risevision/core-consensus-dpos';
-import {
-  IBlocksModule,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { p2pSymbols, Peer } from '@risevision/core-p2p';
 import {
   PoolManager,
@@ -13,7 +8,12 @@ import {
   TXSymbols,
 } from '@risevision/core-transactions';
 import { toNativeTx } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { IKeypair, publicKey } from '@risevision/core-types';
+import {
+  IKeypair,
+  ISystemModule,
+  publicKey,
+  Symbols,
+} from '@risevision/core-types';
 import { expect } from 'chai';
 import {
   Address,

@@ -33,7 +33,6 @@ import { wait } from '@risevision/core-utils';
 import { AccountsModule, AccountsSymbols } from '@risevision/core-accounts';
 import { SystemModule } from '@risevision/core';
 import { toNativeTx } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
 import { TransportModule } from '@risevision/core-p2p';
 import { Crypto } from '@risevision/core-crypto';
 import { p2pSymbols } from '@risevision/core-p2p';
@@ -41,7 +40,12 @@ import { ModelSymbols } from '@risevision/core-models';
 import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
 import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
 import { PoolManager } from '@risevision/core-transactions';
-import { Address, IKeypair } from '@risevision/core-types';
+import {
+  Address,
+  IAccountsModule,
+  IKeypair,
+  Symbols,
+} from '@risevision/core-types';
 
 // tslint:disable no-unused-expression
 chai.use(chaiAsPromised);

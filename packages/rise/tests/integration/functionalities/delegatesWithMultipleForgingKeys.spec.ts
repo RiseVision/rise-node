@@ -2,18 +2,11 @@ import BigNumber from 'bignumber.js';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { Sequelize } from 'sequelize-typescript';
-import * as sinon from 'sinon';
-import { SinonSandbox } from 'sinon';
 import initializer from '../common/init';
 
-import { SystemModule } from '@risevision/core';
-import { AccountsSymbols } from '@risevision/core-accounts';
 import {
-  BlockLogic,
   BlocksModel,
   BlocksModule,
-  BlocksModuleChain,
   BlocksSymbols,
 } from '@risevision/core-blocks';
 import { AccountsModelForDPOS } from '@risevision/core-consensus-dpos';
@@ -22,36 +15,22 @@ import {
   DelegatesModule,
   dPoSSymbols,
 } from '@risevision/core-consensus-dpos';
-import { Crypto } from '@risevision/core-crypto';
-import { IAccountsModule, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AccountsModelWith2ndSign } from '@risevision/core-secondsignature';
 import {
   PoolManager,
-  TransactionLogic,
   TransactionPool,
-  TransactionsModule,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { poolProcess } from '@risevision/core-transactions/tests/integration/utils';
-import { toNativeTx } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
-import { Address, IKeypair, Rise, RiseTransaction } from 'dpos-offline';
-import { util } from 'protobufjs';
+import { IAccountsModule, Symbols } from '@risevision/core-types';
+import { IKeypair, Rise } from 'dpos-offline';
 import { Op } from 'sequelize';
-import { As } from 'type-tagger';
 import {
   confirmTransactions,
-  createRandomAccountWithFunds,
   createRandomWallet,
   createRegDelegateTransactionV2,
-  createSendTransactionV1,
-  createVoteTransactionV1,
-  enqueueAndProcessTransactions,
   getRandomDelegateWallet,
   tempDelegateWallets,
 } from '../common/utils';
-import pool = util.pool;
 chai.use(chaiAsPromised);
 
 // tslint:disable no-big-function no-unused-expression

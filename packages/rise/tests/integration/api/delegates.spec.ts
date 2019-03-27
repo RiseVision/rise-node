@@ -2,14 +2,14 @@ import { APIConfig } from '@risevision/core-apis';
 import { BlocksModel } from '@risevision/core-blocks';
 import { DposAppConfig, Slots } from '@risevision/core-consensus-dpos';
 import { dPoSSymbols, ForgeModule } from '@risevision/core-consensus-dpos';
+import { ModelSymbols } from '@risevision/core-models';
+import { TransactionsModel } from '@risevision/core-transactions';
 import {
   IBlocksModule,
   ITimeToEpoch,
+  SignedAndChainedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { TransactionsModel } from '@risevision/core-transactions';
-import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiSorted from 'chai-sorted';
 import * as supertest from 'supertest';

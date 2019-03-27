@@ -1,5 +1,7 @@
 import { AccountsSymbols } from '@risevision/core-accounts';
 import { BlocksModel, BlocksSymbols } from '@risevision/core-blocks';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
 import {
   AccountFilterData,
   IAccountsModel,
@@ -11,9 +13,7 @@ import {
   ITransactionsModel,
   ITransactionsModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { TXSymbols } from '@risevision/core-transactions';
+} from '@risevision/core-types';
 import {
   Address,
   DBOp,
@@ -23,8 +23,6 @@ import {
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
-import { sort } from 'semver';
-import * as sequelize from 'sequelize';
 import { Op } from 'sequelize';
 import * as sequelize from 'sequelize';
 import * as supersha from 'supersha';

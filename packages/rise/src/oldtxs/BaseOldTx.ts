@@ -1,11 +1,12 @@
 import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
+import { BaseTx } from '@risevision/core-transactions';
 import {
+  Address,
   IAccountsModel,
+  IBaseTransaction,
   ISystemModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { BaseTx } from '@risevision/core-transactions';
-import { Address, IBaseTransaction } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable } from 'inversify';

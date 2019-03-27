@@ -1,15 +1,16 @@
 import { APIConfig } from '@risevision/core-apis';
 import {
-  IBlocksModule,
-  ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import {
   PoolManager,
   TransactionPool,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { IKeypair, TransactionType } from '@risevision/core-types';
+import {
+  IBlocksModule,
+  IKeypair,
+  ITransactionsModule,
+  Symbols,
+  TransactionType,
+} from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { expect } from 'chai';
 import * as supertest from 'supertest';

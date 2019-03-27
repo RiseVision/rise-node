@@ -1,7 +1,10 @@
 import { OnDestroyBlock, OnPostApplyBlock } from '@risevision/core-blocks';
-import { ISystemModule, Symbols } from '@risevision/core-interfaces';
 import { IPeersModule } from '@risevision/core-p2p';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  ISystemModule,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 
