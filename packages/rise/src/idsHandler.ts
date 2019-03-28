@@ -13,6 +13,9 @@ export class RiseIdsHandler implements IIdsHandler {
   public maxBlockIdBytesUsage = 8;
 
   public addressFromBytes(bytes: Buffer): Address {
+    if (bytes.length === 0) {
+      return null;
+    }
     if (bytes.length === 8) {
       return `${toBigIntBE(bytes)}R` as Address;
     } else {
@@ -36,7 +39,7 @@ export class RiseIdsHandler implements IIdsHandler {
 
   public addressToBytes(address: Address): Buffer {
     if (!address) {
-      return toBufferBE(0n, 8);
+      return toBufferBE(0n, 0);
     }
     if (/^[0-9]+R$/i.test(address)) {
       if (address.substring(-1) === 'r') {

@@ -67,15 +67,6 @@ export class RegisterDelegateTransaction extends BaseTx<
     return this.systemModule.getFees(height).fees.delegate;
   }
 
-  public fromBytes(buff: Buffer): IBaseTransaction<DelegateAsset, bigint> {
-    const tx = super.fromBytes(buff);
-    if (tx.recipientId !== '0R') {
-      throw new Error('Invalid recipient');
-    }
-    delete tx.recipientId;
-    return tx;
-  }
-
   public assetBytes(tx: IBaseTransaction<DelegateAsset>): Buffer {
     return Buffer.concat([
       tx.asset.delegate.forgingPK,

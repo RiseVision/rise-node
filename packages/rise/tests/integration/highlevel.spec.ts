@@ -271,7 +271,7 @@ describe('highlevel checks', function() {
           false
         );
         acc = await accModule.getAccount({ address: senderAccount.address });
-        expect(acc.delegates).is.null;
+        expect(acc.delegates).is.deep.eq([]);
         expect(blocksModule.lastBlock.height).to.be.eq(4);
         expect(blocksModule.lastBlock.transactions.length).to.be.eq(1);
       });
@@ -302,7 +302,7 @@ describe('highlevel checks', function() {
         const acc = await accModule.getAccount({
           address: senderAccount.address,
         });
-        expect(acc.delegates).is.null;
+        expect(acc.delegates).is.deep.eq([]);
 
         expect(blocksModule.lastBlock.transactions).is.empty;
       });

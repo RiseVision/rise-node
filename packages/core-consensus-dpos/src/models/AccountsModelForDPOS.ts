@@ -8,7 +8,8 @@ import { As } from 'type-tagger';
 const buildArrayArgAttribute = (table: string): any => {
   return [
     sequelize.literal(
-      `(SELECT ARRAY_AGG("username") FROM mem_accounts2${table} WHERE "address" = "AccountsModel"."address")`
+      // tslint:disable-next-line max-line-length
+      `(SELECT COALESCE(ARRAY_AGG("username"), ARRAY[]::TEXT[]) FROM mem_accounts2${table} WHERE "address" = "AccountsModel"."address")`
     ),
     table,
   ];

@@ -196,6 +196,29 @@ export const createVoteTransactionV1 = async (
   return tx;
 };
 
+export const createVoteTransactionV2 = async (
+  from: IKeypair,
+  username,
+  add: boolean,
+  obj: any = {}
+): Promise<RiseV2Transaction<VoteAsset>> => {
+  const tx = RiseV2.txs.createAndSign(
+    {
+      kind: 'vote',
+      preferences: [
+        {
+          action: add ? '+' : '-',
+          delegateIdentifier: username,
+        },
+      ],
+      sender: from,
+      ...obj,
+    },
+    from,
+    true
+  );
+  return tx;
+};
 export const createSecondSignTransactionV1 = async (
   confirmations: number,
   from: IKeypair,
