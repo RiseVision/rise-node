@@ -19,7 +19,7 @@ before_script:
   - psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
 script:
   - npm run transpile
-  - npm run test-all
+  - npm run test-unit
 #cache:
 #  directories:
 #    - node_modules
