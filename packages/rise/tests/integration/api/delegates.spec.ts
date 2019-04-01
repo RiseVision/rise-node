@@ -18,10 +18,14 @@ import initializer from '../common/init';
 import {
   confirmTransactions,
   createRandomAccountWithFunds,
+  createRandomWallet,
+  createRegDelegateTransactionV2,
   createSendTransactionV1,
   createVoteTransactionV1,
   createWallet,
+  findDelegateByUsername,
   getRandomDelegateWallet,
+  tempDelegateWallets,
 } from '../common/utils';
 import {
   checkEnumParam,
@@ -32,6 +36,7 @@ import {
   checkRequiredParam,
   checkReturnObjKeyVal,
 } from './utils';
+import { Rise } from 'dpos-offline';
 
 chai.use(chaiSorted);
 
@@ -44,7 +49,7 @@ describe('api/delegates', () => {
   initializer.autoRestoreEach();
   before(async function() {
     this.timeout(10000);
-    await initializer.rawMineBlocks(100);
+    await initializer.goToNextRound();
   });
 
   describe('/', () => {
@@ -147,7 +152,7 @@ describe('api/delegates', () => {
     checkIntParam('height', '/api/delegates/fee', { min: 1 });
     checkReturnObjKeyVal('fromHeight', 1, '/api/delegates/fee');
     checkReturnObjKeyVal('toHeight', null, '/api/delegates/fee');
-    checkReturnObjKeyVal('height', 102, '/api/delegates/fee');
+    checkReturnObjKeyVal('height', 103, '/api/delegates/fee');
 
     it('should return fee value for delegate', async () => {
       return supertest(initializer.apiExpress)
@@ -243,13 +248,95 @@ describe('api/delegates', () => {
           })
       );
     });
-    // TODO: Test delegate with delegate with multiple pubkeys APIs.
+
+    it('when delegate has different forging PublicKey it should properly work', async function() {
+      this.timeout(1000000);
+      const blocksModule = initializer.appManager.container.get<IBlocksModule>(
+        Symbols.modules.blocks
+      );
+      const delegateInfo = findDelegateByUsername('genesisDelegate32');
+      const delegateWallet = {
+        ...Rise.deriveKeypair(delegateInfo.secret),
+        address: delegateInfo.address,
+      };
+
+      // change publicKey.
+      const acct = createRandomWallet();
+      // change delegate forgingPK.
+      const tx = await createRegDelegateTransactionV2(
+        delegateWallet,
+        null,
+        acct.publicKey
+      );
+
+      await confirmTransactions([tx], false);
+
+      tempDelegateWallets[acct.publicKey.toString('hex')] = {
+        ...acct,
+        origPK: delegateWallet.publicKey.toString('hex'),
+      };
+      // STILL WITH OLD
+      await initializer.goToNextRound();
+      // MINE 3
+      await initializer.goToNextRound();
+      await initializer.goToNextRound();
+      await initializer.goToNextRound();
+
+      const epoch = initializer.appManager.container.get<ITimeToEpoch>(
+        Symbols.helpers.timeToEpoch
+      );
+
+      const start = Math.floor(epoch.fromTimeStamp(0) / 1000);
+      const end = Math.floor(epoch.fromTimeStamp(epoch.getTime()) / 1000);
+      const response = await supertest(initializer.apiExpress)
+        .get(
+          `/api/delegates/rewards?username=genesisDelegate32&from=${start}&to=${end}`
+        )
+        .expect(200);
+
+      expect(response.body).deep.eq({
+        success: true,
+        cumulative: { fees: '0', rewards: '7500000000', totalBlocks: 5 },
+        details: [
+          {
+            forgingKey:
+              'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
+            fromHeight: 1,
+            fees: '0',
+            rewards: '3000000000',
+            totalBlocks: 2,
+          },
+          {
+            forgingKey: acct.publicKey.toString('hex'),
+            fromHeight: 103,
+            fees: '0',
+            rewards: '4500000000',
+            totalBlocks: 3,
+          },
+        ],
+      });
+
+      delete tempDelegateWallets[acct.publicKey.toString('hex')];
+
+      await initializer.goToPrevRound();
+      await initializer.goToPrevRound();
+      await initializer.goToPrevRound();
+      await initializer.goToPrevRound();
+      await initializer.goToPrevRound();
+
+      // clean up vote accounting ....
+      await initializer.rawDeleteBlocks(1);
+      await initializer.goToNextRound();
+    });
   });
 
   describe('/get', () => {
     // checkPubKey('publicKey', '/api/delegates/get');
 
     it('should return delegate object by username', async () => {
+      const blocksModule = initializer.appManager.container.get<IBlocksModule>(
+        Symbols.modules.blocks
+      );
       return supertest(initializer.apiExpress)
         .get('/api/delegates/get?username=genesisDelegate32')
         .expect(200)
@@ -426,7 +513,7 @@ describe('api/delegates', () => {
         .get('/api/delegates/getNextForgers')
         .expect(200)
         .then((response) => {
-          expect(response.body.currentBlockSlot).to.be.deep.equal(100);
+          expect(response.body.currentBlockSlot).to.be.deep.equal(101);
         });
     });
 

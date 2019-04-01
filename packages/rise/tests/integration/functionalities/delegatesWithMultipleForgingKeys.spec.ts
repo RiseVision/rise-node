@@ -140,7 +140,7 @@ describe('delegatesWithMultipleForgingKEys', () => {
     await checkPubKeyExist('orig');
   });
 
-  it('should allow multi round forward and backward', async function() {
+  it('should allow multi round forward and backward with proper data in between', async function() {
     this.timeout(300000);
     const blocksModel: typeof BlocksModel = initializer.appManager.container.getNamed(
       ModelSymbols.model,
@@ -206,7 +206,8 @@ describe('delegatesWithMultipleForgingKEys', () => {
       await checkPubKeyExist(acct.publicKey);
 
       await doRounds(remaining - 1, acct.publicKey);
-      await initializer.goToPrevRound();
+
+      await await initializer.goToPrevRound();
       // This is needed cause when next block is in next round the delegateList is going to change
       // due to calculations for end-of-round being already applied.
       await initializer.rawDeleteBlocks(1);

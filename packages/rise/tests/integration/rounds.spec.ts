@@ -216,7 +216,8 @@ describe('rounds', () => {
     });
   });
 
-  describe('multiroundtests', () => {
-    it('should allow restore of more than 3 rounds');
-  });
+  // Moved to functionsalities/delegateswithMultipleForgingKey test
+  // describe('multiroundtests', () => {
+  //   it('should allow restore of more than 3 rounds');
+  // });
 });
