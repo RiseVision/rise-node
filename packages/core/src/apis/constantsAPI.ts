@@ -1,9 +1,9 @@
 import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
 import { IoCSymbol } from '@risevision/core-utils';
 import { inject, injectable } from 'inversify';
+import * as _ from 'lodash';
 import { Get, JsonController } from 'routing-controllers';
 import { CoreSymbols } from '../symbols';
-import * as _ from 'lodash';
 
 @JsonController('/api/constants')
 @IoCSymbol(CoreSymbols.api.constants)
@@ -20,15 +20,19 @@ export class ConstantsAPI {
     }
 
     // Each root element is a module
+    // tslint:disable-next-line
     for (const outerKey in allConstants) {
       const moduleConstants = allConstants[outerKey];
       // Inner keys may be either an actual constant or module constants
       for (const innerKey in moduleConstants) {
-        //If it is a module constants element, merge the constants to the outer object
+        // If it is a module constants element, merge the constants to the outer object
         if (innerKey.match(/@.+\/.+/)) {
           const otherModuleConstants = moduleConstants[innerKey];
           allConstants[innerKey] = allConstants[innerKey] || {};
-          allConstants[innerKey] = _.merge(allConstants[innerKey], otherModuleConstants);
+          allConstants[innerKey] = _.merge(
+            allConstants[innerKey],
+            otherModuleConstants
+          );
           delete allConstants[outerKey][innerKey];
         }
       }
@@ -39,7 +43,7 @@ export class ConstantsAPI {
     }
 
     return {
-      constants: allConstants
+      constants: allConstants,
     };
   }
 }

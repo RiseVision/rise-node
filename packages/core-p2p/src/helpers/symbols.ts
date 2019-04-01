@@ -38,6 +38,7 @@ export const p2pSymbols = {
   },
   requests: {
     ping: Symbol.for('rise.p2p.ping'),
+    modules: Symbol.for('rise.p2p.modules'),
     peersList: Symbol.for('rise.p2p.peersList'),
   },
   model: Symbols.models.peers,

@@ -23,7 +23,7 @@ import { Peer } from './peer';
 import { PeersLogic } from './peersLogic';
 import { PeersModel } from './PeersModel';
 import { PeersModule } from './peersModule';
-import { PeersListRequest, PingRequest } from './requests';
+import { PeerModulesRequest, PeersListRequest, PingRequest } from './requests';
 import { TransportModule } from './transport';
 import { TransportWrapper } from './utils/TransportWrapper';
 
@@ -149,6 +149,11 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
       .to(PeersListRequest)
       .inSingletonScope()
       .whenTargetNamed(p2pSymbols.requests.peersList);
+    this.container
+      .bind(p2pSymbols.transportMethod)
+      .to(PeerModulesRequest)
+      .inSingletonScope()
+      .whenTargetNamed(p2pSymbols.requests.modules);
 
     // API
     this.container

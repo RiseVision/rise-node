@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message module {
+    string name = 1;
+    string version = 2;
+}
+
+message modules {
+    repeated module modules = 1;
+}
