@@ -1,10 +1,10 @@
+import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
+  IBaseTransaction,
   IBaseTransactionType,
   IIdsHandler,
   Symbols,
-} from '@risevision/core-interfaces';
-import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
-import { IBaseTransaction } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { inject, injectable, multiInject, optional } from 'inversify';
 import { Model } from 'sequelize-typescript';
 import { BaseTx } from './BaseTx';

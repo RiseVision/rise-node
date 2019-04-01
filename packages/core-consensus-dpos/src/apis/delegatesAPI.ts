@@ -1,22 +1,23 @@
 import {
   APISymbols,
   DeprecatedAPIError,
+  HTTPError,
   PrivateApisGuard,
 } from '@risevision/core-apis';
 import { BlocksAPI, BlocksSymbols } from '@risevision/core-blocks';
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  ConstantsType,
   IAccountsModule,
   IBlocksModel,
   IBlocksModule,
   ICrypto,
   ISystemModule,
   ITransactionsModel,
+  publicKey,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType, publicKey } from '@risevision/core-types';
+} from '@risevision/core-types';
 import {
-  HTTPError,
   IoCSymbol,
   OrderBy,
   SchemaValid,
@@ -39,7 +40,7 @@ import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import { DposConstantsType, dPoSSymbols, Slots } from '../helpers/';
 import { Accounts2DelegatesModel, AccountsModelForDPOS } from '../models';
-import { DelegatesModule, ForgeModule } from '../modules';
+import { BaseDelegateData, DelegatesModule, ForgeModule } from '../modules';
 
 // tslint:disable-next-line
 const schema = require('../../schema/delegates.json');
@@ -152,13 +153,16 @@ export class DelegatesAPI {
     offset: number;
   }) {
     const delegates: Array<
-      AccountsModelForDPOS & { infos?: any }
+      BaseDelegateData & { infos?: any }
     > = await this.delegatesModule.getDelegates(data);
     for (const d of delegates) {
       d.infos = await this.delegatesModule.calcDelegateInfo(d, delegates);
     }
     return {
-      delegates: OrderBy(data.orderBy)(delegates),
+      delegates: OrderBy(data.orderBy)(delegates).slice(
+        0,
+        data.limit || Number.MAX_SAFE_INTEGER
+      ),
     };
   }
 
@@ -186,9 +190,19 @@ export class DelegatesAPI {
     if (!r) {
       throw new HTTPError('Delegate not found', 404);
     }
-
     return {
       ...r,
+      account: {
+        address: r.account.address,
+        balance: r.account.balance,
+        cmb: r.account.cmb,
+        missedBlocks: r.account.missedblocks,
+        producedBlocks: r.account.producedblocks,
+        rewards: r.account.rewards,
+        username: r.account.username,
+        vote: r.account.vote,
+        votesWeight: r.account.votesWeight,
+      },
       info: await this.delegatesModule.calcDelegateInfo(r.account),
     };
   }
@@ -231,6 +245,7 @@ export class DelegatesAPI {
       attributes: [
         'address',
         'cmb',
+        'forgingPK',
         'username',
         'vote',
         'votesWeight',
@@ -251,7 +266,12 @@ export class DelegatesAPI {
       );
     }
 
-    return { delegates: OrderBy(params.orderBy)(results) };
+    return {
+      delegates: OrderBy(params.orderBy)(results).slice(
+        0,
+        params.limit || Number.MAX_SAFE_INTEGER
+      ),
+    };
   }
 
   @Get('/count')
@@ -350,9 +370,6 @@ export class DelegatesAPI {
     if (!account) {
       throw new HTTPError('Account not found', 200);
     }
-    if (!account.isDelegate) {
-      throw new HTTPError('Delegate not found', 200);
-    }
 
     this.forgeModule.enableForge(kp);
   }
@@ -387,9 +404,6 @@ export class DelegatesAPI {
     });
     if (!account) {
       throw new HTTPError('Account not found', 200);
-    }
-    if (!account.isDelegate) {
-      throw new HTTPError('Delegate not found', 200);
     }
 
     this.forgeModule.disableForge(pk);

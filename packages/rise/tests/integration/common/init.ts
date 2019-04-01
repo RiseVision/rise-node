@@ -12,20 +12,22 @@ import {
   dPoSSymbols,
   Slots,
 } from '@risevision/core-consensus-dpos';
+import { RoundLogic, RoundsLogic } from '@risevision/core-consensus-dpos';
+import { loggerCreator } from '@risevision/core-helpers';
 import {
   AppManager,
   fetchCoreModuleImplementations,
 } from '@risevision/core-launchpad';
-import { MigrationsModel, ModelSymbols } from '@risevision/core-models';
+import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, Peer } from '@risevision/core-p2p';
-import { toBufferedTransaction } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
+import { toNativeTx } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
 import {
+  IBaseModel,
   IBaseTransaction,
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
-import { loggerCreator } from '@risevision/core-utils';
 import { expect } from 'chai';
-import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
+import { RiseTransaction, RiseV2Transaction } from 'dpos-offline';
 import 'reflect-metadata';
 import { getKeypairByPkey } from './utils';
 
@@ -98,7 +100,7 @@ export class IntegrationTestInitializer {
   }
 
   public async generateBlock(
-    transactions: Array<ITransaction<any>> = []
+    transactions: Array<RiseTransaction<any> | RiseV2Transaction<any>> = []
   ): Promise<SignedAndChainedBlockType & { height: number }> {
     const blockLogic = this.appManager.container.get<BlockLogic>(
       BlocksSymbols.logic.block
@@ -122,7 +124,7 @@ export class IntegrationTestInitializer {
       keypair: kp,
       previousBlock: blockModule.lastBlock,
       timestamp: slots.getSlotTime(theSlot),
-      transactions: transactions.map((t) => toBufferedTransaction(t)),
+      transactions: transactions.map((t) => toNativeTx(t)),
     });
   }
 
@@ -188,6 +190,48 @@ export class IntegrationTestInitializer {
       );
       await blockProcess.processBlock(block);
     }
+  }
+
+  public async goToPrevRound(): Promise<void> {
+    const blocksModule = this.appManager.container.get<BlocksModule>(
+      BlocksSymbols.modules.blocks
+    );
+    const roundsLogic = this.appManager.container.get<RoundsLogic>(
+      dPoSSymbols.logic.rounds
+    );
+    const firstInRound = roundsLogic.lastInRound(
+      roundsLogic.calcRound(blocksModule.lastBlock.height) - 1
+    );
+
+    const toDelete = blocksModule.lastBlock.height - firstInRound;
+    await this.rawDeleteBlocks(toDelete);
+
+    expect(blocksModule.lastBlock.height).eq(
+      roundsLogic.lastInRound(
+        roundsLogic.calcRound(blocksModule.lastBlock.height)
+      )
+    );
+  }
+
+  public async goToNextRound(): Promise<void> {
+    const blocksModule = this.appManager.container.get<BlocksModule>(
+      BlocksSymbols.modules.blocks
+    );
+    const roundsLogic = this.appManager.container.get<RoundsLogic>(
+      dPoSSymbols.logic.rounds
+    );
+    const lastInRound = roundsLogic.lastInRound(
+      roundsLogic.calcRound(blocksModule.lastBlock.height)
+    );
+
+    const missing = 1 + lastInRound - blocksModule.lastBlock.height;
+    await this.rawMineBlocks(missing);
+
+    expect(blocksModule.lastBlock.height).eq(
+      roundsLogic.firstInRound(
+        roundsLogic.calcRound(blocksModule.lastBlock.height)
+      )
+    );
   }
 
   public async rawMineBlocks(howMany: number): Promise<number> {
@@ -262,6 +306,7 @@ export class IntegrationTestInitializer {
 
   private async runBefore() {
     process.env.NODE_ENV = 'test';
+    process.env.NETWORK = 'devnet';
     this.createAppManager();
     await this.appManager.initAppElements();
     await this.appManager.finishBoot();
@@ -270,30 +315,31 @@ export class IntegrationTestInitializer {
   }
 
   private async runAfter() {
-    const migrations: typeof MigrationsModel = this.appManager.container.getNamed(
+    const BlocksModel: typeof IBaseModel = this.appManager.container.getNamed(
       ModelSymbols.model,
-      ModelSymbols.names.migrations
+      BlocksSymbols.model
     );
     await this.appManager.tearDown();
     const tables = [
       'blocks',
-      'delegates',
-      'forks_stat',
-      'mem_accounts',
+      'delegatesround',
+      'exceptions',
       'info',
+      'mem_accounts',
       'mem_accounts2delegates',
-      'mem_accounts2multisignatures',
       'mem_accounts2u_delegates',
-      'mem_accounts2u_multisignatures',
-      'multisignatures',
+      // 'migrations',
       'peers',
       'rounds_fees',
-      'signatures',
       'trs',
-      'votes',
+      'trsassets_delegates',
+      'trsassets_secondsignature',
+      'trsassets_send',
+      'trsassets_votes',
+      'trsassets_votes_old',
     ];
 
-    await migrations.sequelize.query(`TRUNCATE ${tables.join(', ')} CASCADE`);
+    await BlocksModel.sequelize.query(`TRUNCATE ${tables.join(', ')} CASCADE`);
   }
 }
 

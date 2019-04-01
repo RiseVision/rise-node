@@ -1,15 +1,18 @@
 import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
+import { BaseTx } from '@risevision/core-transactions';
 import {
+  Address,
   IAccountsModel,
+  IBaseTransaction,
   ISystemModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { BaseTx } from '@risevision/core-transactions';
-import { IBaseTransaction } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
 import { inject, injectable } from 'inversify';
+import * as empty from 'is-empty';
 import { Model } from 'sequelize-typescript';
+import * as varuint from 'varuint-bitcoin';
 
 @injectable()
 export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
@@ -39,10 +42,23 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
   public signableBytes(tx: IBaseTransaction<T, bigint>): Buffer {
     const bb = new ByteBuffer(1024, true);
 
+    const recipientV2 =
+      !empty(tx.recipientId) && !/^[0-9]+R$/.test(tx.recipientId);
+
     bb.writeByte(tx.type);
-    bb.writeUint32(tx.timestamp);
+    bb.writeUint32((recipientV2 ? 2 ** 30 : 0) + tx.timestamp);
+
     bb.append(tx.senderPubData);
-    bb.append(this.idsHandler.addressToBytes(tx.recipientId));
+    if (recipientV2) {
+      const address = this.idsHandler.addressToBytes(tx.recipientId);
+      bb.append(varuint.encode(address.length));
+      bb.append(address);
+    } else if (empty(tx.recipientId)) {
+      bb.append(Buffer.alloc(8).fill(0));
+    } else {
+      bb.append(this.idsHandler.addressToBytes(tx.recipientId));
+    }
+
     bb.append(toBufferLE(tx.amount, this.constants.amountBytes));
     bb.append(this.assetBytes(tx));
     bb.flip();
@@ -52,6 +68,13 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
   public fromBytes(buff: Buffer): IBaseTransaction<T, bigint> {
     let offset = 0;
     const self = this;
+    let recipientVersion = 1;
+
+    function readVarUint() {
+      const length = varuint.decode(buff, offset);
+      offset += varuint.decode.bytes;
+      return readSlice(length);
+    }
 
     function readUint8() {
       const toRet = buff.readUInt8(offset);
@@ -80,12 +103,38 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
       return new Array(remBuf.length / 64).fill(null).map(() => readSlice(64));
     }
 
+    function readTimeStamp(): number {
+      let timestamp = readUint32();
+      if (timestamp >= 2 ** 30) {
+        timestamp = timestamp - 2 ** 30;
+        recipientVersion = 2;
+      } else {
+        recipientVersion = 1;
+      }
+
+      return timestamp;
+    }
+
+    const readRecipient = (): Address => {
+      if (recipientVersion === 1) {
+        return this.idsHandler.addressFromBytes(readSlice(8));
+      } else {
+        return this.idsHandler.addressFromBytes(readVarUint());
+      }
+    };
+
     return {
       // tslint:disable object-literal-sort-keys
       type: readUint8(),
-      timestamp: readUint32(),
-      senderPubData: readSlice(32),
-      recipientId: this.idsHandler.addressFromBytes(readSlice(8)),
+      timestamp: readTimeStamp(),
+      ...(() => {
+        const senderPubData = readSlice(32);
+        return {
+          senderId: this.idsHandler.addressFromPubData(senderPubData),
+          senderPubData,
+        };
+      })(),
+      recipientId: readRecipient(),
       amount: toBigIntLE(readSlice(this.constants.amountBytes)),
       asset: readAsset(),
       signatures: readSignatures(),

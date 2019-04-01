@@ -1,16 +1,15 @@
 import { CoreSymbols } from '@risevision/core';
 import { dPoSSymbols } from '@risevision/core-consensus-dpos';
-import {
-  IBaseTransactionType,
-  IBlockLogic,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
 import { TXSymbols } from '@risevision/core-transactions';
 import {
   ConstantsType,
+  IBaseTransactionType,
+  IBlockLogic,
+  ICoreModule,
   SignedAndChainedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import * as activeHandles from 'active-handles';
 import * as bech32 from 'bech32-buffer';
@@ -21,7 +20,7 @@ import * as path from 'path';
 import { Sequelize } from 'sequelize';
 import * as z_schema from 'z-schema';
 import { LoggerStub } from '../../../../core-utils/tests/unit/stubs';
-import { ICoreModule, LaunchpadSymbols } from '../../../src';
+import { LaunchpadSymbols } from '../../../src';
 import {
   loadCoreSortedModules,
   resolveModule,

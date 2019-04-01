@@ -1,5 +1,5 @@
-import { ITransactionsModel, Symbols } from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
+import { ITransactionsModel, Symbols } from '@risevision/core-types';
 import {
   BelongsTo,
   Column,
@@ -35,5 +35,5 @@ export class DelegatesModel extends BaseModel<DelegatesModel> {
       Symbols.models.transactions
     )
   )
-  private tx: ITransactionsModel;
+  public tx: ITransactionsModel;
 }

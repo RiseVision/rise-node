@@ -1,18 +1,19 @@
 import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
 import { AppState, JobsQueue } from '@risevision/core-helpers';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
+import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
 import {
+  ConstantsType,
   IAccountsModule,
   IBlocksModel,
   IBlocksModule,
   ICrypto,
+  IKeypair,
   ILogger,
   ITransactionsModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
-import { ConstantsType, IKeypair } from '@risevision/core-types';
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

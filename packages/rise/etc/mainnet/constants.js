@@ -2,6 +2,7 @@ module.exports = {
   '@risevision/rise': {
     // TODO: changeme
     dposFeesSwitchHeight: 2000000,
+    dposRandSwitchRound: 2000000,
   },
   '@risevision/core': {
     amountBytes: 8,

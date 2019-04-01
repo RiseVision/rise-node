@@ -1,4 +1,4 @@
-import { HTTPError } from '@risevision/core-utils';
+import { HTTPError } from './httpError';
 
 export class DeprecatedAPIError extends HTTPError {
   constructor() {

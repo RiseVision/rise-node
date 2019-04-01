@@ -26,7 +26,7 @@ export interface IPeersModule {
   /**
    * Gets the peers using the given filter.
    */
-  getByFilter(filter: PeerFilter): Promise<Peer[]>;
+  getByFilter(filter: PeerFilter): Peer[];
 
   /**
    * Gets peers list
@@ -35,7 +35,7 @@ export interface IPeersModule {
     limit?: number;
     broadhash?: string;
     allowedStates?: PeerState[];
-  }): Promise<Peer[]>;
+  }): Peer[];
 
   /**
    * Recalculate the consensus. Should be called when new blocks are received.

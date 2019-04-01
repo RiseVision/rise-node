@@ -8,13 +8,14 @@ import {
   VerifyBlock,
   VerifyReceipt,
 } from '@risevision/core-blocks';
-import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   ConstantsType,
   DBOp,
+  ILogger,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { catchToLoggerAndRemapError } from '@risevision/core-utils';
 import { decorate, inject, injectable, named } from 'inversify';
@@ -152,18 +153,24 @@ export class DelegatesHooks extends Extendable {
     dbOP: Array<DBOp<any>>,
     block: SignedAndChainedBlockType
   ) {
-    await this.delegatesModule.onBlockChanged('forward', block.height);
-    return dbOP;
+    return dbOP.concat(
+      ...(await this.delegatesModule.onBlockChanged('forward', block.height))
+    );
   }
 
   @RollbackBlockDBOps()
+  // tslint:disable-next-line
   private async onRollbackBlockDBOpsFilter(
     dbOP: Array<DBOp<any>>,
     block: SignedAndChainedBlockType,
     prevBlock: SignedAndChainedBlockType
   ) {
-    await this.delegatesModule.onBlockChanged('backward', prevBlock.height);
-    return dbOP;
+    return dbOP.concat(
+      ...(await this.delegatesModule.onBlockChanged(
+        'backward',
+        prevBlock.height
+      ))
+    );
   }
 
   @RecreateAccountsTables()

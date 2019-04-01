@@ -1,14 +1,14 @@
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModel,
   IBlockLogic,
   IBlocksModel,
   ISequence,
   ITransactionLogic,
+  SignedAndChainedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -18,7 +18,6 @@ import { Op } from 'sequelize';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { BlocksModule, BlocksModuleUtils, BlocksSymbols } from '../../../src';
-import { CommonHeightsToQuery } from '../../../src/hooks';
 
 // tslint:disable no-unused-expression max-line-length no-big-function
 chai.use(chaiAsPromised);
@@ -116,36 +115,126 @@ describe('modules/utils', () => {
     });
   });
 
+  describe('getHeightSequence', () => {
+    const vectors = [
+      {
+        atHeight: 1,
+        expectHeights: [1],
+      },
+      {
+        atHeight: 2,
+        expectHeights: [2, 1],
+      },
+      {
+        atHeight: 5,
+        expectHeights: [5, 4, 3, 2, 1],
+      },
+      {
+        atHeight: 6,
+        expectHeights: [6, 5, 4, 3, 2, 1],
+      },
+      {
+        atHeight: 10,
+        expectHeights: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+      },
+      {
+        atHeight: 100,
+        expectHeights: [
+          100,
+          99,
+          98,
+          97,
+          96,
+          95,
+          94,
+          93,
+          91,
+          88,
+          83,
+          75,
+          61,
+          38,
+        ],
+      },
+      {
+        atHeight: 1000,
+        expectHeights: [
+          1000,
+          999,
+          998,
+          997,
+          996,
+          995,
+          993,
+          991,
+          986,
+          974,
+          949,
+          896,
+          781,
+          533,
+        ],
+      },
+      {
+        atHeight: 10000,
+        expectHeights: [
+          10000,
+          9999,
+          9998,
+          9997,
+          9996,
+          9995,
+          9993,
+          9988,
+          9974,
+          9936,
+          9829,
+          9531,
+          8704,
+          6403,
+        ],
+      },
+      {
+        atHeight: 2000000,
+        expectHeights: [
+          2000000,
+          1999999,
+          1999998,
+          1999997,
+          1999996,
+          1999995,
+          1999990,
+          1999970,
+          1999870,
+          1999364,
+          1996829,
+          1984122,
+          1920416,
+          1601049,
+        ],
+      },
+    ];
+    for (const vec of vectors) {
+      it(`should work for height ${vec.atHeight}`, () => {
+        const res = inst.getHeightsSequence(vec.atHeight);
+        expect(res).deep.eq(vec.expectHeights);
+      });
+    }
+  });
+
   describe('getIdSequence', () => {
     let dbReturn: any;
     let findAllStub: SinonStub;
-    let heightsToQueryStub: SinonStub;
+    let getHeightsSequenceStub: SinonStub;
 
-    class HookedClass extends WPHooksSubscriber(Object) {
-      public hookSystem = container.get<WordPressHookSystem>(
-        Symbols.generic.hookSystem
-      );
-
-      @CommonHeightsToQuery()
-      public commonHeights(heights: number[], height: number) {
-        return heightsToQueryStub(heights, height);
-      }
-    }
-
-    let hC: HookedClass;
     beforeEach(async () => {
       dbReturn = [{ id: '2', height: 3 }];
       findAllStub = sandbox.stub(blocksModel, 'findAll').resolves(dbReturn);
-      hC = new HookedClass();
-      heightsToQueryStub = sandbox.stub();
-      await hC.hookMethods();
-    });
-    afterEach(async () => {
-      return hC.unHook();
+      getHeightsSequenceStub = sandbox.stub(inst, 'getHeightsSequence');
     });
 
     it('should query db using correct params also derived from filter.', async () => {
-      heightsToQueryStub.resolves([1, 2, 3, 4, 5]);
+      getHeightsSequenceStub.returns([1, 2, 3, 4, 5]);
       await inst.getIdSequence(2000000);
       expect(findAllStub.called).is.true;
       expect(findAllStub.firstCall.args[0]).deep.eq({

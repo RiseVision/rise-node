@@ -4,7 +4,10 @@ import {
   BlocksModuleProcess,
   BlocksSymbols,
 } from '@risevision/core-blocks';
+import { ModelSymbols } from '@risevision/core-models';
+import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
 import {
+  AppConfig,
   IAccountLogic,
   IAccountsModel,
   IAppState,
@@ -16,11 +19,9 @@ import {
   ISequence,
   ISystemModule,
   ITransactionLogic,
+  SignedAndChainedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { BroadcasterLogic, IPeersModule, Peer } from '@risevision/core-p2p';
-import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { logOnly } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -47,7 +48,6 @@ export class LoaderModule implements ILoaderModule {
   @inject(Symbols.helpers.sequence)
   @named(Symbols.names.helpers.defaultSequence)
   public defaultSequence: ISequence;
-  private network: { height: number; peers: Peer[] };
 
   // Generic
   @inject(Symbols.generic.appConfig)
@@ -98,29 +98,13 @@ export class LoaderModule implements ILoaderModule {
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;
 
-  @postConstruct()
-  public initialize() {
-    this.network = {
-      height: 0,
-      peers: [],
-    };
+  public getNetwork() {
+    const peers = this.peersModule.getPeers({});
+    return this.peersModule.findGoodPeers(peers);
   }
 
-  public async getNetwork() {
-    if (
-      !(
-        this.network.height > 0 &&
-        Math.abs(this.network.height - this.blocksModule.lastBlock.height) === 1
-      )
-    ) {
-      const peers = await this.peersModule.getPeers({});
-      this.network = this.peersModule.findGoodPeers(peers);
-    }
-    return this.network;
-  }
-
-  public async getRandomPeer(): Promise<Peer> {
-    const { peers } = await this.getNetwork();
+  public getRandomPeer(): Peer {
+    const { peers } = this.getNetwork();
     if (peers.length === 0) {
       throw new Error('No acceptable peers for the operation');
     }
@@ -298,9 +282,12 @@ export class LoaderModule implements ILoaderModule {
       'loaderSyncTimer',
       async () => {
         this.logger.trace('Sync timer trigger', {
-          last_receipt: this.blocksModule.lastReceipt.get(),
           syncing: this.isSyncing,
         });
+        if (this.getNetwork().peers.length === 0) {
+          this.logger.warn('Cannot sync due to lack of peers');
+          return;
+        }
         this.appState.set('loader.isSyncing', true);
         await this.doSync().catch(logOnly(this.logger));
         this.appState.set('loader.isSyncing', false);

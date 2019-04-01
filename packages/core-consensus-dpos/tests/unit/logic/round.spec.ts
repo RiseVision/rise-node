@@ -1,7 +1,6 @@
-import { IAccountsModel, IBlocksModel } from '@risevision/core-interfaces';
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
+import { IAccountsModel, IBlocksModel, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as fs from 'fs';
 import { Container } from 'inversify';

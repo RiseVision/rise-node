@@ -1,4 +1,4 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
+import { IAccountsModel } from '@risevision/core-types';
 import { createFilterDecorator as createFilter } from '@risevision/core-utils';
 
 /**

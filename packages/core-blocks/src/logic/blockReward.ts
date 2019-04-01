@@ -1,5 +1,8 @@
-import { IBlockReward, Symbols } from '@risevision/core-interfaces';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  IBlockReward,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';

@@ -1,16 +1,18 @@
 import { CoreSymbols } from '@risevision/core';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   AccountDiffType,
   AccountFilterData,
+  Address,
+  ConstantsType,
+  DBOp,
   IAccountLogic,
   IAccountsModel,
   IIdsHandler,
   ILogger,
   Symbols,
-} from '@risevision/core-interfaces';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
-import { ModelSymbols } from '@risevision/core-models';
-import { Address, ConstantsType, DBOp } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as sequelize from 'sequelize';
 import * as z_schema from 'z-schema';

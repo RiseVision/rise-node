@@ -1,7 +1,7 @@
 // ### Chain module hooks
-import { IBlocksModel } from '@risevision/core-interfaces';
 import {
   IBaseTransaction,
+  IBlocksModel,
   SignedAndChainedBlockType,
   SignedBlockType,
 } from '@risevision/core-types';
@@ -25,7 +25,11 @@ export const OnPostApplyBlock = createAction<
  * @codesample actionHook
  */
 export const OnDestroyBlock = createAction<
-  (block: IBlocksModel, tx?: Transaction) => Promise<void>
+  (
+    destroyedBlock: IBlocksModel,
+    newLastBlock: IBlocksModel,
+    tx?: Transaction
+  ) => Promise<void>
 >('core/blocks/chain/onDestroyBlock');
 
 /**

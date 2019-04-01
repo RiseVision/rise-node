@@ -7,17 +7,15 @@ import {
   dPoSSymbols,
   RoundsLogic,
 } from '@risevision/core-consensus-dpos';
-import {
-  IAccountLogic,
-  IAccountsModel,
-  IAccountsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   DBOp,
+  IAccountLogic,
+  IAccountsModel,
+  IAccountsModule,
   IBaseTransaction,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';

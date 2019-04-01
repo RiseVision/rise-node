@@ -1,13 +1,11 @@
 import {
+  Address,
+  DBCustomOp,
+  DBOp,
   IAccountsModel,
   IAccountsModule,
   IBlocksModel,
   ILogger,
-} from '@risevision/core-interfaces';
-import {
-  Address,
-  DBCustomOp,
-  DBOp,
   SignedBlockType,
 } from '@risevision/core-types';
 import * as fs from 'fs';

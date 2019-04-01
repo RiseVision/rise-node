@@ -1,5 +1,4 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
-import { IBaseTransaction } from '@risevision/core-types';
+import { IAccountsModel, IBaseTransaction } from '@risevision/core-types';
 import {
   ActionFilterDecoratorType,
   createActionDecorator as createAction,
@@ -28,7 +27,7 @@ export const TxSignatureVerify = createAction<
     sender?: IAccountsModel,
     height?: number
   ) => Promise<void>
->('core-transactions/txlogic/verify/tx');
+>('core-transactions/txlogic/verify/tx/signature');
 
 export const OnNewUnconfirmedTransation = createAction<
   (tx: IBaseTransaction<any, bigint>, broadcast?: boolean) => Promise<void>

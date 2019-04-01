@@ -1,7 +1,10 @@
-import { IAccountsModel, IAccountsModule } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { Address } from '@risevision/core-types';
+import {
+  Address,
+  IAccountsModel,
+  IAccountsModule,
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

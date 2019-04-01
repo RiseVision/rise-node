@@ -1,14 +1,13 @@
-import { Symbols } from '@risevision/core-interfaces';
 import {
   BaseProtobufTransportMethod,
   Peer,
   ProtoIdentifier,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction, Symbols } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import * as _ from 'lodash';
-import { TransactionLogic } from '../TransactionLogic';
+import { TxConstantsType } from '../helpers/constants';
 import { TransactionsModule } from '../TransactionModule';
 import { TXBytes } from '../txbytes';
 import { TXSymbols } from '../txSymbols';
@@ -43,8 +42,8 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
   @inject(TXSymbols.txBytes)
   private txBytes: TXBytes;
 
-  @inject(Symbols.generic.constants)
-  private constants: { blocks: { maxTxsPerBlock: number } };
+  @inject(TXSymbols.constants)
+  private constants: TxConstantsType;
 
   public mergeRequests(
     reqs: Array<SingleTransportPayload<PostTransactionsRequestDataType, null>>
@@ -55,7 +54,7 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
     );
 
     const chunks = Math.ceil(
-      allTransactions.length / this.constants.blocks.maxTxsPerBlock
+      allTransactions.length / this.constants.maxSharedTxs
     );
 
     // split requests into chunks of size maxTxsPerBlock
@@ -63,8 +62,8 @@ export class PostTransactionsRequest extends BaseProtobufTransportMethod<
       return {
         body: {
           transactions: allTransactions.slice(
-            idx * this.constants.blocks.maxTxsPerBlock,
-            (idx + 1) * this.constants.blocks.maxTxsPerBlock
+            idx * this.constants.maxSharedTxs,
+            (idx + 1) * this.constants.maxSharedTxs
           ),
         },
       };

@@ -1,0 +1,43 @@
+{
+  "port": 5555,
+  "api": {
+    "enabled": true,
+    "access": {
+      "public": true
+    }
+  },
+  "db": {
+    "host": "postgres_2",
+    "port": 5432,
+    "database": "rise_db",
+    "user": "rise",
+    "password": "password",
+    "poolSize": 95,
+    "poolIdleTimeout": 30000,
+    "reapIntervalMillis": 1000,
+    "logEvents": ["error"]
+  },
+  "redis": {
+    "host": "redis_2",
+    "port": 6380,
+    "db": 0,
+    "password": null
+  },
+  "peers": {
+    "enabled": true,
+    "trustProxy": false,
+    "seeds": ["rise_1:5555"],
+    "access": {
+      "blackList": []
+    },
+    "options": {
+      "limits": {
+        "max": 0,
+        "delayMs": 0,
+        "delayAfter": 0,
+        "windowMs": 60000
+      },
+      "timeout": 5000
+    }
+  }
+}

@@ -1,6 +1,5 @@
-import { IJobsQueue, Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, IJobsQueue, Symbols } from '@risevision/core-types';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import { expect } from 'chai';
 import { Container } from 'inversify';
@@ -140,15 +139,15 @@ describe('logic/broadcaster', () => {
   //     peersModuleListStub = sandbox.stub(peersModule, 'list').resolves({ peers, consensus });
   //   });
   //
-  //   it('should call peersModule.list', async () => {
-  //     await instance.getPeers({ limit, broadhash });
+  //   it('should call peersModule.list', () => {
+  //     instance.getPeers({ limit, broadhash });
   //     expect(peersModuleListStub.calledOnce).to.be.true;
   //     expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
   //     expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({ limit, broadhash });
   //   });
   //
-  //   it('should call peersModule.list also with default params', async () => {
-  //     await instance.getPeers({});
+  //   it('should call peersModule.list also with default params', () => {
+  //     instance.getPeers({});
   //     expect(peersModuleListStub.calledOnce).to.be.true;
   //     expect(peersModuleListStub.firstCall.args.length).to.be.equal(1);
   //     expect(peersModuleListStub.firstCall.args[0]).to.be.deep.equal({
@@ -157,22 +156,22 @@ describe('logic/broadcaster', () => {
   //     });
   //   });
   //
-  //   it('should set consensus if limit is constants.maxPeers', async () => {
-  //     await instance.getPeers({ limit: constants.maxPeers });
+  //   it('should set consensus if limit is constants.maxPeers', () => {
+  //     instance.getPeers({ limit: constants.maxPeers });
   //     expect(fakeAppState.set.calledOnce).to.be.true;
   //     expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
   //     expect(fakeAppState.set.firstCall.args[1]).to.be.equal(consensus);
   //   });
   //
-  //   it('should set consensus in 100 if limit is constants.maxPeers and config.forging.force is true', async () => {
-  //     await instance.getPeers({ limit: constants.maxPeers });
+  //   it('should set consensus in 100 if limit is constants.maxPeers and config.forging.force is true', () => {
+  //     instance.getPeers({ limit: constants.maxPeers });
   //     expect(fakeAppState.set.calledOnce).to.be.true;
   //     expect(fakeAppState.set.firstCall.args[0]).to.be.equal('node.consensus');
   //     expect(fakeAppState.set.firstCall.args[1]).to.be.equal(123);
   //   });
   //
-  //   it('should return the right value', async () => {
-  //     const result = await instance.getPeers({ limit: constants.maxPeers });
+  //   it('should return the right value', () => {
+  //     const result = instance.getPeers({ limit: constants.maxPeers });
   //     expect(result).to.be.equal(peers);
   //   });
   // });
@@ -240,7 +239,7 @@ describe('logic/broadcaster', () => {
       ];
 
       getPeersStub = sandbox.stub(peersModule, 'getPeers');
-      getPeersStub.resolves(peers);
+      getPeersStub.returns(peers);
       createPeerStub = sandbox.stub(peersLogic, 'create');
       peers.forEach((peer, index) => {
         createPeerStub.onCall(index).returns(createdPeers[index]);

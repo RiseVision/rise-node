@@ -5,16 +5,17 @@ import {
 } from '@risevision/core-exceptions';
 import { IExceptionHandler } from '@risevision/core-exceptions';
 import {
-  ICrypto,
-  ITransactionLogic,
-  Symbols,
-} from '@risevision/core-interfaces';
-import {
   SignHooksListener,
   SigSymbols,
 } from '@risevision/core-secondsignature';
 import { TXBytes, TXSymbols } from '@risevision/core-transactions';
-import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
+import {
+  IBaseTransaction,
+  ICrypto,
+  ITransactionLogic,
+  SignedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { Container } from 'inversify';
 import { genericExceptionSymbols, secondSignatureExc } from '../generic';
 import { excSymbols } from './symbols';

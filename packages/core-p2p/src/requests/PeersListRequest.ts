@@ -1,5 +1,4 @@
-import { Symbols } from '@risevision/core-interfaces';
-import { PeerType } from '@risevision/core-types';
+import { PeerType, Symbols } from '@risevision/core-types';
 import { inject, injectable } from 'inversify';
 import { P2PConstantsType, p2pSymbols } from '../helpers';
 import { PeersModule } from '../peersModule';
@@ -32,7 +31,7 @@ export class PeersListRequest extends BaseProtobufTransportMethod<
   private p2pConstants: P2PConstantsType;
 
   protected async produceResponse(payload: any): Promise<PeersListResponse> {
-    const peers = await this.peersModule.getPeers({
+    const peers = this.peersModule.getPeers({
       limit: this.p2pConstants.maxPeers,
     });
     return { peers };

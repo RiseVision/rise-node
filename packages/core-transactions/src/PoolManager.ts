@@ -1,13 +1,13 @@
+import { BroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
 import {
   IAccountsModel,
   IAccountsModule,
+  IBaseTransaction,
   IJobsQueue,
   ILogger,
   ISequence,
   Symbols,
-} from '@risevision/core-interfaces';
-import { BroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
-import { IBaseTransaction } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { logOnly, WrapInBalanceSequence } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';
@@ -104,7 +104,7 @@ export class PoolManager {
     const bundledTxs = await this.pool.queued.list({
       limit: this.config.transactions.bundleLimit,
       sortFn: (a, b) =>
-        b.payload.receivedAt.getTime() - a.payload.receivedAt.getTime(),
+        a.payload.receivedAt.getTime() - b.payload.receivedAt.getTime(),
     });
 
     const accMap = await this.accountsModule.txAccounts(

@@ -1,6 +1,6 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
 import {
   DBOp,
+  IAccountsModel,
   IBaseTransaction,
   ITransportTransaction,
   SignedBlockType,

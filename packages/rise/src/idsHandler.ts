@@ -1,5 +1,4 @@
-import { IIdsHandler } from '@risevision/core-interfaces';
-import { Address } from '@risevision/core-types';
+import { Address, IIdsHandler } from '@risevision/core-types';
 import * as bech32 from 'bech32-buffer';
 import { toBigIntBE, toBufferBE } from 'bigint-buffer';
 import { RiseV2 } from 'dpos-offline';
@@ -14,6 +13,9 @@ export class RiseIdsHandler implements IIdsHandler {
   public maxBlockIdBytesUsage = 8;
 
   public addressFromBytes(bytes: Buffer): Address {
+    if (bytes.length === 0) {
+      return null;
+    }
     if (bytes.length === 8) {
       return `${toBigIntBE(bytes)}R` as Address;
     } else {
@@ -37,9 +39,12 @@ export class RiseIdsHandler implements IIdsHandler {
 
   public addressToBytes(address: Address): Buffer {
     if (!address) {
-      return toBufferBE(0n, 8);
+      return toBufferBE(0n, 0);
     }
-    if (/^[0-9]+R$/.test(address)) {
+    if (/^[0-9]+R$/i.test(address)) {
+      if (address.substring(-1) === 'r') {
+        throw new Error('Invalid address');
+      }
       const num = BigInt(address.slice(0, -1));
       if (num > maxAddress) {
         return toBufferBE(num, 16).slice(0, 8);

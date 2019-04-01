@@ -1,8 +1,11 @@
 import { APISymbols } from '@risevision/core-apis';
-import { Symbols } from '@risevision/core-interfaces';
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, ConstantsType } from '@risevision/core-types';
+import {
+  AppConfig,
+  BaseCoreModule,
+  ConstantsType,
+  Symbols,
+} from '@risevision/core-types';
 import * as z_schema from 'z-schema';
 import { AccountsAPI } from './apis';
 import { AccountsLoaderSubscriber } from './hooks/';

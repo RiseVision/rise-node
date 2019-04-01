@@ -11,14 +11,17 @@ import {
 import { Container } from 'inversify';
 import { As } from 'type-tagger';
 import * as uuid from 'uuid';
-import { IIdsHandler, Symbols } from '../../../core-interfaces/src';
-import { ITransactionLogic } from '../../../core-interfaces/src/logic';
 import { createContainer } from '../../../core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '../../../core-models/src/helpers';
 import {
   createRandomTransaction,
   toNativeTx,
 } from '../../../core-transactions/tests/unit/utils/txCrafter';
+import {
+  IIdsHandler,
+  ITransactionLogic,
+  Symbols,
+} from '../../../core-types/src';
 import { AccountsModelWith2ndSign } from '../../src/AccountsModelWith2ndSign';
 
 chai.use(chaiAsPromised);

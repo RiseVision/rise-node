@@ -1,18 +1,20 @@
 import { OnBlockchainReady } from '@risevision/core';
 import { BlocksModuleProcess, BlocksSymbols } from '@risevision/core-blocks';
+import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
 import {
+  ConstantsType,
   IAccountsModule,
   IAppState,
   IBlocksModule,
   ICrypto,
   IJobsQueue,
+  IKeypair,
   ILogger,
   IModule,
   ISequence,
+  publicKey,
   Symbols,
-} from '@risevision/core-interfaces';
-import { IPeersModule, p2pSymbols } from '@risevision/core-p2p';
-import { ConstantsType, IKeypair, publicKey } from '@risevision/core-types';
+} from '@risevision/core-types';
 import {
   catchToLoggerAndRemapError,
   WrapInDefaultSequence,

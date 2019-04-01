@@ -1,9 +1,11 @@
-import { IIdsHandler, ITXBytes, Symbols } from '@risevision/core-interfaces';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
   BlockHeader,
   ConstantsType,
+  IIdsHandler,
+  ITXBytes,
   SignedAndChainedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';

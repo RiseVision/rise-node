@@ -1,6 +1,9 @@
-import { BlocksModule } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
-import { ConstantsType } from '@risevision/core-types';
+import {
+  BlocksConstantsType,
+  BlocksModule,
+  BlocksSymbols,
+} from '@risevision/core-blocks';
+import { ITimeToEpoch, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
@@ -25,7 +28,7 @@ describe('api/loader/status', () => {
   describe('/sync', () => {
     checkReturnObjKeyVal(
       'broadhash',
-      'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
+      '16985986483000875063',
       '/api/loader/status/sync'
     );
     checkReturnObjKeyVal('height', 1, '/api/loader/status/sync');
@@ -35,25 +38,27 @@ describe('api/loader/status', () => {
   describe('/ping', () => {
     // cause last block is too old
     checkReturnObjKeyVal('success', false, '/api/loader/status/ping');
-    it('should return success true if lastblock is within blockReceiptTimeOut', async () => {
+    it('should return success true if lastblock is within staleAgeThreshold', async () => {
       const blocksModule = initializer.appManager.container.get<BlocksModule>(
         Symbols.modules.blocks
       );
-      const consts = initializer.appManager.container.get<ConstantsType>(
-        Symbols.generic.constants
+      const consts = initializer.appManager.container.get<BlocksConstantsType>(
+        BlocksSymbols.constants
+      );
+      const timeToEpoch = initializer.appManager.container.get<ITimeToEpoch>(
+        Symbols.helpers.timeToEpoch
       );
       await initializer.rawMineBlocks(1);
-      consts.blockReceiptTimeOut =
+      consts.staleAgeThreshold =
         60 +
         Math.floor(Date.now() / 1000) -
-        (Math.floor(consts.epochTime.getTime() / 1000) +
-          blocksModule.lastBlock.timestamp);
+        (timeToEpoch.getTime() + blocksModule.lastBlock.timestamp);
       return supertest(initializer.apiExpress)
         .get('/api/loader/status/ping')
         .expect(200)
         .then((response) => {
           expect(response.body.success).is.true;
-          consts.blockReceiptTimeOut = 60;
+          consts.staleAgeThreshold = 45;
         });
     });
   });

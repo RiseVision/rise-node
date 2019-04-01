@@ -1,13 +1,14 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  AppConfig,
   IAppState,
-  IBlocksModule,
   ILogger,
   IPeersModel,
   ISystemModule,
+  PeerState,
+  PeerType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, PeerState, PeerType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import * as _ from 'lodash';
@@ -37,8 +38,6 @@ export class PeersModule implements IPeersModule {
   // Modules
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   @inject(ModelSymbols.model)
   @named(p2pSymbols.model)
@@ -97,7 +96,7 @@ export class PeersModule implements IPeersModule {
     height: number;
     peers: Peer[];
   } {
-    const lastBlockHeight: number = this.blocksModule.lastBlock.height;
+    const lastBlockHeight: number = this.systemModule.getHeight();
 
     this.logger.trace('Good peers - received', { count: peers.length });
 
@@ -156,7 +155,7 @@ export class PeersModule implements IPeersModule {
   }
 
   /**
-   * Remove a peer from the list if its not one from config files
+   * Remove a peer from the list
    */
   public remove(peerIP: string, port: number): boolean {
     const removed = this.peersLogic.remove({ ip: peerIP, port });
@@ -171,7 +170,7 @@ export class PeersModule implements IPeersModule {
    * if orderBy Is not specified then returned peers are shuffled.
    */
   // tslint:disable-next-line cognitive-complexity
-  public async getByFilter(filter: PeerFilter): Promise<Peer[]> {
+  public getByFilter(filter: PeerFilter): Peer[] {
     const allowedFields = [
       'ip',
       'port',
@@ -240,17 +239,16 @@ export class PeersModule implements IPeersModule {
   /**
    * Gets peers list
    */
-  // tslint:disable-next-line max-line-length
-  public async getPeers(options: {
+  public getPeers(options: {
     limit?: number;
     broadhash?: string;
     allowedStates?: PeerState[];
-  }): Promise<Peer[]> {
+  }): Peer[] {
     options.limit = options.limit || this.p2pConstants.maxPeers;
     options.broadhash = options.broadhash || this.systemModule.broadhash;
     options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
 
-    let peersList = (await this.getByFilter({ broadhash: options.broadhash }))
+    let peersList = this.getByFilter({ broadhash: options.broadhash })
       // only matching states
       .filter((p) => options.allowedStates.indexOf(p.state) !== -1);
 
@@ -258,7 +256,7 @@ export class PeersModule implements IPeersModule {
     peersList = peersList.slice(0, options.limit);
 
     if (options.limit > peersList.length) {
-      let unmatchedBroadPeers = (await this.getByFilter({}))
+      let unmatchedBroadPeers = this.getByFilter({})
         // only matching states
         .filter((p) => options.allowedStates.indexOf(p.state) !== -1)
         // but different broadhashes

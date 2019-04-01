@@ -1,7 +1,6 @@
 import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import { DposConstantsType, dPoSSymbols, Slots } from '../../../src/helpers';
 

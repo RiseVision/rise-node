@@ -1,5 +1,8 @@
-import { Symbols } from '@risevision/core-interfaces';
-import { IBaseTransaction, SignedBlockType } from '@risevision/core-types';
+import {
+  IBaseTransaction,
+  SignedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { decorate, inject, injectable } from 'inversify';
 import {
   OnWPAction,

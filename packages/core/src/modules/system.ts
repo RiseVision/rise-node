@@ -1,14 +1,12 @@
 import { BlocksConstantsType, BlocksSymbols } from '@risevision/core-blocks';
 import {
-  IBlocksModule,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import {
   AppConfig,
   ConstantsType,
+  IBlocksModule,
+  ISystemModule,
   PeerHeaders,
   SignedAndChainedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as os from 'os';
@@ -39,9 +37,6 @@ export class SystemModule implements ISystemModule {
 
   @inject(Symbols.generic.genesisBlock)
   private genesisBlock: SignedAndChainedBlockType;
-  // Modules
-  @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
 
   @postConstruct()
   public postConstruct() {
@@ -112,7 +107,7 @@ export class SystemModule implements ISystemModule {
    * Gets private variable `minVersion`
    * @return {string}
    */
-  public getMinVersion(height: number = this.blocksModule.lastBlock.height) {
+  public getMinVersion(height: number = this.headers.height) {
     let minVer = '';
     for (
       let i = this.constants.minVersion.length - 1;
@@ -170,7 +165,7 @@ export class SystemModule implements ISystemModule {
   }
 
   public getFees(
-    height: number = this.blocksModule.lastBlock.height + 1
+    height: number = this.headers.height + 1
   ): {
     fees: {
       [kind: string]: bigint;
@@ -200,8 +195,7 @@ export class SystemModule implements ISystemModule {
   /**
    * Updates private broadhash and height values.
    */
-  public update() {
-    const lastBlock = this.blocksModule.lastBlock;
+  public update(lastBlock: SignedAndChainedBlockType) {
     this.headers.broadhash = lastBlock.id;
     this.headers.height = lastBlock.height;
   }

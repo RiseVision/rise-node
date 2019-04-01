@@ -1,9 +1,12 @@
 import { APISymbols } from '@risevision/core-apis';
-import { Symbols } from '@risevision/core-interfaces';
-import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
-import { AppConfig, SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  AppConfig,
+  BaseCoreModule,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { BlocksAPI } from './apis/blocksAPI';
 import { BlocksConstantsType, constants } from './blocksConstants';
 import { BlocksSymbols } from './blocksSymbols';

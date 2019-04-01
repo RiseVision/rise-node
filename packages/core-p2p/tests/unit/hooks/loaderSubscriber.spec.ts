@@ -1,8 +1,7 @@
 // tslint:disable no-unused-expression
 import { OnBlockchainReady } from '@risevision/core';
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

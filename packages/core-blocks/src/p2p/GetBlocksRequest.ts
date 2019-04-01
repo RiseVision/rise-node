@@ -1,9 +1,3 @@
-import {
-  IBaseTransactionType,
-  IBlocksModel,
-  ITransactionsModel,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import {
   BaseProtobufTransportMethod,
@@ -12,7 +6,13 @@ import {
   Peer,
   SingleTransportPayload,
 } from '@risevision/core-p2p';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import {
+  IBaseTransactionType,
+  IBlocksModel,
+  ITransactionsModel,
+  SignedAndChainedBlockType,
+  Symbols,
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import { Op } from 'sequelize';
 import { BlocksConstantsType } from '../blocksConstants';

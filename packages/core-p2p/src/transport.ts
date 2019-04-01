@@ -1,4 +1,7 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  AppConfig,
+  BasePeerType,
   IAppState,
   IBlocksModel,
   IBlocksModule,
@@ -7,16 +10,11 @@ import {
   ISequence,
   ISystemModule,
   ITransactionsModel,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import {
-  AppConfig,
-  BasePeerType,
   PeerHeaders,
   PeerRequestOptions,
   PeerState,
   PeerType,
+  Symbols,
 } from '@risevision/core-types';
 import { cbToPromise } from '@risevision/core-utils';
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';
@@ -226,7 +224,7 @@ export class TransportModule extends Extendable {
   ): Promise<Out> {
     config.limit = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
-    const peers = await this.peersModule.getPeers(config);
+    const peers = this.peersModule.getPeers(config);
     if (peers.length === 0) {
       throw new Error('No peer available');
     }

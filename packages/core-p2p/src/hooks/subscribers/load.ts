@@ -1,6 +1,10 @@
-import { ILogger, Symbols } from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
-import { AppConfig, BasePeerType } from '@risevision/core-types';
+import {
+  AppConfig,
+  BasePeerType,
+  ILogger,
+  Symbols,
+} from '@risevision/core-types';
 import { resolveTxt } from 'dns';
 import { decorate, inject, injectable, named } from 'inversify';
 import {

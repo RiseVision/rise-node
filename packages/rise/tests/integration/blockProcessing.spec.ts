@@ -4,19 +4,17 @@ import {
   BlocksSymbols,
 } from '@risevision/core-blocks';
 import { SignedAndChainedBlockType } from '@risevision/core-types';
-import { wait } from '@risevision/core-utils';
+import { IKeypair } from '@risevision/core-types';
 import { expect } from 'chai';
-import { LiskWallet } from 'dpos-offline/dist/es5/liskWallet';
-import { ITransaction } from 'dpos-offline/src/trxTypes/BaseTx';
+import { Rise, RiseTransaction } from 'dpos-offline';
 import 'reflect-metadata';
 import * as supertest from 'supertest';
 import initializer from './common/init';
 import {
   createRandomAccountsWithFunds,
-  createRegDelegateTransaction,
-  createSecondSignTransaction,
-  createVoteTransaction,
-  easyCreateMultiSignAccount,
+  createRegDelegateTransactionV1,
+  createSecondSignTransactionV1,
+  createVoteTransactionV1,
 } from './common/utils';
 
 // tslint:disable no-unused-expression
@@ -35,38 +33,32 @@ describe('blockProcessing', async function() {
   });
   describe('delete block', () => {
     let creationOps: Array<{
-      tx: ITransaction;
-      account: LiskWallet;
-      senderWallet: LiskWallet;
+      tx: RiseTransaction<any>;
+      account: IKeypair;
+      senderWallet: IKeypair;
     }>;
-    let multisigOp: {
-      wallet: LiskWallet;
-      keys: LiskWallet[];
-      tx: ITransaction;
-    };
     let block: SignedAndChainedBlockType;
     let initBlock: SignedAndChainedBlockType;
-    let regDelegateTX: ITransaction;
-    let secondSignTX: ITransaction;
-    let voteTX: ITransaction;
-    let allTxs: ITransaction[];
-    let allAccounts: LiskWallet[];
+    let regDelegateTX: RiseTransaction<any>;
+    let secondSignTX: RiseTransaction<any>;
+    let voteTX: RiseTransaction<any>;
+    let allTxs: Array<RiseTransaction<any>>;
+    let allAccounts: IKeypair[];
     initializer.autoRestoreEach();
     beforeEach(async () => {
       initBlock = blocksModule.lastBlock;
       creationOps = await createRandomAccountsWithFunds(10, 10e10);
-      multisigOp = await easyCreateMultiSignAccount(3, 2);
-      regDelegateTX = await createRegDelegateTransaction(
+      regDelegateTX = await createRegDelegateTransactionV1(
         1,
         creationOps[0].account,
         'meow'
       );
-      secondSignTX = await createSecondSignTransaction(
+      secondSignTX = await createSecondSignTransactionV1(
         1,
         creationOps[1].account,
         creationOps[2].account.publicKey
       );
-      voteTX = await createVoteTransaction(
+      voteTX = await createVoteTransactionV1(
         1,
         creationOps[0].account,
         creationOps[0].account.publicKey,
@@ -74,12 +66,9 @@ describe('blockProcessing', async function() {
       );
 
       block = blocksModule.lastBlock;
-      allAccounts = creationOps
-        .map((op) => op.account)
-        .concat(multisigOp.wallet);
+      allAccounts = creationOps.map((op) => op.account);
       allTxs = creationOps
         .map((op) => op.tx)
-        .concat(multisigOp.tx)
         .concat(regDelegateTX)
         .concat(secondSignTX)
         .concat(voteTX);
@@ -120,14 +109,15 @@ describe('blockProcessing', async function() {
 
       for (const account of allAccounts) {
         const res = await supertest(initializer.apiExpress)
-          .get(`/api/accounts/?address=${account.address}`)
+          .get(`/api/accounts/?address=${Rise.calcAddress(account.publicKey)}`)
           .expect(200);
 
         expect(res.body.success).is.true;
-        expect(res.body.account.address).is.deep.eq(account.address);
+        expect(res.body.account.address).is.deep.eq(
+          Rise.calcAddress(account.publicKey)
+        );
         expect(res.body.account.balance).is.deep.eq('0');
         expect(res.body.account.username).is.undefined;
-        expect(res.body.account.multisignatures).is.deep.eq(null);
         expect(res.body.account.secondSignature).is.eq(0);
         expect(res.body.account.secondPublicKey).is.null;
         expect(res.body.account.unconfirmedBalance).is.deep.eq('0');

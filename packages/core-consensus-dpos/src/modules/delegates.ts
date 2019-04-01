@@ -1,7 +1,10 @@
 import { AccountsSymbols } from '@risevision/core-accounts';
 import { BlocksModel, BlocksSymbols } from '@risevision/core-blocks';
+import { ModelSymbols } from '@risevision/core-models';
+import { TXSymbols } from '@risevision/core-transactions';
 import {
   AccountFilterData,
+  IAccountsModel,
   IAccountsModule,
   IAppState,
   IBlockReward,
@@ -10,15 +13,20 @@ import {
   ITransactionsModel,
   ITransactionsModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { TXSymbols } from '@risevision/core-transactions';
-import { Address, publicKey, SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
+import {
+  Address,
+  DBOp,
+  DBUpdateOp,
+  publicKey,
+  SignedBlockType,
+} from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
 import { Op } from 'sequelize';
 import * as sequelize from 'sequelize';
 import * as supersha from 'supersha';
+import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import {
   DposConstantsType,
@@ -33,59 +41,71 @@ import {
   DelegatesRoundModel,
 } from '../models';
 
+// tslint:disable-next-line
+export type BaseDelegateData = {
+  address: Address;
+  cmb: number;
+  forgingPK: Buffer & As<'publicKey'>;
+  username: string;
+  vote: bigint;
+  votesWeight: bigint;
+  producedblocks: number;
+  missedblocks: number;
+};
+
 @injectable()
 export class DelegatesModule {
   // Holds the current round delegates cache list.
-  private delegatesListCache: { [round: number]: Buffer[] } = {};
+  protected delegatesListCache: { [round: number]: Buffer[] } = {};
 
   @inject(Symbols.generic.txtypes)
-  private txTypes: Array<{ name: symbol; type: number }>;
+  protected txTypes: Array<{ name: symbol; type: number }>;
   // Generic
   @inject(Symbols.generic.zschema)
-  private schema: z_schema;
+  protected schema: z_schema;
 
   // Helpers
   @inject(dPoSSymbols.constants)
-  private dposConstants: DposConstantsType;
+  protected dposConstants: DposConstantsType;
   // tslint:disable-next-line member-ordering
   @inject(Symbols.helpers.logger)
-  private logger: ILogger;
+  protected logger: ILogger;
   @inject(dPoSSymbols.helpers.slots)
-  private slots: Slots;
+  protected slots: Slots;
   @inject(dPoSSymbols.helpers.dposV2)
-  private dposV2Helper: DposV2Helper;
+  protected dposV2Helper: DposV2Helper;
 
   // Logic
   @inject(Symbols.logic.appState)
-  private appState: IAppState;
+  protected appState: IAppState;
   @inject(Symbols.logic.blockReward)
-  private blockReward: IBlockReward;
+  protected blockReward: IBlockReward;
   @inject(dPoSSymbols.logic.rounds)
-  private roundsLogic: RoundsLogic;
+  protected roundsLogic: RoundsLogic;
 
   // Modules
   @inject(Symbols.modules.accounts)
-  private accountsModule: IAccountsModule<AccountsModelForDPOS>;
+  protected accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(Symbols.modules.blocks)
-  private blocksModule: IBlocksModule;
+  protected blocksModule: IBlocksModule;
   @inject(Symbols.modules.transactions)
-  private transactionsModule: ITransactionsModule;
+  protected transactionsModule: ITransactionsModule;
 
   @inject(ModelSymbols.model)
   @named(BlocksSymbols.model)
-  private blocksModel: typeof BlocksModel;
+  protected blocksModel: typeof BlocksModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegates)
-  private delegatesModel: typeof DelegatesModel;
+  protected delegatesModel: typeof DelegatesModel;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegatesRound)
-  private delegatesRoundModel: typeof DelegatesRoundModel;
+  protected delegatesRoundModel: typeof DelegatesRoundModel;
   @inject(ModelSymbols.model)
   @named(AccountsSymbols.model)
-  private accountsModel: typeof AccountsModelForDPOS;
+  protected accountsModel: typeof AccountsModelForDPOS;
   @inject(ModelSymbols.model)
   @named(TXSymbols.models.model)
-  private transactionsModel: typeof ITransactionsModel;
+  protected transactionsModel: typeof ITransactionsModel;
 
   public async checkConfirmedDelegates(
     account: AccountsModelForDPOS,
@@ -106,44 +126,56 @@ export class DelegatesModule {
   public async onBlockChanged(
     direction: 'forward' | 'backward',
     newHeight: number
-  ) {
+  ): Promise<Array<DBOp<any>>> {
+    const ops: Array<DBOp<any>> = [];
     if (newHeight === 1) {
       // Dont do anything for the first block
-      return;
+      return ops;
     }
 
-    const oldHeight = direction === 'forward' ? newHeight - 1 : newHeight + 1;
-    const oldRound = this.roundsLogic.calcRound(oldHeight);
-    const newRound = this.roundsLogic.calcRound(newHeight);
+    const round = this.roundsLogic.calcRound(newHeight);
+    const nextIsLastBlockInRound =
+      this.roundsLogic.lastInRound(round) === newHeight + 1;
+    const firstBlockInRound =
+      this.roundsLogic.firstInRound(round) === newHeight;
 
-    if (oldRound !== newRound) {
-      // Round change!
-      // Remove forward cache.
-      if (direction === 'backward') {
-        delete this.delegatesListCache[oldRound];
-        // remove future cache.
-        await this.delegatesRoundModel.destroy({
-          where: { round: { [Op.gte]: oldRound } },
+    if (nextIsLastBlockInRound && direction === 'backward') {
+      delete this.delegatesListCache[round + 1];
+      // remove future cache.
+      ops.push({
+        model: this.delegatesRoundModel,
+        options: {
+          where: { round: { [Op.gte]: round + 1 } },
+        },
+        type: 'remove',
+      });
+
+      // Restore list cache from round.
+      if (!this.delegatesListCache[round]) {
+        const r = await this.delegatesRoundModel.findOne({
+          where: { round },
         });
-
-        // Restore list cache from round.
-        if (!this.delegatesListCache[newRound]) {
-          const r = await this.delegatesRoundModel.findOne({
-            where: { round: newRound },
-          });
-          this.delegatesListCache[newRound] = r.list;
-        }
-      } else {
-        // Lets remove from cache rounds older than 10 to avoid unnecessary memory leaks.
-        delete this.delegatesListCache[newRound - 10];
-
-        // lets save oldRound in db. for faster recovery.
-        await this.delegatesRoundModel.create({
-          list: this.delegatesListCache[oldRound],
-          round: oldRound,
-        });
+        this.delegatesListCache[round] = r.list;
       }
+    } else if (
+      (firstBlockInRound || newHeight === 2) &&
+      direction === 'forward'
+    ) {
+      // Lets remove from cache rounds older than 10 to avoid unnecessary memory leaks.
+      delete this.delegatesListCache[round - 10];
+
+      // lets save oldRound in db. for faster recovery.
+      ops.push({
+        model: this.delegatesRoundModel,
+        type: 'upsert',
+        values: {
+          list: this.delegatesListCache[round],
+          round,
+        },
+      });
     }
+
+    return ops;
   }
   /**
    * Generate a randomized list for the round of which the given height is into.
@@ -155,6 +187,16 @@ export class DelegatesModule {
     const round = this.roundsLogic.calcRound(height);
 
     if (!this.delegatesListCache[round]) {
+      // Try restore from DB Cache
+      const cachedList = await this.delegatesRoundModel.findOne({
+        where: { round },
+      });
+      if (cachedList) {
+        this.delegatesListCache[round] = cachedList.list;
+      }
+    }
+    if (!this.delegatesListCache[round]) {
+      // regenerate.
       const isV2 = this.dposV2Helper.isV2(height);
       const excludedList: Buffer[] = [];
 
@@ -163,7 +205,7 @@ export class DelegatesModule {
         const block = await this.getLastBlockInPrevRound(height);
         excludedList.push(block.generatorPublicKey);
       }
-      let delegates = await this.getFilteredDelegatesSortedByVote(
+      let delegates = await this.getFilteredDelegatesSortedByVoteForForging(
         height,
         excludedList
       );
@@ -181,11 +223,10 @@ export class DelegatesModule {
 
         // Assign a weight to each delegate, which is its normalized vote weight multiplied by a random factor
         pool = delegates.map((delegate) => {
-          const rand = generator.random(); // 0 >= rand < 1
           return {
             ...delegate,
             // Weighted Random Sampling (Efraimidis, Spirakis, 2005)
-            weight: rand ** (1 / parseInt(delegate.vote.toString(), 10)),
+            weight: this.calcV2Weight(generator.random(), delegate, round),
           };
         });
 
@@ -256,7 +297,7 @@ export class DelegatesModule {
 
   // tslint:disable-next-line max-line-length
   public async calcDelegateInfo(
-    delegate: AccountsModelForDPOS,
+    delegate: BaseDelegateData,
     orderedDelegates?: Array<{ cmb: number; username: string }>
   ) {
     if (!orderedDelegates) {
@@ -318,7 +359,7 @@ export class DelegatesModule {
       limit?: number;
       offset?: number;
     } = {}
-  ): Promise<AccountsModelForDPOS[]> {
+  ): Promise<BaseDelegateData[]> {
     if (!query) {
       throw new Error('Missing query argument');
     }
@@ -332,6 +373,7 @@ export class DelegatesModule {
       attributes: [
         'address',
         'cmb',
+        'forgingPK',
         'username',
         'vote',
         'votesWeight',
@@ -368,10 +410,24 @@ export class DelegatesModule {
   }
 
   /**
+   * Calculates v2 weight based on roudn, vote, and rand value.
+   * @param rand
+   * @param delegate
+   * @param round
+   */
+  protected calcV2Weight(
+    rand: number,
+    delegate: { publicKey: Buffer; vote: bigint },
+    round: number
+  ) {
+    return rand ** (1e8 / parseInt(delegate.vote.toString(), 10));
+  }
+
+  /**
    * Get delegates public keys sorted by descending vote.
    */
   // tslint:disable-next-line max-line-length
-  private async getFilteredDelegatesSortedByVote(
+  private async getFilteredDelegatesSortedByVoteForForging(
     height: number,
     exclusionList: Buffer[]
   ): Promise<Array<{ publicKey: Buffer; vote: bigint }>> {
@@ -379,9 +435,9 @@ export class DelegatesModule {
       isDelegate: 1,
     };
     if (this.dposV2Helper.isV1(height)) {
-      filter.sort = { vote: -1, forgingPK: 1 };
+      filter.sort = { vote: -1 };
     } else {
-      filter.sort = { votesWeight: -1, forgingPK: 1 };
+      filter.sort = { votesWeight: -1 };
       filter.forgingPK = { [Op.notIn]: exclusionList || [] };
       filter.cmb = {
         [Op.lte]: this.dposConstants.dposv2.maxContinuousMissedBlocks,
@@ -393,10 +449,56 @@ export class DelegatesModule {
       filter.limit = poolSize;
     }
     const rows = await this.accountsModule.getAccounts(filter);
-    return rows.map((r) => ({
-      publicKey: r.forgingPK,
-      vote: this.dposV2Helper.isV2(height) ? r.votesWeight : r.vote,
-    }));
+
+    // we need to use (up to prev round forginPKs).
+    const round = this.roundsLogic.calcRound(height);
+    const prevForgingKeys: Array<{
+      forgingPK: Buffer & As<'publicKey'>;
+      'tx.senderId': Address;
+    }> = await this.delegatesModel.findAll<any>({
+      attributes: ['forgingPK'],
+      include: [
+        {
+          attributes: ['senderId'],
+          model: this.transactionsModel,
+          where: {
+            height: {
+              [round === 1 ? Op.lte : Op.lt]: this.roundsLogic.firstInRound(
+                round
+              ),
+            },
+            senderId: rows.map((r) => r.address),
+          },
+        },
+      ],
+      order: [sequelize.literal('"tx"."height" ASC')],
+      raw: true,
+    });
+
+    const correctFKByAddr: { [addr: string]: Buffer & As<'publicKey'> } = {};
+    // Since it's ordered by height ASC, we know for sure that most recent
+    // entry will be the one set here.
+    for (const fk of prevForgingKeys) {
+      correctFKByAddr[fk['tx.senderId']] = fk.forgingPK;
+    }
+
+    const sortingParam = this.dposV2Helper.isV1(height)
+      ? 'vote'
+      : 'votesWeight';
+    return rows
+      .sort((a, b) => {
+        if (a[sortingParam] === b[sortingParam]) {
+          return a.forgingPK.compare(b.forgingPK);
+        } else if (a[sortingParam] < b[sortingParam]) {
+          return 1;
+        } else {
+          return -1;
+        }
+      })
+      .map((r) => ({
+        publicKey: correctFKByAddr[r.address],
+        vote: this.dposV2Helper.isV2(height) ? r.votesWeight : r.vote,
+      }));
   }
 
   /**

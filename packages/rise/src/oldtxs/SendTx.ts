@@ -1,7 +1,7 @@
-import { IAccountsModel } from '@risevision/core-interfaces';
 import { SendTransaction, TXSymbols } from '@risevision/core-transactions';
 import {
   DBOp,
+  IAccountsModel,
   IBaseTransaction,
   SignedBlockType,
 } from '@risevision/core-types';
@@ -13,6 +13,10 @@ export class OldSendTx extends OldBaseTx<void, null> {
   @inject(TXSymbols.transaction)
   @named(TXSymbols.sendTX)
   private sendTX: SendTransaction;
+
+  public assetBytes(tx: IBaseTransaction<void>): Buffer {
+    return Buffer.alloc(0);
+  }
 
   public calculateMinFee(
     tx: IBaseTransaction<void>,
@@ -48,5 +52,9 @@ export class OldSendTx extends OldBaseTx<void, null> {
 
   public dbSave(): DBOp<null> {
     return null;
+  }
+
+  public async attachAssets(txs: Array<IBaseTransaction<void>>): Promise<void> {
+    txs.forEach((t) => (t.asset = null));
   }
 }

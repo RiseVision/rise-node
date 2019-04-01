@@ -1,5 +1,4 @@
-import { ICrypto } from '@risevision/core-interfaces';
-import { IKeypair } from '@risevision/core-types';
+import { ICrypto, IKeypair } from '@risevision/core-types';
 import * as sodium from 'sodium-native';
 import { As } from 'type-tagger';
 

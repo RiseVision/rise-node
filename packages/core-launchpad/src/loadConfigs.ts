@@ -1,8 +1,7 @@
-import { AppConfig } from '@risevision/core-types';
-import { z_schema } from '@risevision/core-utils';
+import { z_schema } from '@risevision/core-helpers';
+import { AppConfig, ICoreModule } from '@risevision/core-types';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ICoreModule } from './module';
 
 // tslint:disable-next-line no-var-requires
 const configSchema = require('../schema/config.json');

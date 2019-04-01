@@ -1,17 +1,15 @@
 // tslint:disable object-literal-sort-keys
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { p2pSymbols } from '@risevision/core-p2p';
-import { HTTPError } from '@risevision/core-utils';
+import { Symbols } from '@risevision/core-types';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
-import { DeprecatedAPIError } from '../../src';
-import { APISymbols } from '../../src';
-import { APIErrorHandler } from '../../src';
+import { DeprecatedAPIError, HTTPError } from '../../dist';
+import { APIErrorHandler, APISymbols } from '../../src';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');

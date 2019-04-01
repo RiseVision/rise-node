@@ -1,27 +1,30 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  IPeersModule,
+  p2pSymbols,
+  Peer,
+  PeersLogic,
+} from '@risevision/core-p2p';
+import {
+  BasePeerType,
+  ForkType,
   IAccountsModule,
   IAppState,
+  IBaseTransaction,
   IBlockLogic,
   IBlocksModel,
   IBlocksModule,
   IForkModule,
+  IKeypair,
   ILogger,
   ISequence,
   ITransactionLogic,
   ITransactionPool,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { p2pSymbols, Peer, PeersLogic } from '@risevision/core-p2p';
-import {
-  BasePeerType,
-  ForkType,
-  IBaseTransaction,
-  IKeypair,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import {
   WrapInDBSequence,
@@ -85,6 +88,8 @@ export class BlocksModuleProcess {
   private blocksUtilsModule: BlocksModuleUtils;
   @inject(BlocksSymbols.modules.verify)
   private blocksVerifyModule: BlocksModuleVerify;
+  @inject(Symbols.modules.peers)
+  private peersModule: IPeersModule;
   @inject(Symbols.modules.fork)
   private forkModule: IForkModule;
   @inject(Symbols.modules.transactions)
@@ -116,17 +121,14 @@ export class BlocksModuleProcess {
 
   /**
    * Performs chain comparison with remote peer
-   * WARNING: Can trigger chain recovery
    * @param {Peer} peer
    * @param {number} height
-   * @return {Promise<void>}
+   * @return {Promise}
    */
-  // FIXME Void return for recoverChain
-  // tslint:disable-next-line max-line-length
   public async getCommonBlock(
     peer: Peer,
     height: number
-  ): Promise<{ id: string; previousBlock: string; height: number } | void> {
+  ): Promise<{ id: string; previousBlock: string; height: number }> {
     const { ids } = await this.blocksUtilsModule.getIdSequence(height);
 
     const commonResp = await peer.makeRequest(this.commonBlockRequest, {
@@ -134,19 +136,15 @@ export class BlocksModuleProcess {
     });
 
     if (!commonResp || !commonResp.common) {
-      if (this.appStateLogic.getComputed('node.poorConsensus')) {
-        return this.blocksChainModule.recoverChain();
-      } else {
-        throw new Error(
-          `Chain comparison failed with peer ${
-            peer.string
-          } using ids: ${ids.join(', ')}`
-        );
-      }
+      throw new Error(
+        `Chain comparison failed with peer ${peer.string} using ids: ${ids.join(
+          ', '
+        )}`
+      );
     }
 
     if (!this.schema.validate(commonResp.common, schema.getCommonBlock)) {
-      throw new Error('Cannot validate commonblock response');
+      throw new Error('Cannot validate CommonBlock response');
     }
 
     // Check that block with ID, previousBlock and height exists in database
@@ -159,22 +157,11 @@ export class BlocksModuleProcess {
     });
 
     if (matchingCount === 0) {
-      // Block does not exist  - comparison failed.
-      if (this.appStateLogic.getComputed('node.poorConsensus')) {
-        return this.blocksChainModule.recoverChain();
-      } else {
-        throw new Error(
-          `Chain comparison failed with peer: ${
-            peer.string
-          } using block ${JSON.stringify(commonResp.common)}`
-        );
-      }
-    } else if (
-      peer.height > height &&
-      commonResp.common.height < height &&
-      this.appStateLogic.getComputed('node.poorConsensus')
-    ) {
-      return this.blocksChainModule.recoverChain();
+      throw new Error(
+        `Chain comparison failed with peer: ${
+          peer.string
+        } using block ${JSON.stringify(commonResp.common)}`
+      );
     }
 
     return commonResp.common;
@@ -309,6 +296,7 @@ export class BlocksModuleProcess {
           id: block.id,
           module: 'blocks',
         });
+        this.peersModule.remove(peer.ip, peer.port);
         throw err;
       }
     }
@@ -445,8 +433,6 @@ export class BlocksModuleProcess {
       accountsMap
     );
     await this.blocksVerifyModule.checkBlockTransactions(block, accountsMap);
-
-    this.blocksModule.lastReceipt.update();
 
     // if nothing has thrown till here then block is valid and can be applied.
     // The block and the transactions are OK i.e:

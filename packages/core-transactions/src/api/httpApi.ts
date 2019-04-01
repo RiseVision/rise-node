@@ -1,24 +1,21 @@
-import { PrivateApisGuard } from '@risevision/core-apis';
+import { HTTPError, PrivateApisGuard } from '@risevision/core-apis';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   IAccountsModel,
   IAccountsModule,
+  IBaseTransaction,
   IBlocksModule,
   ISystemModule,
   ITimeToEpoch,
   ITransactionLogic,
   ITransactionsModel,
   ITransactionsModule,
-  Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import {
-  IBaseTransaction,
   ITransportTransaction,
+  Symbols,
 } from '@risevision/core-types';
 import {
   assertValidSchema,
   castFieldsToNumberUsingSchema,
-  HTTPError,
   IoCSymbol,
   removeEmptyObjKeys,
   SchemaValid,
@@ -143,7 +140,7 @@ export class TransactionsAPI {
       where,
     });
     // Reattach transactions asset
-    // await this.txLogic.attachAssets(transactions);
+    await this.txLogic.attachAssets(transactions);
 
     return {
       count,

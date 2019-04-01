@@ -1,22 +1,20 @@
-import {
-  IAccountLogic,
-  IBlockLogic,
-  IBlocksModel,
-  ICrypto,
-  IIdsHandler,
-  ITransactionLogic,
-  ITXBytes,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols, ProtoBufHelper } from '@risevision/core-p2p';
 import {
   BlockType,
   DBOp,
+  IAccountLogic,
   IBaseTransaction,
+  IBlockLogic,
+  IBlocksModel,
+  ICrypto,
+  IIdsHandler,
   IKeypair,
+  ITransactionLogic,
+  ITXBytes,
   SignedAndChainedBlockType,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import * as crypto from 'crypto';
 import * as filterObject from 'filter-object';

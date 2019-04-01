@@ -1,11 +1,11 @@
 import { APISymbols } from '@risevision/core-apis';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import {
   IAppState,
   IBlocksModule,
   ISystemModule,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+} from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -49,7 +49,7 @@ describe('apis/loaderAPI', () => {
 
     // loaderModule.loaded    = true;
     blocksModule.lastBlock = { id: 'fakeId', height: 1 } as any;
-    system.update();
+    system.update(blocksModule.lastBlock);
 
     instance = container.getNamed(APISymbols.class, CoreSymbols.api.loader);
   });
@@ -86,26 +86,26 @@ describe('apis/loaderAPI', () => {
   });
 
   describe('ping', () => {
-    it('should return false status if this.blocksModule.lastBlock in null', () => {
+    it('should return false status if this.blocksModule.lastBlock in null', async () => {
       blocksModule.lastBlock = null;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: false });
     });
 
-    it('should return true status if secondsAgo < constants.blockReceiptTimeOut', () => {
+    it('should return true status if secondsAgo < constants.blockReceiptTimeOut', async () => {
       blocksModule.lastBlock.timestamp = 1000000000;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: true });
     });
 
-    it('should return false status if secondsAgo >= constants.blockReceiptTimeOut', () => {
+    it('should return false status if secondsAgo >= constants.blockReceiptTimeOut', async () => {
       blocksModule.lastBlock.timestamp = 0;
 
-      const ret = instance.ping();
+      const ret = await instance.ping();
 
       expect(ret).to.be.deep.equal({ success: false });
     });

@@ -1,16 +1,14 @@
-import { toTransportable } from '@risevision/core-helpers';
-import {
-  IBlocksModule,
-  ITransactionsModel,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   Address,
   IBaseTransaction,
+  IBlocksModule,
+  ITransactionsModel,
   ITransportTransaction,
+  Symbols,
   TransactionType,
 } from '@risevision/core-types';
+import { toTransportable } from '@risevision/core-utils';
 import {
   Column,
   DataType,

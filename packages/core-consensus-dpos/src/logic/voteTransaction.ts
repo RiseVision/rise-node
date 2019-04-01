@@ -1,15 +1,13 @@
-import {
-  IAccountLogic,
-  IAccountsModel,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseTx } from '@risevision/core-transactions';
 import {
   DBOp,
+  IAccountLogic,
+  IAccountsModel,
   IBaseTransaction,
+  ISystemModule,
   SignedBlockType,
+  Symbols,
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
 import { inject, injectable, named, postConstruct } from 'inversify';

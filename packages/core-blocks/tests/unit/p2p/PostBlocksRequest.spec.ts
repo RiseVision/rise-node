@@ -1,4 +1,3 @@
-import { Symbols } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
@@ -6,7 +5,7 @@ import {
   createRandomTransactions,
   toNativeTx,
 } from '@risevision/core-transactions/tests/unit/utils/txCrafter';
-import { SignedAndChainedBlockType } from '@risevision/core-types';
+import { SignedAndChainedBlockType, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import { Container } from 'inversify';
 import { WordPressHookSystem } from 'mangiafuoco';

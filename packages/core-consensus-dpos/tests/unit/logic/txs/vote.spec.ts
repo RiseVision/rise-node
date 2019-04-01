@@ -1,6 +1,4 @@
 import { SystemModule } from '@risevision/core';
-import { Symbols } from '@risevision/core-interfaces';
-import { IAccountLogic } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
@@ -10,6 +8,8 @@ import {
   DBCustomOp,
   DBRemoveOp,
   DBUpdateOp,
+  IAccountLogic,
+  Symbols,
   TransactionType,
 } from '@risevision/core-types';
 import * as chai from 'chai';

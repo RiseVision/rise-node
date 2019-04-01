@@ -1,10 +1,9 @@
-import { ICrypto, Symbols } from '@risevision/core-interfaces';
 import {
   TXBytes,
   TxSignatureVerify,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { IBaseTransaction } from '@risevision/core-types';
+import { IBaseTransaction, ICrypto, Symbols } from '@risevision/core-types';
 import * as assert from 'assert';
 import { decorate, inject, injectable } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
@@ -26,9 +25,16 @@ export class TransactionsHooks extends Extendable {
     tx: IBaseTransaction<any, bigint>,
     hash: Buffer
   ): Promise<void> {
-    assert.strictEqual(
-      this.crypto.verify(hash, tx.signatures[0], tx.senderPubData),
-      true
-    );
+    if (tx.senderPubData.length === 33) {
+      assert.strictEqual(
+        this.crypto.verify(hash, tx.signatures[0], tx.senderPubData.slice(1)),
+        true
+      );
+    } else {
+      assert.strictEqual(
+        this.crypto.verify(hash, tx.signatures[0], tx.senderPubData),
+        true
+      );
+    }
   }
 }

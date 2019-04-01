@@ -91,12 +91,6 @@
       "orderBy": {
         "type": "string",
         "enum": [
-          "approval:desc",
-          "approval:asc",
-          "productivity:desc",
-          "productivity:asc",
-          "rank:desc",
-          "rank:asc",
           "vote:desc",
           "vote:asc",
           "votesWeight:desc",
@@ -105,8 +99,8 @@
           "address:asc",
           "username:desc",
           "username:asc",
-          "publicKey:desc",
-          "publicKey:asc"
+          "forgingPK:desc",
+          "forgingPK:asc"
         ]
       },
       "limit": {

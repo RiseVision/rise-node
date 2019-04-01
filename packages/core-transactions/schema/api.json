@@ -155,7 +155,7 @@
       "limit": {
         "type": "integer",
         "minimum": 1,
-        "maximum": 100
+        "maximum": 200
       },
       "offset": {
         "type": "integer",

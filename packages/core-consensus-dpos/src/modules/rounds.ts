@@ -1,14 +1,16 @@
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  Address,
+  DBOp,
   IAccountsModel,
   IAccountsModule,
   IAppState,
   IBlocksModel,
   IDBHelper,
   ILogger,
+  SignedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { ModelSymbols } from '@risevision/core-models';
-import { Address, DBOp, SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import * as fs from 'fs';
 import { inject, injectable, named } from 'inversify';
 import * as sequelize from 'sequelize';

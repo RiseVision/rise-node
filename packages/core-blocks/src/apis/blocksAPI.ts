@@ -1,6 +1,9 @@
-import { DeprecatedAPIError } from '@risevision/core-apis';
+import { DeprecatedAPIError, HTTPError } from '@risevision/core-apis';
 import { Sequence } from '@risevision/core-helpers';
+import { LaunchpadSymbols } from '@risevision/core-launchpad';
+import { ModelSymbols } from '@risevision/core-models';
 import {
+  ConstantsType,
   IBlockLogic,
   IBlockReward,
   IBlocksModel,
@@ -10,12 +13,8 @@ import {
   ITransactionLogic,
   ITransactionsModel,
   Symbols,
-} from '@risevision/core-interfaces';
-import { LaunchpadSymbols } from '@risevision/core-launchpad';
-import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import {
-  HTTPError,
   IoCSymbol,
   removeEmptyObjKeys,
   SchemaValid,

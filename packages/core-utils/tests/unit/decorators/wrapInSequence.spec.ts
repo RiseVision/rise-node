@@ -1,4 +1,4 @@
-import { ISequence, Symbols } from '@risevision/core-interfaces';
+import { ISequence, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import { Container, injectable } from 'inversify';

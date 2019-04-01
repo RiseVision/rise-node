@@ -1,8 +1,7 @@
 // tslint:disable object-literal-sort-keys no-big-function
-import { IAccountsModel } from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
-import { Address, DBUpdateOp } from '@risevision/core-types';
+import { Address, DBUpdateOp, IAccountsModel } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

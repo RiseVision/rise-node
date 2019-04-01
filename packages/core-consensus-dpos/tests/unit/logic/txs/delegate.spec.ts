@@ -1,16 +1,14 @@
 'use strict';
-import {
-  IAccountsModule,
-  ISystemModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
 import {
   Address,
   DBUpdateOp,
+  IAccountsModule,
   IBaseTransaction,
+  ISystemModule,
+  Symbols,
   TransactionType,
 } from '@risevision/core-types';
 import * as chai from 'chai';
@@ -472,6 +470,7 @@ describe('logic/transactions/delegate', () => {
       expect(createOp.values).is.deep.eq({
         transactionId: tx.id,
         username: tx.asset.delegate.username,
+        forgingPK: tx.senderPubData,
       });
     });
   });

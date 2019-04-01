@@ -1,14 +1,14 @@
 import { APISymbols } from '@risevision/core-apis';
+import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
+import { ModelSymbols } from '@risevision/core-models';
 import {
   IBlocksModel,
   ISystemModule,
   ITimeToEpoch,
   ITransactionsModel,
+  SignedBlockType,
   Symbols,
-} from '@risevision/core-interfaces';
-import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { SignedBlockType } from '@risevision/core-types';
+} from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';

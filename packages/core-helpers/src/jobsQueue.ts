@@ -1,4 +1,4 @@
-import { IJobsQueue } from '@risevision/core-interfaces';
+import { IJobsQueue } from '@risevision/core-types';
 import { injectable } from 'inversify';
 
 @injectable()

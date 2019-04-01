@@ -1,17 +1,11 @@
-import {
-  IBlocksModel,
-  IBlocksModule,
-  Symbols,
-} from '@risevision/core-interfaces';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { ModelSymbols } from '@risevision/core-models';
-import { ConstantsType } from '@risevision/core-types';
+import { ConstantsType, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import 'chai-as-promised';
 import { Container } from 'inversify';
 import 'reflect-metadata';
 import * as sinon from 'sinon';
-import { SinonSandbox, SinonStub } from 'sinon';
+import { SinonSandbox } from 'sinon';
 import { SystemModule } from '../../../src/modules';
 
 // tslint:disable no-unused-expression no-identical-functions object-literal-sort-keys no-big-function
@@ -27,7 +21,6 @@ describe('modules/system', () => {
   };
   let constants: ConstantsType;
   let sandbox: SinonSandbox;
-  let blocksModule: IBlocksModule;
   before(async () => {
     container = await createContainer([
       'core',
@@ -59,10 +52,9 @@ describe('modules/system', () => {
   beforeEach(() => {
     sandbox = sinon.createSandbox();
     inst = container.get(Symbols.modules.system);
-    blocksModule = container.get(Symbols.modules.blocks);
-    blocksModule.lastBlock = {
+    inst.update({
       height: 10,
-    } as any;
+    } as any);
   });
   afterEach(() => {
     sandbox.restore();
@@ -81,15 +73,12 @@ describe('modules/system', () => {
     it('should return ^0.1.3 for height 3', () => {
       expect(inst.getMinVersion(3)).to.be.eq('^0.1.3');
     });
-    it('should return ^0.1.3 for default height taken from blocksModule', () => {
-      const origStub = sinon.stub().returns(10);
-      const stub = sinon
-        .stub(blocksModule.lastBlock, 'height')
-        .get(() => origStub());
-      expect(inst.getMinVersion()).to.be.eq('^0.1.3');
+    it('should return ^0.1.3 for default height taken from lastBlock', () => {
+      const heightStub = sinon.stub().returns(10);
+      sandbox.stub(inst.headers, 'height').get(() => heightStub());
 
-      expect(origStub.called).to.be.true;
-      stub.restore();
+      expect(inst.getMinVersion()).to.be.eq('^0.1.3');
+      expect(heightStub.calledOnce).to.be.true;
     });
     it('should remove letters from the end', () => {
       inst.getMinVersion(11);
@@ -140,15 +129,12 @@ describe('modules/system', () => {
     });
 
     it('should use height from blockmodule if not provided', () => {
-      const origStub = sinon.stub().returns(10);
-      const stub = sinon
-        .stub(blocksModule.lastBlock, 'height')
-        .get(() => origStub());
+      const heightStub = sinon.stub().returns(10);
+      sandbox.stub(inst.headers, 'height').get(() => heightStub());
 
       inst.getFees();
 
-      expect(origStub.called).to.be.true;
-      stub.restore();
+      expect(heightStub.called).to.be.true;
     });
   });
 
@@ -167,9 +153,9 @@ describe('modules/system', () => {
 
   describe('.versionCompatible', () => {
     beforeEach(() => {
-      blocksModule.lastBlock = {
+      inst.update({
         height: 2,
-      } as any; // ^0.1.2
+      } as any); // ^0.1.2
     });
     it('should return true if 0.1.2', () => {
       expect(inst.versionCompatible('0.1.2')).is.true;
@@ -187,9 +173,9 @@ describe('modules/system', () => {
       expect(inst.versionCompatible('0.2.0')).is.false;
     });
     it('should return true if 0.1.4b', () => {
-      blocksModule.lastBlock = {
+      inst.update({
         height: 11,
-      } as any;
+      } as any);
       expect(inst.versionCompatible('0.1.4b')).is.true;
     });
   });
@@ -198,11 +184,10 @@ describe('modules/system', () => {
     it('should update height and broadhash value', async () => {
       inst.headers.height = 0;
       inst.headers.broadhash = 'haha';
-      blocksModule.lastBlock = {
+      inst.update({
         id: 'meow',
         height: 2,
-      } as any; // ^0.1.2
-      await inst.update();
+      } as any); // ^0.1.2
       expect(inst.headers.broadhash).to.be.eq('meow');
       expect(inst.headers.height).to.be.eq(2);
     });

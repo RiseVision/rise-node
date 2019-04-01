@@ -1,5 +1,10 @@
-import { IJobsQueue, ILogger, Symbols } from '@risevision/core-interfaces';
-import { AppConfig, PeerType } from '@risevision/core-types';
+import {
+  AppConfig,
+  IJobsQueue,
+  ILogger,
+  PeerType,
+  Symbols,
+} from '@risevision/core-types';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
@@ -110,7 +115,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
     let peers = task.filters.peers;
     if (!task.filters.peers) {
-      peers = await this.peersModule.getPeers(task.filters);
+      peers = this.peersModule.getPeers(task.filters);
     }
 
     this.logger.debug('Begin broadcast');

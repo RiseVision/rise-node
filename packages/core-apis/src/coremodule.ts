@@ -1,6 +1,4 @@
-import { Symbols } from '@risevision/core-interfaces';
-import { BaseCoreModule } from '@risevision/core-launchpad';
-import { AppConfig } from '@risevision/core-types';
+import { AppConfig, BaseCoreModule, Symbols } from '@risevision/core-types';
 import { cbToPromise } from '@risevision/core-utils';
 import * as bodyParser from 'body-parser';
 import * as compression from 'compression';

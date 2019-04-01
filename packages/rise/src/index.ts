@@ -4,18 +4,20 @@ import {
   ExceptionsManager,
   ExceptionSymbols,
 } from '@risevision/core-exceptions';
-import { IBaseTransactionType, Symbols } from '@risevision/core-interfaces';
 import { BaseCoreModule } from '@risevision/core-launchpad';
 import { ModelSymbols } from '@risevision/core-models';
 import { SigSymbols } from '@risevision/core-secondsignature';
 import { TXSymbols } from '@risevision/core-transactions';
+import { IBaseTransactionType, Symbols } from '@risevision/core-types';
 import * as SqlString from 'sequelize/lib/sql-string';
 import * as z_schema from 'z-schema';
 import { registerExceptions } from './exceptions/mainnet';
 import { RiseUpgrader } from './helpers';
+import { TransactionsHooks } from './hooks';
 import { RiseIdsHandler } from './idsHandler';
 import { RiseBlockBytes } from './logic';
 import { OldVoteTxModel } from './models';
+import { RiseDelegatesModule } from './modules';
 import {
   OldRegDelegateTx,
   OldSecondSignatureTx,
@@ -52,6 +54,11 @@ export class CoreModule extends BaseCoreModule<any> {
   }
 
   public addElementsToContainer() {
+    this.container
+      .bind(RISESymbols.hooks.txHooks)
+      .to(TransactionsHooks)
+      .inSingletonScope();
+
     this.container
       .bind(RISESymbols.helpers.constants)
       .toConstantValue(this.constants);
@@ -101,6 +108,12 @@ export class CoreModule extends BaseCoreModule<any> {
       .rebind(BlocksSymbols.logic.blockBytes)
       .to(RiseBlockBytes)
       .inSingletonScope();
+
+    // Replace delegates with our own implementation which overrides rand weight calculation in some cases.
+    this.container
+      .rebind(dPoSSymbols.modules.delegates)
+      .to(RiseDelegatesModule)
+      .inSingletonScope();
   }
 
   public async initAppElements(): Promise<void> {
@@ -138,8 +151,18 @@ export class CoreModule extends BaseCoreModule<any> {
 
     z_schema.registerFormat('address', (str: string) => {
       // tslint:disable-next-line
-      return /^[0-9]{1,20}R/.test(str);
+      return /^(([0-9]{1,20}R)|(rise1[a-z0-9]+))$/.test(str);
     });
+
+    await this.container
+      .get<TransactionsHooks>(RISESymbols.hooks.txHooks)
+      .hookMethods();
+  }
+
+  public async teardown() {
+    await this.container
+      .get<TransactionsHooks>(RISESymbols.hooks.txHooks)
+      .unHook();
   }
 
   public async preBoot() {

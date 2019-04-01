@@ -1,4 +1,4 @@
-import { IInfoModel } from '@risevision/core-interfaces';
+import { IInfoModel } from '@risevision/core-types';
 import { Column, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'info' })
