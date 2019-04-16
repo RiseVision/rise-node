@@ -70,10 +70,10 @@ export class TransactionsModel<Asset = any>
   @Column(DataType.BLOB)
   public senderPubData: Buffer;
 
-  @Column
+  @Column(DataType.STRING)
   public senderId: Address;
 
-  @Column
+  @Column(DataType.STRING)
   public recipientId: Address;
 
   @Column(DataType.BIGINT)
