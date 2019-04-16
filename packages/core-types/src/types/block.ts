@@ -4,7 +4,7 @@ import { IBaseTransaction, ITransportTransaction } from './transactions';
 export type BlockHeader<T = Buffer, N = bigint> = {
   version: number;
   timestamp: number;
-  previousBlock: string;
+  previousBlock: string | null;
   numberOfTransactions: number;
   totalAmount: N;
   totalFee: N;

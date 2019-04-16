@@ -329,10 +329,8 @@ describe('modules/peers', () => {
       expect(res.consensus).to.be.eq(100);
     });
     it('should return 25 if 100 matched and 300 did not', async () => {
-      fakePeers = [].concat(
-        createFakePeers(100),
-        createFakePeers(300, { broadhash: 'bb' })
-      );
+      fakePeers = createFakePeers(100);
+      fakePeers.push(...createFakePeers(300, { broadhash: 'bb' }));
       acceptableStub.callsFake((w) => w);
       const res = await inst.determineConsensus('aa');
       expect(res.consensus).to.be.eq(25);

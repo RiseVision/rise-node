@@ -441,7 +441,7 @@ describe('src/modules/transport.ts', () => {
       ];
 
       throttleStub.all = sandbox.stub().callsFake((fkArray) => {
-        const promiseArray = [];
+        const promiseArray: any[] = [];
         for (const fk of fkArray) {
           promiseArray.push(fk());
         }

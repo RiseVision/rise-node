@@ -34,7 +34,7 @@ describe('apis/requests/PeersListRequest', () => {
       const peersModule = container.get<PeersModule>(p2pSymbols.modules.peers);
       sandbox.stub(peersModule, 'getPeers').returns(peers);
       const buf = await peerRequestFactory.handleRequest({
-        body: null,
+        body: undefined,
         query: null,
       });
       expect(buf.length).gte(10);

@@ -5,6 +5,7 @@ import { SingleTransportPayload } from './ITransportMethod';
 
 // tslint:disable-next-line
 @injectable()
+// TODO values for the generic
 export class PingRequest extends BaseTransportMethod<null, null, null> {
   public readonly method: 'GET' = 'GET';
   public readonly baseUrl = '/v2/peer/ping';

@@ -1,7 +1,8 @@
 import { PeerState, PeerType } from '@risevision/core-types';
+import { PeerHeaders } from '@risevision/core-types';
 import { v4 } from 'uuid';
 
-export const createFakePeer = (item: any = {}): PeerType => {
+export function createFakePeer(item: any = {}): PeerType {
   return {
     broadhash: item.broadhash || 'aa',
     clock: item.clock || 1,
@@ -18,13 +19,18 @@ export const createFakePeer = (item: any = {}): PeerType => {
     get string() {
       return `${this.ip}:${this.port}`;
     },
-    applyHeaders() {
+    applyHeaders(h?: PeerHeaders): PeerHeaders {
       // tslint:disable-next-line
       console.log('stubme?');
-      return null;
+      return {
+        nethash: 'stubme?',
+        port: 123,
+        version: '1.2.3',
+        firewalled: 'true',
+      };
     },
   };
-};
+}
 
 export const createFakePeers = (
   howMany: number,

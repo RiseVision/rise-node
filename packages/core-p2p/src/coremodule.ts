@@ -1,7 +1,7 @@
 import { APISymbols, middleware } from '@risevision/core-apis';
 import { ModelSymbols } from '@risevision/core-models';
 import { BaseCoreModule, BasePeerType, Symbols } from '@risevision/core-types';
-import { cbToPromise } from '@risevision/core-utils';
+import { cbToPromise, cbToVoidPromise } from '@risevision/core-utils';
 import * as bodyParser from 'body-parser';
 import { CommanderStatic } from 'commander';
 import * as compression from 'compression';
@@ -58,7 +58,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
 
   public initAppElements() {
     const app = this.container.get<Application>(p2pSymbols.express);
-    if (this.config.peers.trustProxy) {
+    if (this.config.peers && this.config.peers.trustProxy) {
       app.enable('trust proxy');
     }
     app.use(compression({ level: 9 }));
@@ -185,7 +185,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     await this.container
       .get<PeersLoaderSubscriber>(p2pSymbols.__internals.loadSubscriber)
       .unHook();
-    return cbToPromise((cb) => this.srv.close(cb)).catch((e) => void 0);
+    return cbToVoidPromise((cb) => this.srv.close(cb)).catch((e) => void 0);
   }
 
   public async boot(): Promise<void> {

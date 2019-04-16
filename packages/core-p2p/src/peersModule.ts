@@ -246,11 +246,12 @@ export class PeersModule implements IPeersModule {
   }): Peer[] {
     options.limit = options.limit || this.p2pConstants.maxPeers;
     options.broadhash = options.broadhash || this.systemModule.broadhash;
-    options.allowedStates = options.allowedStates || [PeerState.CONNECTED];
+    const allowedStates = options.allowedStates || [PeerState.CONNECTED];
+    options.allowedStates = allowedStates;
 
     let peersList = this.getByFilter({ broadhash: options.broadhash })
       // only matching states
-      .filter((p) => options.allowedStates.indexOf(p.state) !== -1);
+      .filter((p) => allowedStates.indexOf(p.state) !== -1);
 
     peersList = this.peersLogic.acceptable(peersList);
     peersList = peersList.slice(0, options.limit);
@@ -258,7 +259,7 @@ export class PeersModule implements IPeersModule {
     if (options.limit > peersList.length) {
       let unmatchedBroadPeers = this.getByFilter({})
         // only matching states
-        .filter((p) => options.allowedStates.indexOf(p.state) !== -1)
+        .filter((p) => allowedStates.indexOf(p.state) !== -1)
         // but different broadhashes
         .filter((p) => options.broadhash !== p.broadhash);
 

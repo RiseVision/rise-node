@@ -126,9 +126,17 @@ export class PeersLoaderSubscriber extends Extendable {
    * @returns null when parsing failed, BasePeerType on success
    */
   public parsePeerData(record: ParsedTxtRecord): null | BasePeerType {
+    const port = record.get('port');
+    const ip = record.get('ip');
+    if (!port) {
+      throw new Error("Peer's port required");
+    }
+    if (!ip) {
+      throw new Error("Peer's IP required");
+    }
     const peer = {
-      ip: record.get('ip'),
-      port: parseInt(record.get('port'), 10),
+      ip: ip!,
+      port: parseInt(port, 10),
     };
     if (peer.ip && !isNaN(peer.port)) {
       return peer;
@@ -139,7 +147,7 @@ export class PeersLoaderSubscriber extends Extendable {
 
   public async resolveSeeds(seeds: string[]): Promise<BasePeerType[]> {
     const directRegex = /^(.*):(\d+)$/;
-    const peerArrays = await Promise.all(
+    const peerArrays: BasePeerType[][] = await Promise.all(
       seeds.map(async (seed) => {
         const match = seed.match(directRegex);
         if (match) {
@@ -151,7 +159,7 @@ export class PeersLoaderSubscriber extends Extendable {
           ];
         } else {
           this.logger.trace(`Peers->resolveSeeds - Querying ${seed} for peers`);
-          let records = [];
+          let records: string[][] = [];
           try {
             records = await this.resolveTxt(seed);
           } catch (e) {
@@ -160,7 +168,7 @@ export class PeersLoaderSubscriber extends Extendable {
           return records
             .map(this.parseTxtRecord)
             .map(this.parsePeerData)
-            .filter((peer) => peer !== null);
+            .filter((peer) => peer !== null) as BasePeerType[];
         }
       })
     );

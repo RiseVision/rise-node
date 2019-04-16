@@ -5,6 +5,7 @@ import {
   PeerType,
   Symbols,
 } from '@risevision/core-types';
+import * as assert from 'assert';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as _ from 'lodash';
 import * as PromiseThrottle from 'promise-parallel-throttle';
@@ -32,12 +33,14 @@ export interface BroadcastTaskOptions<Body, Query, Out> {
 // tslint:disable-next-line
 export interface BroadcastTask<Body, Query, Out> {
   options: BroadcastTaskOptions<Body, Query, Out>;
-  filters?: BroadcastFilters;
+  filters: BroadcastFilters;
 }
+
+type Queue = Array<BroadcastTask<any, any, any>>;
 
 @injectable()
 export class BroadcasterLogic implements IBroadcasterLogic {
-  public queue: Array<BroadcastTask<any, any, any>> = [];
+  public queue: Queue = [];
   // Generics
   @inject(Symbols.generic.appConfig)
   private config: AppConfig;
@@ -87,6 +90,9 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     method: BaseTransportMethod<Body, Query, Out>,
     filters?: BroadcastFilters
   ): boolean {
+    if (!payload.body) {
+      throw new Error('payload.body param required');
+    }
     payload.body.relays = (payload.body.relays || 0) + 1;
     if (payload.body.relays < this.maxRelays()) {
       this.enqueue(payload, method, filters);
@@ -101,20 +107,22 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     filters?: BroadcastFilters
   ): number {
     return this.queue.push({
-      filters,
+      filters: filters || {},
       options: { immediate: false, method, payload },
     });
   }
 
   public async broadcast(
-    task: BroadcastTask<any, any, any>
+    // require `task.filters.peers` as not-null
+    task: BroadcastTask<any, any, any> & { filters: BroadcastFilters }
   ): Promise<{ peer: PeerType[] }> {
-    task.filters = task.filters || {};
+    assert(task.filters, 'task.filters params required');
+    assert(task.filters.peers, 'task.filters.peers params required');
+
     task.filters.limit = task.filters.limit || this.p2pConstants.maxPeers;
-    task.filters.broadhash = task.filters.broadhash || null;
 
     let peers = task.filters.peers;
-    if (!task.filters.peers) {
+    if (!peers) {
       peers = this.peersModule.getPeers(task.filters);
     }
 
@@ -157,7 +165,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
    */
   private async filterQueue(): Promise<void> {
     this.logger.debug(`Broadcast before filtering: ${this.queue.length}`);
-    const newQueue = [];
+    const newQueue: Queue = [];
     const oldQueue = this.queue.slice();
     this.queue = [];
     for (const task of oldQueue) {
@@ -189,9 +197,13 @@ export class BroadcasterLogic implements IBroadcasterLogic {
       const requests = byRequests[type];
       const [first] = requests;
 
-      const newRequests = first.options.method.mergeRequests(
-        requests.map((item) => item.options.payload)
-      );
+      const payloads = requests
+        .map((item) => item.options.payload)
+        .filter((payload) => payload);
+      // cast manually as `filter` doesnt
+      const payloadsFiltered: Required<typeof payloads> = payloads as any;
+
+      const newRequests = first.options.method.mergeRequests(payloadsFiltered);
 
       squashed.push(
         ...newRequests.map((payload) => ({
@@ -200,6 +212,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
             method: first.options.method,
             payload,
           },
+          filters: {},
         }))
       );
     }

@@ -4,9 +4,10 @@ import { Container } from 'inversify';
 export interface ICoreModule<ConfigType> {
   configSchema: any;
   constants: any;
-  version: string;
-  name: string;
-  directory: string;
+  version: string | null;
+  name: string | null;
+  // TODO shouldnt be null?
+  directory: string | null;
   container?: Container;
   config?: ConfigType;
   sortedModules?: Array<ICoreModule<any>>;
@@ -24,7 +25,7 @@ export interface ICoreModule<ConfigType> {
 
   preBoot(): Promise<void>;
 
-  initAppElements(): void | Promise<void>;
+  initAppElements(): void | Promise<void> | null;
 
   boot(): Promise<void>;
 
@@ -40,8 +41,8 @@ export abstract class BaseCoreModule<ConfigType = any>
   public version = null;
   public name = null;
   public directory = null;
-  public container?: Container;
-  public config?: ConfigType;
+  public container: Container;
+  public config: ConfigType;
   public sortedModules?: Array<ICoreModule<ConfigType>>;
 
   public extendCommander(program: CommanderStatic): void {
@@ -79,7 +80,7 @@ export abstract class BaseCoreModule<ConfigType = any>
     return void 0;
   }
 
-  public initAppElements(): Promise<void> | void {
+  public initAppElements(): Promise<void> | void | null {
     return null;
   }
 }

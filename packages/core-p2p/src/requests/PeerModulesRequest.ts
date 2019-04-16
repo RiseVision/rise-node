@@ -1,4 +1,5 @@
 import { ICoreModule, LaunchpadSymbols } from '@risevision/core-launchpad';
+import * as assert from 'assert';
 import { inject, injectable } from 'inversify';
 import {
   BaseProtobufTransportMethod,
@@ -32,9 +33,11 @@ export class PeerModulesRequest extends BaseProtobufTransportMethod<
   ): Promise<Output> {
     const toRet: Output = { modules: [] };
     for (const mod of this.coremodules) {
+      assert(mod.name);
+      assert(mod.version);
       toRet.modules.push({
-        name: mod.name,
-        version: mod.version,
+        name: mod.name!,
+        version: mod.version!,
       });
     }
     return toRet;

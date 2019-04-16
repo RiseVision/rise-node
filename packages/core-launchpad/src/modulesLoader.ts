@@ -1,4 +1,5 @@
 import { ICoreModule } from '@risevision/core-types';
+import * as assert from 'assert';
 import DAG from 'dag-map';
 import * as findPkg from 'find-pkg';
 import * as path from 'path';
@@ -43,7 +44,7 @@ export function resolveModule(modulePath: string, modules: any): ModuleInfo {
     const subModulePath = require.resolve(depHandle, {
       paths: [
         `${sourceModuleRootDirectory}/node_modules`,
-        ...require.main.paths,
+        ...require.main!.paths,
       ],
     });
     const packageJSONPath = findPkg.sync(subModulePath);

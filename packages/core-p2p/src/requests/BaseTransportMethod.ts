@@ -1,4 +1,5 @@
 import { PeerRequestOptions, Symbols } from '@risevision/core-types';
+import * as assert from 'assert';
 import { inject, injectable } from 'inversify';
 import * as querystring from 'querystring';
 import * as z_schema from 'z-schema';
@@ -22,14 +23,27 @@ export class BaseTransportMethod<Data, Query, Out>
   @inject(Symbols.generic.zschema)
   private schema: z_schema;
 
+  get isRequestEncodable() {
+    return true;
+  }
+  get isResponseEncodable() {
+    return true;
+  }
+
   public async createRequestOptions(
-    req: SingleTransportPayload<Data, Query> = { body: null }
+    payload: SingleTransportPayload<Data, Query> & { body: Data }
   ): Promise<PeerRequestOptions<Buffer>> {
+    assert(payload, 'payload param required');
     const queryString =
-      req.query !== null ? `?${querystring.stringify(req.query)}` : '';
+      payload && payload.query
+        ? `?${querystring.stringify(payload.query)}`
+        : '';
+    const data = this.isRequestEncodable
+      ? await this.encodeRequest(payload.body, payload.requester || null)
+      : undefined;
     return {
-      data: await this.encodeRequest(req.body, req.requester),
-      headers: req.headers || {},
+      data,
+      headers: payload.headers || {},
       method: this.method,
       url: `${this.baseUrl}${queryString}`,
     };
@@ -40,7 +54,10 @@ export class BaseTransportMethod<Data, Query, Out>
    * @param peer the peer to query
    * @param body the buffer containing the response
    */
-  public async handleResponse(peer: Peer, body: Buffer): Promise<Out> {
+  public async handleResponse(peer: Peer, body: Buffer): Promise<Out | null> {
+    if (!this.isResponseEncodable) {
+      return null;
+    }
     const decodedResponse = await this.decodeResponse(body, peer);
     await this.assertValidResponse(decodedResponse);
     return decodedResponse;
@@ -54,15 +71,21 @@ export class BaseTransportMethod<Data, Query, Out>
   public async handleRequest(
     req: SingleTransportPayload<Buffer, Query>
   ): Promise<Buffer> {
-    // Rewrite body so that furthyes
+    const body =
+      this.isRequestEncodable && req.body
+        ? await this.decodeRequest(req)
+        : undefined;
+    // Rewrite body so that further
     // er calls can process pojo data.
     const newReq = {
       ...req,
-      body: await this.decodeRequest(req),
+      body,
     };
     await this.assertValidRequest(newReq);
     const response = await this.produceResponse(newReq);
-    return this.encodeResponse(response, newReq);
+    return this.isResponseEncodable && response
+      ? this.encodeResponse(response, newReq)
+      : new Buffer(0);
   }
 
   /**
@@ -78,7 +101,7 @@ export class BaseTransportMethod<Data, Query, Out>
   /**
    * Check if such envelope request is expired or not.
    */
-  public isRequestExpired(req: SingleTransportPayload<Data, Query>) {
+  public isRequestExpired(req: SingleTransportPayload<Data, Query> = {}) {
     return Promise.resolve(false);
   }
 
@@ -87,26 +110,30 @@ export class BaseTransportMethod<Data, Query, Out>
    * @param request input body data object
    * @param query Query object.
    */
-  protected produceResponse(
+  protected async produceResponse(
     request: SingleTransportPayload<Data, Query>
   ): Promise<Out> {
-    return null;
+    throw new Error('Implement request');
   }
 
   /**
    * Encodes request from pojo to buffer
    */
-  protected encodeRequest(data: Data | null, peer: Peer): Promise<Buffer> {
-    return null;
+  protected async encodeRequest(
+    data: Data,
+    // TODO can be null?
+    peer: Peer | null
+  ): Promise<Buffer> {
+    throw new Error('Implement encoder');
   }
 
   /**
    * Decodes requests from buffer to pojo
    */
-  protected decodeRequest(
+  protected async decodeRequest(
     req: SingleTransportPayload<Buffer, Query>
   ): Promise<Data> {
-    return null;
+    throw new Error('Implement decoder');
   }
 
   /**
