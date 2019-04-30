@@ -12,6 +12,7 @@ import {
 } from '@risevision/core-types';
 import * as chai from 'chai';
 import * as chaiSorted from 'chai-sorted';
+import { Rise } from 'dpos-offline';
 import * as supertest from 'supertest';
 import { As } from 'type-tagger';
 import initializer from '../common/init';
@@ -36,7 +37,6 @@ import {
   checkRequiredParam,
   checkReturnObjKeyVal,
 } from './utils';
-import { Rise } from 'dpos-offline';
 
 chai.use(chaiSorted);
 
