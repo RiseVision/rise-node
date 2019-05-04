@@ -12,13 +12,13 @@
   "license": "GPL-3.0",
   "dependencies": {
     "inversify": "5.0.1",
-    "sequelize": "4.42.0",
-    "sequelize-typescript": "0.6.6",
+    "sequelize": "5.3.0",
+    "sequelize-typescript": "0.6.10",
     "type-tagger": "^1.0.0",
     "utility-types": "^2.1.0"
   },
   "devDependencies": {
     "shx": "=0.3.2",
-    "typescript": "3.2.2"
+    "typescript": "3.4.3"
   }
 }

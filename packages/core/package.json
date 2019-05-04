@@ -32,8 +32,8 @@
     "mangiafuoco": "1.2.3",
     "routing-controllers": "=0.7.7",
     "semver": "^5.6.0",
-    "sequelize": "4.42.0",
-    "sequelize-typescript": "0.6.6",
+    "sequelize": "5.3.0",
+    "sequelize-typescript": "0.6.10",
     "socket.io": "2.2.0",
     "uuid": "=3.3.2",
     "z-schema": "3.24.2"
@@ -44,6 +44,6 @@
     "mocha": "=5.2.0",
     "shx": "=0.3.2",
     "ts-node": "7.0.1",
-    "typescript": "3.2.2"
+    "typescript": "3.4.3"
   }
 }

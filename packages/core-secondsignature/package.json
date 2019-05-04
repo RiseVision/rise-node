@@ -26,10 +26,10 @@
     "inversify": "5.0.1",
     "lodash": "4.17.11",
     "mangiafuoco": "1.2.3",
-    "reflect-metadata": "^0.1.12",
+    "reflect-metadata": "^0.1.10",
     "routing-controllers": "=0.7.7",
-    "sequelize": "4.42.0",
-    "sequelize-typescript": "0.6.6",
+    "sequelize": "5.3.0",
+    "sequelize-typescript": "0.6.10",
     "z-schema": "3.24.2"
   },
   "devDependencies": {
@@ -48,6 +48,6 @@
     "mocha": "=5.2.0",
     "shx": "=0.3.2",
     "ts-node": "7.0.1",
-    "typescript": "3.2.2"
+    "typescript": "3.4.3"
   }
 }
