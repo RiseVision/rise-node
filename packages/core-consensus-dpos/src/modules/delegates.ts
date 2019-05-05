@@ -23,7 +23,7 @@ import {
 } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
 import * as MersenneTwister from 'mersenne-twister';
-import { Op } from 'sequelize';
+import { Op, OrderItem } from 'sequelize';
 import * as sequelize from 'sequelize';
 import * as supersha from 'supersha';
 import { As } from 'type-tagger';
@@ -126,8 +126,8 @@ export class DelegatesModule {
   public async onBlockChanged(
     direction: 'forward' | 'backward',
     newHeight: number
-  ): Promise<Array<DBOp<any>>> {
-    const ops: Array<DBOp<any>> = [];
+  ): Promise<Array<DBOp<DelegatesRoundModel>>> {
+    const ops: Array<DBOp<DelegatesRoundModel>> = [];
     if (newHeight === 1) {
       // Dont do anything for the first block
       return ops;
@@ -666,7 +666,7 @@ export class DelegatesModule {
     }
   }
 
-  private order() {
+  private order(): OrderItem[] {
     return this.dposV2Helper.isV1()
       ? [['vote', 'DESC'], ['forgingPK', 'ASC']]
       : [['votesWeight', 'DESC'], ['forgingPK', 'ASC']];

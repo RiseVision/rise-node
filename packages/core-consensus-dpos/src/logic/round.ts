@@ -43,7 +43,7 @@ export interface RoundLogicScope {
     RoundChanges: typeof RoundChanges;
   };
   models: {
-    AccountsModel: typeof IAccountsModel;
+    AccountsModel: typeof AccountsModelForDPOS;
     BlocksModel: typeof IBlocksModel;
   };
   modules: {
@@ -90,7 +90,7 @@ export class RoundLogic {
    * Updates accounts and add a missing block to whoever skipped one
    * @returns {Promise<void>}
    */
-  public updateMissedBlocks(): DBOp<any> {
+  public updateMissedBlocks(): DBOp<AccountsModelForDPOS> {
     if (this.scope.roundOutsiders.length === 0) {
       return null;
     }
@@ -154,7 +154,7 @@ export class RoundLogic {
    */
   public applyRound(): Array<DBOp<any>> {
     const roundChanges = new this.scope.library.RoundChanges(this.scope);
-    const queries: Array<DBOp<any>> = [];
+    const queries: Array<DBOp<AccountsModelForDPOS>> = [];
 
     const delegates = this.scope.roundDelegates;
 

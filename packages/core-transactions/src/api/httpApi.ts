@@ -163,7 +163,7 @@ export class TransactionsAPI {
     id: string;
   }) {
     const { id } = params;
-    const txOBJ = await this.TXModel.findById(id);
+    const txOBJ = await this.TXModel.findByPk(id);
     if (txOBJ === null) {
       throw new Error('Transaction not found');
     }

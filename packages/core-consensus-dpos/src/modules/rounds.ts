@@ -66,7 +66,7 @@ export class RoundsModule {
   // models
   @inject(ModelSymbols.model)
   @named(Symbols.models.accounts)
-  private AccountsModel: typeof IAccountsModel;
+  private AccountsModel: typeof AccountsModelForDPOS;
   @inject(ModelSymbols.model)
   @named(Symbols.models.blocks)
   private BlocksModel: typeof IBlocksModel;

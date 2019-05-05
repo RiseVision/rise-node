@@ -20,13 +20,13 @@
     "inversify": "5.0.1",
     "lodash": "4.17.11",
     "reflect-metadata": "^0.1.10",
-    "sequelize": "5.3.0",
-    "sequelize-typescript": "0.6.10",
+    "sequelize": "5.7.0",
+    "sequelize-typescript": "^1.0.0-alpha.9",
     "squel": "=5.12.2"
   },
   "devDependencies": {
     "@types/lodash": "4.14.119",
     "shx": "=0.3.2",
-    "typescript": "3.4.3"
+    "typescript": "3.4.5"
   }
 }

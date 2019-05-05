@@ -1,18 +1,17 @@
 import * as _ from 'lodash';
-import { IScopeFindOptions, IScopeOptions, Model } from 'sequelize-typescript';
+import { Model } from 'sequelize-typescript';
 import {
   addAttribute,
-  getAttributes,
-} from 'sequelize-typescript/lib/services/models';
-import {
   addScopeOptions,
+  getAttributes,
   getScopeOptions,
-} from 'sequelize-typescript/lib/services/scopes';
-import { deepAssign } from 'sequelize-typescript/lib/utils/object';
+} from 'sequelize-typescript';
+import { ScopeFindOptions } from 'sequelize-typescript/dist/scopes/shared/scope-find-options';
+import { deepAssign } from 'sequelize-typescript/dist/shared/object';
 
 export function mergeScopeOptions(
-  from: IScopeFindOptions,
-  into: IScopeFindOptions
+  from: ScopeFindOptions,
+  into: ScopeFindOptions
 ) {
   const toRet = deepAssign({}, from, into);
   if (typeof into === 'undefined') {
@@ -49,8 +48,8 @@ export function mergeModels(what: typeof Model, into: typeof Model) {
   const newAttrs = getAttributes(what.prototype);
   what.isInitialized = true;
   // Merge scopes.
-  const fromScopeOptions: IScopeOptions = getScopeOptions(what.prototype) || {};
-  const intoScopeOptions: IScopeOptions = getScopeOptions(into.prototype) || {};
+  const fromScopeOptions = getScopeOptions(what.prototype) || {};
+  const intoScopeOptions = getScopeOptions(into.prototype) || {};
 
   Object.keys(fromScopeOptions).forEach((scope) => {
     if (fromScopeOptions[scope] && intoScopeOptions[scope]) {

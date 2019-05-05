@@ -1,4 +1,4 @@
-import { WhereLogic } from 'sequelize';
+import { WhereOptions } from 'sequelize';
 import { As } from 'type-tagger';
 import { Omit } from 'utility-types';
 
@@ -7,7 +7,7 @@ import { IAccountsModel } from '../models';
 
 // tslint:disable-next-line
 export type AccountFilterData<T extends IAccountsModel = IAccountsModel> = Omit<
-  { [k in keyof T]?: T[k] | WhereLogic },
+  { [k in keyof T]?: T[k] | WhereOptions },
   'address'
 > & {
   address?: string | { $in: string[] };

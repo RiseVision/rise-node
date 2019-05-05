@@ -1,11 +1,8 @@
 import { Model } from 'sequelize-typescript';
-import {
-  Diff,
-  Omit,
-  RecursivePartial,
-} from 'sequelize-typescript/lib/utils/types';
+import { Diff, Omit } from 'utility-types';
+export type RecursivePartial<T> = { [P in keyof T]?: RecursivePartial<T[P]> };
 
-export { Diff, Omit, RecursivePartial };
+export { Diff, Omit };
 
 export type Partial<T> = { [P in keyof T]?: T[P] };
 export type FieldsInT<T> = Array<keyof T>;

@@ -137,7 +137,7 @@ export class BlocksModuleChain {
    * @returns {Promise<any>}
    */
   public async saveGenesisBlock() {
-    const genesis = await this.BlocksModel.findById(this.genesisBlock.id);
+    const genesis = await this.BlocksModel.findByPk(this.genesisBlock.id);
     if (!genesis) {
       return this.BlocksModel.sequelize.transaction((t) =>
         this.saveBlock(this.genesisBlock, t)
@@ -418,13 +418,13 @@ export class BlocksModuleChain {
   private async popLastBlock(
     lb1: SignedAndChainedBlockType
   ): Promise<IBlocksModel> {
-    const lb = await this.BlocksModel.findById(lb1.id, {
+    const lb = await this.BlocksModel.findByPk(lb1.id, {
       include: [this.TransactionsModel],
     });
     if (lb === null) {
       throw new Error('curBlock is null');
     }
-    const previousBlock = await this.BlocksModel.findById(lb.previousBlock, {
+    const previousBlock = await this.BlocksModel.findByPk(lb.previousBlock, {
       include: [this.TransactionsModel],
     });
 

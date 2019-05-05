@@ -145,7 +145,7 @@ export class BlocksAPI {
       attributes: ['totalFee', 'reward'],
       raw: true,
       where: {
-        generatorPublicKey: Buffer.from(filter.generator, 'hex'),
+        generatorPublicKey: Buffer.from(filter.generator, 'hex') as any,
         timestamp: {
           [Op.gte]: from,
           [Op.lt]: to,
@@ -173,7 +173,7 @@ export class BlocksAPI {
   filters: {
     id: string;
   }) {
-    const block = await this.BlocksModel.findById(filters.id, {
+    const block = await this.BlocksModel.findByPk(filters.id, {
       include: [this.TransactionsModel],
     });
     if (block === null) {

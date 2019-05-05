@@ -41,25 +41,23 @@ export class DBHelper {
   private sequelize: Sequelize;
 
   public handleUpdate(updateOp: DBUpdateOp<any>) {
-    return this.sequelize
-      .getQueryInterface()
-      .QueryGenerator.updateQuery(
-        updateOp.model.getTableName(),
-        updateOp.values,
-        updateOp.options.where,
-        updateOp.options
-      );
+    return (this.sequelize.getQueryInterface()
+      .QueryGenerator as any).updateQuery(
+      updateOp.model.getTableName(),
+      updateOp.values,
+      updateOp.options.where,
+      updateOp.options
+    );
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    return this.sequelize
-      .getQueryInterface()
-      .QueryGenerator.insertQuery(
-        insertOp.model.getTableName(),
-        insertOp.values,
-        insertOp.model.rawAttributes,
-        {}
-      );
+    return (this.sequelize.getQueryInterface()
+      .QueryGenerator as any).insertQuery(
+      insertOp.model.getTableName(),
+      insertOp.values,
+      insertOp.model.rawAttributes,
+      {}
+    );
   }
 
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
@@ -76,7 +74,8 @@ export class DBHelper {
   }
 
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
-    return this.sequelize.getQueryInterface().QueryGenerator.upsertQuery(
+    return (this.sequelize.getQueryInterface()
+      .QueryGenerator as any).upsertQuery(
       upsertOp.model.getTableName(),
       upsertOp.values,
       upsertOp.values,
@@ -95,14 +94,13 @@ export class DBHelper {
   }
 
   public handleDelete(deleteOp: DBRemoveOp<any>) {
-    return this.sequelize
-      .getQueryInterface()
-      .QueryGenerator.deleteQuery(
-        deleteOp.model.getTableName(),
-        deleteOp.options.where,
-        { ...deleteOp.options, limit: null },
-        deleteOp.model
-      );
+    return (this.sequelize.getQueryInterface()
+      .QueryGenerator as any).deleteQuery(
+      deleteOp.model.getTableName(),
+      deleteOp.options.where,
+      { ...deleteOp.options, limit: null },
+      deleteOp.model
+    );
   }
 
   /**

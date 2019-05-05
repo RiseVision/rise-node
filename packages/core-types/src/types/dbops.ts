@@ -1,6 +1,17 @@
 import { DestroyOptions, UpdateOptions, UpsertOptions } from 'sequelize';
 import { Model } from 'sequelize-typescript';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { Literal } from 'sequelize/types/lib/utils';
+import { Omit, RecursivePartial } from './utils';
+
+export type FilteredModelAttributes<T extends Model<T>> = RecursivePartial<
+  Omit<T, keyof Model<any>>
+>;
+
+export type FilteredModelAttributesWithLiteral<T extends Model<T>> = {
+  [P in keyof FilteredModelAttributes<T>]?:
+    | FilteredModelAttributes<T>[P]
+    | Literal
+};
 
 // tslint:disable-next-line interface-name
 export interface BaseDBOp<T extends Model<T>> {
@@ -9,7 +20,7 @@ export interface BaseDBOp<T extends Model<T>> {
 export type DBUpdateOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'update';
   options: UpdateOptions;
-  values: FilteredModelAttributes<T>;
+  values: FilteredModelAttributesWithLiteral<T>;
 };
 export type DBCreateOp<T extends Model<T>> = BaseDBOp<T> & {
   type: 'create';

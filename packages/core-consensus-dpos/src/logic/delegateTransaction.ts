@@ -7,6 +7,7 @@ import {
 import {
   DBCreateOp,
   DBOp,
+  FilteredModelAttributes,
   IAccountsModel,
   IAccountsModule,
   IBaseTransaction,
@@ -17,7 +18,6 @@ import {
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
 import * as sequelize from 'sequelize';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
 import { dPoSSymbols } from '../helpers/';
@@ -51,7 +51,7 @@ export class RegisterDelegateTransaction extends BaseTx<
 
   @inject(ModelSymbols.model)
   @named(Symbols.models.accounts)
-  private AccountsModel: typeof IAccountsModel;
+  private AccountsModel: typeof AccountsModelForDPOS;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegates)
   private DelegatesModel: typeof DelegatesModel;
@@ -206,7 +206,7 @@ export class RegisterDelegateTransaction extends BaseTx<
     tx: IBaseTransaction<DelegateAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     let data: Partial<AccountsModelForDPOS>;
     if (this.isTxFirstRegistration(tx)) {
       data = {
@@ -241,7 +241,7 @@ export class RegisterDelegateTransaction extends BaseTx<
     tx: IBaseTransaction<DelegateAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     if (this.isTxFirstRegistration(tx)) {
       const data = {
         isDelegate: 0 as 0 | 1,
@@ -299,7 +299,7 @@ export class RegisterDelegateTransaction extends BaseTx<
   public async applyUnconfirmed(
     tx: IBaseTransaction<DelegateAsset>,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     if (this.isTxFirstRegistration(tx)) {
       const data = {
         isDelegate: 0 as 0 | 1,
@@ -330,7 +330,7 @@ export class RegisterDelegateTransaction extends BaseTx<
   public async undoUnconfirmed(
     tx: IBaseTransaction<DelegateAsset>,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     if (this.isTxFirstRegistration(tx)) {
       const data = {
         isDelegate: 0 as 0 | 1,

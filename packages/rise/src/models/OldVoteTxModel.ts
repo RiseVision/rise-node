@@ -1,7 +1,7 @@
 import { BaseModel } from '@risevision/core-models';
-import { publicKey } from '@risevision/core-types';
-import { Column, IBuildOptions, PrimaryKey, Table } from 'sequelize-typescript';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
+import { FilteredModelAttributes, publicKey } from '@risevision/core-types';
+import { BuildOptions } from 'sequelize';
+import { Column, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({ tableName: 'trsassets_votes_old' })
 export class OldVoteTxModel extends BaseModel<OldVoteTxModel> {
@@ -18,7 +18,7 @@ export class OldVoteTxModel extends BaseModel<OldVoteTxModel> {
 
   constructor(
     values?: FilteredModelAttributes<OldVoteTxModel>,
-    options?: IBuildOptions
+    options?: BuildOptions
   ) {
     super(values, options);
 

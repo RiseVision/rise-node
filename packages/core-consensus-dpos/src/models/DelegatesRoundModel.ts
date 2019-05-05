@@ -10,6 +10,6 @@ export class DelegatesRoundModel extends BaseModel<DelegatesRoundModel> {
   @Column
   public round: number;
 
-  @Column(DataType.ARRAY(DataType.BLOB))
+  @Column({ type: DataType.ARRAY(DataType.BLOB) })
   public list: Buffer[];
 }

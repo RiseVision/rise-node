@@ -121,7 +121,7 @@ export class SecondSignatureTransaction extends BaseTx<
     tx: IBaseTransaction<SecondSignatureAsset>,
     block: SignedBlockType,
     sender: AccountsModelWith2ndSign
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelWith2ndSign>>> {
     const secondPublicKey = tx.asset.signature.publicKey;
     sender.applyValues({
       secondPublicKey,
@@ -148,7 +148,7 @@ export class SecondSignatureTransaction extends BaseTx<
     tx: IBaseTransaction<SecondSignatureAsset>,
     block: SignedBlockType,
     sender: AccountsModelWith2ndSign
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelWith2ndSign>>> {
     sender.applyValues({
       secondPublicKey: null,
       secondSignature: 0,
@@ -173,7 +173,7 @@ export class SecondSignatureTransaction extends BaseTx<
   public async applyUnconfirmed(
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: AccountsModelWith2ndSign
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelWith2ndSign>>> {
     if (sender.u_secondSignature || sender.secondSignature) {
       throw new Error('Second signature already enabled');
     }
@@ -197,7 +197,7 @@ export class SecondSignatureTransaction extends BaseTx<
   public async undoUnconfirmed(
     tx: IBaseTransaction<SecondSignatureAsset>,
     sender: AccountsModelWith2ndSign
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelWith2ndSign>>> {
     sender.applyValues({
       u_secondSignature: 0,
     });
@@ -241,7 +241,9 @@ export class SecondSignatureTransaction extends BaseTx<
   }
 
   // tslint:disable-next-line max-line-length
-  public dbSave(tx: IBaseTransaction<SecondSignatureAsset>): DBOp<any> {
+  public dbSave(
+    tx: IBaseTransaction<SecondSignatureAsset>
+  ): DBOp<SignaturesModel> {
     return {
       model: this.SignaturesModel,
       type: 'create',

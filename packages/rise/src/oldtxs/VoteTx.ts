@@ -275,7 +275,7 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
   // tslint:disable-next-line max-line-length
   public dbSave(
     tx: IBaseTransaction<VoteAsset> & { senderId: string }
-  ): DBOp<any> {
+  ): DBOp<OldVoteTxModel> {
     return {
       model: this.OldVoteTxModel,
       type: 'create',
@@ -392,7 +392,7 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
         values: added.map((username) => ({
           address: senderAddress,
           username,
-        })),
+        })) as any,
       });
     }
 

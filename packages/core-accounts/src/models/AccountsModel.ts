@@ -1,8 +1,6 @@
 // tslint:disable
-import { Address, IAccountsModel, publicKey } from '@risevision/core-types';
+import { Address, IAccountsModel } from '@risevision/core-types';
 import * as pgp from 'pg-promise';
-import * as sequelize from 'sequelize';
-import { Op } from 'sequelize';
 import {
   Column,
   DataType,
@@ -32,7 +30,7 @@ export class AccountsModel extends BaseModel<AccountsModel>
   public u_balance: bigint;
 
   public toPOJO() {
-    const toRet = this.toJSON();
+    const toRet: any = this.toJSON();
     Object.keys(toRet).forEach((k) => {
       if (Buffer.isBuffer(toRet[k])) {
         toRet[k] = toRet[k].toString('hex');

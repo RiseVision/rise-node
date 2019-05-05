@@ -418,7 +418,7 @@ export class BlocksModuleProcess {
     }
 
     // check if blocks exists.
-    const dbBlock = await this.BlocksModel.findById(block.id);
+    const dbBlock = await this.BlocksModel.findByPk(block.id);
     if (dbBlock !== null) {
       throw new Error(`Block ${block.id} already exists`);
     }

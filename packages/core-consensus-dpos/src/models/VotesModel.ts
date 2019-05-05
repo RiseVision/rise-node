@@ -5,19 +5,17 @@ import {
   Column,
   DataType,
   ForeignKey,
-  IBuildOptions,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @Table({ tableName: 'trsassets_votes' })
 export class VotesModel extends BaseModel<VotesModel> {
   @PrimaryKey
-  @Column(DataType.ARRAY(DataType.TEXT))
+  @Column({ type: DataType.ARRAY(DataType.TEXT) })
   public added: string[];
   @PrimaryKey
-  @Column(DataType.ARRAY(DataType.TEXT))
+  @Column({ type: DataType.ARRAY(DataType.TEXT) })
   public removed: string[];
 
   @PrimaryKey

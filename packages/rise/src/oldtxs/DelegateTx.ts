@@ -41,7 +41,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
   private accountsModule: IAccountsModule<AccountsModelForDPOS>;
   @inject(ModelSymbols.model)
   @named(Symbols.models.accounts)
-  private AccountsModel: typeof IAccountsModel;
+  private AccountsModel: typeof AccountsModelForDPOS;
   @inject(ModelSymbols.model)
   @named(dPoSSymbols.models.delegates)
   private DelegatesModel: typeof DelegatesModel;
@@ -159,7 +159,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
     tx: IBaseTransaction<DelegateAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     const data = {
       isDelegate: 1 as any,
       u_isDelegate: 1 as any,
@@ -187,7 +187,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
     tx: IBaseTransaction<DelegateAsset>,
     block: SignedBlockType,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     const data = {
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
@@ -216,7 +216,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
   public async applyUnconfirmed(
     tx: IBaseTransaction<DelegateAsset>,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     const data = {
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 1 as 0 | 1,
@@ -243,7 +243,7 @@ export class OldRegDelegateTx extends OldBaseTx<DelegateAsset, DelegatesModel> {
   public async undoUnconfirmed(
     tx: IBaseTransaction<DelegateAsset>,
     sender: AccountsModelForDPOS
-  ): Promise<Array<DBOp<any>>> {
+  ): Promise<Array<DBOp<AccountsModelForDPOS>>> {
     const data = {
       isDelegate: 0 as 0 | 1,
       u_isDelegate: 0 as 0 | 1,

@@ -1,11 +1,13 @@
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
+  FilteredModelAttributes,
   ITransactionsModel,
   SignedBlockType,
   Symbols,
 } from '@risevision/core-types';
 import { toTransportable } from '@risevision/core-utils';
 import * as _ from 'lodash';
+import { BuildOptions } from 'sequelize';
 import {
   Column,
   DataType,
@@ -13,8 +15,6 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
 
 @Table({ tableName: 'blocks' })
 export class BlocksModel extends BaseModel<BlocksModel> {
@@ -25,7 +25,9 @@ export class BlocksModel extends BaseModel<BlocksModel> {
       ModelSymbols.model,
       Symbols.models.transactions
     );
-    const b = _.cloneDeep(btmp instanceof BlocksModel ? btmp.toJSON() : btmp);
+    const b: any = _.cloneDeep(
+      btmp instanceof BlocksModel ? btmp.toJSON() : btmp
+    );
     const txs = (btmp.transactions || []).map((t) =>
       TxModel.toTransportTransaction(t)
     );
@@ -94,7 +96,7 @@ export class BlocksModel extends BaseModel<BlocksModel> {
   private TransactionsModel: ITransactionsModel[];
   constructor(
     values?: FilteredModelAttributes<BlocksModel>,
-    options?: IBuildOptions
+    options?: BuildOptions
   ) {
     super(values, options);
     if (this.TransactionsModel == null) {

@@ -1,6 +1,7 @@
 import { BaseModel, ModelSymbols } from '@risevision/core-models';
 import {
   Address,
+  FilteredModelAttributes,
   IBaseTransaction,
   IBlocksModule,
   ITransactionsModel,
@@ -9,6 +10,7 @@ import {
   TransactionType,
 } from '@risevision/core-types';
 import { toTransportable } from '@risevision/core-utils';
+import { BuildOptions } from 'sequelize';
 import {
   Column,
   DataType,
@@ -16,9 +18,6 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { IBuildOptions } from 'sequelize-typescript/lib/interfaces/IBuildOptions';
-import { FilteredModelAttributes } from 'sequelize-typescript/lib/models/Model';
-
 @Table({ tableName: 'trs' })
 // tslint:disable-next-line max-line-length
 export class TransactionsModel<Asset = any>
@@ -82,7 +81,7 @@ export class TransactionsModel<Asset = any>
   @Column(DataType.BIGINT)
   public fee: bigint;
 
-  @Column(DataType.ARRAY(DataType.BLOB))
+  @Column({ type: DataType.ARRAY(DataType.BLOB) })
   public signatures: Buffer[];
 
   @Column(DataType.INTEGER)
@@ -92,7 +91,7 @@ export class TransactionsModel<Asset = any>
 
   constructor(
     values?: FilteredModelAttributes<TransactionsModel<Asset>>,
-    options?: IBuildOptions
+    options?: BuildOptions
   ) {
     super(values, options);
     if (values && values.asset) {
