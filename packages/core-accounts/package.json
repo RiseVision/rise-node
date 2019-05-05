@@ -28,7 +28,7 @@
     "pg-promise": "=7.3.2",
     "reflect-metadata": "^0.1.10",
     "routing-controllers": "=0.7.7",
-    "sequelize": "5.7.0",
+    "sequelize": "5.8.5",
     "sequelize-typescript": "^1.0.0-alpha.9",
     "z-schema": "3.24.2"
   },

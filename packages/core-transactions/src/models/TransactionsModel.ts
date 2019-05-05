@@ -18,7 +18,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-@Table({ tableName: 'trs' })
+@Table({ tableName: 'trs', timestamps: false })
 // tslint:disable-next-line max-line-length
 export class TransactionsModel<Asset = any>
   extends BaseModel<TransactionsModel<Asset>>

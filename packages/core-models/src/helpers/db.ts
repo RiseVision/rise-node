@@ -51,13 +51,16 @@ export class DBHelper {
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).insertQuery(
-      insertOp.model.getTableName(),
-      insertOp.values,
-      insertOp.model.rawAttributes,
-      {}
-    );
+    return squelPostgres
+      .insert({
+        autoQuoteFieldNames: true,
+        autoQuoteTableNames: true,
+        nameQuoteCharacter: '"',
+        stringFormatter: (s) => `'${s}'`,
+      })
+      .into(insertOp.model.getTableName() as string)
+      .setFields(insertOp.values)
+      .toString();
   }
 
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {

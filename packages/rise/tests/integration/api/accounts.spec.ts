@@ -5,7 +5,11 @@ import {
   Symbols,
 } from '@risevision/core-types';
 import { expect } from 'chai';
+import * as sequelize from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
+
 import { IKeypair, Rise } from 'dpos-offline';
+import { DefaultScope, Model, Table } from 'sequelize-typescript';
 import * as supertest from 'supertest';
 import { toNativeTx } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import initializer from '../common/init';
@@ -19,6 +23,23 @@ import {
 } from '../common/utils';
 import { checkAddress, checkIntParam, checkPubKey } from './utils';
 
+describe('test', () => {
+  beforeEach(async () => {
+    @Table({ tableName: 'brocca' })
+    @DefaultScope({
+      attributes: [[sequelize.literal('meow'), 'aaa']],
+    })
+    class Brocca extends Model<Brocca> {}
+    const bit = new Sequelize({ dialect: 'postgres' });
+    bit.addModels([Brocca]);
+    await Brocca.findAll();
+
+    process.exit(0);
+  });
+  it('test', () => {
+    // console.log('a');
+  });
+});
 // tslint:disable no-unused-expression max-line-length no-big-function object-literal-sort-keys no-identical-functions
 describe('api/accounts', () => {
   initializer.setup();

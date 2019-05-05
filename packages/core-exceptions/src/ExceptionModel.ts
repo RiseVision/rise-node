@@ -1,6 +1,6 @@
 import { Column, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
-@Table({ tableName: 'exceptions' })
+@Table({ tableName: 'exceptions', timestamps: false })
 export class ExceptionModel extends Model<ExceptionModel> {
   @PrimaryKey
   @Column

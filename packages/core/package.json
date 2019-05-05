@@ -32,7 +32,7 @@
     "mangiafuoco": "1.2.3",
     "routing-controllers": "=0.7.7",
     "semver": "^5.6.0",
-    "sequelize": "5.7.0",
+    "sequelize": "5.8.5",
     "sequelize-typescript": "^1.0.0-alpha.9",
     "socket.io": "2.2.0",
     "uuid": "=3.3.2",

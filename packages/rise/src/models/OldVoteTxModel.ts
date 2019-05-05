@@ -3,7 +3,7 @@ import { FilteredModelAttributes, publicKey } from '@risevision/core-types';
 import { BuildOptions } from 'sequelize';
 import { Column, PrimaryKey, Table } from 'sequelize-typescript';
 
-@Table({ tableName: 'trsassets_votes_old' })
+@Table({ tableName: 'trsassets_votes_old', timestamps: false })
 export class OldVoteTxModel extends BaseModel<OldVoteTxModel> {
   @PrimaryKey
   @Column

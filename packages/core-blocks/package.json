@@ -33,7 +33,7 @@
     "mangiafuoco": "1.2.3",
     "promise-retry": "^1.1.1",
     "routing-controllers": "=0.7.7",
-    "sequelize": "5.7.0",
+    "sequelize": "5.8.5",
     "sequelize-typescript": "^1.0.0-alpha.9",
     "type-tagger": "^1.0.0",
     "utility-types": "^3.6.1",

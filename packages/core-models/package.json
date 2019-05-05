@@ -20,7 +20,7 @@
     "inversify": "5.0.1",
     "lodash": "4.17.11",
     "reflect-metadata": "^0.1.10",
-    "sequelize": "5.7.0",
+    "sequelize": "5.8.5",
     "sequelize-typescript": "^1.0.0-alpha.9",
     "squel": "=5.12.2"
   },

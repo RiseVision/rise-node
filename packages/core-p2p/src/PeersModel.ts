@@ -1,7 +1,7 @@
 import { IPeersModel, PeerState } from '@risevision/core-types';
 import { Column, DataType, Model, Table } from 'sequelize-typescript';
 
-@Table({ tableName: 'peers' })
+@Table({ tableName: 'peers', timestamps: false })
 export class PeersModel extends Model<PeersModel> implements IPeersModel {
   @Column
   public ip: string;
