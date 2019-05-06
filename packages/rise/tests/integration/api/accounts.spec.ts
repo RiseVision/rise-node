@@ -5,13 +5,11 @@ import {
   Symbols,
 } from '@risevision/core-types';
 import { expect } from 'chai';
-import * as sequelize from 'sequelize';
-import { DataTypes, Sequelize as SSequelize } from 'sequelize';
-import { Model as SModel } from 'sequelize';
-import { Column, PrimaryKey, Sequelize } from 'sequelize-typescript';
 
-import { IKeypair, Rise } from 'dpos-offline';
-import { DefaultScope, Model, Table } from 'sequelize-typescript';
+import { Rise } from 'dpos-offline';
+import { Sequelize as SSequelize } from 'sequelize';
+import * as sequelize from 'sequelize';
+import { DefaultScope, Model, Sequelize, Table } from 'sequelize-typescript';
 import * as supertest from 'supertest';
 import { toNativeTx } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import initializer from '../common/init';
@@ -25,59 +23,28 @@ import {
 } from '../common/utils';
 import { checkAddress, checkIntParam, checkPubKey } from './utils';
 
-describe('test', () => {
-  it('test', async () => {
-    // console.log('a');
-    @Table({ tableName: 'brocca' })
-    @DefaultScope(() => ({
-      attributes: [[sequelize.literal('meow'), 'aaa']],
-    }))
-    class Brocca extends Model<Brocca> {
-      @PrimaryKey
-      @Column(DataTypes.STRING)
-      public betulla: string;
-    }
-    const bit = new Sequelize({
-      dialect: 'postgres',
-      username: 'test',
-      // tslint:disable-next-line
-      password: 'password',
-      database: 'test',
-      logging: true,
-    });
-    bit.addModels([Brocca]);
-
-    const bro = new Brocca({ betulla: 'ciao' });
-    await bro.update({ betulla: 'mao' });
-    await Brocca.findAll();
-  });
+// tslint:disable no-unused-expression max-line-length no-big-function object-literal-sort-keys no-identical-functions
+describe('api/accounts', () => {
+  initializer.setup();
+  initializer.autoRestoreEach();
   it('test2', async () => {
-    // tslint:disable-next-line
     class Brocca extends Model {}
     const s = new SSequelize('test', 'test', 'password', {
       dialect: 'postgres',
       logging: true,
     });
     Brocca.init(
-      {
-        a: { type: DataTypes.STRING },
-      },
+      {},
       {
         defaultScope: {
-          attributes: [[sequelize.literal('meow'), 'aaa']],
+          attributes: ['a', 'b', 'c'],
         },
         sequelize: s,
         tableName: 'brocca',
       }
     );
-    await Brocca.findAll();
+    await Brocca.findAll({ attributes: ['a'] });
   });
-});
-// tslint:disable no-unused-expression max-line-length no-big-function object-literal-sort-keys no-identical-functions
-describe('api/accounts', () => {
-  initializer.setup();
-  initializer.autoRestoreEach();
-
   describe('/', () => {
     checkAddress('address', '/api/accounts/');
     // checkPubKey('publicKey', '/api/accounts/');

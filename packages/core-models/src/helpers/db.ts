@@ -7,7 +7,7 @@ import {
   DBUpsertOp,
 } from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, postConstruct } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
@@ -40,27 +40,34 @@ export class DBHelper {
   @inject(ModelSymbols.sequelize)
   private sequelize: Sequelize;
 
+  private queryGenerator: any;
+
+  @postConstruct()
+  public postConstruct() {
+    this.queryGenerator = this.sequelize.getQueryInterface()
+      .QueryGenerator as any;
+  }
+
   public handleUpdate(updateOp: DBUpdateOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).updateQuery(
-      updateOp.model.getTableName(),
-      updateOp.values,
-      updateOp.options.where,
-      updateOp.options
+    return this.prepareStatement(
+      this.queryGenerator.updateQuery(
+        updateOp.model.getTableName(),
+        updateOp.values,
+        updateOp.options.where,
+        updateOp.options
+      )
     );
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    return squelPostgres
-      .insert({
-        autoQuoteFieldNames: true,
-        autoQuoteTableNames: true,
-        nameQuoteCharacter: '"',
-        stringFormatter: (s) => `'${s}'`,
-      })
-      .into(insertOp.model.getTableName() as string)
-      .setFields(insertOp.values)
-      .toString();
+    return this.prepareStatement(
+      this.queryGenerator.insertQuery(
+        insertOp.model.getTableName(),
+        insertOp.values,
+        insertOp.model.rawAttributes,
+        {}
+      )
+    );
   }
 
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
@@ -168,5 +175,19 @@ export class DBHelper {
       }
     }
     return tempOps.join(';');
+  }
+
+  private prepareStatement(data: { query: string; bind: any[] }) {
+    return data.query.replace(/\$([0-9]+)/g, (_, k) => {
+      const numericK = parseInt(k, 10) - 1;
+      if (isNaN(numericK)) {
+        throw new Error('non numeric data');
+      }
+      if (numericK in data.bind) {
+        return this.queryGenerator.escape(data.bind[numericK]);
+      } else {
+        throw new Error('cant find');
+      }
+    });
   }
 }
