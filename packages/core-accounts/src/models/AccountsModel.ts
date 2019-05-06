@@ -10,9 +10,9 @@ import {
 } from 'sequelize-typescript';
 import { BaseModel } from '@risevision/core-models';
 
-@DefaultScope({
+@DefaultScope(() => ({
   attributes: ['address', 'balance', 'virgin', 'u_balance'].sort(),
-})
+}))
 @Table({ tableName: 'mem_accounts', timestamps: false })
 export class AccountsModel extends BaseModel<AccountsModel>
   implements IAccountsModel {

@@ -17,7 +17,7 @@ const buildArrayArgAttribute = (table: string): any => {
   ];
 };
 
-@DefaultScope({
+@DefaultScope(() => ({
   attributes: [
     'username',
     'isDelegate',
@@ -34,7 +34,7 @@ const buildArrayArgAttribute = (table: string): any => {
     buildArrayArgAttribute('delegates'),
     buildArrayArgAttribute('u_delegates'),
   ],
-})
+}))
 export class AccountsModelForDPOS extends IAccountsModel {
   @Column
   public username: string;
