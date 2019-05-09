@@ -109,7 +109,7 @@ export async function createContainer(
     return Promise.resolve(null) as any;
   };
 
-  const types = [];
+  const types: Array<{ name: symbol; type: number }> = [];
 
   if (modules.indexOf('core-transactions') !== -1) {
     types.push({ name: TXSymbols.sendTX, type: 10 });

@@ -21,13 +21,18 @@ export class BaseProtobufTransportMethod<
   protected readonly protoRequest: ProtoIdentifier<Data>;
   protected readonly protoResponse: ProtoIdentifier<Out>;
 
+  get isRequestEncodable(): boolean {
+    return Boolean(this.protoRequest);
+  }
+
+  get isResponseEncodable(): boolean {
+    return Boolean(this.protoResponse);
+  }
+
   protected async encodeRequest(
     data: Data | null = null,
     peer: Peer
   ): Promise<Buffer> {
-    if (data === null) {
-      return null;
-    }
     return this.protoBufHelper.encode(
       data,
       this.protoRequest.namespace,
@@ -36,11 +41,8 @@ export class BaseProtobufTransportMethod<
   }
 
   protected async decodeRequest(
-    req: Overwrite<SingleTransportPayload<Data, Query>, { body?: Buffer }>
+    req: Overwrite<SingleTransportPayload<Data, Query>, { body: Buffer }>
   ): Promise<Data> {
-    if (req.body === null || !this.protoRequest) {
-      return null;
-    }
     return this.protoBufHelper.decodeToObj(
       req.body,
       this.protoRequest.namespace,
@@ -50,9 +52,6 @@ export class BaseProtobufTransportMethod<
   }
 
   protected async decodeResponse(res: Buffer, peer: Peer): Promise<Out> {
-    if (res === null || !this.protoResponse) {
-      return null;
-    }
     return this.protoBufHelper.decodeToObj(
       res,
       this.protoResponse.namespace,
@@ -65,9 +64,6 @@ export class BaseProtobufTransportMethod<
     data: Out,
     req: SingleTransportPayload<Data, Query>
   ): Promise<Buffer> {
-    if (data === null) {
-      return null;
-    }
     return this.protoBufHelper.encode(
       data,
       this.protoResponse.namespace,

@@ -220,15 +220,15 @@ export class TransportModule extends Extendable {
   public async getFromRandomPeer<Body, Query, Out>(
     config: { limit?: number; broadhash?: string; allowedStates?: PeerState[] },
     transportMethod: ITransportMethod<Body, Query, Out>,
-    payload: SingleTransportPayload<Body, Query>
-  ): Promise<Out> {
+    payload: SingleTransportPayload<Body, Query> | null
+  ): Promise<Out | null> {
     config.limit = 1;
     config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
     const peers = this.peersModule.getPeers(config);
     if (peers.length === 0) {
-      throw new Error('No peer available');
+      throw new Error('No peers available');
     }
-    return peers[0].makeRequest(transportMethod, payload);
+    return peers[0].makeRequest(transportMethod, payload || undefined);
   }
 
   public cleanup() {
@@ -308,12 +308,16 @@ export class TransportModule extends Extendable {
       PeersListResponse
     >({}, this.peersListMethod, null);
 
+    if (!response) {
+      this.logger.debug('discoverPeers failed');
+    }
+
     await cbToPromise((cb) =>
       this.schema.validate(response, peersSchema.discover.peers, cb)
     );
 
     // Filter only acceptable peers.
-    const acceptablePeers = this.peersLogic.acceptable(response.peers);
+    const acceptablePeers = this.peersLogic.acceptable(response!.peers);
 
     let discovered = 0;
     let alreadyKnown = 0;

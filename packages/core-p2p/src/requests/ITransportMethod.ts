@@ -1,12 +1,13 @@
 import { PeerRequestOptions } from '@risevision/core-types';
 import { Peer } from '../peer';
 
-export type SingleTransportPayload<Body, Query> = {
+// TODO `extends` for generic params
+export interface SingleTransportPayload<Body, Query> {
   headers?: { [h: string]: string };
   body?: Body;
   query?: Query;
   requester?: Peer;
-} | null;
+}
 
 export interface ITransportMethod<Data, Query, Out> {
   batchable: boolean;
@@ -38,7 +39,7 @@ export interface ITransportMethod<Data, Query, Out> {
    * @param peer the peer to query
    * @param body the buffer containing the response
    */
-  handleResponse(peer: Peer, body: Buffer): Promise<Out>;
+  handleResponse(peer: Peer, body: Buffer): Promise<Out | null>;
 
   /**
    * Creates request options

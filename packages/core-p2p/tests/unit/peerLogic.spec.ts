@@ -449,7 +449,10 @@ describe('logic/peer', () => {
   describe('makeRequest', () => {
     let requestHandlerStub: StubbedRequest;
     let reqData;
-    const response = { body: null, peer: 'peer' };
+    const response: { body: Buffer | null; peer: 'peer' } = {
+      body: null,
+      peer: 'peer',
+    };
     let getFromPeerStub: SinonStub;
     beforeEach(async () => {
       requestHandlerStub = new StubbedRequest();

@@ -47,6 +47,7 @@ export function promiseToCB<T>(
 
 /**
  * Promisify a fn that returns a callback
+ * TODO use build-in promisify
  */
 export function cbToPromise<T>(
   fn: (cb: cback<T>) => void,
@@ -75,6 +76,7 @@ export function cbToPromise<T>(
   });
 }
 
+// TODO use build-in promisify
 export function cbToVoidPromise(fn: (cb: cback<any>) => void): Promise<void> {
   return cbToPromise(fn);
 }

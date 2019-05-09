@@ -4,6 +4,7 @@ import {
   PeerState,
   PeerType,
 } from '@risevision/core-types';
+import * as assert from 'assert';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
 import { p2pSymbols } from './helpers';
@@ -82,7 +83,6 @@ export class Peer implements PeerType {
     return this;
   }
 
-  // tslint:disable-next-line max-line-length
   public normalize<
     T extends { height?: number; port?: number; state?: PeerState }
   >(peer: T): T {
@@ -99,7 +99,7 @@ export class Peer implements PeerType {
   /**
    * Checks number or assigns default value from parameter.
    */
-  public parseInt(integer: number, fallback: number) {
+  public parseInt(integer: number | null | undefined, fallback: number) {
     integer = parseInt(`${integer}`, 10);
     integer = isNaN(integer) ? fallback : integer;
     return integer;
@@ -146,10 +146,11 @@ export class Peer implements PeerType {
   public async makeRequest<Body, Query, Out>(
     method: ITransportMethod<Body, Query, Out>,
     payload: SingleTransportPayload<Body, Query> = {}
-  ): Promise<Out> {
+  ): Promise<Out | null> {
+    const options = await method.createRequestOptions(payload);
     const { body } = await this.transportModule.getFromPeer<Buffer>(
       this,
-      await method.createRequestOptions(payload)
+      options
     );
     const resp = await this.transportWrapper.unwrapResponse(body, this);
     if (resp === null) {
@@ -162,7 +163,7 @@ export class Peer implements PeerType {
     }
   }
 
-  public pingAndUpdate(): Promise<void> {
+  public pingAndUpdate(): Promise<null> {
     return this.makeRequest(this.pingRequest);
   }
 

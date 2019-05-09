@@ -14,6 +14,7 @@ import {
   BroadcastTaskOptions,
   P2PConstantsType,
   p2pSymbols,
+  Peer,
   PeersLogic,
   PeersModule,
 } from '../../src';
@@ -304,7 +305,10 @@ describe('logic/broadcaster', () => {
 
     it('should call peer.makeRequest per each created peer instance', async () => {
       createPeerStub.resetBehavior();
-      const stubs = [];
+      const stubs: Array<{
+        makeRequest: SinonStub;
+        peer: Peer;
+      }> = [];
       let makeRequestCallCount = 0;
       createPeerStub.callsFake((p) => {
         const peer = {

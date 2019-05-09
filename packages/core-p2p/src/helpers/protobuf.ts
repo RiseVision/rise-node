@@ -1,5 +1,6 @@
 import { LaunchpadSymbols } from '@risevision/core-launchpad';
 import { ICoreModule, ILogger, Symbols } from '@risevision/core-types';
+import * as assert from 'assert';
 import * as fs from 'fs';
 import { inject, injectable, postConstruct } from 'inversify';
 import * as path from 'path';
@@ -60,7 +61,7 @@ export class ProtoBufHelper {
    */
   public encode(payload: any, namespace: string, messageType?: string): Buffer {
     if (!this.validate(payload, namespace, messageType)) {
-      return null;
+      throw new Error('ProtoBuf payload not valid');
     }
     const message = this.getMessageInstance(namespace, messageType);
     return message.encode(payload).finish() as Buffer;
@@ -92,7 +93,7 @@ export class ProtoBufHelper {
         }
       }
     }
-    return null;
+    throw new Error('ProtoBuf Message missing');
   }
 
   /**
@@ -153,11 +154,16 @@ export class ProtoBufHelper {
         this.logger.error(
           `ProtoBuf: cannot find message ${typeToLookup} in ${namespace}`
         );
-        return null;
+        throw new Error(
+          `ProtoBuf: cannot find message ${typeToLookup} in ${namespace}`
+        );
       }
       return instance;
     } else {
       this.logger.error(
+        `Unable to find ProtoBuf with package ${namespace} and messageType ${messageType}`
+      );
+      throw new Error(
         `Unable to find ProtoBuf with package ${namespace} and messageType ${messageType}`
       );
     }
@@ -165,7 +171,8 @@ export class ProtoBufHelper {
 
   private autoLoadProtos() {
     for (const module of this.modules) {
-      const protoDir = path.join(module.directory, 'proto');
+      assert(module.directory);
+      const protoDir = path.join(module.directory!, 'proto');
       if (!fs.existsSync(protoDir)) {
         continue;
       }
