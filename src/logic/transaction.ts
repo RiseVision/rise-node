@@ -7,14 +7,14 @@ import * as supersha from 'supersha';
 import z_schema from 'z-schema';
 import {
   BigNum,
-  catchToLoggerAndRemapError,
   constants,
   Ed,
   ExceptionsList,
   ExceptionsManager,
   IKeypair,
   ILogger,
-  Slots
+  Slots,
+  TransactionType
 } from '../helpers/';
 import { RunThroughExceptions } from '../helpers/decorators/exceptions';
 import { IAccountLogic, IRoundsLogic, ITransactionLogic, VerificationType } from '../ioc/interfaces/logic/';
@@ -209,7 +209,7 @@ export class TransactionLogic implements ITransactionLogic {
         break;
       }
     }
-    const recipientId = recipientValid ?
+    const recipientId = (recipientValid || type === TransactionType.SEND) ?
       BigNum.fromBuffer(recipientIdBytes).toString() + 'R' : null;
 
     const amount = bb.readLong(offset);

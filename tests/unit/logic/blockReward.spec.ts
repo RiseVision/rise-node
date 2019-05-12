@@ -89,11 +89,11 @@ describe('logic/blockReward', () => {
     });
 
     const tests = [
-      { height: 10, supply: 11000000141000000 },
-      { height: 11, supply: 11000000141000000 + 30000000 },
-      { height: 12, supply: 11000000141000000 + 30000000 + 20000000 },
-      { height: 13, supply: 11000000141000000 + 30000000 + 20000000 + 150000000 },
-      { height: 100, supply: 11000000141000000 + 30000000 + 20000000 + 150000000 * (100 - 12) },
+      { height: 10, supply: 11000001491000000 },
+      { height: 11, supply: 11000001491000000 + 30000000 },
+      { height: 12, supply: 11000001491000000 + 30000000 + 20000000 },
+      { height: 13, supply: 11000001491000000 + 30000000 + 20000000 + 1500000000 },
+      { height: 100, supply: 11000001491000000 + 30000000 + 20000000 + 1500000000 * (100 - 12) },
     ];
     tests.forEach((supplyTest) => {
       it(`should return correct supply for height ${supplyTest.height}`, () => {

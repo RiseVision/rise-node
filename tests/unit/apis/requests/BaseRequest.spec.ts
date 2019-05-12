@@ -176,7 +176,7 @@ describe('apis/requests/BaseRequest', () => {
   describe('decodeProtoBufResponse', () => {
 
     describe('when response status is 200', () => {
-      const res = {status: 200, body: Buffer.from('', 'hex')};
+      const res = {status: 200, body: Buffer.from('aa', 'hex')};
       it('should call protoBufHelper.decodeToObj and return if it message is validated', () => {
         protoBufStub.enqueueResponse('decodeToObj', 'decodedResult');
         const resp = (instance as any).decodeProtoBufResponse(res, 'namespace', 'messageType');
@@ -189,7 +189,7 @@ describe('apis/requests/BaseRequest', () => {
     });
 
     describe('when response is an error', () => {
-      const res = {status: 200, body: Buffer.from('', 'hex')};
+      const res = {status: 200, body: Buffer.from('aa', 'hex')};
       it('should try first to parse the request as an API error', () => {
         const err = {success: false, error: 'thisIsAnErr'};
         protoBufStub.stubs.decode.returns(err);

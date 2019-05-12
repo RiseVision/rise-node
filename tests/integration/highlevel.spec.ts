@@ -584,6 +584,7 @@ describe('highlevel checks', function () {
         otherAccounts = await createRandomAccountWithFunds(123);
         transactions = [
           await createSendTransaction(1, 1, senderAccount, otherAccounts.wallet.address),
+          await createSendTransaction(1, 1, senderAccount, '0R'),
           await createVoteTransaction(1, senderAccount, otherAccounts.delegate.publicKey, true),
         ];
         block = await initializer.generateBlock(transactions);

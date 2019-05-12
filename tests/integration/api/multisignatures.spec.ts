@@ -60,16 +60,23 @@ describe('api/multisignatures', () => {
         .then((response) => {
           expect(Array.isArray(response.body.accounts)).is.true;
           expect(response.body.accounts.length).is.eq(1);
+          response.body.accounts[0].multisigaccounts.sort((a, b) => {
+            return a.address.localeCompare(b.address);
+          });
+          const multisigaccounts = keys.map((k) => {
+            return {
+              address: k.address,
+              balance: 0,
+              publicKey: k.publicKey,
+            };
+          });
+          multisigaccounts.sort((a, b) => {
+            return a.address.localeCompare(b.address);
+          });
           expect(response.body.accounts[0]).to.be.deep.eq({
             address: sender.address,
             balance: 5000000000 - 500000000,
-            multisigaccounts: keys.map((k) => {
-              return {
-                address: k.address,
-                balance: 0,
-                publicKey: k.publicKey,
-              };
-            }),
+            multisigaccounts,
             multilifetime: 24,
             multimin: 3,
             multisignatures: keys.map((k) => k.publicKey),

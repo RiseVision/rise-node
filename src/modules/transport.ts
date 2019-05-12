@@ -331,8 +331,8 @@ export class TransportModule implements ITransportModule {
   }
 
   @ValidateSchema()
-  // tslint:disable-next-line
   @WrapInBalanceSequence
+  // tslint:disable-next-line
   public async receiveTransactions(@SchemaValid(schema.transactions.properties.transactions, 'Invalid transactions body')
                                      transactions: Array<ITransportTransaction<any>>,
                                    peer: IPeerLogic | null,

@@ -1,7 +1,7 @@
 {
     "port": 5566,
     "address": "0.0.0.0",
-    "version": "1.3.2t",
+    "version": "1.3.4t",
     "fileLogLevel": "info",
     "logFileName": "logs/rise-testnet.log",
     "consoleLogLevel": "info",
@@ -50,7 +50,7 @@
         "banTime": 90000,
         "list": [
             {
-                "ip": "45.63.91.77",
+                "ip": "216.126.233.182",
                 "port": 5566
             },
             {
@@ -98,5 +98,5 @@
         "verifyOnLoading": false,
         "loadPerIteration": 5000
     },
-    "nethash": "e90d39ac200c495b97deb6d9700745177c7fc4aa80a404108ec820cbeced054c"
+    "nethash": "296dc9a4d1f4730473e2b19c4462fecd9a877eeff684de78b21bfc84de453062"
 }

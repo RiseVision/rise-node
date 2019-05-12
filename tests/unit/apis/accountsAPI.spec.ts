@@ -310,9 +310,11 @@ describe('apis/accountsAPI', () => {
         delegatesFromQuery = [del1, del2].map((d, idx) => ({
           delegate: new AccountsModel(d), info: {
             approval    : 100,
+            cmb         : 0,
             productivity: 100,
             rank        : idx,
             rate        : idx,
+            votesWeight : 1000000 * idx,
           },
         }));
         accountsModule.reset();
@@ -336,6 +338,7 @@ describe('apis/accountsAPI', () => {
             {
               address: null,
               approval: 100,
+              cmb: undefined,
               missedblocks: undefined,
               producedblocks: undefined,
               productivity: 100,
@@ -344,6 +347,7 @@ describe('apis/accountsAPI', () => {
               rate: 0,
               username: undefined,
               vote: undefined,
+              votesWeight: undefined,
             },
           ],
         });

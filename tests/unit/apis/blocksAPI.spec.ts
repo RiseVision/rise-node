@@ -95,6 +95,7 @@ describe('apis/blocksAPI', () => {
         limit  : 100,
         offset : 0,
         order  : [['height', 'desc']],
+        raw    : true,
       };
       findAllStub                  = sandbox.stub(blocksModel, 'findAndCountAll').resolves({ rows: [], count: 0 });
       txfindAllStub                = sandbox.stub(TxModel, 'findAll').resolves([{a: 'a'},{b: 'b'}]);
