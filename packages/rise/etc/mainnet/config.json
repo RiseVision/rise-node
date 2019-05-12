@@ -1,5 +1,5 @@
 {
-  "port": 5555,
+  "port": 5554,
   "address": "0.0.0.0",
   "version": "1.0.1",
   "fileLogLevel": "info",
@@ -27,7 +27,7 @@
   },
   "api": {
     "enabled": true,
-    "port": 5554,
+    "port": 5555,
     "access": {
       "public": false,
       "whiteList": ["127.0.0.1"],

@@ -23,10 +23,10 @@ export function createFakePeer(item: any = {}): PeerType {
       // tslint:disable-next-line
       console.log('stubme?');
       return {
+        firewalled: 'true',
         nethash: 'stubme?',
         port: 123,
         version: '1.2.3',
-        firewalled: 'true',
       };
     },
   };

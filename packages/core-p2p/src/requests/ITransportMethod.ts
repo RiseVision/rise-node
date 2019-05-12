@@ -2,6 +2,7 @@ import { PeerRequestOptions } from '@risevision/core-types';
 import { Peer } from '../peer';
 
 // TODO `extends` for generic params
+// tslint:disable-next-line
 export interface SingleTransportPayload<Body, Query> {
   headers?: { [h: string]: string };
   body?: Body;

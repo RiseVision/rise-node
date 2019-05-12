@@ -207,12 +207,12 @@ export class BroadcasterLogic implements IBroadcasterLogic {
 
       squashed.push(
         ...newRequests.map((payload) => ({
+          filters: {},
           options: {
             immediate: false,
             method: first.options.method,
             payload,
           },
-          filters: {},
         }))
       );
     }
