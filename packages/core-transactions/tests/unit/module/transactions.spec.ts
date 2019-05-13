@@ -213,23 +213,23 @@ describe('modules/transactions', () => {
 
   describe('getByID', () => {
     let txModel: typeof TransactionsModel;
-    let findByIDStub: SinonStub;
+    let findByPkStub: SinonStub;
     beforeEach(() => {
       txModel = container.getNamed(
         ModelSymbols.model,
         Symbols.models.transactions
       );
-      findByIDStub = sandbox.stub(txModel, 'findById').resolves('tx');
+      findByPkStub = sandbox.stub(txModel, 'findByPk').resolves('tx');
     });
 
     it('should call db.query', async () => {
       await instance.getByID('12345');
-      expect(findByIDStub.called).is.true;
-      expect(findByIDStub.firstCall.args[0]).to.be.deep.equal('12345');
+      expect(findByPkStub.called).is.true;
+      expect(findByPkStub.firstCall.args[0]).to.be.deep.equal('12345');
     });
 
     it('should throw if tx not found', async () => {
-      findByIDStub.resolves(null);
+      findByPkStub.resolves(null);
       await expect(instance.getByID('12345')).to.be.rejectedWith(
         'Transaction not found'
       );

@@ -96,7 +96,7 @@ describe('modules/blocks/chain', () => {
         .callsFake((cb: any) => {
           return cb('tx');
         });
-      findStub = sandbox.stub(blocksModel, 'findById');
+      findStub = sandbox.stub(blocksModel, 'findByPk');
       findStub.onFirstCall().resolves(blocksModule.lastBlock);
       findStub.onSecondCall().resolves({ id: 'previousBlock' });
 

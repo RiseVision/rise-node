@@ -84,8 +84,7 @@ export class DBHelper {
   }
 
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).upsertQuery(
+    return this.queryGenerator.upsertQuery(
       upsertOp.model.getTableName(),
       upsertOp.values,
       upsertOp.values,
@@ -104,8 +103,7 @@ export class DBHelper {
   }
 
   public handleDelete(deleteOp: DBRemoveOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).deleteQuery(
+    return this.queryGenerator.deleteQuery(
       deleteOp.model.getTableName(),
       deleteOp.options.where,
       { ...deleteOp.options, limit: null },

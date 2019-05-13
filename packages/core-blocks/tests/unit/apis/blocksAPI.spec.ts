@@ -217,27 +217,27 @@ describe('apis/blocksAPI', () => {
     });
 
     it('should call dbSequence.addAndPromise', async () => {
-      sandbox.stub(blocksModel, 'findById').resolves(fakeBlock);
+      sandbox.stub(blocksModel, 'findByPk').resolves(fakeBlock);
       await instance.getBlock(filters);
     });
 
-    it('should call blocksModel.findById', async () => {
-      const findByIdStub = sandbox
-        .stub(blocksModel, 'findById')
+    it('should call blocksModel.findByPk', async () => {
+      const findByPkStub = sandbox
+        .stub(blocksModel, 'findByPk')
         .resolves(fakeBlock);
       await instance.getBlock(filters);
-      expect(findByIdStub.calledOnce).is.true;
+      expect(findByPkStub.calledOnce).is.true;
     });
 
     it('should throw error if rows.length === 0', async () => {
-      sandbox.stub(blocksModel, 'findById').resolves(null);
+      sandbox.stub(blocksModel, 'findByPk').resolves(null);
       await expect(instance.getBlock(filters)).to.be.rejectedWith(
         'Block not found'
       );
     });
 
     it('should return stringified block from an id', async () => {
-      sandbox.stub(blocksModel, 'findById').resolves(fakeBlock);
+      sandbox.stub(blocksModel, 'findByPk').resolves(fakeBlock);
       const ret = await instance.getBlock(filters);
 
       expect(ret).to.be.deep.equal({
