@@ -6690,18 +6690,17 @@ sequelize-pool@^1.0.2:
   dependencies:
     bluebird "^3.5.3"
 
-sequelize-typescript@^1.0.0-alpha.9:
-  version "1.0.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/sequelize-typescript/-/sequelize-typescript-1.0.0-alpha.9.tgz#133310f2e9b4b050a0b45faa05b0efe3cc221408"
-  integrity sha512-YG2jClu1cILs/lZiYSpWwTzUKfC19aiZvzt1b9KIXoUX/ojwL2oXPMs+n2AGhdGLpIvoj6TBK7fNfeRvnHJnxA==
+sequelize-typescript@^1.0.0-beta.3:
+  version "1.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/sequelize-typescript/-/sequelize-typescript-1.0.0-beta.3.tgz#7f1060e62822d203776df3c25cd8ed70187a1a3c"
+  integrity sha512-JICyUiRJSUqYIbGgzrWHJBfWSxhL6eTXqcPKuEB7aB9zKaAcyuOxVGWpiUa9rJHg2M2wWZGPfHdcFJM0KDRJGg==
   dependencies:
-    "@types/node" "*"
     glob "7.1.2"
 
-sequelize@5.7.0:
-  version "5.7.0"
-  resolved "https://registry.yarnpkg.com/sequelize/-/sequelize-5.7.0.tgz#3a1df3d730a5f0ad691bca620759215758825282"
-  integrity sha512-BlCq26jzsQLgxUtxchVdNNmoPoPtT3f1LpP/QEpEWhSO9rOiwWcanb6vNZtRdXkvfbwIgELzS6/RsCqJL0CHGA==
+sequelize@5.8.5:
+  version "5.8.5"
+  resolved "https://registry.yarnpkg.com/sequelize/-/sequelize-5.8.5.tgz#3bb63b5e5b65eedc46d57fc69bb251b8af1bd73a"
+  integrity sha512-FvI3ceqYnNmgbBDeMvD7kdPFAnqelchiMavM+v+1SC+J19M4NThLSxrYL+yJWUJCSe++dHTyv2MEe7OBDVL6mw==
   dependencies:
     bluebird "^3.5.0"
     cls-bluebird "^2.1.0"
@@ -7096,6 +7095,11 @@ sprintf-js@~1.0.2:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
+
+sql-template-strings@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/sql-template-strings/-/sql-template-strings-2.2.2.tgz#3f11508a25addfce217a3042a9d300c3193b96ff"
+  integrity sha1-PxFQiiWt384hejBCqdMAwxk7lv8=
 
 squel@=5.12.2:
   version "5.12.2"

@@ -17,6 +17,7 @@ import {
 } from '@risevision/core-types';
 import { removeEmptyObjKeys } from '@risevision/core-utils';
 import { inject, injectable, named } from 'inversify';
+import { Op } from 'sequelize';
 import * as sequelize from 'sequelize';
 import { As } from 'type-tagger';
 import * as z_schema from 'z-schema';
@@ -270,7 +271,7 @@ export class RegisterDelegateTransaction extends BaseTx<
             model: this.TransactionsModel,
             required: true,
             where: {
-              id: { $not: tx.id },
+              id: { [Op.not]: tx.id },
               senderId: sender.address,
             },
           },

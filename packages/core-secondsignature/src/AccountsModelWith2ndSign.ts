@@ -6,9 +6,9 @@ import 'reflect-metadata';
 import { BuildOptions } from 'sequelize';
 import { Column, DataType, DefaultScope } from 'sequelize-typescript';
 
-@DefaultScope({
+@DefaultScope(() => ({
   attributes: ['secondSignature', 'secondPublicKey', 'u_secondSignature'],
-})
+}))
 export class AccountsModelWith2ndSign extends IAccountsModel {
   @Column
   public secondSignature: 0 | 1;

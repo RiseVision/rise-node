@@ -12,8 +12,8 @@
   "license": "GPL-3.0",
   "dependencies": {
     "inversify": "5.0.1",
-    "sequelize": "5.7.0",
-    "sequelize-typescript": "^1.0.0-alpha.9",
+    "sequelize": "5.8.5",
+    "sequelize-typescript": "^1.0.0-beta.3",
     "type-tagger": "^1.0.0",
     "utility-types": "^3.6.1"
   },

@@ -1,7 +1,7 @@
 import { IInfoModel } from '@risevision/core-types';
 import { Column, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
-@Table({ tableName: 'info' })
+@Table({ tableName: 'info', timestamps: false })
 export class InfoModel extends Model<InfoModel> implements IInfoModel {
   @PrimaryKey
   @Column

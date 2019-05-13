@@ -184,7 +184,7 @@ describe('delegatesWithMultipleForgingKEys', () => {
       // Assert prev round was forged by prevPubKey.
       let b = await blocksModel.findAll({
         where: {
-          generatorPublicKey: prevPubKey,
+          generatorPublicKey: prevPubKey as any,
           height: {
             [Op.gte]: blocksModule.lastBlock.height - 101,
           },
@@ -195,7 +195,7 @@ describe('delegatesWithMultipleForgingKEys', () => {
       // Assert prev round was NOT forged by curPubKey
       b = await blocksModel.findAll({
         where: {
-          generatorPublicKey: acct.publicKey,
+          generatorPublicKey: acct.publicKey as any,
           height: {
             [Op.gte]: blocksModule.lastBlock.height - 101,
           },

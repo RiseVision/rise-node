@@ -417,7 +417,7 @@ describe('modules/loader', () => {
       expect(second).deep.eq([5, 6, true]);
 
       loadBlocksOffsetStub.resetHistory();
-      await instance.load(10, 6, '', alse, 3);
+      await instance.load(10, 6, '', false, 3);
       expect(loadBlocksOffsetStub.callCount).eq(2);
 
       [first, second] = loadBlocksOffsetStub.args;

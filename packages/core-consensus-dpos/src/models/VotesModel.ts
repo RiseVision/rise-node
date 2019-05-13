@@ -9,7 +9,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 
-@Table({ tableName: 'trsassets_votes' })
+@Table({ tableName: 'trsassets_votes', timestamps: false })
 export class VotesModel extends BaseModel<VotesModel> {
   @PrimaryKey
   @Column({ type: DataType.ARRAY(DataType.TEXT) })

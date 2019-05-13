@@ -185,7 +185,7 @@ describe('apis/transactionsAPI', () => {
         TXSymbols.models.model
       );
       const findStub = sandbox
-        .stub(TxModel, 'findById')
+        .stub(TxModel, 'findByPk')
         .resolves(new TxModel(tx));
 
       const attachAssetsStub = sandbox

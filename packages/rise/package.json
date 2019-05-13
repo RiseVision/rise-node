@@ -36,8 +36,8 @@
     "inversify": "5.0.1",
     "lodash": "4.17.11",
     "mangiafuoco": "1.2.3",
-    "sequelize": "5.7.0",
-    "sequelize-typescript": "^1.0.0-alpha.9",
+    "sequelize": "5.8.5",
+    "sequelize-typescript": "^1.0.0-beta.3",
     "supersha": "0.0.1",
     "z-schema": "3.24.2"
   },

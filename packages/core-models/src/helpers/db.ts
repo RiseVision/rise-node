@@ -7,7 +7,7 @@ import {
   DBUpsertOp,
 } from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, postConstruct } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
@@ -40,23 +40,33 @@ export class DBHelper {
   @inject(ModelSymbols.sequelize)
   private sequelize: Sequelize;
 
+  private queryGenerator: any;
+
+  @postConstruct()
+  public postConstruct() {
+    this.queryGenerator = this.sequelize.getQueryInterface()
+      .QueryGenerator as any;
+  }
+
   public handleUpdate(updateOp: DBUpdateOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).updateQuery(
-      updateOp.model.getTableName(),
-      updateOp.values,
-      updateOp.options.where,
-      updateOp.options
+    return this.prepareStatement(
+      this.queryGenerator.updateQuery(
+        updateOp.model.getTableName(),
+        updateOp.values,
+        updateOp.options.where,
+        updateOp.options
+      )
     );
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).insertQuery(
-      insertOp.model.getTableName(),
-      insertOp.values,
-      insertOp.model.rawAttributes,
-      {}
+    return this.prepareStatement(
+      this.queryGenerator.insertQuery(
+        insertOp.model.getTableName(),
+        insertOp.values,
+        insertOp.model.rawAttributes,
+        {}
+      )
     );
   }
 
@@ -74,8 +84,7 @@ export class DBHelper {
   }
 
   public handleUpsert(upsertOp: DBUpsertOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).upsertQuery(
+    return this.queryGenerator.upsertQuery(
       upsertOp.model.getTableName(),
       upsertOp.values,
       upsertOp.values,
@@ -94,8 +103,7 @@ export class DBHelper {
   }
 
   public handleDelete(deleteOp: DBRemoveOp<any>) {
-    return (this.sequelize.getQueryInterface()
-      .QueryGenerator as any).deleteQuery(
+    return this.queryGenerator.deleteQuery(
       deleteOp.model.getTableName(),
       deleteOp.options.where,
       { ...deleteOp.options, limit: null },
@@ -165,5 +173,19 @@ export class DBHelper {
       }
     }
     return tempOps.join(';');
+  }
+
+  private prepareStatement(data: { query: string; bind: any[] }) {
+    return data.query.replace(/\$([0-9]+)/g, (_, k) => {
+      const numericK = parseInt(k, 10) - 1;
+      if (isNaN(numericK)) {
+        throw new Error('non numeric data');
+      }
+      if (numericK in data.bind) {
+        return this.queryGenerator.escape(data.bind[numericK]);
+      } else {
+        throw new Error('cant find');
+      }
+    });
   }
 }

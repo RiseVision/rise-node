@@ -1,5 +1,12 @@
 import * as _ from 'lodash';
-import { Model } from 'sequelize-typescript';
+import {
+  getScopeOptionsGetters,
+  Model,
+  resolveScopes,
+  ScopeOptions,
+  ScopeOptionsGetters,
+  setScopeOptionsGetters,
+} from 'sequelize-typescript';
 import {
   addAttribute,
   addScopeOptions,
@@ -12,7 +19,7 @@ import { deepAssign } from 'sequelize-typescript/dist/shared/object';
 export function mergeScopeOptions(
   from: ScopeFindOptions,
   into: ScopeFindOptions
-) {
+): ScopeFindOptions {
   const toRet = deepAssign({}, from, into);
   if (typeof into === 'undefined') {
     return toRet;
@@ -48,20 +55,56 @@ export function mergeModels(what: typeof Model, into: typeof Model) {
   const newAttrs = getAttributes(what.prototype);
   what.isInitialized = true;
   // Merge scopes.
-  const fromScopeOptions = getScopeOptions(what.prototype) || {};
-  const intoScopeOptions = getScopeOptions(into.prototype) || {};
+  let { getScopes, getDefaultScope } = getScopeOptionsGetters(what.prototype);
+  let {
+    getScopes: intoGetScopes,
+    getDefaultScope: intoGetDefaultScope,
+  } = getScopeOptionsGetters(into.prototype);
 
-  Object.keys(fromScopeOptions).forEach((scope) => {
-    if (fromScopeOptions[scope] && intoScopeOptions[scope]) {
-      intoScopeOptions[scope] = mergeScopeOptions(
-        fromScopeOptions[scope] as any,
-        intoScopeOptions[scope] as any
+  getScopes = getScopes || (() => ({}));
+  getDefaultScope = getDefaultScope || (() => ({}));
+  intoGetScopes = intoGetScopes || (() => ({}));
+  intoGetDefaultScope = intoGetDefaultScope || (() => ({}));
+
+  const fromScopes = { ...getScopes() };
+  const intoScopes = { ...intoGetScopes() };
+
+  const newIntoScopeGetter: { [scope: string]: ScopeFindOptions } = {};
+
+  Object.keys(fromScopes).forEach((scope) => {
+    if (fromScopes[scope] && intoScopes[scope]) {
+      newIntoScopeGetter[scope] = mergeScopeOptions(
+        fromScopes[scope] as any,
+        intoScopes[scope] as any
       );
-    } else if (fromScopeOptions[scope]) {
-      intoScopeOptions[scope] = fromScopeOptions[scope];
+    } else if (fromScopes[scope]) {
+      newIntoScopeGetter[scope] = fromScopes[scope] as ScopeFindOptions;
     }
   });
-  addScopeOptions(into.prototype, intoScopeOptions);
+
+  Object.keys(intoScopes).forEach((scope) => {
+    if (typeof newIntoScopeGetter[scope] === 'undefined') {
+      newIntoScopeGetter[scope] = intoScopes[scope] as ScopeFindOptions;
+    }
+  });
+
+  // Handle default.
+  const resolvedFromDefaultScope = getDefaultScope();
+  const resolvedToDefaultScope = intoGetDefaultScope();
+
+  const resolvedDefaultScope = mergeScopeOptions(
+    resolvedFromDefaultScope as any,
+    resolvedToDefaultScope as any
+  ) as any;
+
+  setScopeOptionsGetters(into.prototype, {
+    getDefaultScope() {
+      return resolvedDefaultScope;
+    },
+    getScopes() {
+      return newIntoScopeGetter as any;
+    },
+  });
 
   // Add methods.
   Object.getOwnPropertyNames(what.prototype)

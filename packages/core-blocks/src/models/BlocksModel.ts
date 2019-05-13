@@ -16,7 +16,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 
-@Table({ tableName: 'blocks' })
+@Table({ tableName: 'blocks', timestamps: false })
 export class BlocksModel extends BaseModel<BlocksModel> {
   public static toStringBlockType(
     btmp: SignedBlockType

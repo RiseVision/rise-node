@@ -31,18 +31,18 @@ describe('helpers/mergeModels', () => {
     const s = createNewTestSequelize();
 
     s.addModels([A]);
-    expect(A.attributes.a).not.undefined;
-    expect(A.attributes.b).not.undefined;
-    expect(A.attributes.b.primaryKey).true;
+    expect(A.rawAttributes.a).not.undefined;
+    expect(A.rawAttributes.b).not.undefined;
+    expect(A.rawAttributes.b.primaryKey).true;
   });
   it('should merge scopes', () => {
-    @Scopes({
+    @Scopes(() => ({
       both: { attributes: ['a'] },
       only_in_a: { attributes: ['a'] },
-    })
-    @DefaultScope({
+    }))
+    @DefaultScope(() => ({
       attributes: ['a', 'b'],
-    })
+    }))
     @Table({ modelName: 'a' })
     class A extends BaseModel<A> {
       @Column
@@ -51,13 +51,13 @@ describe('helpers/mergeModels', () => {
       private b: string;
     }
 
-    @Scopes({
+    @Scopes(() => ({
       both: { attributes: ['b'] },
       only_in_b: { attributes: ['b'] },
-    })
-    @DefaultScope({
+    }))
+    @DefaultScope(() => ({
       attributes: ['c'],
-    })
+    }))
     @Table({ modelName: 'a' })
     class B extends BaseModel<B> {
       @Column

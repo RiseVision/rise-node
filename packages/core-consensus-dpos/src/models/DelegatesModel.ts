@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { As } from 'type-tagger';
 
-@Table({ tableName: 'trsassets_delegates' })
+@Table({ tableName: 'trsassets_delegates', timestamps: false })
 export class DelegatesModel extends BaseModel<DelegatesModel> {
   @PrimaryKey
   @Column

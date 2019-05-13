@@ -37,6 +37,7 @@ describe('helpers/db', () => {
         return { QueryGenerator: this.qi };
       },
     } as any;
+    instance.postConstruct();
     // tslint:enable  no-empty
     // @ts-ignore
     stubQuery = sandbox.stub(instance.sequelize, 'query').resolves('yeah');
@@ -129,10 +130,12 @@ describe('helpers/db', () => {
   it('handleUpdate should call sequelize.querygenerator.updateQuery', () => {
     FakeModel.getTableName = () => 'theTable';
     // @ts-ignore
-    const stub = sandbox.stub(instance.sequelize.qi, 'updateQuery');
+    const stub = sandbox
+      .stub((instance as any).sequelize.qi, 'updateQuery')
+      .returns({ query: 'query', bind: null });
     instance.handleUpdate({
       type: 'update',
-      values: { test: 'hey' },
+      values: { test: 'hey' } as any,
       model: FakeModel,
       options: { where: { test: 'hAy' } },
     });
@@ -144,13 +147,14 @@ describe('helpers/db', () => {
   });
   it('handleInsert should call sequelize.querygenerator.insertQuery', () => {
     FakeModel.getTableName = () => 'theTable';
-    FakeModel.rawAttributes = { test: 'string' } as any;
-    // @ts-ignore
-    const stub = sandbox.stub(instance.sequelize.qi, 'insertQuery');
+    (FakeModel as any).rawAttributes = { test: 'string' } as any;
+    const stub = sandbox
+      .stub((instance as any).sequelize.qi, 'insertQuery')
+      .returns({ query: 'query', bind: null });
     instance.handleInsert({
       type: 'create',
       model: FakeModel,
-      values: { test: 'hey' },
+      values: { test: 'hey' } as any,
     });
 
     expect(stub.firstCall.args[0]).to.be.eq('theTable');
@@ -160,11 +164,12 @@ describe('helpers/db', () => {
   });
   it('handleUpsert should call sequelize.querygenerator.upsertQuery', () => {
     FakeModel.getTableName = () => 'theTable';
-    // @ts-ignore
-    const stub = sandbox.stub(instance.sequelize.qi, 'upsertQuery');
+    const stub = sandbox
+      .stub((instance as any).sequelize.qi, 'upsertQuery')
+      .returns({ query: 'query', bind: null });
     instance.handleUpsert({
       type: 'upsert',
-      values: { test: 'hey' },
+      values: { test: 'hey' } as any,
       model: FakeModel,
     });
 
@@ -176,8 +181,10 @@ describe('helpers/db', () => {
   });
   it('handleDelete should call sequelize.querygenerator.deleteQuery', () => {
     FakeModel.getTableName = () => 'theTable';
-    // @ts-ignore
-    const stub = sandbox.stub(instance.sequelize.qi, 'deleteQuery');
+    const stub = sandbox
+      // @ts-ignore
+      .stub(instance.sequelize.qi, 'deleteQuery')
+      .returns({ query: 'query', bind: null });
     instance.handleDelete({
       type: 'remove',
       model: FakeModel,
