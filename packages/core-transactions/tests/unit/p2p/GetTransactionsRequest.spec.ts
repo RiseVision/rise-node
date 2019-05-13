@@ -38,7 +38,7 @@ describe('apis/requests/GetTransactionsRequest', () => {
   });
 
   async function createRequest() {
-    const { data } = await instance.createRequestOptions();
+    const { data } = await instance.createRequestOptions({ body: null });
     const resp = await instance.handleRequest({ body: data, query: null });
     return instance.handleResponse(null, resp);
   }

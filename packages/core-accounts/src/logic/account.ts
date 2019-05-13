@@ -63,20 +63,18 @@ export class AccountLogic implements IAccountLogic {
       }
     });
 
-    return Promise.resolve(
-      this.AccountsModel.findAll({
-        limit: limit > 0 ? limit : undefined,
-        offset: offset > 0 ? offset : undefined,
-        order:
-          typeof sort === 'string'
-            ? [[sort, 'ASC']]
-            : Object.keys(sort).map((col) => [
-                col,
-                sort[col] === -1 ? 'DESC' : 'ASC',
-              ]),
-        where: filter,
-      })
-    );
+    return this.AccountsModel.findAll({
+      limit: limit > 0 ? limit : undefined,
+      offset: offset > 0 ? offset : undefined,
+      order:
+        typeof sort === 'string'
+          ? [[sort, 'ASC']]
+          : Object.keys(sort).map((col) => [
+              col,
+              sort[col] === -1 ? 'DESC' : 'ASC',
+            ]),
+      where: filter,
+    });
   }
 
   /**

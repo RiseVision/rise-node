@@ -216,6 +216,7 @@ export class DelegatesAPI {
   }) {
     const rows = await this.Accounts2DelegatesModel.findAll({
       attributes: ['address'],
+      raw: true,
       where: { username: params.username },
     });
     const addresses = rows.map((r) => r.address);
@@ -228,7 +229,6 @@ export class DelegatesAPI {
         address: { [Op.in]: addresses },
       },
     });
-
     return { voters };
   }
 

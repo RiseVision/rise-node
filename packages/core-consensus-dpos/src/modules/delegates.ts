@@ -435,7 +435,7 @@ export class DelegatesModule {
       isDelegate: 1,
     };
     if (this.dposV2Helper.isV1(height)) {
-      filter.sort = { vote: -1 };
+      filter.sort = { vote: -1, forgingPK: 1 };
     } else {
       filter.sort = { votesWeight: -1 };
       filter.forgingPK = { [Op.notIn]: exclusionList || [] };

@@ -128,15 +128,15 @@ export class PeersLoaderSubscriber extends Extendable {
   public parsePeerData(record: ParsedTxtRecord): null | BasePeerType {
     const port = record.get('port');
     const ip = record.get('ip');
-    if (!port) {
-      throw new Error("Peer's port required");
-    }
-    if (!ip) {
-      throw new Error("Peer's IP required");
-    }
+    // if (!port) {
+    //   throw new Error("Peer's port required");
+    // }
+    // if (!ip) {
+    //   throw new Error("Peer's IP required");
+    // }
     const peer = {
       ip: ip!,
-      port: parseInt(port, 10),
+      port: port ? parseInt(port, 10) : NaN,
     };
     if (peer.ip && !isNaN(peer.port)) {
       return peer;

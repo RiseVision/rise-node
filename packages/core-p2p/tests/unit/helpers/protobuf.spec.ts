@@ -78,8 +78,10 @@ describe('helpers/protobuf', () => {
       const r = instance.encode({}, 'test');
       expect(r).instanceof(Buffer);
     });
-    it('should return null if payload is invalid', () => {
-      expect(instance.encode({ test: 1 }, 'test')).null;
+    it('should throw err if payload is invalid', () => {
+      expect(() => instance.encode({ test: 1 }, 'test')).to.throw(
+        'ProtoBuf payload not valid'
+      );
     });
     it('should encode/decode properly', () => {
       const p = { test: 'hey brotha', success: true };

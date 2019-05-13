@@ -161,7 +161,10 @@ export class BaseTransportMethod<Data, Query, Out>
     request: SingleTransportPayload<Data, Query>
   ): Promise<void> {
     if (this.requestSchema) {
-      const res = this.schema.validate(request, this.requestSchema);
+      const res = this.schema.validate(
+        { ...request, body: request.body || null },
+        this.requestSchema
+      );
       if (!res) {
         throw new Error(
           this.schema
