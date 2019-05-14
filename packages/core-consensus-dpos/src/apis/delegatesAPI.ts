@@ -221,7 +221,7 @@ export class DelegatesAPI {
     });
     const addresses = rows.map((r) => r.address);
 
-    const voters = await this.AccountsModel.findAll({
+    const voters = await this.AccountsModel.scope(null).findAll({
       attributes: ['address', 'balance'],
       order: [['balance', 'DESC']],
       raw: true,
@@ -241,7 +241,7 @@ export class DelegatesAPI {
     limit?: number;
     orderBy?: string;
   }) {
-    const results = await this.AccountsModel.findAll({
+    const results = await this.AccountsModel.scope(null).findAll({
       attributes: [
         'address',
         'cmb',

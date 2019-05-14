@@ -77,7 +77,6 @@
     "sodium": "3.0.2",
     "source-map-support": "0.5.9",
     "sql-template-strings": "^2.2.2",
-    "squel": "=5.12.2",
     "strftime": "=0.10.0",
     "traverse": "^0.6.6",
     "uuid": "=3.3.2",

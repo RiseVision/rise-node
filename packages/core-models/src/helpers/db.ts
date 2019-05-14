@@ -11,29 +11,7 @@ import { inject, injectable, postConstruct } from 'inversify';
 import * as sequelize from 'sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { Model } from 'sequelize-typescript';
-import * as squel from 'squel';
 import { ModelSymbols } from './modelSymbols';
-
-const squelPostgres = squel.useFlavour('postgres');
-squelPostgres.registerValueHandler(Buffer, (buffer) => {
-  return {
-    formatted: true,
-    rawNesting: true,
-    value: "E'\\\\x" + buffer.toString('hex') + "'::bytea",
-  } as any;
-});
-squelPostgres.registerValueHandler('bigint', (bi: bigint) => {
-  return {
-    formatted: true,
-    rawNesting: true,
-    value: bi.toString(),
-  } as any;
-});
-squelPostgres.registerValueHandler(Array, (array) => {
-  const ins = squelPostgres.insert();
-  const values = array.map((a) => ins._buildString('?', [a], {}).text);
-  return `ARRAY[ ${values.join(', ')} ]`;
-});
 
 @injectable()
 export class DBHelper {
@@ -60,27 +38,52 @@ export class DBHelper {
   }
 
   public handleInsert(insertOp: DBCreateOp<any>) {
-    return this.prepareStatement(
-      this.queryGenerator.insertQuery(
-        insertOp.model.getTableName(),
-        insertOp.values,
-        insertOp.model.rawAttributes,
-        {}
-      )
+    const keys = Object.keys(insertOp.values);
+    const attributesSQL = keys
+      .map((attr) => this.queryGenerator.quoteIdentifier(attr))
+      .join(',');
+    const tableSQL = this.queryGenerator.quoteTable(
+      insertOp.model.getTableName()
     );
+    const valuesSQL = keys
+      .map((k) =>
+        this.queryGenerator.escape(
+          insertOp.values[k],
+          insertOp.model.rawAttributes[k],
+          { context: 'INSERT' }
+        )
+      )
+      .join(',');
+    return `INSERT INTO ${tableSQL} (${attributesSQL}) VALUES(${valuesSQL})`;
   }
 
   public handleBulkInsert(insertOp: DBBulkCreateOp<any>) {
-    return squelPostgres
-      .insert({
-        autoQuoteFieldNames: true,
-        autoQuoteTableNames: true,
-        nameQuoteCharacter: '"',
-        stringFormatter: (s) => `'${s}'`,
-      })
-      .into(insertOp.model.getTableName() as string)
-      .setFieldsRows(insertOp.values)
-      .toString();
+    if (insertOp.values.length === 0) {
+      return '';
+    }
+    const keys = Object.keys(insertOp.values[0]);
+
+    const attributesSQL = keys
+      .map((attr) => this.queryGenerator.quoteIdentifier(attr))
+      .join(',');
+    const tableSQL = this.queryGenerator.quoteTable(
+      insertOp.model.getTableName()
+    );
+    const valuesSQL = insertOp.values
+      .map(
+        (tuple) =>
+          `(${keys
+            .map((k) =>
+              this.queryGenerator.escape(
+                tuple[k],
+                insertOp.model.rawAttributes[k],
+                { context: 'INSERT' }
+              )
+            )
+            .join(',')})`
+      )
+      .join(', ');
+    return `INSERT INTO ${tableSQL} (${attributesSQL}) VALUES ${valuesSQL}`;
   }
 
   public handleUpsert(upsertOp: DBUpsertOp<any>) {

@@ -279,16 +279,14 @@ export class PeersModule implements IPeersModule {
       return;
     }
     // Wrap sql queries in transaction and execute
-    await this.PeersModel.sequelize
-      .transaction(async (transaction) => {
-        await this.PeersModel.truncate({ transaction });
-        await this.PeersModel.bulkCreate(peers, { transaction });
-        this.logger.info('Peers exported to database');
-      })
-      .catch((err) => {
-        this.logger.error('Export peers to database failed', {
-          error: err.message || err,
-        });
+    await this.PeersModel.sequelize!.transaction(async (transaction) => {
+      await this.PeersModel.truncate({ transaction });
+      await this.PeersModel.bulkCreate(peers, { transaction });
+      this.logger.info('Peers exported to database');
+    }).catch((err) => {
+      this.logger.error('Export peers to database failed', {
+        error: err.message || err,
       });
+    });
   }
 }

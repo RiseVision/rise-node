@@ -27,24 +27,24 @@ import { checkAddress, checkIntParam, checkPubKey } from './utils';
 describe('api/accounts', () => {
   initializer.setup();
   initializer.autoRestoreEach();
-  it('test2', async () => {
-    class Brocca extends Model {}
-    const s = new SSequelize('test', 'test', 'password', {
-      dialect: 'postgres',
-      logging: true,
-    });
-    Brocca.init(
-      {},
-      {
-        defaultScope: {
-          attributes: ['a', 'b', 'c'],
-        },
-        sequelize: s,
-        tableName: 'brocca',
-      }
-    );
-    await Brocca.findAll({ attributes: ['a'] });
-  });
+  // it('test2', async () => {
+  //   class Brocca extends Model {}
+  //   const s = new SSequelize('test', 'test', 'password', {
+  //     dialect: 'postgres',
+  //     logging: true,
+  //   });
+  //   Brocca.init(
+  //     {},
+  //     {
+  //       defaultScope: {
+  //         attributes: ['a', 'b', 'c'],
+  //       },
+  //       sequelize: s,
+  //       tableName: 'brocca',
+  //     }
+  //   );
+  //   await Brocca.findAll({ attributes: ['a'] });
+  // });
   describe('/', () => {
     checkAddress('address', '/api/accounts/');
     // checkPubKey('publicKey', '/api/accounts/');

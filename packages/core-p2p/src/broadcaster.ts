@@ -117,7 +117,7 @@ export class BroadcasterLogic implements IBroadcasterLogic {
     task: BroadcastTask<any, any, any> & { filters: BroadcastFilters }
   ): Promise<{ peer: PeerType[] }> {
     assert(task.filters, 'task.filters params required');
-    assert(task.filters.peers, 'task.filters.peers params required');
+    // assert(task.filters.peers, 'task.filters.peers params required');
 
     task.filters.limit = task.filters.limit || this.p2pConstants.maxPeers;
 
