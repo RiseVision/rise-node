@@ -8,13 +8,16 @@ RUN apk --update add --no-cache --virtual .gyp \
         libtool \
         make \
         python \
-        postgresql-dev
+        postgresql-dev \
+        libc6-compat
 
 RUN mkdir -p /home/rise/rise-node
 RUN mkdir /home/rise/logs
-WORKDIR /home/rise/rise-node
 
+WORKDIR /home/rise
 COPY docker/bundle/config.json config.json
+
+WORKDIR /home/rise/rise-node
 COPY docker/bundle/rise.tar rise.tar
 RUN tar -xf rise.tar
 RUN rm rise.tar
@@ -22,9 +25,12 @@ RUN rm rise.tar
 ENV NETWORK="mainnet"
 EXPOSE 5555
 
-CMD node packages/core-launchpad/dist/app.js \
+# rebuild the native modules
+#RUN npm rebuild
+
+CMD ./node_modules/.bin/lerna run \
 	start:$NETWORK --stream --no-prefix -- \
 	-e config.json
 
 # debug
-CMD sh
+#CMD sh
