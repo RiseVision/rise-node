@@ -1,0 +1,43 @@
+version: "3"
+services:
+
+  rise:
+    build:
+      context: ../../
+      # TODO no relative
+      dockerfile: ./docker/bundle/Dockerfile
+#    depends_on:
+#      - redis
+#      - postgres
+    ports:
+      - "127.0.0.1:5555:5555"
+    networks:
+      - overlay
+    environment:
+      NETWORK: mainnet
+    restart: on-failure
+    # debug
+    stdin_open: true
+    tty: true
+
+#  redis:
+#    image: redis:5-alpine
+#    networks:
+#      - overlay
+#    restart: on-failure
+#
+#  postgres:
+#    build:
+#      context: ../../
+#      # TODO no relative
+#      dockerfile: ./docker/bundle/Dockerfile.postgres
+#    environment:
+#      POSTGRES_PASSWORD: password
+#      POSTGRES_USER: rise
+#      POSTGRES_DB: rise_db
+#    networks:
+#      - overlay
+#    restart: on-failure
+
+networks:
+  overlay:
