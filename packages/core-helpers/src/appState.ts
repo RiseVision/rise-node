@@ -1,6 +1,7 @@
 import { IAppState } from '@risevision/core-types';
 import { injectable } from 'inversify';
 import * as jsonpath from 'jsonpath';
+import "reflect-metadata";
 
 /**
  * Container for modules and application loading state.
