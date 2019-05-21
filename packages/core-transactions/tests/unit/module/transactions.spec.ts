@@ -1,10 +1,20 @@
 import { ModelSymbols } from '@risevision/core-models';
 import {
+  IPeersModule,
+  P2PConstantsType,
+  p2pSymbols,
+} from '@risevision/core-p2p';
+import {
   IAccountsModel,
   IAccountsModule,
   IDBHelper,
   ITransactionLogic,
   Symbols,
+} from '@risevision/core-types';
+import {
+  IBaseTransaction,
+  ITransactionsModel,
+  SignedAndChainedBlockType,
 } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
@@ -14,10 +24,7 @@ import * as sinon from 'sinon';
 import { SinonSandbox, SinonSpy, SinonStub } from 'sinon';
 import { generateAccount } from '../../../../core-accounts/tests/unit/utils/accountsUtils';
 import { createContainer } from '../../../../core-launchpad/tests/unit/utils/createContainer';
-import {
-  IBaseTransaction,
-  SignedAndChainedBlockType,
-} from '../../../../core-types/src';
+import { createFakePeer } from '../../../../core-p2p/tests/unit/utils/fakePeersFactory';
 import { StubbedInstance } from '../../../../core-utils/tests/unit/stubs';
 import {
   TransactionPool,
@@ -49,6 +56,7 @@ describe('modules/transactions', () => {
 
   let accountsModule: IAccountsModule;
   let AccountsModel: typeof IAccountsModel;
+  let TxModel: typeof ITransactionsModel;
   let dbHelper: IDBHelper;
   let genesisBlock: SignedAndChainedBlockType;
   let txPool: StubTxPool;
@@ -74,6 +82,10 @@ describe('modules/transactions', () => {
     AccountsModel = container.getNamed(
       ModelSymbols.model,
       Symbols.models.accounts
+    );
+    TxModel = container.getNamed(
+      ModelSymbols.model,
+      Symbols.models.transactions
     );
     dbHelper = container.get(Symbols.helpers.db);
     genesisBlock = container.get(Symbols.generic.genesisBlock);
@@ -259,19 +271,7 @@ describe('modules/transactions', () => {
         'Cannot find account from accounts'
       );
     });
-    // it('should throw if tx has requesterPublicKey but notin accountsMap', async () => {
-    //   tx.requesterPublicKey = Buffer.from('abababab', 'hex');
-    //   genAddressStub.returns('1111R');
-    //   await expect(
-    //     instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1)
-    //   ).to.rejectedWith('Cannot find requester from accounts');
-    // });
 
-    // it('should query readyness and throw if not ready', async () => {
-    //   readyStub.returns(false);
-    //   await expect(instance.checkTransaction(tx, { [tx.senderId]: new AccountsModel() }, 1))
-    //     .to.rejectedWith(`Transaction ${tx.id} is not ready`);
-    // });
     it('should query txLogic.verify with proper data', async () => {
       // genAddressStub.returns('1111R');
       readyStub.returns(true);
@@ -296,9 +296,61 @@ describe('modules/transactions', () => {
   });
 
   describe('processIncomingTransactions', () => {
-    it('should throw if tx is not passing through txLogic.objectNormalize');
-    it('should remove peer if normalizationf ailed');
-    it('should add valid transactions to the queued queue of the txpool');
-    it('should filter already confirmed transactions');
+    it('should throw if tx is not passing through txLogic.objectNormalize', async () => {
+      const tx = toNativeTx(createRandomTransaction());
+      tx.type = 'banana' as any;
+      await expect(
+        instance.processIncomingTransactions([tx], null)
+      ).to.rejectedWith('Invalid transaction body');
+      expect((txPool.queued as StubTxQueue).stubs.add.called).false;
+    });
+    it('should remove peer if normalizationf ailed', async () => {
+      const fakePeer = createFakePeer();
+      const peersModule = container.get<IPeersModule>(p2pSymbols.modules.peers);
+      const peersRemoveStub = sandbox.stub(peersModule, 'remove');
+      const tx = toNativeTx(createRandomTransaction());
+      tx.amount = -1n;
+
+      await expect(
+        instance.processIncomingTransactions([tx], fakePeer)
+      ).to.rejectedWith('Invalid transaction body');
+      expect(peersRemoveStub.called).true;
+      expect(peersRemoveStub.calledWith(fakePeer.ip, fakePeer.port)).true;
+    });
+    it('should add valid transactions to the queued queue of the txpool', async () => {
+      const tx = toNativeTx(createRandomTransaction());
+      const tx2 = toNativeTx(createRandomTransaction());
+      sandbox.stub(TxModel, 'findAll').resolves([]);
+
+      await instance.processIncomingTransactions([tx, tx2], null);
+
+      expect((txPool.queued as StubTxQueue).stubs.add.called).true;
+      expect((txPool.queued as StubTxQueue).stubs.add.callCount).eq(2);
+
+      delete tx.asset;
+      delete tx2.asset;
+      expect(
+        (txPool.queued as StubTxQueue).stubs.add.firstCall.args[0]
+      ).deep.eq(tx);
+      expect(
+        (txPool.queued as StubTxQueue).stubs.add.secondCall.args[0]
+      ).deep.eq(tx2);
+    });
+    it('should filter already confirmed transactions', async () => {
+      const tx = toNativeTx(createRandomTransaction());
+      const tx2 = toNativeTx(createRandomTransaction());
+      sandbox.stub(TxModel, 'findAll').resolves([{ id: tx2.id }]);
+
+      await instance.processIncomingTransactions(
+        [tx2, tx, tx2, tx2, tx2],
+        null
+      );
+      expect((txPool.queued as StubTxQueue).stubs.add.called).true;
+      expect((txPool.queued as StubTxQueue).stubs.add.callCount).eq(1);
+      delete tx.asset;
+      expect(
+        (txPool.queued as StubTxQueue).stubs.add.firstCall.args[0]
+      ).deep.eq(tx);
+    });
   });
 });

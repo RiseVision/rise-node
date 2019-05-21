@@ -404,7 +404,7 @@ describe('api/transactions', () => {
       });
       it('should return txs that have a certain min amount', async () => {
         return supertest(initializer.apiExpress)
-          .get('/api/transactions?fromTimestamp=500&minAmount=500')
+          .get('/api/transactions?and:fromTimestamp=500&and:minAmount=500')
           .expect(200)
           .then((resp) => {
             expect(resp.body.transactions.length).eq(1);

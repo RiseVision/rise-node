@@ -32,6 +32,15 @@ describe('helpers/db', () => {
         upsertQuery() {},
         deleteQuery() {},
         updateQuery() {},
+        escape(a: string) {
+          return `_${a}_`;
+        },
+        quoteIdentifier(i: string) {
+          return `'${i}'`;
+        },
+        quoteTable(t: string) {
+          return `"${t}"`;
+        },
       },
       getQueryInterface() {
         return { QueryGenerator: this.qi };
@@ -145,22 +154,17 @@ describe('helpers/db', () => {
     expect(stub.firstCall.args[2]).to.be.deep.eq({ test: 'hAy' });
     expect(stub.firstCall.args[3]).to.be.deep.eq({ where: { test: 'hAy' } });
   });
-  it('handleInsert should call sequelize.querygenerator.insertQuery', () => {
+
+  it('handleInsert should properly produce query', () => {
     FakeModel.getTableName = () => 'theTable';
     (FakeModel as any).rawAttributes = { test: 'string' } as any;
-    const stub = sandbox
-      .stub((instance as any).sequelize.qi, 'insertQuery')
-      .returns({ query: 'query', bind: null });
-    instance.handleInsert({
+    const r = instance.handleInsert({
       type: 'create',
       model: FakeModel,
       values: { test: 'hey' } as any,
     });
 
-    expect(stub.firstCall.args[0]).to.be.eq('theTable');
-    expect(stub.firstCall.args[1]).to.be.deep.eq({ test: 'hey' });
-    expect(stub.firstCall.args[2]).to.be.deep.eq({ test: 'string' });
-    expect(stub.firstCall.args[3]).to.be.deep.eq({});
+    expect(r).eq(`INSERT INTO "theTable" ('test') VALUES(_hey_)`);
   });
   it('handleUpsert should call sequelize.querygenerator.upsertQuery', () => {
     FakeModel.getTableName = () => 'theTable';
