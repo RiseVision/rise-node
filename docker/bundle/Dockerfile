@@ -15,10 +15,10 @@ RUN mkdir -p /home/rise/rise-node
 RUN mkdir /home/rise/logs
 
 WORKDIR /home/rise
-COPY docker/bundle/config.json config.json
+COPY config.json config.json
 
 WORKDIR /home/rise/rise-node
-COPY docker/bundle/rise.tar rise.tar
+COPY rise.tar .
 RUN tar -xf rise.tar
 RUN rm rise.tar
 
