@@ -5,7 +5,8 @@ import {
   Address,
   IAccountsModel,
   IBaseTransaction,
-  ISystemModule, ITransactionsModel,
+  ISystemModule,
+  ITransactionsModel,
   Symbols,
 } from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
@@ -54,7 +55,10 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
         },
       });
 
-      if (oneOfPrevTx && oneOfPrevTx.senderPubData.compare(tx.senderPubData) !== 0) {
+      if (
+        oneOfPrevTx &&
+        oneOfPrevTx.senderPubData.compare(tx.senderPubData) !== 0
+      ) {
         throw new Error(`PublicKey mismatch for acct ${sender.address}`);
       }
     }

@@ -322,4 +322,24 @@ describe('v2txtypes/send', () => {
       });
     });
   }
+
+  it('should encode/decode asset field via api', async () => {
+    const tx = createSendTransactionV2(
+      10 * 1e8,
+      getRandomDelegateWallet(),
+      v1[0].address,
+      {
+        asset: Buffer.from('banana', 'utf8'),
+      }
+    );
+
+    await confirmTransactions([tx], false);
+    return supertest(initializer.apiExpress)
+      .get(`/api/transactions/get?id=${tx.id}`)
+      .expect(200)
+      .then((d) => {
+        expect(d.body.transaction.asset.data).deep.eq('62616e616e61' /* banana in utf8 */);
+      });
+
+  });
 });
