@@ -35,7 +35,6 @@ import {
 } from '../../../src/models';
 import { DelegatesModule } from '../../../src/modules';
 
-
 chai.use(chaiAsPromised);
 
 // tslint:disable no-unused-expression no-big-function

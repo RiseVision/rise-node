@@ -553,15 +553,15 @@ describe('highlevel checks', function() {
           address: senderAccount.address,
         });
         // console.log('End loop - test begins');
-        expect(balance).to.be.eq(
-          BigInt(funds) -
+        expect(balance.toString()).to.be.eq(
+          `${BigInt(funds) -
             fundPerTx * (BigInt(i) + 1n) -
-            systemModule.getFees().fees.send * (BigInt(i) + 1n),
+            systemModule.getFees().fees.send * (BigInt(i) + 1n)}`,
           'confirmed balance'
         );
 
-        expect(u_balance).to.be.eq(
-          BigInt(
+        expect(`${u_balance}`).to.be.eq(
+          `${BigInt(
             Math.max(
               0,
               parseInt(
@@ -572,7 +572,7 @@ describe('highlevel checks', function() {
                 ).toString()
               )
             )
-          ),
+          )}`,
           'unconfirmed balance'
         );
 
@@ -584,7 +584,7 @@ describe('highlevel checks', function() {
       const { u_balance, balance } = await accModule.getAccount({
         address: senderAccount.address,
       });
-      expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
+      expect(`${u_balance}`).to.be.eq(`${balance}`, 'unconfirmed balance');
     });
     it('transactions/blocks concurrency test 2', async function() {
       this.timeout(1230000);
@@ -638,14 +638,14 @@ describe('highlevel checks', function() {
           address: senderAccount.address,
         });
         // console.log('End loop - test begins');
-        expect(balance).to.be.eq(
-          BigInt(funds) -
+        expect(`${balance}`).to.be.eq(
+          `${BigInt(funds) -
             fundPerTx * BigInt(i + 1) -
-            systemModule.getFees().fees.send * BigInt(i + 1),
+            systemModule.getFees().fees.send * BigInt(i + 1)}`,
           'confirmed balance'
         );
 
-        expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
+        expect(`${u_balance}`).to.be.eq(`${balance}`, 'unconfirmed balance');
 
         expect(blocksModule.lastBlock.height).to.be.eq(startHeight + i + 1);
         // console.log('Current Balance is : ', balance, u_balance);
@@ -659,82 +659,4 @@ describe('highlevel checks', function() {
     });
   });
 
-  // TODO: Lerna ? -> not sure why this is here.
-  // describe('blockLogic / transactionLogic .fromBytes()', () => {
-  //     let instance: BlockLogic;
-  //     let transactions;
-  //     let block;
-  //     let otherAccounts;
-  //     beforeEach(async () => {
-  //       otherAccounts = await createRandomAccountWithFunds(123);
-  //       transactions = [
-  //         await createSendTransactionV1(1, 1, senderAccount, otherAccounts.wallet.address),
-  //         await createVoteTransactionV1(1, senderAccount, otherAccounts.delegate.publicKey, true),
-  //       ];
-  //       block = await initializer.generateBlock(transactions);
-  //     });
-  //
-  //     it('should create block and transactions identical to the original one', () => {
-  //       block.transactions = transactions.map((tx) => {
-  //         tx.senderPublicKey = Buffer.from(tx.senderPublicKey, 'hex');
-  //         tx.signature = Buffer.from(tx.signature, 'hex');
-  //         tx.height = block.height;
-  //         tx.blockId = block.id;
-  //         tx.relays = undefined;
-  //         return tx;
-  //       });
-  //       block.relays = 1;
-  //       const origBytes = blockLogic.getBytes(block);
-  //       const bytesBlock: IBytesBlock = {
-  //         bytes: origBytes as any,
-  //         transactions: transactions.map((tx) => {
-  //           return {
-  //             bytes: txLogic.getBytes(tx) as any,
-  //             hasRequesterPublicKey: typeof tx.requesterPublicKey !== 'undefined' && tx.requesterPublicKey != null,
-  //             hasSignSignature: typeof tx.signSignature !== 'undefined' && tx.signSignature != null,
-  //             fee: tx.fee
-  //           };
-  //         }),
-  //         height: block.height,
-  //         relays: 1
-  //       };
-  //       const fromBytesBlock = blockLogic.fromBytes(bytesBlock);
-  //       expect(fromBytesBlock).to.be.deep.eq(block);
-  //     });
-  // });
-
-  // describe('he', () => {
-  //   it('bau', async function () {
-  //     this.timeout(1000000)
-  //     const sequelize = initializer.appManager.container.get<Sequelize>(Symbols.generic.sequelize);
-  //     // sequelize.options.logging = true;
-  //     // sequelize.options.benchmark = true;
-  //     // await initializer.rawMineBlocks(1000);
-  //     const systemModule = initializer.appManager.container.get<ISystemModule>(Symbols.modules.system);
-  //     const senderWallets = [];
-  //     for (let i=0; i<25; i++) {
-  //       const del = findDelegateByUsername(`genesisDelegate${i+1}`);
-  //       senderWallets.push(new LiskWallet(del.secret, 'R'));
-  //     }
-  //
-  //     const howManyPerAccount = 1000; // /10 blocchi!
-  //     const txs = [];
-  //     for (let i=0; i< howManyPerAccount * senderWallets.length; i++) {
-  //       const t               = new dposOffline.transactions.SendTx();
-  //       t.set('amount', 1);
-  //       t.set('fee', systemModule.getFees().fees.send);
-  //       t.set('timestamp', i);
-  //       t.set('recipientId', '1R');
-  //       const signedTx = t.sign(senderWallets[i%senderWallets.length]);
-  //       signedTx['senderId'] = senderWallets[i%senderWallets.length].address;
-  //       txs.push(signedTx);
-  //     }
-  //
-  //     const now = Date.now();
-  //     await confirmTransactions(txs, false);
-  //     const took = Date.now() - now;
-  //     console.log(`It Took ${took} for ${txs.length} - TPs: ${txs.length/took* 1000}`);
-  //     sequelize.options.logging = false;
-  //   });
-  // });
 });
