@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./build",
+    "module": "esnext"
+  },
+  "include": ["./src/**/*.ts"],
+  "exclude": ["tests", "public", "dist", "build", "coverage", "node_modules"]
+}

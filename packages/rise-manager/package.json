@@ -1,0 +1,33 @@
+{
+  "name": "@risevision/manager",
+  "rise_vision": {
+    "module": true
+  },
+  "version": "1.0.0",
+  "bin": {
+    "rise-manager": "dist/index.js"
+  },
+  "description": "RISE Manager",
+  "main": "dist/index.js",
+  "scripts": {
+    "clean": "rm -rf dist; rm -rf build",
+    "build": "tsc",
+    "chmod-x": "chmod +x dist/rise-manager",
+    "rollup": "npx rollup -c rollup.config.js",
+    "bundle": "yarn clean; yarn build; yarn rollup; yarn rollup; yarn chmod-x"
+  },
+  "types": "dist/index.d.ts",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@carnesen/cli": "^0.3.3",
+    "core-worker": "^0.3.5"
+  },
+  "devDependencies": {
+    "rollup": "^1.12.4",
+    "rollup-plugin-add-shebang": "^0.3.0",
+    "rollup-plugin-commonjs": "^10.0.0",
+    "rollup-plugin-node-resolve": "^5.0.0",
+    "typescript": "3.4.5"
+  }
+}
