@@ -28,4 +28,5 @@ dist/
 docker/qemu-arm-static
 yarn-error.log
 coverage
-docker/bundle/rise.tar
+docker/bundle/rise-node.tar*
+docker/bundle/rise-docker.tar*
