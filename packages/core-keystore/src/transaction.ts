@@ -14,9 +14,9 @@ import {
 import { inject, injectable, named } from 'inversify';
 import * as isEmpty from 'is-empty';
 import * as varuint from 'varuint-bitcoin';
-import { KeystoreModel } from './models/model';
+import { VerifyKeystoreTx } from './hooks/';
+import { KeystoreModel } from './models/';
 import { KeystoreTxSymbols } from './symbols';
-import { VerifyKeystoreTx } from './hooks/actions';
 
 // tslint:disable-next-line
 export type KeyStoreAsset<T = Buffer> = {

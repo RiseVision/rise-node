@@ -7,8 +7,8 @@ import { Container } from 'inversify';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
 import { KeystoreAPI } from '../../../src/apis';
-import { KeystoreTxSymbols } from '../../../src/symbols';
 import { KeystoreModule } from '../../../src/modules';
+import { KeystoreTxSymbols } from '../../../src/symbols';
 
 // tslint:disable-next-line no-var-requires
 const assertArrays = require('chai-arrays');
@@ -24,7 +24,11 @@ describe('apis/keystoreAPI', () => {
   let keystoreModule: KeystoreModule;
 
   beforeEach(async () => {
-    container = await createContainer(['core-keystore', 'core']);
+    container = await createContainer([
+      'core-keystore',
+      'core',
+      'core-accounts',
+    ]);
     sandbox = sinon.createSandbox();
     keystoreModule = container.get(KeystoreTxSymbols.module);
 
@@ -41,10 +45,26 @@ describe('apis/keystoreAPI', () => {
       const getallAcctValuseStub = sandbox
         .stub(keystoreModule, 'getAllAcctValues')
         .resolves({
+          current: 'potato',
           history: 'banana',
         });
       const res = await instance.history({ address: '1R' as Address });
       expect(res).deep.eq({ history: 'banana' });
+      expect(getallAcctValuseStub.called).true;
+      expect(getallAcctValuseStub.calledWith('1R' as Address)).true;
+    });
+  });
+
+  describe('current', () => {
+    it('should call getAllAcctValues from module', async () => {
+      const getallAcctValuseStub = sandbox
+        .stub(keystoreModule, 'getAllAcctValues')
+        .resolves({
+          current: 'potato',
+          history: 'banana',
+        });
+      const res = await instance.current({ address: '1R' as Address });
+      expect(res).deep.eq({ current: 'potato' });
       expect(getallAcctValuseStub.called).true;
       expect(getallAcctValuseStub.calledWith('1R' as Address)).true;
     });
