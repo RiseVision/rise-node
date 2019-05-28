@@ -17,8 +17,8 @@ services:
     restart: on-failure
     container_name: rise-node
     # debug
-#    stdin_open: true
-#    tty: true
+    stdin_open: true
+    tty: true
 
   redis:
     image: redis:5-alpine

@@ -10,7 +10,9 @@ tar -cf rise-node.tar package.json
 tar -rf rise-node.tar lerna.json
 tar -rf rise-node.tar packages/**/dist
 tar -rf rise-node.tar packages/**/etc
+tar -rf rise-node.tar packages/**/proto
 tar -rf rise-node.tar packages/**/schema
+tar -rf rise-node.tar packages/**/sql
 tar -rf rise-node.tar packages/**/package.json
 # move to docker
 mv -f rise-node.tar docker/bundle
