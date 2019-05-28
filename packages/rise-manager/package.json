@@ -3,6 +3,7 @@
   "rise_vision": {
     "module": true
   },
+  "engines": ">=10",
   "version": "1.0.0",
   "bin": {
     "rise-manager": "dist/index.js"
@@ -13,21 +14,20 @@
     "clean": "rm -rf dist; rm -rf build",
     "build": "tsc",
     "chmod-x": "chmod +x dist/rise-manager",
-    "rollup": "npx rollup -c rollup.config.js",
-    "bundle": "yarn clean; yarn build; yarn rollup; yarn rollup; yarn chmod-x"
+    "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise-manager > /tmp/out && mv /tmp/out dist/rise-manager",
+    "parcel": "npx parcel build build/main.js -d dist --target node --bundle-node-modules --no-cache",
+    "parcel:rename": "mv dist/main.js dist/rise-manager; mv dist/main.js.map dist/rise-manager.map",
+    "bundle": "yarn clean; yarn build; yarn parcel; yarn shebang; yarn rename; yarn chmod-x"
   },
   "types": "dist/index.d.ts",
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "dependencies": {
     "@carnesen/cli": "^0.3.3",
-    "core-worker": "^0.3.5"
+    "core-worker": "^0.3.5",
+    "parcel": "^1.12.3"
   },
   "devDependencies": {
-    "rollup": "^1.12.4",
-    "rollup-plugin-add-shebang": "^0.3.0",
-    "rollup-plugin-commonjs": "^10.0.0",
-    "rollup-plugin-node-resolve": "^5.0.0",
     "typescript": "3.4.5"
   }
 }

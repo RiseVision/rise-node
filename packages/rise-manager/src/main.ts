@@ -1,5 +1,5 @@
 import { branch, cli, leaf, option } from '@carnesen/cli';
-import { process as exec } from 'core-worker/src/index';
+import { process as exec } from 'core-worker';
 import { resolve } from 'path';
 
 // ----- COMMANDS
@@ -64,6 +64,6 @@ export const root = branch({
   subcommands: [docker, node],
 });
 
-if (require.main === module) {
-  cli(root)();
-}
+// if (require.main === module) {
+//   cli(root)();
+// }
