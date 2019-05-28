@@ -17,9 +17,7 @@ import {
 import { expect } from 'chai';
 import {
   Address,
-  IRiseV2RegisterDelegateTx,
-  Rise,
-  RiseTransaction,
+  LiskVotesAsset,
   RiseV2,
   RiseV2Transaction,
 } from 'dpos-offline';
@@ -77,7 +75,7 @@ export const getKeypairByPkey = (pk: publicKey): IKeypair => {
   if (typeof d === 'undefined') {
     throw new Error('cannot find delegate for this pk ' + pk);
   }
-  return Rise.deriveKeypair(d.secret);
+  return RiseV2.deriveKeypair(d.secret);
 };
 
 export const getSelfTransportPeer = (): Peer => {
@@ -89,7 +87,7 @@ export const getSelfTransportPeer = (): Peer => {
 };
 
 export const enqueueAndProcessTransactions = async (
-  txs: Array<RiseV2Transaction<any> | RiseTransaction<any>>
+  txs: Array<RiseV2Transaction<any>>
 ) => {
   const poolManager = initializer.appManager.container.get<PoolManager>(
     TXSymbols.poolManager
@@ -105,7 +103,7 @@ export const enqueueAndProcessTransactions = async (
 };
 
 export const confirmTransactions = async (
-  txs: Array<RiseV2Transaction<any> | RiseTransaction<any>>,
+  txs: Array<RiseV2Transaction<any>>,
   withTxPool: boolean
 ) => {
   txs = txs.slice();
@@ -144,7 +142,11 @@ export const createRandomWallet = (): IKeypair & {
 } => {
   const secret = uuid.v4();
   const wallet = createWallet(secret);
-  return { ...wallet, secret, address: Rise.calcAddress(wallet.publicKey) };
+  return {
+    ...wallet,
+    address: RiseV2.calcAddress(wallet.publicKey, 'main', 'v0'),
+    secret,
+  };
 };
 
 export const createRandomV2Wallet = (): IKeypair & {
@@ -153,14 +155,21 @@ export const createRandomV2Wallet = (): IKeypair & {
 } => {
   const secret = uuid.v4();
   const wallet = createWalletV2(secret);
-  return { ...wallet, secret, address: RiseV2.calcAddress(wallet.publicKey) };
+  return {
+    ...wallet,
+    address: RiseV2.calcAddress(wallet.publicKey, 'main', 'v1'),
+    secret,
+  };
 };
 
 export const createWallet = (
   secret: string
 ): IKeypair & { address: Address } => {
-  const wallet = Rise.deriveKeypair(secret);
-  return { ...wallet, address: Rise.calcAddress(wallet.publicKey) };
+  const wallet = RiseV2.deriveKeypair(secret);
+  return {
+    ...wallet,
+    address: RiseV2.calcAddress(wallet.publicKey, 'main', 'v0'),
+  };
 };
 export const createWalletV2 = (
   secret: string
@@ -170,12 +179,12 @@ export const createWalletV2 = (
 };
 export const createVoteTransactionV1 = async (
   confirmations: number,
-  from: IKeypair,
+  from: IKeypair & { address?: Address },
   to: Buffer,
   add: boolean,
   obj: any = {}
-): Promise<RiseTransaction<VoteAsset>> => {
-  const tx = Rise.txs.createAndSign(
+): Promise<RiseV2Transaction<LiskVotesAsset>> => {
+  const tx = RiseV2.txs.createAndSign(
     {
       kind: 'vote',
       preferences: [
@@ -204,7 +213,7 @@ export const createVoteTransactionV2 = async (
 ): Promise<RiseV2Transaction<VoteAsset>> => {
   const tx = RiseV2.txs.createAndSign(
     {
-      kind: 'vote',
+      kind: 'vote-v2',
       preferences: [
         {
           action: add ? '+' : '-',
@@ -227,7 +236,7 @@ export const createSecondSignTransactionV1 = async (
   const systemModule = initializer.appManager.container.get<ISystemModule>(
     Symbols.modules.system
   );
-  const tx = Rise.txs.createAndSign(
+  const tx = RiseV2.txs.createAndSign(
     {
       fee: systemModule.getFees().fees.secondsignature.toString(),
       kind: 'second-signature',
@@ -253,8 +262,8 @@ export const createRegDelegateTransactionV1 = async (
   confirmations: number,
   from: IKeypair,
   name: string
-): Promise<RiseTransaction<any>> => {
-  const tx = Rise.txs.createAndSign(
+): Promise<RiseV2Transaction<any>> => {
+  const tx = RiseV2.txs.createAndSign(
     {
       identifier: name as string & As<'delegateName'>,
       kind: 'register-delegate',
@@ -281,7 +290,7 @@ export const createRegDelegateTransactionV2 = async (
     {
       forgingPublicKey,
       identifier: identifier as string & As<'delegateName'>,
-      kind: 'register-delegate',
+      kind: 'register-delegate-v2',
       sender: from,
     },
     from,
@@ -303,7 +312,7 @@ export const createSendTransactionV2 = (
     {
       amount: `${amount}`,
       fee: conf ? conf.fee : null,
-      kind: 'send',
+      kind: 'send-v2',
       memo: conf ? conf.asset : null,
       nonce: `${conf ? conf.timestamp || 0 : 0}` as string & As<'nonce'>,
       recipient: dest as string & As<'address'>,
@@ -321,14 +330,17 @@ export const createSendTransactionV1 = async (
   from: IKeypair,
   dest: string,
   timestamp: number = 0
-): Promise<RiseTransaction<any>> => {
-  const tx = Rise.txs.createAndSign(
+): Promise<RiseV2Transaction<any>> => {
+  const tx = RiseV2.txs.createAndSign(
     {
       amount: `${amount}`,
       kind: 'send',
       nonce: `${timestamp}` as string & As<'nonce'>,
       recipient: dest as string & As<'address'>,
-      sender: from,
+      sender: {
+        ...from,
+        address: RiseV2.calcAddress(from.publicKey, 'main', 'v0'),
+      },
     },
     from,
     true
@@ -370,7 +382,11 @@ export const createRandomAccountsWithFunds = async (
   howManyAccounts: number,
   amount: number
 ): Promise<
-  Array<{ tx: RiseTransaction<any>; account: IKeypair; senderWallet: IKeypair }>
+  Array<{
+    tx: RiseV2Transaction<any>;
+    account: IKeypair;
+    senderWallet: IKeypair;
+  }>
 > => {
   const senderWallet = getRandomDelegateWallet();
 
@@ -382,7 +398,7 @@ export const createRandomAccountsWithFunds = async (
       0,
       amount,
       senderWallet,
-      Rise.calcAddress(randomRecipient.publicKey)
+      RiseV2.calcAddress(randomRecipient.publicKey, 'main', 'v0')
     );
     txs.push(toNativeTx(t));
     accounts.push(randomRecipient);

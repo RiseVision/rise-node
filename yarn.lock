@@ -6952,10 +6952,10 @@ socks@~2.3.2:
     ip "^1.1.5"
     smart-buffer "4.0.2"
 
-sodium-native@^2.2.3:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/sodium-native/-/sodium-native-2.3.0.tgz#40cee5f504bb5f6196cc40c42748162d66ec2598"
-  integrity sha512-TYId1m2iLXXot2Q3KA6u8Ti9pmL24T2cm8nb9OUGFFmTxdw4I+vnkjcPVA4LT1acw+A86iJkEn+8iV51jcTWUg==
+sodium-native@^2.4.2:
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/sodium-native/-/sodium-native-2.4.2.tgz#de3c99675899555a8c83f5be3ed97f28653aa2b2"
+  integrity sha512-qwHcUnzFpRSGSm6F49j/h5SnxPFBgSNdDwZkAqjvuAoHQIVBFOXYb+oCUTJV80K5hRqSYCihpbX06vbrtPbilg==
   dependencies:
     ini "^1.3.5"
     nan "^2.4.0"
