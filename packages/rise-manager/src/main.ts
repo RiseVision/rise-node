@@ -1,12 +1,26 @@
 import { branch, cli, leaf, option } from '@carnesen/cli';
-import { process as exec } from 'core-worker';
-import { readFile } from 'fs';
-import { isAbsolute } from 'path';
-import { promisify } from 'util';
+import { process as exec } from 'core-worker/src/index';
+import { resolve } from 'path';
+
+// ----- COMMANDS
 
 export const docker_start = leaf({
   commandName: 'start',
-  description: 'Starts the container using a provided config',
+  description: 'Starts the container using config.json',
+
+  async action() {
+    // TODO check if in the correct dir
+    await exec(
+      'docker-compose build; docker-compose up',
+      'Blockchain ready'
+    );
+    console.log('Docker started');
+  },
+});
+
+export const node_start = leaf({
+  commandName: 'start',
+  description: 'Starts the node using the provided config',
 
   options: {
     config: option({
@@ -15,47 +29,39 @@ export const docker_start = leaf({
       defaultValue: 'config.json',
     }),
   },
+
   async action({ config }) {
-    const result = await exec('docker-compose build; docker-compose up');
+    // TODO check if in the correct dir
+    const config_path = resolve(config);
+    await exec(
+      `./node_modules/.bin/lerna run ` +
+        `start:$NETWORK --stream --no-prefix --` +
+        `-e ${config_path}`,
+      'Blockchain ready'
+    );
+    console.log('Node started');
   },
+});
+
+// ----- BRANCHES
+
+export const node = branch({
+  commandName: 'node',
+  description: 'Node related commands',
+  subcommands: [docker_start],
 });
 
 export const docker = branch({
   commandName: 'docker',
-  description: 'Docker-related commands',
+  description: 'Docker related commands',
   subcommands: [docker_start],
 });
 
-export const cat = leaf({
-  commandName: 'cat',
-  description: 'Print the contents of a file',
-  options: {
-    filePath: option({
-      typeName: 'string',
-      nullable: false,
-      description: 'An absolute path',
-      defaultValue: __filename,
-      validate(value) {
-        if (isAbsolute(value)) {
-          return;
-        }
-        return 'File path must be absolute';
-      },
-    }),
-  },
-  async action({ filePath }) {
-    const contents = await promisify(readFile)(filePath, { encoding: 'utf8' });
-    return contents;
-  },
-});
-
-// A "branch" command is a container for subcommands which can
-// themselves be either "branch" commands or "leaf" commands
 export const root = branch({
   commandName: 'rise-manager',
   description: `
     Manager your RISE node instance, including docker images.`,
-  subcommands: [docker, cat],
+  subcommands: [docker, node],
 });
 
 if (require.main === module) {
