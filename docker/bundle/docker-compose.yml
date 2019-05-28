@@ -16,7 +16,6 @@ services:
       NETWORK: mainnet
     restart: on-failure
     container_name: rise-node
-    image: node:11-alpine
     # debug
 #    stdin_open: true
 #    tty: true
