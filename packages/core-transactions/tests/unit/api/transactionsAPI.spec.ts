@@ -1,7 +1,7 @@
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import { RiseTransaction, RiseV2, RiseV2Transaction } from 'dpos-offline';
+import { RiseV2, RiseV2Transaction } from 'dpos-offline';
 import { Container } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { Op } from 'sequelize';

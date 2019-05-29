@@ -2,12 +2,7 @@ import { TXBytes, TXSymbols } from '@risevision/core-transactions';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {
-  IKeypair,
-  RiseTransaction,
-  RiseV2,
-  RiseV2Transaction,
-} from 'dpos-offline';
+import { IKeypair, RiseV2, RiseV2Transaction } from 'dpos-offline';
 import { Container } from 'inversify';
 import { As } from 'type-tagger';
 import * as uuid from 'uuid';
@@ -61,9 +56,7 @@ describe('secondSignHooks', () => {
       // tx.signature = null;
     });
     it('should allow proper tx', async () => {
-      tx.signatures[1] = RiseV2.txs.calcSignature(tx, secondSignWallet, {
-        skipSignatures: true,
-      });
+      tx.signatures[1] = RiseV2.txs.calcSignature(tx, secondSignWallet);
       // tx.id;
       tx.id = RiseV2.txs.identifier(tx);
       await expect(txLogic.verify(toNativeTx(tx), sender, 1)).not.rejected;
