@@ -3,6 +3,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
 import { BaseCoreModule } from '@risevision/core-types';
 import { KeystoreAPI } from './apis';
+import { constants } from './constants';
 import { KeystoreModel } from './models';
 import { KeystoreModule } from './modules';
 import { KeystoreTxSymbols } from './symbols';
@@ -10,7 +11,7 @@ import { KeystoreTransaction } from './transaction';
 
 export class CoreModule extends BaseCoreModule {
   public configSchema = {};
-  public constants = {};
+  public constants = constants;
 
   public addElementsToContainer(): void {
     // API endpoint registration
@@ -37,5 +38,9 @@ export class CoreModule extends BaseCoreModule {
       .to(KeystoreTransaction)
       .inSingletonScope()
       .whenTargetNamed(KeystoreTxSymbols.transaction);
+
+    this.container
+      .bind(KeystoreTxSymbols.constants)
+      .toConstantValue(this.constants);
   }
 }

@@ -14,6 +14,8 @@ import {
 import { inject, injectable, named } from 'inversify';
 import * as isEmpty from 'is-empty';
 import * as varuint from 'varuint-bitcoin';
+import * as z_schema from 'z-schema';
+import { KeystoreConstantsType } from './constants';
 import { VerifyKeystoreTx } from './hooks/';
 import { KeystoreModel } from './models/';
 import { KeystoreTxSymbols } from './symbols';
@@ -23,6 +25,8 @@ export type KeyStoreAsset<T = Buffer> = {
   key: string;
   value: T;
 };
+// tslint:disable-next-line
+const assetSchema = require('../schema/asset.json');
 
 @injectable()
 export class KeystoreTransaction extends BaseTx<KeyStoreAsset, KeystoreModel> {
@@ -42,11 +46,33 @@ export class KeystoreTransaction extends BaseTx<KeyStoreAsset, KeystoreModel> {
   @named(KeystoreTxSymbols.model)
   private KeyStoreAssetModel: typeof KeystoreModel;
 
+  @inject(Symbols.generic.zschema)
+  private zSchema: z_schema;
+
+  @inject(KeystoreTxSymbols.constants)
+  private keystoreConstants: KeystoreConstantsType;
+
   public assetBytes(tx: IBaseTransaction<KeyStoreAsset>): Buffer {
+    const keyBuf = Buffer.from(tx.asset.key, 'utf8');
     return Buffer.concat([
-      varuint.encode(Buffer.from(tx.asset.key, 'utf8')),
+      varuint.encode(keyBuf.length),
+      keyBuf,
+      varuint.encode(tx.asset.value.length),
       tx.asset.value,
     ]);
+  }
+
+  public readAssetFromBytes(bytes: Buffer): KeyStoreAsset {
+    let offset = 0;
+    const keyLength = varuint.decode(bytes, offset);
+    offset += varuint.decode.bytes;
+    const key = bytes.slice(offset, offset + keyLength).toString('utf8');
+    offset += keyLength;
+
+    const valueLength = varuint.decode(bytes, offset);
+    offset += varuint.decode.bytes;
+    const value = bytes.slice(offset, offset + valueLength);
+    return { key, value };
   }
 
   public calculateMinFee(
@@ -73,16 +99,17 @@ export class KeystoreTransaction extends BaseTx<KeyStoreAsset, KeystoreModel> {
       throw new Error('Invalid transaction amount');
     }
 
-    if (!tx.asset) {
-      throw new Error('No asset provided');
-    }
-
-    if (isEmpty(tx.asset.key)) {
-      throw new Error('Asset key cannot be empty');
+    if (!this.zSchema.validate(tx.asset, assetSchema)) {
+      const lastErrorDetail = this.zSchema.getLastError().details[0];
+      const errMessage = `${lastErrorDetail.path} ${lastErrorDetail.message}`;
+      throw new Error(`Asset Schema is not valid: ${errMessage}`);
     }
 
     if (isEmpty(tx.asset.value) || tx.asset.value.length === 0) {
-      throw new Error('Asset key cannot be empty');
+      throw new Error('Asset value cannot be empty');
+    }
+    if (tx.asset.value.length > this.keystoreConstants.maxValueLength) {
+      throw new Error('Asset value cannot exceed max length');
     }
 
     await this.hookSystem.do_action(VerifyKeystoreTx.name, tx, sender);
@@ -109,7 +136,7 @@ export class KeystoreTransaction extends BaseTx<KeyStoreAsset, KeystoreModel> {
     tx: IBaseTransaction<KeyStoreAsset<string | Buffer>, bigint>
   ): IBaseTransaction<KeyStoreAsset, bigint> {
     if (tx.asset && typeof tx.asset.value === 'string') {
-      tx.asset.value = Buffer.from(tx.asset.value, 'utf8');
+      tx.asset.value = Buffer.from(tx.asset.value, 'hex');
     }
     return tx as IBaseTransaction<KeyStoreAsset>;
   }
