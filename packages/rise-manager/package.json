@@ -3,7 +3,7 @@
   "rise_vision": {
     "module": true
   },
-  "engines": ">=10",
+  "engine": ">=10",
   "version": "1.0.0",
   "bin": {
     "rise-manager": "dist/index.js"
@@ -17,17 +17,16 @@
     "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise-manager > /tmp/out && mv /tmp/out dist/rise-manager",
     "parcel": "npx parcel build build/main.js -d dist --target node --bundle-node-modules --no-cache",
     "parcel:rename": "mv dist/main.js dist/rise-manager; mv dist/main.js.map dist/rise-manager.map",
-    "bundle": "yarn clean; yarn build; yarn parcel; yarn shebang; yarn rename; yarn chmod-x"
+    "bundle": "yarn clean; yarn build; yarn parcel; yarn parcel:rename; yarn shebang; yarn chmod-x"
   },
   "types": "dist/index.d.ts",
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
-  "dependencies": {
-    "@carnesen/cli": "^0.3.3",
-    "core-worker": "^0.3.5",
-    "parcel": "^1.12.3"
-  },
   "devDependencies": {
+    "@carnesen/cli": "^0.3.3",
+    "@types/execa": "^0.9.0",
+    "execa": "^1.0.0",
+    "parcel": "^1.12.3",
     "typescript": "3.4.5"
   }
 }

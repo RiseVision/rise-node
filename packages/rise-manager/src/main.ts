@@ -1,22 +1,12 @@
 import { branch, cli, leaf, option } from '@carnesen/cli';
-import { process as exec } from 'core-worker';
+import * as execa from 'execa';
 import { resolve } from 'path';
+import { Writable } from 'stream';
+
+const SEC = 1000;
+const MIN = 60 * SEC;
 
 // ----- COMMANDS
-
-export const docker_start = leaf({
-  commandName: 'start',
-  description: 'Starts the container using config.json',
-
-  async action() {
-    // TODO check if in the correct dir
-    await exec(
-      'docker-compose build; docker-compose up',
-      'Blockchain ready'
-    );
-    console.log('Docker started');
-  },
-});
 
 export const node_start = leaf({
   commandName: 'start',
@@ -28,18 +18,68 @@ export const node_start = leaf({
       nullable: true,
       defaultValue: 'config.json',
     }),
+    network: option({
+      typeName: 'string',
+      nullable: true,
+      defaultValue: 'mainnet',
+      // TODO limit values
+    }),
   },
 
-  async action({ config }) {
+  async action({ config, network }) {
     // TODO check if in the correct dir
+    // TODO check if `./node_modules/.bin/lerna` exists
     const config_path = resolve(config);
-    await exec(
-      `./node_modules/.bin/lerna run ` +
-        `start:$NETWORK --stream --no-prefix --` +
-        `-e ${config_path}`,
-      'Blockchain ready'
-    );
-    console.log('Node started');
+    console.log('Stating RISE node...');
+    try {
+      const lerna_run = new Promise((resolve, reject) => {
+        // kill the process after 2 mins
+        const timeout = setTimeout(reject.bind(null, 'TIMEOUT'), 2 * MIN);
+        // parse the commands output
+        const stream = new Writable({
+          write(chunk, encoding, callback) {
+            // decode
+            chunk = chunk.toString('utf8');
+            console.log('chunk', chunk);
+            // check if the output reached the desired line
+            if (chunk.includes('Blockchain ready')) {
+              clearTimeout(timeout);
+              resolve();
+            }
+            // mark the chunk as written
+            callback();
+          },
+        });
+
+        const cmd = execa(`./node_modules/.bin/lerna`, [
+          'run',
+          `start:${network}`,
+          `--stream`,
+          `--no-prefix`,
+          `--`,
+          `-e ${config_path}`,
+        ])
+        cmd.stdout.pipe(stream);
+        cmd.stderr.pipe(stream);
+      });
+      await lerna_run;
+      console.log('done');
+    } catch (e) {
+      console.log('error error error');
+      console.error(e);
+      debugger;
+    }
+  },
+});
+
+export const docker_start = leaf({
+  commandName: 'start',
+  description: 'Starts the container using config.json',
+
+  async action() {
+    // TODO check if in the correct dir
+    // await execa('docker-compose build; docker-compose up', 'Blockchain ready');
+    console.log('Docker started');
   },
 });
 
@@ -48,7 +88,7 @@ export const node_start = leaf({
 export const node = branch({
   commandName: 'node',
   description: 'Node related commands',
-  subcommands: [docker_start],
+  subcommands: [node_start],
 });
 
 export const docker = branch({
@@ -60,10 +100,11 @@ export const docker = branch({
 export const root = branch({
   commandName: 'rise-manager',
   description: `
-    Manager your RISE node instance, including docker images.`,
+    Manager your RISE node instance, including docker images.
+    
+    Examples:
+    ./rise-manager node start`,
   subcommands: [docker, node],
 });
 
-// if (require.main === module) {
-//   cli(root)();
-// }
+cli(root)();
