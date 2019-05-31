@@ -64,14 +64,17 @@ export class KeystoreTransaction extends BaseTx<KeyStoreAsset, KeystoreModel> {
 
   public readAssetFromBytes(bytes: Buffer): KeyStoreAsset {
     let offset = 0;
-    const keyLength = varuint.decode(bytes, offset);
-    offset += varuint.decode.bytes;
-    const key = bytes.slice(offset, offset + keyLength).toString('utf8');
-    offset += keyLength;
+    function decodeItem() {
+      const valueLength = varuint.decode(bytes, offset);
+      offset += varuint.decode.bytes;
+      const toRet = bytes.slice(offset, offset + valueLength);
+      offset += valueLength;
+      return toRet;
+    }
 
-    const valueLength = varuint.decode(bytes, offset);
-    offset += varuint.decode.bytes;
-    const value = bytes.slice(offset, offset + valueLength);
+    const key = decodeItem().toString('utf8');
+    const value = decodeItem();
+
     return { key, value };
   }
 
@@ -160,6 +163,31 @@ export class KeystoreTransaction extends BaseTx<KeyStoreAsset, KeystoreModel> {
         value: m.value,
       };
     }
+  }
+
+  /**
+   * it'll allow only one "key"+"sender" per set.
+   * @param txs
+   */
+  // tslint:disable-next-line
+  public async findConflicts(
+    txs: Array<IBaseTransaction<KeyStoreAsset>>
+  ): Promise<Array<IBaseTransaction<KeyStoreAsset>>> {
+    const conflictingTransactions: Array<IBaseTransaction<KeyStoreAsset>> = [];
+    const senders = {};
+    for (const tx of txs) {
+      const ass = tx.asset;
+      if (typeof senders[tx.senderId] === 'undefined') {
+        senders[tx.senderId] = {};
+      }
+      if (typeof senders[tx.senderId][ass.key] !== 'undefined') {
+        conflictingTransactions.push(tx);
+      } else {
+        senders[tx.senderId][ass.key] = tx;
+      }
+    }
+
+    return conflictingTransactions;
   }
 
   public dbSave(tx: IBaseTransaction<KeyStoreAsset>) {

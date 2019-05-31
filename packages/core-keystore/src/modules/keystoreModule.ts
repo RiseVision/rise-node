@@ -2,6 +2,7 @@ import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
 import { Address, ITransactionsModel } from '@risevision/core-types';
 import { inject, injectable, named } from 'inversify';
+import * as sequelize from 'sequelize';
 import { KeystoreModel } from '../models/';
 import { KeystoreTxSymbols } from '../symbols';
 
@@ -21,16 +22,17 @@ export class KeystoreModule {
    */
   public async getAllAcctValues(senderId: Address) {
     const data: Array<
-      KeystoreModel & { 'tx.height': number }
+      KeystoreModel & { 'transaction.height': number }
     > = await this.keystoreModel.findAll({
       include: [
         {
+          as: 'transaction',
           attributes: ['height'],
           model: this.transactionsModel,
           where: { senderId },
         },
       ],
-      order: [['tx.height', 'ASC']],
+      order: [sequelize.literal('"transaction"."height" ASC')],
       raw: true,
     });
 
@@ -43,7 +45,7 @@ export class KeystoreModule {
       current[d.key] = d.value;
       history[d.key] = history[d.key] || [];
       history[d.key].push({
-        height: d['tx.height'],
+        height: d['transaction.height'],
         id: d.transactionId,
         value: d.value,
       });

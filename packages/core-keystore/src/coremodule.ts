@@ -1,7 +1,7 @@
 import { APISymbols } from '@risevision/core-apis';
 import { ModelSymbols } from '@risevision/core-models';
 import { TXSymbols } from '@risevision/core-transactions';
-import { BaseCoreModule } from '@risevision/core-types';
+import { BaseCoreModule, ISystemModule, Symbols } from '@risevision/core-types';
 import { KeystoreAPI } from './apis';
 import { constants } from './constants';
 import { KeystoreModel } from './models';
@@ -42,5 +42,17 @@ export class CoreModule extends BaseCoreModule {
     this.container
       .bind(KeystoreTxSymbols.constants)
       .toConstantValue(this.constants);
+  }
+
+  public async boot(): Promise<void> {
+    const curFees = this.container
+      .get<ISystemModule>(Symbols.modules.system)
+      .getFees();
+    if (
+      typeof curFees.fees.keystore === 'undefined' ||
+      typeof curFees.fees.keystoreMultiplier === 'undefined'
+    ) {
+      throw new Error('No fees defined for keystore');
+    }
   }
 }

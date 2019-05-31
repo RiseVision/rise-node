@@ -76,32 +76,32 @@ describe('modules/keystoreModule', () => {
     const SQLRes = [
       {
         key: 'first',
+        'transaction.height': 1,
         transactionId: 'idOne',
-        'tx.height': 1,
         value: 'first1Val',
       },
       {
         key: 'second',
+        'transaction.height': 2,
         transactionId: 'idTwo',
-        'tx.height': 2,
         value: 'second1Val',
       },
       {
         key: 'first',
+        'transaction.height': 3,
         transactionId: 'idThree',
-        'tx.height': 3,
         value: 'first2Val',
       },
       {
         key: 'second',
+        'transaction.height': 5,
         transactionId: 'idFourth',
-        'tx.height': 5,
         value: 'second2Val',
       },
       {
         key: 'third',
+        'transaction.height': 3,
         transactionId: 'idFifth',
-        'tx.height': 3,
         value: 'thirdVal',
       },
     ];

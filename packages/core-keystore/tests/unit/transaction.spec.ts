@@ -121,6 +121,20 @@ describe('transaction', () => {
       await expect(instance.verify(tx, null)).to.rejectedWith(
         'Asset Schema is not valid: #/key String'
       );
+      tx.asset.key =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      await expect(instance.verify(tx, null)).to.rejectedWith(
+        'Asset Schema is not valid: #/key String'
+      );
+    });
+    it('should allow good keys', async () => {
+      tx.asset.key = 'a';
+      await expect(instance.verify(tx, null)).to.not.rejected;
+      tx.asset.key =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      await expect(instance.verify(tx, null)).to.not.rejected;
+      tx.asset.key = 'a.b.c.d';
+      await expect(instance.verify(tx, null)).to.not.rejected;
     });
     it('should fail if value is empty', async () => {
       tx.asset.value = null;
