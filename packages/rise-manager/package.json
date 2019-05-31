@@ -24,8 +24,7 @@
   "license": "GPL-3.0",
   "devDependencies": {
     "@carnesen/cli": "^0.3.3",
-    "@types/execa": "^0.9.0",
-    "execa": "^1.0.0",
+    "debug": "^4.1.1",
     "parcel": "^1.12.3",
     "typescript": "3.4.5"
   }
