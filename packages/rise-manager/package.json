@@ -13,10 +13,10 @@
   "scripts": {
     "clean": "rm -rf dist; rm -rf build",
     "build": "tsc",
-    "chmod-x": "chmod +x dist/rise-manager",
-    "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise-manager > /tmp/out && mv /tmp/out dist/rise-manager",
     "parcel": "npx parcel build build/main.js -d dist --target node --bundle-node-modules --no-cache",
-    "parcel:rename": "mv dist/main.js dist/rise-manager; mv dist/main.js.map dist/rise-manager.map",
+    "parcel:rename": "mv dist/main.js dist/rise; mv dist/main.js.map dist/rise.map",
+    "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise > /tmp/out && mv /tmp/out dist/rise",
+    "chmod-x": "chmod +x dist/rise",
     "bundle": "yarn clean; yarn build; yarn parcel; yarn parcel:rename; yarn shebang; yarn chmod-x"
   },
   "types": "dist/index.d.ts",

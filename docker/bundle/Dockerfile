@@ -6,13 +6,12 @@ RUN apt-get install -y \
         python \
         postgresql-server-dev-all
 
-RUN mkdir -p /home/rise/rise-node
+RUN mkdir -p /home/rise
 #RUN mkdir -p /home/rise/logs
 
 WORKDIR /home/rise
 COPY config.json config.json
 
-WORKDIR /home/rise/rise-node
 COPY rise-node.tar.gz .
 RUN tar -zxf rise-node.tar.gz
 RUN rm rise-node.tar.gz
@@ -23,6 +22,7 @@ ENV NETWORK="mainnet"
 EXPOSE 5554
 EXPOSE 5555
 
+WORKDIR /home/rise/rise-node
 CMD ./node_modules/.bin/lerna run \
 	start:$NETWORK --stream --no-prefix -- \
 	-e $(pwd)/../config.json

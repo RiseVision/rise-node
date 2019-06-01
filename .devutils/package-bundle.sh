@@ -1,21 +1,26 @@
 #!/usr/bin/env bash
 
-echo "Creating rise-node.tar.gz"
-rm docker/bundle/rise-node.tar.gz
-rm docker/bundle/rise-docker.tar.gz
+echo "Creating /dist/rise-node"
 
-## create the inner package
-tar -cf rise-node.tar package.json
-# append
-tar -rf rise-node.tar lerna.json
-tar -rf rise-node.tar packages/**/dist
-tar -rf rise-node.tar packages/**/etc
-tar -rf rise-node.tar packages/**/proto
-tar -rf rise-node.tar packages/**/schema
-tar -rf rise-node.tar packages/**/sql
-tar -rf rise-node.tar packages/**/package.json
-# move to docker
-mv -f rise-node.tar docker/bundle
+# cleanup
+rm -f dist/rise-node.tar.gz
+rm -f dist/rise-docker.tar.gz
+rm -Rf dist/rise-node
+rm -Rf dist/rise-docker
+
+## create rise-docker.tar.gz
+mkdir -p dist/rise-node
+cp package.json dist/rise-node
+cp lerna.json dist/rise-node
+rsync -Rr packages/**/dist dist/rise-node/
+rsync -Rr packages/**/etc dist/rise-node
+rsync -Rr packages/**/proto dist/rise-node
+rsync -Rr packages/**/schema dist/rise-node
+rsync -Rr packages/**/sql dist/rise-node
+rsync -Rr packages/**/package.json dist/rise-node
+
+# copy the rise manager file to the root
+cp packages/rise-manager/dist/rise dist
 
 ## compile native node_modules
 echo "Compiling native node_modules"
@@ -35,25 +40,41 @@ docker run --name node_modules_build \
 	node_modules
 
 ## append rebuild node_modules to the archive
-echo "Adding node_modules to rise-node.tar"
+echo "Adding node_modules to /dist/rise-node"
 
+mv docker/bundle/node_modules dist/rise-node
+
+echo "Creating rise-node.tar.gz"
+pushd dist
+tar -czf rise-node.tar.gz rise-node rise
+popd
+
+## create rise-docker.tar.gz
+echo "Creating /dist/rise-docker"
+mkdir -p dist/rise-docker
 pushd docker/bundle
-tar -rf rise-node.tar node_modules
-rm -R node_modules
 
-## gzip the result
-gzip rise-node.tar
+# copy docker files
+cp config.json ../../dist/rise-docker
+cp docker-compose.yml ../../dist/rise-docker
+cp Dockerfile ../../dist/rise-docker
+cp Dockerfile.postgres ../../dist/rise-docker
 
+popd
 
-## create the outer package
 echo "Creating rise-docker.tar.gz"
-tar -cf rise-docker.tar config.json
-tar -rf rise-docker.tar docker-compose.yml
-tar -rf rise-docker.tar Dockerfile
-tar -rf rise-docker.tar Dockerfile.postgres
-tar -rf rise-docker.tar rise-node.tar.gz
-gzip rise-docker.tar
+pushd dist
 
+cp rise-node.tar.gz rise-docker
+tar -czf rise-docker.tar.gz rise-docker rise
+
+popd
+
+# cleanup
+rm -R dist/rise-node
+rm -R dist/rise-docker
+
+echo ""
 echo "Ready"
-echo "- docker/rise-node.tar.gz"
-echo "- docker/rise-docker.tar.gz"
+echo "- dist/rise-node.tar.gz"
+echo "- dist/rise-docker.tar.gz"

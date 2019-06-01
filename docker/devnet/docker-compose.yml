@@ -6,7 +6,6 @@ services:
       context: ../../
       dockerfile: ./docker/devnet/Dockerfile
     depends_on:
-      - redis_1
       - postgres_1
     ports:
       # rise node
@@ -35,12 +34,6 @@ services:
 #    stdin_open: true
 #    tty: true
 
-  redis_1:
-    image: redis:5-alpine
-    networks:
-      - overlay
-    restart: on-failure
-
   postgres_1:
     build:
       context: ../../
@@ -59,8 +52,7 @@ services:
       context: ../../
       dockerfile: ./docker/devnet/Dockerfile
     depends_on:
-      - redis_1
-      - postgres_1
+      - postgres_2
     ports:
       # rise node
       - '5502:5555'
@@ -82,12 +74,6 @@ services:
       - ../../lerna.json:/home/rise/rise-node/lerna.json
       - ../../yarn.lock:/home/rise/rise-node/yarn.lock
       - ../../packages:/home/rise/rise-node/packages
-    restart: on-failure
-
-  redis_2:
-    image: redis:5-alpine
-    networks:
-      - overlay
     restart: on-failure
 
   postgres_2:
