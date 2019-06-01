@@ -1,5 +1,5 @@
 import { branch, cli } from '@carnesen/cli';
-import { docker_start } from './docker';
+import { docker_download, docker_start } from './docker';
 import { node_download, node_start } from './node';
 
 export const node = branch({
@@ -11,7 +11,7 @@ export const node = branch({
 export const docker = branch({
   commandName: 'docker',
   description: 'Docker related commands',
-  subcommands: [docker_start],
+  subcommands: [docker_start, docker_download],
 });
 
 export const root = branch({
@@ -20,11 +20,12 @@ export const root = branch({
     Manager your RISE node instance, including docker images.
 
     Usage:
-    ./rise-manager node start
-    ./rise-manager docker start
-    ./rise-manager node download
-    ./rise-manager docker download
-    `,
+    
+    ./rise node download
+    ./rise node start
+    
+    ./rise docker download
+    ./rise docker start`,
   subcommands: [docker, node],
 });
 

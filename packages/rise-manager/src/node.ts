@@ -2,14 +2,13 @@ import { leaf, option } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
 import * as path from 'path';
 import * as debug from 'debug';
-// TODO uncomment for production
-// import * as http from 'https';
+import * as https from 'https';
 import * as http from 'http';
 import * as fs from 'fs';
 
 const NODE_DIR = 'rise-node';
 const NODE_URL = 'https://github.com/RiseVision/rise-node-priv/releases/';
-const NODE_FILENAME = 'rise-node.tar.gz';
+const NODE_FILE = 'rise-node.tar.gz';
 
 const SEC = 1000;
 const MIN = 60 * SEC;
@@ -36,7 +35,7 @@ export const node_start = leaf({
       typeName: 'boolean',
       nullable: true,
       defaultValue: false,
-      description: 'Keep the process in the foreground. Implies --showLog',
+      description: 'Keep the process in the foreground. Implies --show_logs',
     }),
     show_logs: option({
       typeName: 'boolean',
@@ -52,8 +51,6 @@ export const node_start = leaf({
     }
     const showLogs = show_logs || foreground;
     const config_path = path.resolve(config);
-    // remember the original cwd
-    const cwd = process.cwd()
     let ready = false;
 
     console.log('Stating RISE node...');
@@ -62,7 +59,6 @@ export const node_start = leaf({
         // kill the process after 2 mins
         const timeout = setTimeout(reject.bind(null, 'TIMEOUT'), 2 * MIN);
 
-        process.chdir(path.resolve(__dirname, NODE_DIR));
         const cmd = exec(
           getLernaPath() +
             ' run ' +
@@ -70,7 +66,10 @@ export const node_start = leaf({
             '--stream ' +
             '--no-prefix ' +
             '-- ' +
-            `-e ${config_path}`
+            `-e ${config_path}`,
+          {
+            cwd: path.resolve(__dirname, NODE_DIR),
+          }
         );
 
         cmd.stdout.on('data', (data: Buffer) => {
@@ -111,17 +110,15 @@ export const node_start = leaf({
         process.exit(1);
       }
     } catch (e) {
-      console.log('Error while running the node:');
+      console.log('Something went wrong. Examine the log using --show_logs.');
       console.error(e);
-    } finally {
-      process.chdir(cwd)
     }
   },
 });
 
 function checkNodeDirExists(): boolean {
   if (!fs.existsSync(NODE_DIR) || !fs.lstatSync(NODE_DIR).isDirectory()) {
-    console.log(`Error: directory 'rise-node' doesn't exist.`);
+    console.log(`Error: directory '${NODE_DIR}' doesn't exist.`);
     console.log(`You can download the latest version using:`);
     console.log(`  ./rise node download`);
     return false;
@@ -163,14 +160,15 @@ export const node_download = leaf({
   async action({ version }) {
     const url = process.env['DEV']
       ? 'http://localhost:8080/rise-node.tar.gz'
-      : NODE_URL + version + '/' + NODE_FILENAME;
+      : NODE_URL + version + '/' + NODE_FILE;
 
     console.log(`Downloading ${url}`);
 
-    const file = fs.createWriteStream(NODE_FILENAME);
+    const file = fs.createWriteStream(NODE_FILE);
     // TODO show progress ?
     await new Promise((resolve, reject) => {
-      http
+      // use plain http when in DEV mode
+      (process.env['DEV'] ? http : https)
         .get(url, function(response) {
           response.pipe(file);
           file.on('finish', function() {
@@ -179,18 +177,22 @@ export const node_download = leaf({
           });
         })
         .on('error', function(err) {
-          fs.unlink(NODE_FILENAME, () => {
+          fs.unlink(NODE_FILE, () => {
             reject(err.message);
           });
         });
     });
 
     console.log('Download completed');
-    console.log('Extracting rise-node.tar.gz');
+    console.log(`Extracting ${NODE_FILE}`);
 
-    execSync(`tar -zxf rise-node.tar.gz`);
+    execSync(`tar -zxf ${NODE_FILE}`);
+    await new Promise((resolve) => {
+      fs.unlink(NODE_FILE, resolve);
+    });
 
-    console.log('Done. You can start the node using:');
+    console.log('Done.\n');
+    console.log('You can start the node using:');
     console.log('  ./rise node start');
   },
 });
