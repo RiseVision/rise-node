@@ -2,6 +2,10 @@ import { leaf, option } from '@carnesen/cli';
 import { exec } from 'child_process';
 import { resolve } from 'path';
 import * as debug from 'debug';
+// TODO uncomment for production
+// import * as http from 'https';
+import * as http from 'http';
+import * as fs from 'fs';
 
 const SEC = 1000;
 const MIN = 60 * SEC;
@@ -101,5 +105,48 @@ export const node_start = leaf({
       console.error(e);
       debugger;
     }
+  },
+});
+
+const NODE_URL = 'https://github.com/RiseVision/rise-node-priv/releases/';
+const NODE_FILENAME = 'rise-node.tar.gz';
+
+export const node_download = leaf({
+  commandName: 'download',
+  description: 'Download a node release file',
+
+  options: {
+    version: option({
+      typeName: 'string',
+      nullable: true,
+      defaultValue: 'latest',
+      description: 'Version number to download, eg v2.0.0',
+    }),
+  },
+
+  async action({ version }) {
+    // TODO uncomment for production
+    // const url = NODE_URL + version + '/' + NODE_FILENAME;
+    const url = 'http://localhost:8080/rise-node.tar.gz';
+    const file = fs.createWriteStream(NODE_FILENAME);
+    // TODO console msg with the version being downloaded
+    // TODO show progress
+    await new Promise((resolve, reject) => {
+      http
+        .get(url, function(response) {
+          response.pipe(file);
+          response.on('finish', function() {
+            file.close();
+            resolve();
+          });
+        })
+        .on('error', function(err) {
+          fs.unlink(NODE_FILENAME, () => {
+            reject(err.message);
+          });
+        });
+    });
+    console.log('Download complete');
+    // TODO extract rise-node.tar.gz
   },
 });

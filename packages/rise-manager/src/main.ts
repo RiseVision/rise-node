@@ -1,11 +1,11 @@
 import { branch, cli } from '@carnesen/cli';
 import { docker_start } from './docker';
-import { node_start } from './node';
+import { node_download, node_start } from './node';
 
 export const node = branch({
   commandName: 'node',
   description: 'Node related commands',
-  subcommands: [node_start],
+  subcommands: [node_start, node_download],
 });
 
 export const docker = branch({
