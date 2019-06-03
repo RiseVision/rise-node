@@ -3,15 +3,14 @@
 echo "Creating /dist/rise-node"
 
 # cleanup
-rm -f dist/rise-node.tar.gz
-rm -f dist/rise-docker.tar.gz
-rm -Rf dist/rise-node
-rm -Rf dist/rise-docker
+mkdir -p /dist
+rm -Rf dist/*
 
 ## create rise-docker.tar.gz
 mkdir -p dist/rise-node
 cp package.json dist/rise-node
 cp lerna.json dist/rise-node
+cp docker/bundle/config.json dist/rise-node
 rsync -Rr packages/**/dist dist/rise-node/
 rsync -Rr packages/**/etc dist/rise-node
 rsync -Rr packages/**/proto dist/rise-node
@@ -20,7 +19,7 @@ rsync -Rr packages/**/sql dist/rise-node
 rsync -Rr packages/**/package.json dist/rise-node
 
 # copy the rise manager file to the root
-cp packages/rise-manager/dist/rise dist
+cp packages/cli/dist/rise dist
 
 ## compile native node_modules
 echo "Compiling native node_modules"

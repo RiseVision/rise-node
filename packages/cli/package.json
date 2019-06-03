@@ -13,7 +13,7 @@
   "scripts": {
     "clean": "rm -rf dist; rm -rf build",
     "build": "tsc",
-    "parcel": "npx parcel build build/main.js -d dist --target node --bundle-node-modules --no-cache",
+    "parcel": "npx parcel build build/main.js -d dist --target node --bundle-node-modules",
     "parcel:rename": "mv dist/main.js dist/rise; mv dist/main.js.map dist/rise.map",
     "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise > /tmp/out && mv /tmp/out dist/rise",
     "chmod-x": "chmod +x dist/rise",
@@ -27,5 +27,9 @@
     "debug": "^4.1.1",
     "parcel": "^1.12.3",
     "typescript": "3.4.5"
+  },
+  "dependencies": {
+    "env": "^0.0.2",
+    "fs-extra": "^8.0.1"
   }
 }
