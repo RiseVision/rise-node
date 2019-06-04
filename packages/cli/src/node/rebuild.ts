@@ -4,8 +4,8 @@ import * as fs from 'fs';
 import { NODE_DIR } from '../misc';
 
 export default leaf({
-  commandName: 'rebuild-native',
-  description: 'Rebuilds native node_modules for the current OS.',
+  commandName: 'rebuild',
+  description: 'Rebuilds the native node_modules for the current OS.',
 
   async action() {
     if (!checkNodeDirExists()) {

@@ -61,7 +61,7 @@ export default leaf({
   },
 });
 
-async function dockerRemove() {
+async function dockerRemove(): void {
   console.log('Removing the previous container...');
 
   const cmd = 'docker rm rise-node';
@@ -73,7 +73,7 @@ async function dockerRemove() {
   }
 }
 
-async function dockerBuild(showLogs: boolean) {
+async function dockerBuild(showLogs: boolean): void {
   console.log('Building the image...');
 
   // build

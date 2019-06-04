@@ -8,6 +8,7 @@ rm -Rf dist/*
 
 ## create rise-docker.tar.gz
 mkdir -p dist/rise-node
+mkdir -p dist/packages/rise/logs
 cp package.json dist/rise-node
 cp lerna.json dist/rise-node
 cp docker/bundle/config.json dist/rise-node

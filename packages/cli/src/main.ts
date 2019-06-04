@@ -5,7 +5,7 @@ import dockerStop from './docker/stop';
 import dockerDownload from './docker/download';
 import nodeDownload from './node/download';
 import nodeStart from './node/start';
-import nodeRebuild from './node/rebuild_modules';
+import nodeRebuild from './node/rebuild';
 import { VERSION } from './misc';
 dot.config();
 
