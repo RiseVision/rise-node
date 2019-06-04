@@ -20,7 +20,7 @@ import {
   TransactionsModule,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { IKeypair, Symbols } from '@risevision/core-types';
+import { Address, IKeypair, Symbols } from '@risevision/core-types';
 import { expect } from 'chai';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -108,7 +108,15 @@ describe('rounds', () => {
       const delegate = findDelegateByUsername(`genesisDelegate${i}`);
       const delWallet = Rise.deriveKeypair(delegate.secret);
       txs.push(
-        await createVoteTransactionV1(0, delWallet, delWallet.publicKey, false)
+        await createVoteTransactionV1(
+          0,
+          {
+            ...delWallet,
+            address: delegate.address as Address,
+          },
+          delWallet.publicKey,
+          false
+        )
       );
       txs.push(
         await createVoteTransactionV1(

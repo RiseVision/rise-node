@@ -31,12 +31,11 @@ import {
   checkAddress,
   checkEnumParam,
   checkIntParam,
-  checkPubKey,
   checkRequiredParam,
   checkReturnObjKeyVal,
 } from './utils';
 
-import { Rise, RiseTransaction, RiseV2 } from 'dpos-offline';
+import { RiseV2, RiseV2Transaction } from 'dpos-offline';
 import uuid = require('uuid');
 
 // tslint:disable no-unused-expression max-line-length no-identical-functions no-big-function object-literal-sort-keys
@@ -98,9 +97,9 @@ describe('api/transactions', () => {
       '/api/transactions'
     );
 
-    let voteTx: RiseTransaction<any>;
+    let voteTx: RiseV2Transaction<any>;
     let sendTxID: string;
-    let secondSignTx: RiseTransaction<any>;
+    let secondSignTx: RiseV2Transaction<any>;
     let onlyReceiverTxID: string;
     let senderAccount: IKeypair;
     let voterAccount: IKeypair;
@@ -201,8 +200,10 @@ describe('api/transactions', () => {
       it('should return only tx from such senderId', async () => {
         return supertest(initializer.apiExpress)
           .get(
-            `/api/transactions?senderId=${Rise.calcAddress(
-              voterAccount.publicKey
+            `/api/transactions?senderId=${RiseV2.calcAddress(
+              voterAccount.publicKey,
+              'main',
+              'v0'
             )}&orderBy=height:asc`
           )
           .expect(200)
@@ -227,8 +228,10 @@ describe('api/transactions', () => {
       it('should return only tx for such recipientId', async () => {
         return supertest(initializer.apiExpress)
           .get(
-            `/api/transactions?recipientId=${Rise.calcAddress(
-              onlyReceiverAccount.publicKey
+            `/api/transactions?recipientId=${RiseV2.calcAddress(
+              onlyReceiverAccount.publicKey,
+              'main',
+              'v0'
             )}`
           )
           .expect(200)
@@ -282,7 +285,7 @@ describe('api/transactions', () => {
     });
 
     describe('fromTimestamp filter', () => {
-      let tx: RiseTransaction<any>;
+      let tx: RiseV2Transaction<any>;
       beforeEach(async () => {
         tx = await createSendTransactionV1(1, 1, senderAccount, '1R', 1000);
       });
@@ -305,7 +308,7 @@ describe('api/transactions', () => {
       });
     });
     describe('toTimestamp filter', () => {
-      let tx: RiseTransaction<any>;
+      let tx: RiseV2Transaction<any>;
       beforeEach(async () => {
         tx = await createSendTransactionV1(1, 1, senderAccount, '1R', 1000);
       });
@@ -328,7 +331,7 @@ describe('api/transactions', () => {
       });
     });
     describe('unixTime filters', () => {
-      let tx: RiseTransaction<any>;
+      let tx: RiseV2Transaction<any>;
       let txUnixTime: number;
       beforeEach(async () => {
         tx = await createSendTransactionV1(1, 1, senderAccount, '1R', 1000);
@@ -384,8 +387,8 @@ describe('api/transactions', () => {
     });
 
     describe('minAmount filter', () => {
-      let smallTx: RiseTransaction<any>;
-      let bigTx: RiseTransaction<any>;
+      let smallTx: RiseV2Transaction<any>;
+      let bigTx: RiseV2Transaction<any>;
       beforeEach(async () => {
         smallTx = await createSendTransactionV1(
           1,
@@ -482,7 +485,7 @@ describe('api/transactions', () => {
     describe('with some txs', () => {
       initializer.createBlocks(1, 'each');
       beforeEach(async () => {
-        const txs: Array<RiseTransaction<any>> = [];
+        const txs: Array<RiseV2Transaction<any>> = [];
         for (let i = 0; i < 5; i++) {
           const tx = await createSendTransactionV1(
             0,
@@ -532,7 +535,7 @@ describe('api/transactions', () => {
   });
 
   describe('/get', () => {
-    let tx: RiseTransaction<any>;
+    let tx: RiseV2Transaction<any>;
     let delegate1: IKeypair;
     let senderAccount: IKeypair;
     beforeEach(async () => {
@@ -636,7 +639,7 @@ describe('api/transactions', () => {
   });
 
   describe('/put', () => {
-    let tx: RiseTransaction<any>;
+    let tx: RiseV2Transaction<any>;
     let delegate1: IKeypair;
     let senderAccount: IKeypair;
     beforeEach(async () => {
@@ -661,9 +664,7 @@ describe('api/transactions', () => {
         { nonce: 2 }
       );
 
-      const postableTx: any = Rise.txs.toPostable(voteTX);
-      postableTx.senderPubData = postableTx.senderPublicKey;
-      postableTx.signatures = [postableTx.signature];
+      const postableTx = RiseV2.txs.toPostable(voteTX);
 
       expect(voteTX.id).not.eq(tx.id);
       await supertest(initializer.apiExpress)
@@ -702,11 +703,10 @@ describe('api/transactions', () => {
         0,
         1,
         senderAccount,
-        Rise.calcAddress(senderAccount.publicKey)
+        RiseV2.calcAddress(senderAccount.publicKey)
       );
-      let postableTx: any = Rise.txs.toPostable(orig);
-      postableTx.senderPubData = postableTx.senderPublicKey;
-      postableTx.signatures = [postableTx.signature];
+      let postableTx = RiseV2.txs.toPostable(orig);
+
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
         .send({ transactions: [{ ...postableTx, senderId: null }] })
@@ -745,10 +745,8 @@ describe('api/transactions', () => {
         delegate1.publicKey,
         false
       ); /*unvote */
-      postableTx = Rise.txs.toPostable(unvoteTX);
-      postableTx.senderPubData = postableTx.senderPublicKey;
-      postableTx.signatures = [postableTx.signature];
-      (unvoteTX.asset as any).votes.push('meow');
+      unvoteTX.asset.votes.push('meow');
+      postableTx = RiseV2.txs.toPostable(unvoteTX);
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
         .send({ transaction: postableTx })
@@ -771,9 +769,7 @@ describe('api/transactions', () => {
         delegate1.publicKey,
         false
       ); /*unvote */
-      const postableTx: any = Rise.txs.toPostable(unvoteTX);
-      postableTx.senderPubData = postableTx.senderPublicKey;
-      postableTx.signatures = [postableTx.signature];
+      const postableTx = RiseV2.txs.toPostable(unvoteTX);
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
         .send({ transaction: postableTx })
@@ -787,9 +783,7 @@ describe('api/transactions', () => {
         false
       ); /*unvote */
 
-      const postableTx: any = Rise.txs.toPostable(unvoteTX);
-      postableTx.senderPubData = postableTx.senderPublicKey;
-      postableTx.signatures = [postableTx.signature];
+      const postableTx = RiseV2.txs.toPostable(unvoteTX);
       await supertest(initializer.apiExpress)
         .put('/api/transactions/')
         .send({ transactions: [postableTx] })

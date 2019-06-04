@@ -177,15 +177,6 @@ export class TransactionLogic implements ITransactionLogic {
     if (calcAddress !== sender.address || tx.senderId !== calcAddress) {
       throw new Error('Invalid sender address');
     }
-    // // Check sender public key
-    // if (sender.publicKey && !sender.publicKey.equals(tx.senderPublicKey)) {
-    //   // tslint:disable-next-line
-    //   throw new Error(
-    //     `Invalid sender public key: ${tx.senderPublicKey.toString(
-    //       'hex'
-    //     )} expected ${sender.publicKey.toString('hex')}`
-    //   );
-    // }
 
     // Check sender is not genesis account unless block id equals genesis
     // if (

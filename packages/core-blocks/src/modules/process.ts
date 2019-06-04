@@ -356,6 +356,9 @@ export class BlocksModuleProcess {
     // Remove conflicting transactions transactions
     const conflicts = await this.transactionLogic.findConflicts(ready);
     for (const tx of conflicts) {
+      this.logger.debug(
+        `Tx[${tx.id}] has been removed from this block cause its conflicting`
+      );
       for (let i = 0; i < ready.length; i++) {
         if (ready[i].id === tx.id) {
           ready.splice(i, 1);

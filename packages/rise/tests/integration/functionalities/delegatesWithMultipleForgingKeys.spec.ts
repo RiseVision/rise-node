@@ -1,4 +1,3 @@
-import BigNumber from 'bignumber.js';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
@@ -21,7 +20,7 @@ import {
   TransactionPool,
   TXSymbols,
 } from '@risevision/core-transactions';
-import { IAccountsModule, Symbols } from '@risevision/core-types';
+import { Address, IAccountsModule, Symbols } from '@risevision/core-types';
 import { IKeypair, Rise } from 'dpos-offline';
 import { Op } from 'sequelize';
 import {
@@ -37,7 +36,7 @@ chai.use(chaiAsPromised);
 describe('delegatesWithMultipleForgingKEys', () => {
   initializer.setup();
   initializer.autoRestoreEach();
-  let delegateWallet: IKeypair;
+  let delegateWallet: IKeypair & { address: Address };
   let delegatesModule: DelegatesModule;
   let blocksModule: BlocksModule;
   let delegatesModel: typeof DelegatesModel;
@@ -58,7 +57,7 @@ describe('delegatesWithMultipleForgingKEys', () => {
       dPoSSymbols.models.delegates
     );
     const acc = await accModule.getAccount({
-      address: Rise.calcAddress(delegateWallet.publicKey),
+      address: delegateWallet.address,
     });
     delegateUsername = acc.username;
     expect(delegateUsername).not.empty;

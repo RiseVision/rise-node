@@ -27,7 +27,7 @@ import {
   SignedAndChainedBlockType,
 } from '@risevision/core-types';
 import { expect } from 'chai';
-import { RiseTransaction, RiseV2Transaction } from 'dpos-offline';
+import { RiseV2Transaction } from 'dpos-offline';
 import 'reflect-metadata';
 import { getKeypairByPkey } from './utils';
 
@@ -100,7 +100,7 @@ export class IntegrationTestInitializer {
   }
 
   public async generateBlock(
-    transactions: Array<RiseTransaction<any> | RiseV2Transaction<any>> = []
+    transactions: Array<RiseV2Transaction<any>> = []
   ): Promise<SignedAndChainedBlockType & { height: number }> {
     const blockLogic = this.appManager.container.get<BlockLogic>(
       BlocksSymbols.logic.block

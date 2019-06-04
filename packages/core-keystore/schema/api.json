@@ -1,0 +1,28 @@
+{
+  "getHistory": {
+    "id": "keystore.getHistory",
+    "type": "object",
+    "properties": {
+      "address": {
+        "type": "string",
+        "format": "address",
+        "minLength": 1,
+        "maxLength": 250
+      }
+    },
+    "required": ["address"]
+  },
+  "getCurrent": {
+    "id": "keystore.getCurrent",
+    "type": "object",
+    "properties": {
+      "address": {
+        "type": "string",
+        "format": "address",
+        "minLength": 1,
+        "maxLength": 250
+      }
+    },
+    "required": ["address"]
+  }
+}
