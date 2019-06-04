@@ -1,8 +1,8 @@
 import { leaf, option } from '@carnesen/cli';
-import { execSync } from "child_process";
-import * as fs from "fs-extra";
-import * as http from "http";
-import * as https from "https";
+import { execSync } from 'child_process';
+import * as fs from 'fs-extra';
+import * as http from 'http';
+import * as https from 'https';
 import { isDevEnd, NODE_DIR, NODE_FILE, NODE_URL } from '../misc';
 
 export default leaf({
@@ -48,7 +48,7 @@ export default leaf({
     console.log('Download completed');
 
     console.log(`Removing the old ${NODE_DIR}/ dir`);
-    fs.removeSync(NODE_DIR)
+    fs.removeSync(NODE_DIR);
 
     console.log(`Extracting ${NODE_FILE}`);
     execSync(`tar -zxf ${NODE_FILE}`);

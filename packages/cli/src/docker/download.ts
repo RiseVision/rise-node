@@ -1,8 +1,8 @@
 import { leaf, option } from '@carnesen/cli';
-import { execSync } from "child_process";
-import * as fs from "fs";
-import * as http from "http";
-import * as https from "https";
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as http from 'http';
+import * as https from 'https';
 import { DOCKER_FILE, DOCKER_URL, isDevEnd } from '../misc';
 
 export default leaf({

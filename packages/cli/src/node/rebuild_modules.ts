@@ -13,7 +13,8 @@ export default leaf({
     }
 
     try {
-      execSync('npm rebuild', { cwd: NODE_DIR });
+      // TODO make sure yarn is installed
+      execSync('yarn --force', { cwd: NODE_DIR });
     } catch (err) {
       console.log(
         'Error while building the container. Examine the log using --show_logs.'

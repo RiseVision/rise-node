@@ -1,4 +1,4 @@
-import 'env';
+import * as dot from 'dotenv';
 import { branch, cli, leaf } from '@carnesen/cli';
 import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
@@ -7,6 +7,7 @@ import nodeDownload from './node/download';
 import nodeStart from './node/start';
 import nodeRebuild from './node/rebuild_modules';
 import { VERSION } from './misc';
+dot.config();
 
 export const node = branch({
   commandName: 'node',
@@ -24,14 +25,14 @@ export const version = leaf({
   commandName: 'version',
   description: 'Version of the app',
   action() {
-    console.log(VERSION)
-  }
+    console.log(VERSION);
+  },
 });
 
 export const root = branch({
   commandName: 'rise',
   description: `
-    Manager your RISE node instance, including docker images.
+    Manage your RISE node instances, including docker images.
 
     Usage:
     

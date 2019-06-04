@@ -111,7 +111,7 @@ async function dockerRun(
   foreground: boolean,
   showLogs: boolean
 ) {
-  console.log('Stating the container...');
+  console.log('Starting the container...');
   let ready = false;
   await new Promise((resolve, reject) => {
     const cmd =

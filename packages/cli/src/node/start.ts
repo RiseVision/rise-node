@@ -46,7 +46,7 @@ export default leaf({
     const showLogs = show_logs || foreground;
     const configPath = path.resolve(config);
 
-    console.log('Stating RISE node...');
+    console.log('Starting RISE node...');
     try {
       let ready = false;
       await new Promise((resolve, reject) => {

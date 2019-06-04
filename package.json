@@ -140,6 +140,6 @@
     "utility-types": "^3.6.1"
   },
   "resolutions": {
-    "nan": "2.14.0"
+    "nan": "2.10.0"
   }
 }

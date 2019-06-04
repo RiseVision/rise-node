@@ -6,6 +6,7 @@ export default leaf({
   description: 'Stops a running container',
 
   async action() {
-    execSync('docker stop rise-node')
+    // TODO check is container is running and show some info
+    execSync('docker stop rise-node');
   },
 });
