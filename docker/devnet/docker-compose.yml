@@ -9,9 +9,9 @@ services:
       - postgres_1
     ports:
       # rise node - p2p
-      - '5501:5554'
+      - '5501:9999'
       # rise node - api
-      - '5502:5555'
+      - '5502:9998'
       # node inspector
       - '9201:9229'
     networks:
@@ -25,6 +25,7 @@ services:
       # root
       - ../../node_modules:/home/rise/rise-node/node_modules
       - ../../package.json:/home/rise/rise-node/package.json
+      - ../../tsconfig.base.json:/home/rise/rise-node/tsconfig.base.json
       - ../../lerna.json:/home/rise/rise-node/lerna.json
       - ../../yarn.lock:/home/rise/rise-node/yarn.lock
       - ../../packages:/home/rise/rise-node/packages
@@ -53,9 +54,9 @@ services:
       - postgres_2
     ports:
       # rise node - p2p
-      - '5511:5554'
+      - '5511:9999'
       # rise node - api
-      - '5512:5555'
+      - '5512:9998'
       # node inspector
       - '9211:9229'
     networks:

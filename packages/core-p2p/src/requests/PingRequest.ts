@@ -10,9 +10,9 @@ export class PingRequest extends BaseTransportMethod<null, null, null> {
   public readonly method: 'GET' = 'GET';
   public readonly baseUrl = '/v2/peer/ping';
 
-  // protected encodeRequest(data: null, peer: Peer): Promise<Buffer> {
-  //   return Promise.resolve(Buffer.alloc(0));
-  // }
+  protected encodeRequest(data: null, peer: Peer): Promise<Buffer> {
+    return Promise.resolve(Buffer.alloc(0));
+  }
 
   protected encodeResponse(
     data: null,

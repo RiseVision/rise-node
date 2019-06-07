@@ -1,6 +1,7 @@
 {
-  "port": 5555,
+  "port": 9999,
   "api": {
+    "port": 9998,
     "enabled": true,
     "access": {
       "public": true
@@ -17,16 +18,10 @@
     "reapIntervalMillis": 1000,
     "logEvents": ["error"]
   },
-  "redis": {
-    "host": "redis_1",
-    "port": 6380,
-    "db": 0,
-    "password": null
-  },
   "peers": {
     "enabled": true,
     "trustProxy": false,
-    "seeds": ["rise_2:5555"],
+    "seeds": ["rise_2:9999"],
     "access": {
       "blackList": []
     },

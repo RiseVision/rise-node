@@ -3,11 +3,10 @@ import * as dot from 'dotenv';
 import dockerComposeStart from './docker-compose/start';
 import dockerComposeStop from './docker-compose/stop';
 import dockerBuild from './docker/build';
-import dockerDownload from './docker/download';
+import download from './download';
 import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
 import { VERSION } from './misc';
-import nodeDownload from './node/download';
 import nodeRebuild from './node/rebuild';
 import nodeStart from './node/start';
 
@@ -16,13 +15,13 @@ dot.config();
 export const node = branch({
   commandName: 'node',
   description: 'Running a node in the host OS',
-  subcommands: [nodeStart, nodeDownload, nodeRebuild],
+  subcommands: [nodeStart, nodeRebuild],
 });
 
 export const docker = branch({
   commandName: 'docker',
   description: 'Running a node in Docker',
-  subcommands: [dockerStart, dockerDownload, dockerStop, dockerBuild],
+  subcommands: [dockerStart, dockerStop, dockerBuild],
 });
 
 export const dockerCompose = branch({
@@ -46,13 +45,13 @@ export const root = branch({
 
     Usage:
     
+    ./rise download
+    
     # running a node in the host OS
-    ./rise node download
     ./rise node start
     ./rise node rebuild-native
     
     # running a node in Docker
-    ./rise docker download
     ./rise docker build
     ./rise docker start
     ./rise docker stop
@@ -60,7 +59,7 @@ export const root = branch({
     # running the DB and a node in Docker
     ./rise docker-compose start
     ./rise docker-compose stop`,
-  subcommands: [docker, node, version, dockerCompose],
+  subcommands: [download, node, docker, dockerCompose, version],
 });
 
 cli(root)();

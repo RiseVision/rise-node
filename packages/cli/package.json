@@ -17,9 +17,10 @@
     "parcel:rename": "mv dist/main.js dist/rise; mv dist/main.js.map dist/rise.map",
     "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise > /tmp/out && mv /tmp/out dist/rise",
     "chmod-x": "chmod +x dist/rise",
-    "dist": "yarn clean; yarn build; yarn parcel; yarn parcel:rename; yarn shebang; yarn chmod-x"
+    "dist": "yarn clean; yarn build; yarn parcel; yarn parcel:rename; yarn shebang; yarn chmod-x",
+    "postinstall": "yarn dist"
   },
-  "types": "dist/index.d.ts",
+  "types": "build/main.d.ts",
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
   "devDependencies": {
