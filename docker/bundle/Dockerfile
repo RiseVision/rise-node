@@ -17,6 +17,8 @@ RUN tar -zxf rise-node.tar.gz
 RUN rm rise-node.tar.gz
 # TODO should log to /home/rise/logs instead, fix pwd
 RUN mkdir -p /home/rise/rise-node/packages/rise/logs
+# rebuild npm modules
+RUN cd rise-node && npm rebuild
 
 ENV NETWORK="mainnet"
 EXPOSE 5554

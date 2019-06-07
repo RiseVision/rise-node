@@ -55,7 +55,8 @@ export default leaf({
     fs.unlinkSync(NODE_FILE);
 
     console.log('Done\n');
-    console.log('\nYou can start the node using:');
+    console.log('\nYou can start a node using:');
+    console.log('  ./rise node rebuild');
     console.log('  ./rise node start');
   },
 });

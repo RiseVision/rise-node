@@ -2,7 +2,7 @@ import { leaf, option } from '@carnesen/cli';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { log, MIN, NODE_DIR } from '../misc';
+import { getNodeDir, log, MIN, NETWORKS, NODE_DIR } from '../misc';
 
 export default leaf({
   commandName: 'start',
@@ -19,7 +19,7 @@ export default leaf({
       typeName: 'string',
       nullable: true,
       defaultValue: 'mainnet',
-      allowedValues: ['mainnet', 'testnet'],
+      allowedValues: NETWORKS,
     }),
     foreground: option({
       typeName: 'boolean',
@@ -61,7 +61,7 @@ export default leaf({
         log('$', cmd);
         // run the command
         const proc = exec(cmd, {
-          cwd: path.resolve(__dirname, NODE_DIR),
+          cwd: getNodeDir(),
           timeout: 2 * MIN,
         });
 

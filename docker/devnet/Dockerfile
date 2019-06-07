@@ -15,7 +15,9 @@ RUN mkdir /home/rise/logs
 WORKDIR /home/rise/rise-node
 
 ENV NETWORK="mainnet"
+EXPOSE 5554
 EXPOSE 5555
+EXPOSE 9229
 
 # rebuild native modules
 # uncomment and run once

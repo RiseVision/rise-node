@@ -6,10 +6,10 @@
   "engine": ">=10",
   "version": "1.0.0",
   "bin": {
-    "rise-manager": "dist/index.js"
+    "rise": "dist/rise"
   },
   "description": "RISE Manager",
-  "main": "dist/index.js",
+  "main": "dist/rise",
   "scripts": {
     "clean": "rm -rf dist; rm -rf build",
     "build": "tsc",
@@ -17,7 +17,7 @@
     "parcel:rename": "mv dist/main.js dist/rise; mv dist/main.js.map dist/rise.map",
     "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise > /tmp/out && mv /tmp/out dist/rise",
     "chmod-x": "chmod +x dist/rise",
-    "bundle": "yarn clean; yarn build; yarn parcel; yarn parcel:rename; yarn shebang; yarn chmod-x"
+    "dist": "yarn clean; yarn build; yarn parcel; yarn parcel:rename; yarn shebang; yarn chmod-x"
   },
   "types": "dist/index.d.ts",
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",

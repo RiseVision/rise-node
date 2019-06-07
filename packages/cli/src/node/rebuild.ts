@@ -1,7 +1,7 @@
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
-import { NODE_DIR } from '../misc';
+import { getNodeDir, NODE_DIR } from '../misc';
 
 export default leaf({
   commandName: 'rebuild',
@@ -13,8 +13,9 @@ export default leaf({
     }
 
     try {
-      // TODO make sure yarn is installed
-      execSync('yarn --force', { cwd: NODE_DIR });
+      execSync('npm rebuild', {
+        cwd: getNodeDir(),
+      });
     } catch (err) {
       console.log(
         'Error while building the container. Examine the log using --show_logs.'

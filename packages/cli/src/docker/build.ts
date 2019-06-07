@@ -1,27 +1,14 @@
 import { leaf, option } from '@carnesen/cli';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { DOCKER_DIR, getDockerDir, log, MIN, NETWORKS } from '../misc';
-import { dockerStop } from './build';
+import { DOCKER_DIR, getDockerDir, log, MIN } from '../misc';
 
 export default leaf({
-  commandName: 'start',
-  description: 'Starts a container using the provided config',
+  commandName: 'build',
+  description: 'Rebuilds an image',
 
   options: {
-    config: option({
-      typeName: 'string',
-      nullable: true,
-      defaultValue: `${DOCKER_DIR}/config.json`,
-      description: 'Path to the config file',
-    }),
-    network: option({
-      typeName: 'string',
-      nullable: true,
-      defaultValue: 'mainnet',
-      allowedValues: NETWORKS,
-    }),
     foreground: option({
       typeName: 'boolean',
       nullable: true,
@@ -33,16 +20,11 @@ export default leaf({
       nullable: true,
       defaultValue: false,
       description: 'Stream the console output',
-    })
+    }),
   },
 
-  async action({ config, network, foreground, show_logs }) {
+  async action({ foreground, show_logs }) {
     if (!checkDockerDirExists()) {
-      return;
-    }
-    const configPath = path.resolve(config);
-    if (!fs.existsSync(configPath)) {
-      console.log("ERROR: Config file doesn't exist.");
       return;
     }
     const showLogs = show_logs || foreground;
@@ -50,7 +32,8 @@ export default leaf({
     // TODO check if docker is running
     try {
       await dockerStop();
-      await dockerRun(configPath, network, foreground, showLogs);
+      await dockerRemove();
+      await dockerBuild(showLogs);
     } catch (err) {
       console.log(
         'Error while building the container. Examine the log using --show_logs.'
@@ -61,24 +44,39 @@ export default leaf({
   },
 });
 
-async function dockerRun(
-  config: string,
-  network: string,
-  foreground: boolean,
-  showLogs: boolean
-) {
-  console.log('Starting the container...');
-  let ready = false;
+export async function dockerStop(): Promise<void> {
+  console.log('Stopping the previous container...');
+
+  const cmd = 'docker stop rise-node';
+  log('$', cmd);
+  try {
+    execSync(cmd);
+  } catch (e) {
+    log(e)
+  }
+}
+
+export async function dockerRemove(): Promise<void> {
+  console.log('Removing the previous container...');
+
+  const cmd = 'docker rm rise-node';
+  log('$', cmd);
+  try {
+    execSync(cmd);
+  } catch (e) {
+    log(e)
+  }
+}
+
+async function dockerBuild(showLogs: boolean): Promise<void> {
+  console.log('Building the image...');
+
+  // build
   await new Promise((resolve, reject) => {
-    const cmd =
-      `docker run --name rise-node ` +
-      `-v ${config}:/home/rise/config.json rise-local/node`;
+    const cmd = 'docker build -t rise-local/node .';
     log('$', cmd);
     const proc = exec(cmd, {
-      timeout: 2 * MIN,
-      env: {
-        NETWORK: network
-      },
+      timeout: 5 * MIN,
       cwd: getDockerDir(),
     });
     function line(data: string) {
@@ -86,14 +84,6 @@ async function dockerRun(
         process.stdout.write(data);
       } else {
         log(data);
-      }
-      // check if the output reached the desired line
-      if (data.includes('Blockchain ready')) {
-        ready = true;
-        // keep streaming the output if in the foreground
-        if (!foreground) {
-          resolve();
-        }
       }
     }
     proc.stdout.on('data', line);
@@ -103,12 +93,9 @@ async function dockerRun(
       code ? reject(code) : resolve(code);
     });
   });
-  log('run done');
-  if (!ready) {
-    console.log('Something went wrong. Examine the log using --show_logs.');
-    process.exit(1);
-  }
-  console.log('Container started');
+
+  log('build done');
+  console.log('Build complete');
 }
 
 function checkDockerDirExists(): boolean {

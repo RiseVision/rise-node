@@ -8,8 +8,9 @@ rm -Rf dist/*
 
 ## create rise-docker.tar.gz
 mkdir -p dist/rise-node
-mkdir -p dist/packages/rise/logs
+mkdir -p dist/rise-node/packages/rise/logs
 cp package.json dist/rise-node
+cp yarn.lock dist/rise-node
 cp lerna.json dist/rise-node
 cp docker/bundle/config.json dist/rise-node
 rsync -Rr packages/**/dist dist/rise-node/
@@ -21,28 +22,8 @@ rsync -Rr packages/**/package.json dist/rise-node
 
 # copy the rise manager file to the root
 cp packages/cli/dist/rise dist
-
-## compile native node_modules
-echo "Compiling native node_modules"
-
-pushd docker/bundle
-docker build \
-	-f Dockerfile.node_modules \
-	-t node_modules \
-	.
-mkdir -p node_modules
-popd
-
-docker rm --force node_modules_build
-docker run --name node_modules_build \
-	-v $(pwd)/:/home/rise/rise_node \
-	-v $(pwd)/docker/bundle/node_modules:/home/rise/dist \
-	node_modules
-
-## append rebuild node_modules to the archive
-echo "Adding node_modules to /dist/rise-node"
-
-mv docker/bundle/node_modules dist/rise-node
+# copy current node_modules as cache
+cp -R node_modules dist/rise-node
 
 echo "Creating rise-node.tar.gz"
 pushd dist

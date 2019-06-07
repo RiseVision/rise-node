@@ -8,7 +8,12 @@ services:
     depends_on:
       - postgres
     ports:
-      - "127.0.0.1:5555:5555"
+      # rise node - p2p
+      - '5554'
+      # rise node - api
+      - '5555'
+      # node inspector
+      - '9229'
     networks:
       - overlay
     environment:

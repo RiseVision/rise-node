@@ -1,9 +1,9 @@
 import { leaf, option } from '@carnesen/cli';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { dockerRemove, dockerStop } from '../docker/build';
 import { DOCKER_DIR, getDockerDir, log, MIN, NETWORKS } from '../misc';
-import { dockerStop } from './build';
 
 export default leaf({
   commandName: 'start',
@@ -49,7 +49,10 @@ export default leaf({
 
     // TODO check if docker is running
     try {
+      await dockerComposeStop();
       await dockerStop();
+      await dockerRemove();
+      await dockerBuild(showLogs);
       await dockerRun(configPath, network, foreground, showLogs);
     } catch (err) {
       console.log(
@@ -61,6 +64,52 @@ export default leaf({
   },
 });
 
+async function dockerComposeStop(): Promise<void> {
+  let cmd
+
+  console.log('Stopping docker compose...');
+
+  cmd = 'docker-compose stop rise-node';
+  log('$', cmd);
+  try {
+    execSync(cmd, {
+      cwd: DOCKER_DIR
+    });
+  } catch (e) {
+    log(e)
+  }
+}
+
+async function dockerBuild(showLogs: boolean): Promise<void> {
+  console.log('Building the image...');
+
+  // build
+  await new Promise((resolve, reject) => {
+    const cmd = 'docker-compose build';
+    log('$', cmd);
+    const proc = exec(cmd, {
+      timeout: 5 * MIN,
+      cwd: getDockerDir(),
+    });
+    function line(data: string) {
+      if (showLogs) {
+        process.stdout.write(data);
+      } else {
+        log(data);
+      }
+    }
+    proc.stdout.on('data', line);
+    proc.stderr.on('data', line);
+    proc.on('close', (code) => {
+      log('close', code);
+      code ? reject(code) : resolve(code);
+    });
+  });
+
+  log('build done');
+  console.log('Build complete');
+}
+
 async function dockerRun(
   config: string,
   network: string,
@@ -71,8 +120,7 @@ async function dockerRun(
   let ready = false;
   await new Promise((resolve, reject) => {
     const cmd =
-      `docker run --name rise-node ` +
-      `-v ${config}:/home/rise/config.json rise-local/node`;
+      `docker-compose up`;
     log('$', cmd);
     const proc = exec(cmd, {
       timeout: 2 * MIN,

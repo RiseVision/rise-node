@@ -8,14 +8,12 @@ services:
     depends_on:
       - postgres_1
     ports:
-      # rise node
-      - '5501:5555'
-      # rise rest api
-      - '8010:8080'
+      # rise node - p2p
+      - '5501:5554'
+      # rise node - api
+      - '5502:5555'
       # node inspector
       - '9201:9229'
-    expose:
-      - "5555"
     networks:
       overlay:
         ipv4_address: 172.16.238.101
@@ -54,12 +52,12 @@ services:
     depends_on:
       - postgres_2
     ports:
-      # rise node
-      - '5502:5555'
+      # rise node - p2p
+      - '5511:5554'
+      # rise node - api
+      - '5512:5555'
       # node inspector
-      - '9202:9229'
-    expose:
-      - "5555"
+      - '9211:9229'
     networks:
       overlay:
         ipv4_address: 172.16.238.102

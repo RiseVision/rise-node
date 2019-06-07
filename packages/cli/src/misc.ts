@@ -1,6 +1,9 @@
 import * as debug from 'debug';
+import * as path from "path";
 
 export const VERSION = 'v1.0.0';
+
+export const NETWORKS = ['mainnet', 'testnet', 'devnet']
 
 export const SEC = 1000;
 export const MIN = 60 * SEC;
@@ -18,4 +21,12 @@ export const DOCKER_FILE = 'rise-docker.tar.gz';
 
 export function isDevEnd() {
   return process.env.DEV;
+}
+
+export function getDockerDir(): string {
+  return path.resolve(__dirname, DOCKER_DIR)
+}
+
+export function getNodeDir(): string {
+  return path.resolve(__dirname, DOCKER_DIR)
 }

@@ -55,6 +55,7 @@ export default leaf({
 
     console.log('Done.\n');
     console.log('You can start the container using:');
+    console.log('  ./rise docker build');
     console.log('  ./rise docker start');
   },
 });
