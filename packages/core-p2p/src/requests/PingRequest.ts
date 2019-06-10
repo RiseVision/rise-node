@@ -18,7 +18,7 @@ export class PingRequest extends BaseTransportMethod<null, null, null> {
   }
 
   protected async produceResponse(
-    request: SingleTransportPayload<null, { lastBlockId: string }>
+    request: SingleTransportPayload<null, null>
   ): Promise<null> {
     return null;
   }
