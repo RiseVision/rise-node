@@ -30,3 +30,7 @@ yarn-error.log
 coverage
 docker/bundle/rise-node.tar*
 docker/bundle/rise-docker.tar*
+packages/cli/.cache
+packages/cli/build
+packages/cli/dist
+packages/cli/v8-compile-cache-*
