@@ -19,6 +19,7 @@ services:
         ipv4_address: 172.16.238.101
     environment:
       NETWORK: devnet
+#      NODE_ENV: test
     volumes:
       # config
       - ./node_config.1.json:/home/rise/config.json
@@ -64,6 +65,7 @@ services:
         ipv4_address: 172.16.238.102
     environment:
       NETWORK: devnet
+#      NODE_ENV: test
     volumes:
       # config
       - ./node_config.2.json:/home/rise/config.json

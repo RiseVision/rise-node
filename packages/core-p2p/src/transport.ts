@@ -32,6 +32,7 @@ import {
   PeersListResponse,
   SingleTransportPayload,
 } from './requests/';
+import { WrapInBalanceSequence } from '@risevision/core-utils';
 
 // tslint:disable-next-line
 const peersSchema = require('../schema/peers.json');
@@ -299,6 +300,7 @@ export class TransportModule extends Extendable {
   /**
    * Discover peers by getting list and validates them
    */
+  @WrapInBalanceSequence
   private async discoverPeers(): Promise<void> {
     this.logger.trace('Transport->discoverPeers');
 

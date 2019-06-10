@@ -13,6 +13,7 @@ import {
   IModule,
   ISequence,
   publicKey,
+  SignedAndChainedBlockType,
   Symbols,
 } from '@risevision/core-types';
 import {
@@ -203,14 +204,18 @@ export class ForgeModule extends Extendable implements IModule {
     }
 
     // ok lets generate, save and broadcast the block
-    await this.blocksProcessModule
+    const block = await this.blocksProcessModule
       .generateBlock(blockData.keypair, blockData.time)
-      .catch(
+      .catch<SignedAndChainedBlockType>(
         catchToLoggerAndRemapError(
           'Failed to generate block within delegate slot',
           this.logger
         )
       );
+    await this.blocksProcessModule.processBlock(block, {
+      broadcast: true,
+      saveBlock: true,
+    });
   }
 
   /**

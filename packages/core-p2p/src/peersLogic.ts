@@ -153,7 +153,7 @@ export class PeersLogic {
           return peer.nonce !== this.systemModule.getNonce();
         }
         return (
-          !ip.isPrivate(peer.ip) &&
+          // !ip.isPrivate(peer.ip) &&
           peer.nonce !== this.systemModule.getNonce() &&
           peer.os !== 'lisk-js-api'
         );

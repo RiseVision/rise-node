@@ -160,7 +160,7 @@ export class BlocksModuleProcess {
       throw new Error(
         `Chain comparison failed with peer: ${
           peer.string
-        } using block ${JSON.stringify(commonResp.common)}`
+        } using block ${commonResp.common.id}`
       );
     }
 
