@@ -1,16 +1,19 @@
 import { BlocksModule, BlocksSymbols } from '@risevision/core-blocks';
-import { BaseTx } from '@risevision/core-transactions';
+import { ModelSymbols } from '@risevision/core-models';
+import { BaseTx, TXSymbols } from '@risevision/core-transactions';
 import {
   Address,
   IAccountsModel,
   IBaseTransaction,
   ISystemModule,
+  ITransactionsModel,
   Symbols,
 } from '@risevision/core-types';
 import { toBigIntLE, toBufferLE } from 'bigint-buffer';
 import * as ByteBuffer from 'bytebuffer';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as empty from 'is-empty';
+import { Op } from 'sequelize';
 import { Model } from 'sequelize-typescript';
 import * as varuint from 'varuint-bitcoin';
 
@@ -20,6 +23,10 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
   protected systemModule: ISystemModule;
   @inject(BlocksSymbols.modules.blocks)
   protected blocksModule: BlocksModule;
+
+  @inject(ModelSymbols.model)
+  @named(TXSymbols.models.model)
+  private txModel: typeof ITransactionsModel;
 
   public async verify(
     tx: IBaseTransaction<T>,
@@ -36,6 +43,24 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
           tx.fee
         }`
       );
+    }
+
+    if (this.blocksModule.lastBlock.height > 2000000) {
+      const oneOfPrevTx = await this.txModel.findOne({
+        limit: 1,
+        raw: true,
+        where: {
+          height: { [Op.lte]: this.blocksModule.lastBlock.height },
+          senderId: sender.address,
+        },
+      });
+
+      if (
+        oneOfPrevTx &&
+        oneOfPrevTx.senderPubData.compare(tx.senderPubData) !== 0
+      ) {
+        throw new Error(`PublicKey mismatch for acct ${sender.address}`);
+      }
     }
   }
 

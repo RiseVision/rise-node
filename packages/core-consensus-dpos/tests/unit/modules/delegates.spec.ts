@@ -8,6 +8,7 @@ import {
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
 import { ModelSymbols } from '@risevision/core-models';
 import {
+  Address,
   ConstantsType,
   IAccountsModule,
   IBlocksModel,
@@ -27,7 +28,11 @@ import * as supersha from 'supersha';
 import { As } from 'type-tagger';
 import { DposConstantsType, dPoSSymbols, Slots } from '../../../src/helpers';
 import { RoundsLogic } from '../../../src/logic/rounds';
-import { AccountsModelForDPOS, DelegatesRoundModel } from '../../../src/models';
+import {
+  AccountsModelForDPOS,
+  DelegatesModel,
+  DelegatesRoundModel,
+} from '../../../src/models';
 import { DelegatesModule } from '../../../src/modules';
 
 chai.use(chaiAsPromised);
@@ -47,6 +52,7 @@ describe('modules/delegates', () => {
 
   let blocksModel: typeof IBlocksModel;
   let accountsModel: typeof AccountsModelForDPOS;
+  let delegatesModel: typeof DelegatesModel;
   let constants: ConstantsType;
   let dposConstants: DposConstantsType;
   let blocksConstants: BlocksConstantsType;
@@ -106,6 +112,10 @@ describe('modules/delegates', () => {
       version: 1,
     };
     blocksModel = container.getNamed(ModelSymbols.model, Symbols.models.blocks);
+    delegatesModel = container.getNamed(
+      ModelSymbols.model,
+      dPoSSymbols.models.delegates
+    );
     accountsModel = container.getNamed(
       ModelSymbols.model,
       Symbols.models.accounts
@@ -654,12 +664,73 @@ describe('modules/delegates', () => {
   });
 
   describe('getDelegate', () => {
-    it('should query accountsModel');
-    it('should load forgingPKs for such delegate');
+    it('should load forgingPKs for such delegate', async () => {
+      const loadPKStub = sandbox
+        .stub(instance, 'loadForgingPKByDelegate')
+        .resolves([
+          { forgingPK: 'a', height: 10 },
+          { forgingPK: 'b', height: 20 },
+        ]);
+      sandbox.stub(accountsModel, 'findOne').resolves({
+        address: 'myAddress',
+        amount: 1,
+      });
+
+      const res = await instance.getDelegate('vekexasia');
+      expect(loadPKStub.calledWith('myAddress' as Address)).true;
+      expect(res).deep.eq({
+        account: {
+          address: 'myAddress',
+          amount: 1,
+        },
+        forgingPKs: [
+          { forgingPK: 'a', height: 10 },
+          { forgingPK: 'b', height: 20 },
+        ],
+      });
+    });
   });
 
   describe('loadForgingPKByDelegate', () => {
-    it('should properly query model and return manipulated data');
+    it('should properly query model and return manipulated data', async () => {
+      sandbox.stub(delegatesModel, 'findAll').resolves([
+        {
+          forgingPK: 'a',
+          'tx.height': 1,
+        },
+        {
+          forgingPK: 'd',
+          'tx.height': 30,
+        },
+        {
+          forgingPK: 'b',
+          'tx.height': 10,
+        },
+        {
+          forgingPK: 'c',
+          'tx.height': 20,
+        },
+      ]);
+      const r = await instance.loadForgingPKByDelegate('myAddress' as Address);
+      expect(r).to.be.deep.eq([
+        {
+          forgingPK: 'a',
+          height: 1,
+        },
+        {
+          forgingPK: 'b',
+          height: 10,
+        },
+        {
+          forgingPK: 'c',
+          height: 20,
+        },
+        {
+          forgingPK: 'd',
+          height: 30,
+        },
+      ]);
+    });
   });
 
   describe('assertValidBlockSlot', () => {

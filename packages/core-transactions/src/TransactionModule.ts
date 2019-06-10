@@ -52,7 +52,7 @@ export class TransactionsModule implements ITransactionsModule {
   }
 
   /**
-   * filters the provided input ids returning only the ids that are
+   * filters the provided input ids returning only the ids that are already confirmed
    * @param {string[]} ids transaction ids.
    * @return {Promise<string[]>} already existing ids
    */
@@ -65,6 +65,11 @@ export class TransactionsModule implements ITransactionsModule {
     return idObjs.map((idObj) => idObj.id);
   }
 
+  /**
+   * Entry point for external modules to call in order to initiate the tx processing logic.
+   * @param transactions
+   * @param peer
+   */
   @WrapInBalanceSequence
   public async processIncomingTransactions(
     transactions: Array<IBaseTransaction<any, bigint>>,

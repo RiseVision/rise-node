@@ -17,6 +17,6 @@ export class RiseDelegatesModule extends DelegatesModule {
     if (round >= this.riseContants['@risevision/rise'].dposRandSwitchRound) {
       return super.calcV2Weight(rand, delegate, round);
     }
-    return rand ** (1e8 / parseInt(delegate.vote.toString(), 10));
+    return rand ** (1 / parseInt(delegate.vote.toString(), 10));
   }
 }

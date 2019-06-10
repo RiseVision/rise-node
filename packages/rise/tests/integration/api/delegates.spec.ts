@@ -179,6 +179,12 @@ describe('api/delegates', () => {
     //   '/api/delegates/rewards'
     // );
 
+    it('should return 404 if delegate not found', async () => {
+      return supertest(initializer.apiExpress)
+        .get('/api/delegates/rewards?username=MEOW&from=0&to=1')
+        .expect(404);
+    });
+
     it('should calculate the total forged amount', async () => {
       const now = Date.now() / 1000;
       const thaEpoch = initializer.appManager.container.get<ITimeToEpoch>(

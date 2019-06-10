@@ -7,6 +7,7 @@ import {
 import {
   IBlocksModule,
   IKeypair,
+  ITimeToEpoch,
   ITransactionsModule,
   Symbols,
   TransactionType,
@@ -121,7 +122,8 @@ describe('api/transactions', () => {
         1,
         randomAccount,
         senderAccount.publicKey,
-        true
+        true,
+        { nonce: 10 }
       );
 
       const { wallet: rA, txID: ortid } = await createRandomAccountWithFunds(
@@ -280,31 +282,135 @@ describe('api/transactions', () => {
     });
 
     describe('fromTimestamp filter', () => {
-      it('should return txs that were broadcasted after that timestamp');
-      it(
-        'should return empty txs if there are no txs that were broadcasted after that timestamp'
-      );
+      let tx: RiseTransaction<any>;
+      beforeEach(async () => {
+        tx = await createSendTransactionV1(1, 1, senderAccount, '1R', 1000);
+      });
+      it('should return txs that were broadcasted after that timestamp', async () => {
+        return supertest(initializer.apiExpress)
+          .get('/api/transactions?fromTimestamp=1000')
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transactions.length).eq(1);
+            expect(resp.body.transactions[0].id).deep.eq(tx.id);
+          });
+      });
+      it('should return empty txs if there are no txs that were broadcasted after that timestamp', async () => {
+        return supertest(initializer.apiExpress)
+          .get('/api/transactions?fromTimestamp=1001')
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transactions).deep.eq([]);
+          });
+      });
     });
     describe('toTimestamp filter', () => {
-      it('should return txs that were broadcasted before that timestamp');
-      it(
-        'should return empty txs if there are no txs that were broadcasted before that timestamp'
-      );
+      let tx: RiseTransaction<any>;
+      beforeEach(async () => {
+        tx = await createSendTransactionV1(1, 1, senderAccount, '1R', 1000);
+      });
+      it('should return txs that were broadcasted before that timestamp', async () => {
+        return supertest(initializer.apiExpress)
+          .get('/api/transactions?toTimestamp=1001&fromTimestamp=100')
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transactions.length).eq(1);
+            expect(resp.body.transactions[0].id).deep.eq(tx.id);
+          });
+      });
+      it('should return empty txs if there are no txs that were broadcasted before that timestamp', async () => {
+        return supertest(initializer.apiExpress)
+          .get('/api/transactions?toTimestamp=999&fromTimestamp=900')
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transactions).deep.eq([]);
+          });
+      });
     });
-    describe('fromUnixTime filter', () => {
-      it('should return txs that were broadcasted after that unix time');
-      it(
-        'should return empty txs if there are no txs that were broadcasted after that unix time'
-      );
+    describe('unixTime filters', () => {
+      let tx: RiseTransaction<any>;
+      let txUnixTime: number;
+      beforeEach(async () => {
+        tx = await createSendTransactionV1(1, 1, senderAccount, '1R', 1000);
+        const timeToEpoch: ITimeToEpoch = initializer.appManager.container.get(
+          Symbols.helpers.timeToEpoch
+        );
+        txUnixTime = Math.floor(timeToEpoch.fromTimeStamp(1000) / 1000);
+      });
+      describe('fromUnixTime filter', () => {
+        it('should return txs that were broadcasted after that unix time', () => {
+          return supertest(initializer.apiExpress)
+            .get(`/api/transactions?fromUnixTime=${txUnixTime}`)
+            .expect(200)
+            .then((resp) => {
+              expect(resp.body.transactions.length).eq(1);
+              expect(resp.body.transactions[0].id).deep.eq(tx.id);
+            });
+        });
+        it('should return empty txs if there are no txs that were broadcasted after that unix time', async () => {
+          return supertest(initializer.apiExpress)
+            .get(`/api/transactions?fromUnixTime=${txUnixTime + 1}`)
+            .expect(200)
+            .then((resp) => {
+              expect(resp.body.transactions.length).eq(0);
+            });
+        });
+      });
+      describe('toUnixTime filter', () => {
+        it('should return txs that were broadcasted before that unix time', async () => {
+          return supertest(initializer.apiExpress)
+            .get(
+              `/api/transactions?fromUnixTime=${txUnixTime -
+                1}&toUnixTime=${txUnixTime}`
+            )
+            .expect(200)
+            .then((resp) => {
+              expect(resp.body.transactions.length).eq(1);
+              expect(resp.body.transactions[0].id).deep.eq(tx.id);
+            });
+        });
+        it('should return empty txs if there are no txs that were broadcasted before that unix time', async () => {
+          return supertest(initializer.apiExpress)
+            .get(
+              `/api/transactions?fromUnixTime=${txUnixTime -
+                1}&toUnixTime=${txUnixTime - 1}`
+            )
+            .expect(200)
+            .then((resp) => {
+              expect(resp.body.transactions.length).eq(0);
+            });
+        });
+      });
     });
-    describe('toUnixTime filter', () => {
-      it('should return txs that were broadcasted before that unix time');
-      it(
-        'should return empty txs if there are no txs that were broadcasted before that unix time'
-      );
-    });
+
     describe('minAmount filter', () => {
-      it('should return txs that have a certain min amount');
+      let smallTx: RiseTransaction<any>;
+      let bigTx: RiseTransaction<any>;
+      beforeEach(async () => {
+        smallTx = await createSendTransactionV1(
+          1,
+          499,
+          senderAccount,
+          '1R',
+          1000
+        );
+        bigTx = await createSendTransactionV1(
+          1,
+          500,
+          senderAccount,
+          '1R',
+          1000
+        );
+      });
+      it('should return txs that have a certain min amount', async () => {
+        return supertest(initializer.apiExpress)
+          .get('/api/transactions?and:fromTimestamp=500&and:minAmount=500')
+          .expect(200)
+          .then((resp) => {
+            expect(resp.body.transactions.length).eq(1);
+            expect(resp.body.transactions[0].id).eq(bigTx.id);
+          });
+      });
     });
     describe('minConfirmations filter', () => {
       it('should return txs that have a certain min confirmations amount', async () => {

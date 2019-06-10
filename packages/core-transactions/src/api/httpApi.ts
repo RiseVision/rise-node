@@ -449,7 +449,7 @@ export class TransactionsAPI {
         this.timeToEpoch.getTime(body.toUnixTime * 1000),
         Number.isInteger(whereClause.timestamp[Op.lte])
           ? whereClause.timestamp[Op.lte]
-          : 0
+          : Number.MAX_SAFE_INTEGER
       );
     }
 

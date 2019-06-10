@@ -343,7 +343,7 @@ export class DelegatesModule {
       where: { username },
     });
     if (!delegate) {
-      return null;
+      throw new Error(`Delegate "${username}" not found!`);
     }
     return {
       account: delegate,

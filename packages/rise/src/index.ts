@@ -151,7 +151,7 @@ export class CoreModule extends BaseCoreModule<any> {
 
     z_schema.registerFormat('address', (str: string) => {
       // tslint:disable-next-line
-      return /^(([0-9]{1,20}R)|(rise1[a-z0-9]+))$/.test(str);
+      return /^(([0-9]{1,20}R)|(rise1[a-z0-9]{10,}))$/.test(str);
     });
 
     await this.container

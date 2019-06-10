@@ -106,7 +106,9 @@ export class DelegatesAPI {
     from: number;
     to: number;
   }) {
-    const r = await this.delegatesModule.getDelegate(params.username);
+    const r = await this.delegatesModule
+      .getDelegate(params.username)
+      .catch(() => null);
     if (!r) {
       throw new HTTPError('Delegate not found', 404);
     }
@@ -186,7 +188,9 @@ export class DelegatesAPI {
   params: {
     username: string;
   }) {
-    const r = await this.delegatesModule.getDelegate(params.username);
+    const r = await this.delegatesModule
+      .getDelegate(params.username)
+      .catch(() => null);
     if (!r) {
       throw new HTTPError('Delegate not found', 404);
     }
