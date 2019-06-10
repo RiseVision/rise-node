@@ -52,7 +52,7 @@ describe('votes', () => {
       dPoSSymbols.models.delegates
     );
     const acc = await accModule.getAccount({
-      address: Rise.calcAddress(delegateWallet.publicKey),
+      address: delegateWallet.address,
     });
     delegateUsername = acc.username;
     expect(delegateUsername).not.empty;
@@ -60,7 +60,7 @@ describe('votes', () => {
 
   it('should allow to vote using tx type v1', async () => {
     let acc = await accModule.getAccount({
-      address: Rise.calcAddress(delegateWallet.publicKey),
+      address: delegateWallet.address,
     });
     expect(acc.delegates).not.empty;
 
@@ -72,7 +72,7 @@ describe('votes', () => {
       false
     );
     acc = await accModule.getAccount({
-      address: Rise.calcAddress(delegateWallet.publicKey),
+      address: delegateWallet.address,
     });
     expect(acc.delegates).empty;
 
@@ -92,7 +92,7 @@ describe('votes', () => {
       )
     ).rejectedWith('Failed to remove vote');
     acc = await accModule.getAccount({
-      address: Rise.calcAddress(delegateWallet.publicKey),
+      address: delegateWallet.address,
     });
     expect(acc.delegates).empty;
 
@@ -105,7 +105,7 @@ describe('votes', () => {
       { nonce: 3 }
     );
     acc = await accModule.getAccount({
-      address: Rise.calcAddress(delegateWallet.publicKey),
+      address: delegateWallet.address,
     });
     expect(acc.delegates).not.empty;
     const curHeight = blocksModule.lastBlock.height;

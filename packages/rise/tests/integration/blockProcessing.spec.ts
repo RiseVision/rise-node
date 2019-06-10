@@ -6,7 +6,7 @@ import {
 import { SignedAndChainedBlockType } from '@risevision/core-types';
 import { IKeypair } from '@risevision/core-types';
 import { expect } from 'chai';
-import { Rise, RiseTransaction } from 'dpos-offline';
+import { Rise, RiseV2Transaction } from 'dpos-offline';
 import 'reflect-metadata';
 import * as supertest from 'supertest';
 import initializer from './common/init';
@@ -33,16 +33,16 @@ describe('blockProcessing', async function() {
   });
   describe('delete block', () => {
     let creationOps: Array<{
-      tx: RiseTransaction<any>;
+      tx: RiseV2Transaction<any>;
       account: IKeypair;
       senderWallet: IKeypair;
     }>;
     let block: SignedAndChainedBlockType;
     let initBlock: SignedAndChainedBlockType;
-    let regDelegateTX: RiseTransaction<any>;
-    let secondSignTX: RiseTransaction<any>;
-    let voteTX: RiseTransaction<any>;
-    let allTxs: Array<RiseTransaction<any>>;
+    let regDelegateTX: RiseV2Transaction<any>;
+    let secondSignTX: RiseV2Transaction<any>;
+    let voteTX: RiseV2Transaction<any>;
+    let allTxs: Array<RiseV2Transaction<any>>;
     let allAccounts: IKeypair[];
     initializer.autoRestoreEach();
     beforeEach(async () => {
@@ -109,12 +109,18 @@ describe('blockProcessing', async function() {
 
       for (const account of allAccounts) {
         const res = await supertest(initializer.apiExpress)
-          .get(`/api/accounts/?address=${Rise.calcAddress(account.publicKey)}`)
+          .get(
+            `/api/accounts/?address=${Rise.calcAddress(
+              account.publicKey,
+              'main',
+              'v0'
+            )}`
+          )
           .expect(200);
 
         expect(res.body.success).is.true;
         expect(res.body.account.address).is.deep.eq(
-          Rise.calcAddress(account.publicKey)
+          Rise.calcAddress(account.publicKey, 'main', 'v0')
         );
         expect(res.body.account.balance).is.deep.eq('0');
         expect(res.body.account.username).is.undefined;

@@ -95,7 +95,7 @@ describe('logic/block', () => {
     dummyTransactions = [
       RiseV2.txs.createAndSign(
         {
-          kind: 'send',
+          kind: 'send-v2',
           recipient: '15256762582730568272R' as Address,
           amount: '1',
           fee: '5',
@@ -106,7 +106,7 @@ describe('logic/block', () => {
       ),
       RiseV2.txs.createAndSign(
         {
-          kind: 'send',
+          kind: 'send-v2',
           recipient: '15256762582730568272R' as Address,
           amount: '2',
           fee: '5',
@@ -117,7 +117,7 @@ describe('logic/block', () => {
       ),
       RiseV2.txs.createAndSign(
         {
-          kind: 'send',
+          kind: 'send-v2',
           recipient: '15256762582730568272R' as Address,
           amount: '3',
           fee: '5',
@@ -128,7 +128,7 @@ describe('logic/block', () => {
       ),
       RiseV2.txs.createAndSign(
         {
-          kind: 'send',
+          kind: 'send-v2',
           recipient: '15256762582730568272R' as Address,
           amount: '4',
           fee: '5',

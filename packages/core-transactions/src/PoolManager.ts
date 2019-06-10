@@ -181,6 +181,11 @@ export class PoolManager {
           readyTx
         );
       } catch (e) {
+        this.logger.debug(
+          `Transaction ${readyTx.id} couldnt applyUnconfirmed due to Err: ${
+            e.message
+          }`
+        );
         // IF tx failed to apply for some reason lets move it back in queued state.
         this.pool.moveTx(readyTx.id, 'ready', 'queued');
       }

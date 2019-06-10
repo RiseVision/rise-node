@@ -10,13 +10,7 @@ import { IAccountsModule, Symbols } from '@risevision/core-types';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
-import {
-  Address,
-  IKeypair,
-  RiseTransaction,
-  RiseV2,
-  RiseV2Transaction,
-} from 'dpos-offline';
+import { Address, IKeypair, RiseV2, RiseV2Transaction } from 'dpos-offline';
 import * as supertest from 'supertest';
 import initializer from '../common/init';
 import {
@@ -105,7 +99,7 @@ describe('v2txtypes/send', () => {
     describe(testName, () => {
       if (testName.startsWith('v1')) {
         describe('Send V1', () => {
-          let tx: RiseTransaction<void>;
+          let tx: RiseV2Transaction<void>;
           beforeEach(async () => {
             tx = await createSendTransactionV1(
               0,
@@ -142,7 +136,7 @@ describe('v2txtypes/send', () => {
         });
       } else {
         describe('Send V1', () => {
-          let tx: RiseTransaction<void>;
+          let tx: RiseV2Transaction<void>;
           // tslint:disable-next-line
           beforeEach(async () => {
             tx = await createSendTransactionV1(
@@ -338,8 +332,9 @@ describe('v2txtypes/send', () => {
       .get(`/api/transactions/get?id=${tx.id}`)
       .expect(200)
       .then((d) => {
-        expect(d.body.transaction.asset.data).deep.eq('62616e616e61' /* banana in utf8 */);
+        expect(d.body.transaction.asset.data).deep.eq(
+          '62616e616e61' /* banana in utf8 */
+        );
       });
-
   });
 });

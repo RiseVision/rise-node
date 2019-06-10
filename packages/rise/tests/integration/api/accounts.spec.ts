@@ -1,15 +1,13 @@
 import {
   AppConfig,
   IAccountsModule,
+  IBlocksModule,
   ISystemModule,
   Symbols,
 } from '@risevision/core-types';
 import { expect } from 'chai';
 
 import { Rise } from 'dpos-offline';
-import { Sequelize as SSequelize } from 'sequelize';
-import * as sequelize from 'sequelize';
-import { DefaultScope, Model, Sequelize, Table } from 'sequelize-typescript';
 import * as supertest from 'supertest';
 import { toNativeTx } from '../../../../core-transactions/tests/unit/utils/txCrafter';
 import initializer from '../common/init';
@@ -94,12 +92,17 @@ describe('api/accounts', () => {
     });
     it('should return second signature data', async () => {
       const [{ account }] = await createRandomAccountsWithFunds(1, 1e10);
+      const blocksModule: IBlocksModule = initializer.appManager.container.get(
+        Symbols.modules.blocks
+      );
+
       const tx = await createSecondSignTransactionV1(
         1,
         account,
         createRandomWallet().publicKey
       );
-      const address = Rise.calcAddress(account.publicKey);
+
+      const address = Rise.calcAddress(account.publicKey, 'main', 'v0');
       return supertest(initializer.apiExpress)
         .get(`/api/accounts/?address=${address}`)
         .expect(200)

@@ -17,7 +17,7 @@ import { BaseModel } from '@risevision/core-models';
 export class AccountsModel extends BaseModel<AccountsModel>
   implements IAccountsModel {
   @PrimaryKey
-  @Column
+  @Column(DataType.STRING)
   public address: Address;
 
   @Column(DataType.BIGINT)

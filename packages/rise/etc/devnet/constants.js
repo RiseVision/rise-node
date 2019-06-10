@@ -31,6 +31,8 @@ module.exports = {
           secondsignature: 500000000,
           delegate: 2500000000,
           multisignature: 500000000,
+          keystore: 10000,
+          keystoreMultiplier: 10,
         },
       },
     ],

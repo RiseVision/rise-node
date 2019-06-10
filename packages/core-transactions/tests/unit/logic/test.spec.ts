@@ -38,7 +38,7 @@ describe('some real cases', () => {
   it('11060395798852656599', () => {
     const tx = RiseV2.txs.createAndSign(
       {
-        kind: 'send',
+        kind: 'send-v2',
         amount: '1',
         nonce: '1' as string & As<'nonce'>,
         recipient: '1R' as Address,
@@ -48,9 +48,7 @@ describe('some real cases', () => {
     );
 
     const nativeTx = toNativeTx(tx);
-    expect(txBytes.fullBytes(nativeTx)).deep.eq(
-      RiseV2.txs.bytes(tx, { skipSignatures: false })
-    );
+    expect(txBytes.fullBytes(nativeTx)).deep.eq(RiseV2.txs.bytes(tx));
 
     expect(idsHandler.calcTxIdFromBytes(txBytes.fullBytes(nativeTx))).deep.eq(
       RiseV2.txs.identifier(tx)
