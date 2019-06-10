@@ -19,9 +19,13 @@ EXPOSE 9229
 # uncomment and run once, on one node only (docker-compose.yml)
 #CMD npm rebuild
 
-# run a node
+# debug with --inspect
 CMD npx lerna run debug:$NETWORK --stream --no-prefix -- \
 	-e /home/rise/config.json
+
+# debug with --inspect-brk
+#CMD npx lerna run break:$NETWORK --stream --no-prefix -- \
+#	-e /home/rise/config.json
 
 # debug
 #CMD bash

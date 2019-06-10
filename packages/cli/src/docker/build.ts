@@ -1,7 +1,7 @@
+// tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
 import * as fs from 'fs';
-import * as path from 'path';
 import { DOCKER_DIR, getDockerDir, log, MIN } from '../misc';
 
 export default leaf({
@@ -10,16 +10,16 @@ export default leaf({
 
   options: {
     foreground: option({
-      typeName: 'boolean',
-      nullable: true,
       defaultValue: false,
       description: 'Keep the process in the foreground. Implies --show_logs',
+      nullable: true,
+      typeName: 'boolean',
     }),
     show_logs: option({
-      typeName: 'boolean',
-      nullable: true,
       defaultValue: false,
       description: 'Stream the console output',
+      nullable: true,
+      typeName: 'boolean',
     }),
   },
 
@@ -52,10 +52,11 @@ export async function dockerStop(): Promise<void> {
   try {
     execSync(cmd);
   } catch (e) {
-    log(e)
+    log(e);
   }
 }
 
+// tslint:disable-next-line:no-identical-functions
 export async function dockerRemove(): Promise<void> {
   console.log('Removing the previous container...');
 
@@ -64,7 +65,7 @@ export async function dockerRemove(): Promise<void> {
   try {
     execSync(cmd);
   } catch (e) {
-    log(e)
+    log(e);
   }
 }
 
@@ -76,8 +77,8 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
     const cmd = 'docker build -t rise-local/node .';
     log('$', cmd);
     const proc = exec(cmd, {
-      timeout: 5 * MIN,
       cwd: getDockerDir(),
+      timeout: 5 * MIN,
     });
     function line(data: string) {
       if (showLogs) {
@@ -101,8 +102,8 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
 function checkDockerDirExists(): boolean {
   if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
     console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
-    console.log(`You can download the latest version using:`);
-    console.log(`  ./rise docker download`);
+    console.log('You can download the latest version using:');
+    console.log('  ./rise docker download');
     return false;
   }
   return true;

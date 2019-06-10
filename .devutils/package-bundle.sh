@@ -54,8 +54,7 @@ tar -czf rise-docker.tar.gz rise-docker rise
 popd
 
 # cleanup
-# TODO uncomment
-#rm -R $DOCKER
+rm -R $DOCKER
 
 echo ""
 echo "Ready:"

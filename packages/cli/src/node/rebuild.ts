@@ -1,3 +1,4 @@
+// tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
@@ -29,8 +30,8 @@ export default leaf({
 function checkNodeDirExists(): boolean {
   if (!fs.existsSync(NODE_DIR) || !fs.lstatSync(NODE_DIR).isDirectory()) {
     console.log(`Error: directory '${NODE_DIR}' doesn't exist.`);
-    console.log(`You can download the latest version using:`);
-    console.log(`  ./rise node download`);
+    console.log('You can download the latest version using:');
+    console.log('  ./rise node download');
     return false;
   }
   return true;

@@ -658,5 +658,4 @@ describe('highlevel checks', function() {
       expect(u_balance).to.be.eq(balance, 'unconfirmed balance');
     });
   });
-
 });

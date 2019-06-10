@@ -1,10 +1,10 @@
 import * as debug from 'debug';
-import * as path from "path";
+import * as path from 'path';
 
 export const VERSION = 'v1.0.0';
 export const NODE_VERSION = 'v2.0.0-beta2';
 
-export const NETWORKS = ['mainnet', 'testnet', 'devnet']
+export const NETWORKS = ['mainnet', 'testnet', 'devnet'];
 
 export const SEC = 1000;
 export const MIN = 60 * SEC;
@@ -23,9 +23,9 @@ export function isDevEnd() {
 }
 
 export function getDockerDir(): string {
-  return path.resolve(__dirname, DOCKER_DIR)
+  return path.resolve(__dirname, DOCKER_DIR);
 }
 
 export function getNodeDir(): string {
-  return path.resolve(__dirname, DOCKER_DIR)
+  return path.resolve(__dirname, DOCKER_DIR);
 }

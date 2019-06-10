@@ -1,11 +1,12 @@
+// tslint:disable:no-console
 import { branch, cli, leaf } from '@carnesen/cli';
 import * as dot from 'dotenv';
 import dockerComposeStart from './docker-compose/start';
 import dockerComposeStop from './docker-compose/stop';
 import dockerBuild from './docker/build';
-import download from './download';
 import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
+import download from './download';
 import { VERSION } from './misc';
 import nodeRebuild from './node/rebuild';
 import nodeStart from './node/start';
@@ -44,18 +45,18 @@ export const root = branch({
     Manage your RISE node instances, including docker images.
 
     Usage:
-    
+
     ./rise download
-    
+
     # running a node in the host OS
     ./rise node start
     ./rise node rebuild-native
-    
+
     # running a node in Docker
     ./rise docker build
     ./rise docker start
     ./rise docker stop
-    
+
     # running the DB and a node in Docker
     ./rise docker-compose start
     ./rise docker-compose stop`,

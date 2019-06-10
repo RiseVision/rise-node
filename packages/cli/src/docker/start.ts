@@ -1,3 +1,4 @@
+// tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { exec } from 'child_process';
 import * as fs from 'fs';
@@ -11,29 +12,29 @@ export default leaf({
 
   options: {
     config: option({
-      typeName: 'string',
-      nullable: true,
       defaultValue: `${DOCKER_DIR}/config.json`,
       description: 'Path to the config file',
-    }),
-    network: option({
-      typeName: 'string',
       nullable: true,
-      defaultValue: 'mainnet',
-      allowedValues: NETWORKS,
+      typeName: 'string',
     }),
     foreground: option({
-      typeName: 'boolean',
-      nullable: true,
       defaultValue: false,
       description: 'Keep the process in the foreground. Implies --show_logs',
+      nullable: true,
+      typeName: 'boolean',
+    }),
+    network: option({
+      allowedValues: NETWORKS,
+      defaultValue: 'mainnet',
+      nullable: true,
+      typeName: 'string',
     }),
     show_logs: option({
-      typeName: 'boolean',
-      nullable: true,
       defaultValue: false,
       description: 'Stream the console output',
-    })
+      nullable: true,
+      typeName: 'boolean',
+    }),
   },
 
   async action({ config, network, foreground, show_logs }) {
@@ -71,15 +72,15 @@ async function dockerRun(
   let ready = false;
   await new Promise((resolve, reject) => {
     const cmd =
-      `docker run --name rise-node ` +
+      'docker run --name rise-node ' +
       `-v ${config}:/home/rise/config.json rise-local/node`;
     log('$', cmd);
     const proc = exec(cmd, {
-      timeout: 2 * MIN,
-      env: {
-        NETWORK: network
-      },
       cwd: getDockerDir(),
+      env: {
+        NETWORK: network,
+      },
+      timeout: 2 * MIN,
     });
     function line(data: string) {
       if (showLogs) {
@@ -114,8 +115,8 @@ async function dockerRun(
 function checkDockerDirExists(): boolean {
   if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
     console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
-    console.log(`You can download the latest version using:`);
-    console.log(`  ./rise docker download`);
+    console.log('You can download the latest version using:');
+    console.log('  ./rise docker download');
     return false;
   }
   return true;

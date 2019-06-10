@@ -1,9 +1,17 @@
+// tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
-import { DOCKER_FILE, DOCKER_URL, getDockerDir, isDevEnd, NODE_FILE, NODE_VERSION } from './misc';
+import {
+  DOCKER_FILE,
+  DOCKER_URL,
+  getDockerDir,
+  isDevEnd,
+  NODE_FILE,
+  NODE_VERSION,
+} from './misc';
 
 export default leaf({
   commandName: 'download',
@@ -12,10 +20,10 @@ export default leaf({
 
   options: {
     version: option({
-      typeName: 'string',
-      nullable: true,
       defaultValue: NODE_VERSION,
       description: 'Version number to download, eg v2.0.0',
+      nullable: true,
+      typeName: 'string',
     }),
   },
 
@@ -30,15 +38,15 @@ export default leaf({
     // TODO show progress ?
     await new Promise((resolve, reject) => {
       // use plain http when in DEV mode
-      (process.env['DEV'] ? http : https)
-        .get(url, function(response) {
+      (process.env.DEV ? http : https)
+        .get(url, (response) => {
           response.pipe(file);
-          file.on('finish', function() {
+          file.on('finish', () => {
             file.close();
             resolve();
           });
         })
-        .on('error', function(err) {
+        .on('error', (err) => {
           fs.unlink(DOCKER_FILE, () => {
             reject(err.message);
           });

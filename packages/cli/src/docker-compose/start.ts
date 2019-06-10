@@ -1,3 +1,4 @@
+// tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
 import * as fs from 'fs';
@@ -11,29 +12,29 @@ export default leaf({
 
   options: {
     config: option({
-      typeName: 'string',
-      nullable: true,
       defaultValue: `${DOCKER_DIR}/config.json`,
       description: 'Path to the config file',
-    }),
-    network: option({
-      typeName: 'string',
       nullable: true,
-      defaultValue: 'mainnet',
-      allowedValues: NETWORKS,
+      typeName: 'string',
     }),
     foreground: option({
-      typeName: 'boolean',
-      nullable: true,
       defaultValue: false,
       description: 'Keep the process in the foreground. Implies --show_logs',
+      nullable: true,
+      typeName: 'boolean',
+    }),
+    network: option({
+      allowedValues: NETWORKS,
+      defaultValue: 'mainnet',
+      nullable: true,
+      typeName: 'string',
     }),
     show_logs: option({
-      typeName: 'boolean',
-      nullable: true,
       defaultValue: false,
       description: 'Stream the console output',
-    })
+      nullable: true,
+      typeName: 'boolean',
+    }),
   },
 
   async action({ config, network, foreground, show_logs }) {
@@ -65,7 +66,7 @@ export default leaf({
 });
 
 async function dockerComposeStop(): Promise<void> {
-  let cmd
+  let cmd;
 
   console.log('Stopping docker compose...');
 
@@ -73,10 +74,10 @@ async function dockerComposeStop(): Promise<void> {
   log('$', cmd);
   try {
     execSync(cmd, {
-      cwd: DOCKER_DIR
+      cwd: DOCKER_DIR,
     });
   } catch (e) {
-    log(e)
+    log(e);
   }
 }
 
@@ -88,8 +89,8 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
     const cmd = 'docker-compose build';
     log('$', cmd);
     const proc = exec(cmd, {
-      timeout: 5 * MIN,
       cwd: getDockerDir(),
+      timeout: 5 * MIN,
     });
     function line(data: string) {
       if (showLogs) {
@@ -119,15 +120,14 @@ async function dockerRun(
   console.log('Starting the container...');
   let ready = false;
   await new Promise((resolve, reject) => {
-    const cmd =
-      `docker-compose up`;
+    const cmd = 'docker-compose up';
     log('$', cmd);
     const proc = exec(cmd, {
-      timeout: 2 * MIN,
-      env: {
-        NETWORK: network
-      },
       cwd: getDockerDir(),
+      env: {
+        NETWORK: network,
+      },
+      timeout: 2 * MIN,
     });
     function line(data: string) {
       if (showLogs) {
@@ -162,8 +162,8 @@ async function dockerRun(
 function checkDockerDirExists(): boolean {
   if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
     console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
-    console.log(`You can download the latest version using:`);
-    console.log(`  ./rise docker download`);
+    console.log('You can download the latest version using:');
+    console.log('  ./rise docker download');
     return false;
   }
   return true;

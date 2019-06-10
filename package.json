@@ -10,8 +10,8 @@
     "tslint"
   ],
   "scripts": {
-    "prettier": "prettier \"packages/*/!(dist)/**/*.ts\" \"packages/*/!(dist)/**/*.json\" \"packages/*/!(dist)/**/*.js\" --write",
-    "tslint": "tslint -c ./tslint.json 'packages/*/!(dist)/**/*.ts' --fix",
+    "prettier": "prettier \"packages/*/!(dist|.cache|build)/**/*.ts\" \"packages/*/!(dist|.cache|build)/**/*.json\" \"packages/*/!(dist|.cache|build)/**/*.js\" --write",
+    "tslint": "tslint -c ./tslint.json 'packages/*/!(dist|.cache|build)/**/*.ts' --fix",
     "test-unit": "NODE_ENV=test lerna run --stream test-unit",
     "test-all": "NODE_ENV=test mocha  --bail --exit --require ts-node/register './tests/unit/**/*.spec.ts' './tests/integration/**/*.spec.ts'",
     "transpile": "lerna run transpile",
