@@ -1,5 +1,4 @@
 import { injectable } from 'inversify';
-import { Peer } from '../peer';
 import { BaseTransportMethod } from './BaseTransportMethod';
 import { SingleTransportPayload } from './ITransportMethod';
 
@@ -10,18 +9,17 @@ export class PingRequest extends BaseTransportMethod<null, null, null> {
   public readonly method: 'GET' = 'GET';
   public readonly baseUrl = '/v2/peer/ping';
 
-  // protected encodeRequest(data: null, peer: Peer): Promise<Buffer> {
-  //   return Promise.resolve(Buffer.alloc(0));
-  // }
-
-  protected encodeResponse(
-    data: null,
-    req: SingleTransportPayload<null, null>
-  ): Promise<Buffer> {
-    return Promise.resolve(Buffer.alloc(0));
+  get isRequestEncodable(): boolean {
+    return false;
   }
 
-  protected decodeResponse(res: Buffer, peer: Peer): Promise<null> {
-    return Promise.resolve(null);
+  get isResponseEncodable(): boolean {
+    return false;
+  }
+
+  protected async produceResponse(
+    request: SingleTransportPayload<null, null>
+  ): Promise<null> {
+    return null;
   }
 }

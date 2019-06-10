@@ -6,17 +6,14 @@ services:
       context: ../../
       dockerfile: ./docker/devnet/Dockerfile
     depends_on:
-      - redis_1
       - postgres_1
     ports:
-      # rise node
-      - '5501:5555'
-      # rise rest api
-      - '8010:8080'
+      # rise node - p2p
+      - '5501:9999'
+      # rise node - api
+      - '5502:9998'
       # node inspector
       - '9201:9229'
-    expose:
-      - "5555"
     networks:
       overlay:
         ipv4_address: 172.16.238.101
@@ -28,18 +25,13 @@ services:
       # root
       - ../../node_modules:/home/rise/rise-node/node_modules
       - ../../package.json:/home/rise/rise-node/package.json
+      - ../../tsconfig.base.json:/home/rise/rise-node/tsconfig.base.json
       - ../../lerna.json:/home/rise/rise-node/lerna.json
       - ../../yarn.lock:/home/rise/rise-node/yarn.lock
       - ../../packages:/home/rise/rise-node/packages
     restart: on-failure
 #    stdin_open: true
 #    tty: true
-
-  redis_1:
-    image: redis:5-alpine
-    networks:
-      - overlay
-    restart: on-failure
 
   postgres_1:
     build:
@@ -59,15 +51,14 @@ services:
       context: ../../
       dockerfile: ./docker/devnet/Dockerfile
     depends_on:
-      - redis_1
-      - postgres_1
+      - postgres_2
     ports:
-      # rise node
-      - '5502:5555'
+      # rise node - p2p
+      - '5511:9999'
+      # rise node - api
+      - '5512:9998'
       # node inspector
-      - '9202:9229'
-    expose:
-      - "5555"
+      - '9211:9229'
     networks:
       overlay:
         ipv4_address: 172.16.238.102
@@ -82,12 +73,6 @@ services:
       - ../../lerna.json:/home/rise/rise-node/lerna.json
       - ../../yarn.lock:/home/rise/rise-node/yarn.lock
       - ../../packages:/home/rise/rise-node/packages
-    restart: on-failure
-
-  redis_2:
-    image: redis:5-alpine
-    networks:
-      - overlay
     restart: on-failure
 
   postgres_2:

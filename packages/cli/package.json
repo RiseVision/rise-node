@@ -1,0 +1,37 @@
+{
+  "name": "@risevision/cli",
+  "rise_vision": {
+    "module": true
+  },
+  "engine": ">=10",
+  "version": "1.0.0",
+  "bin": {
+    "rise": "dist/rise"
+  },
+  "description": "RISE Manager",
+  "main": "dist/rise",
+  "scripts": {
+    "clean": "rm -rf dist; rm -rf build",
+    "build": "tsc",
+    "parcel": "npx parcel build build/main.js -d dist --target node --bundle-node-modules",
+    "parcel:rename": "mv dist/main.js dist/rise; mv dist/main.js.map dist/rise.map",
+    "shebang": "echo \"#!/usr/bin/env node\"|cat - dist/rise > /tmp/out && mv /tmp/out dist/rise",
+    "chmod-x": "chmod +x dist/rise",
+    "dist": "yarn clean; yarn build; yarn parcel; yarn parcel:rename; yarn shebang; yarn chmod-x",
+    "postinstall": "yarn dist"
+  },
+  "types": "build/main.d.ts",
+  "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@carnesen/cli": "^0.3.3",
+    "debug": "^4.1.1",
+    "parcel": "^1.12.3",
+    "typescript": "3.4.5"
+  },
+  "dependencies": {
+    "dotenv": "^8.0.0",
+    "env": "^0.0.2",
+    "fs-extra": "^8.0.1"
+  }
+}
