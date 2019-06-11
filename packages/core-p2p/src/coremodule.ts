@@ -13,7 +13,7 @@ import {
   useExpressServer,
 } from 'routing-controllers';
 import * as socketIO from 'socket.io';
-import { AttachPeerHeaders, ValidatePeerHeaders } from './api/middlewares';
+import { ValidatePeerHeaders } from './api/middlewares';
 import { PeersAPI } from './api/peersAPI';
 import { TransportAPI } from './api/transport';
 import { BroadcasterLogic } from './broadcaster';
@@ -61,6 +61,9 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
     if (this.config.peers && this.config.peers.trustProxy) {
       app.enable('trust proxy');
     }
+    app.set('etag', false); // turn off etag
+    app.disable('x-powered-by');
+
     app.use(compression({ level: 9 }));
 
     app.use(bodyParser.raw({ limit: '2mb' }));
@@ -156,11 +159,6 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
       .whenTargetNamed(p2pSymbols.requests.modules);
 
     // API
-    this.container
-      .bind(p2pSymbols.transportMiddleware)
-      .to(AttachPeerHeaders)
-      .inSingletonScope()
-      .whenTargetNamed(p2pSymbols.transportMiddlewares.attachPeerHeaders);
     this.container
       .bind(p2pSymbols.transportMiddleware)
       .to(ValidatePeerHeaders)

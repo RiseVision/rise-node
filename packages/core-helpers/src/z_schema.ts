@@ -89,6 +89,16 @@ z_schema.registerFormat('address', (str: string) => {
   return /^[0-9]{1,20}R/.test(str);
 });
 
+z_schema.registerFormat('stringPositiveInt', (str: string) => {
+  const i = parseInt(str, 10);
+  return !isNaN(i) && i > 0;
+});
+
+z_schema.registerFormat('stringTCPPort', (str: string) => {
+  const i = parseInt(str, 10);
+  return !isNaN(i) && i > 0 && i < 65536;
+});
+
 // var registeredFormats = z_schema.getRegisteredFormats();
 // console.log(registeredFormats);
 

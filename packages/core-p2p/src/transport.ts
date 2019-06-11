@@ -17,6 +17,7 @@ import {
   Symbols,
 } from '@risevision/core-types';
 import { cbToPromise } from '@risevision/core-utils';
+import { WrapInBalanceSequence } from '@risevision/core-utils';
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as popsicle from 'popsicle';
@@ -32,7 +33,6 @@ import {
   PeersListResponse,
   SingleTransportPayload,
 } from './requests/';
-import { WrapInBalanceSequence } from '@risevision/core-utils';
 
 // tslint:disable-next-line
 const peersSchema = require('../schema/peers.json');
@@ -151,7 +151,10 @@ export class TransportModule extends Extendable {
         }
       );
     } catch (err) {
-      this.removePeer({ peer: thePeer, code: 'HTTPERROR' }, err.message);
+      this.removePeer(
+        { peer: thePeer, code: 'HTTPERROR' },
+        `${err.message} - When requesting ${options.url}`
+      );
       return Promise.reject(err);
     }
 
@@ -167,21 +170,21 @@ export class TransportModule extends Extendable {
       );
     }
 
-    const headers: PeerHeaders = thePeer.applyHeaders(res.headers as any);
-    if (!this.schema.validate(headers, transportSchema.headers)) {
+    if (!this.schema.validate(res.headers as any, transportSchema.headers)) {
       this.removePeer(
         { peer: thePeer, code: 'EHEADERS' },
         `${req.method} ${req.url}`
       );
       return Promise.reject(
         new Error(
-          `Invalid response headers ${JSON.stringify(headers)} ${req.method} ${
-            req.url
-          }`
+          `Invalid response headers ${JSON.stringify(res.headers)} ${
+            req.method
+          } ${req.url}`
         )
       );
     }
 
+    const headers: PeerHeaders = thePeer.applyHeaders(res.headers as any);
     if (!this.systemModule.networkCompatible(headers.nethash)) {
       this.removePeer(
         { peer: thePeer, code: 'ENETHASH' },

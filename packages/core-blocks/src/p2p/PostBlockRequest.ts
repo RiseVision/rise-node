@@ -9,7 +9,7 @@ import { inject, injectable } from 'inversify';
 import { BlocksSymbols } from '../blocksSymbols';
 import { BlockLogic } from '../logic';
 import { BlockBytes } from '../logic/blockBytes';
-import { BlocksModuleProcess } from '../modules';
+import { BlocksModule, BlocksModuleProcess } from '../modules';
 
 // tslint:disable-next-line
 export type PostBlockRequestDataType = {
@@ -39,6 +39,9 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
 
   @inject(BlocksSymbols.modules.process)
   private process: BlocksModuleProcess;
+
+  @inject(BlocksSymbols.modules.blocks)
+  private blocksModule: BlocksModule;
 
   protected async encodeRequest(
     data: PostBlockRequestDataType,
@@ -72,6 +75,10 @@ export class PostBlockRequest extends BaseProtobufTransportMethod<
   ): Promise<null> {
     const normalizedBlock = this.blockLogic.objectNormalize(req.body.block);
 
+    // check if received block is the one already processed and fast-return.
+    if (this.blocksModule.lastBlock.id === normalizedBlock.id) {
+      return null;
+    }
     // We propagate relays here so that the next postblockrequest has a relay to handle.
     (normalizedBlock as any).relays = req.body.relays;
     await this.process.onReceiveBlock(normalizedBlock);

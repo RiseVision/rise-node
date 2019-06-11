@@ -4,9 +4,8 @@
     "type": "object",
     "properties": {
       "port": {
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 65535
+        "type": "string",
+        "format": "stringTCPPort"
       },
       "os": {
         "type": "string",
@@ -30,8 +29,8 @@
         "format": "hex"
       },
       "height": {
-        "type": "integer",
-        "minimum": 1
+        "type": "string",
+        "format": "stringPositiveInt"
       },
       "nonce": {
         "type": "string",

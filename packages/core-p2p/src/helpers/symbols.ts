@@ -12,7 +12,6 @@ export const p2pSymbols = {
   transportMethod: Symbol.for('rise.p2p.transportMethod'),
   transportMiddleware: Symbol.for('rise.p2p.transportMiddleware'),
   transportMiddlewares: {
-    attachPeerHeaders: Symbol.for('rise.p2p.attachPeerHeaders'),
     validatePeer: Symbol.for('rise.p2p.validatePeerHeadersMiddleware'),
   },
   helpers: {

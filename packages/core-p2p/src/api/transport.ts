@@ -1,4 +1,4 @@
-import { ILogger, Symbols } from '@risevision/core-types';
+import { ILogger, ISystemModule, Symbols } from '@risevision/core-types';
 import * as express from 'express';
 import {
   Application,
@@ -30,6 +30,9 @@ export class TransportAPI {
 
   @inject(p2pSymbols.utils.transportWrapper)
   private transportWrapper: TransportWrapper;
+
+  @inject(Symbols.modules.system)
+  private systemModule: ISystemModule;
 
   @postConstruct()
   public postConstruct() {
@@ -64,6 +67,7 @@ export class TransportAPI {
             );
             res
               .set('content-type', 'application/octet-stream')
+              .set(this.systemModule.headers)
               .send(wrappedResp);
           } catch (e) {
             next(e);
@@ -96,7 +100,9 @@ export class TransportAPI {
     if (message instanceof Error) {
       message = message.message;
     }
-    res.set('content-type', 'application/octet-stream');
+    res
+      .set('content-type', 'application/octet-stream')
+      .set(this.systemModule.headers);
     this.transportWrapper
       .wrapResponse({ success: false, error: message as string }, req.peer)
       .then((r) => res.send(r));

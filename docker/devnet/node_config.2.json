@@ -1,6 +1,6 @@
 {
   "port": 9999,
-  "consoleLogLevel": "warn",
+  "consoleLogLevel": "error",
   "api": {
     "port": 9998,
     "enabled": true,
