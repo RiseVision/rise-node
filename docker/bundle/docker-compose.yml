@@ -1,0 +1,42 @@
+version: "3"
+services:
+
+  rise:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    ports:
+      # rise node - p2p
+      - '5554'
+      # rise node - api
+      - '5555'
+      # node inspector
+      - '9229'
+    networks:
+      - overlay
+    environment:
+      NETWORK: mainnet
+    restart: on-failure
+    container_name: rise-node
+    # debug
+    stdin_open: true
+    tty: true
+
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: rise
+      POSTGRES_DB: rise_db
+    networks:
+      - overlay
+    restart: on-failure
+    container_name: rise-postgres
+    image: postgres:11-alpine
+
+networks:
+  overlay:

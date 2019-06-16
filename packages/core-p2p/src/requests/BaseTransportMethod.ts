@@ -113,7 +113,7 @@ export class BaseTransportMethod<Data, Query, Out>
   protected async produceResponse(
     request: SingleTransportPayload<Data, Query>
   ): Promise<Out> {
-    throw new Error('Implement request');
+    throw new Error('Implement the request');
   }
 
   /**
@@ -124,7 +124,7 @@ export class BaseTransportMethod<Data, Query, Out>
     // TODO can be null?
     peer: Peer | null
   ): Promise<Buffer> {
-    throw new Error('Implement encoder');
+    throw new Error('Implement a request encoder');
   }
 
   /**
@@ -133,14 +133,14 @@ export class BaseTransportMethod<Data, Query, Out>
   protected async decodeRequest(
     req: SingleTransportPayload<Buffer, Query>
   ): Promise<Data> {
-    throw new Error('Implement decoder');
+    throw new Error('Implement a request decoder');
   }
 
   /**
    * Decodes Response from buffer to Out Pojo
    */
   protected decodeResponse(res: Buffer, peer: Peer): Promise<Out> {
-    throw new Error('Implement decoder!');
+    throw new Error('Implement a response decoder');
   }
 
   /**
@@ -150,7 +150,7 @@ export class BaseTransportMethod<Data, Query, Out>
     data: Out,
     req: SingleTransportPayload<Data, Query>
   ): Promise<Buffer> {
-    throw new Error('Implement encoder');
+    throw new Error('Implement a response encoder');
   }
 
   /**

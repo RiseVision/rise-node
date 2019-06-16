@@ -1,0 +1,8 @@
+{
+  "db": {
+    "host": "rise-postgres"
+  },
+  "redis": {
+    "host": "rise-redis"
+  }
+}
