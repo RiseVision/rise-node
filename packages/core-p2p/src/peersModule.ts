@@ -210,7 +210,10 @@ export class PeersModule implements IPeersModule {
         const key = filterKeys[i];
         const value = filter[key];
         // Every filter field need to be in allowed fields, exists and match value
-        if (_.includes(allowedFields, key) && peer[key] !== value) {
+        if (
+          _.includes(allowedFields, key) &&
+          !(typeof peer[key] !== 'undefined' && peer[key] === value)
+        ) {
           passed = false;
         }
       }

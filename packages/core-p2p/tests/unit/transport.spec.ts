@@ -148,9 +148,9 @@ describe('src/modules/transport.ts', () => {
         url: 'url.com',
       };
       headers = {
-        height: 100,
+        height: '100',
         nethash: systemModule.headers.nethash,
-        port: peer.port,
+        port: `${peer.port}`,
         version: '1.1.1',
       };
       res = {
