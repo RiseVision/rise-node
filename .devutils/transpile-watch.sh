@@ -5,7 +5,7 @@ root=$(pwd)
 timestamp() { date "+%H:%M:%S"; }
 
 # Get packages in topology order
-pkgs=($(yarn -s lerna --sort exec "echo \$LERNA_PACKAGE_NAME"))
+pkgs=($(yarn -s lerna --sort exec "echo \$LERNA_PACKAGE_NAME" | grep -v cli))
 
 # Run in a sub-shell to make Ctrl-C work
 (

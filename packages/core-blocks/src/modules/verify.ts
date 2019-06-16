@@ -26,7 +26,7 @@ import {
 } from 'mangiafuoco';
 import { BlocksConstantsType } from '../blocksConstants';
 import { BlocksSymbols } from '../blocksSymbols';
-import { OnPostApplyBlock, VerifyBlock, VerifyReceipt } from '../hooks';
+import { OnBlockApplied, VerifyBlock, VerifyReceipt } from '../hooks';
 import { BlockBytes } from '../logic/blockBytes';
 import { BlocksModuleChain } from './chain';
 
@@ -152,7 +152,7 @@ export class BlocksModuleVerify extends Extendable {
     this.lastNBlockIds = blocks.map((b) => b.id);
   }
 
-  @OnPostApplyBlock()
+  @OnBlockApplied()
   public async onNewBlock(block: SignedBlockType) {
     this.lastNBlockIds.push(block.id);
     if (this.lastNBlockIds.length > this.blocksConstants.slotWindow) {

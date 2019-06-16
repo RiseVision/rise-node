@@ -10,7 +10,7 @@ import { decorate, inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import { BlocksSymbols } from '../blocksSymbols';
-import { OnPostApplyBlock } from '../hooks';
+import { OnBlockApplied } from '../hooks';
 import { PostBlockRequest } from './PostBlockRequest';
 
 const Extendable = WPHooksSubscriber(Object);
@@ -34,13 +34,13 @@ export class BlocksP2P extends Extendable {
   @inject(Symbols.helpers.logger)
   private logger: ILogger;
 
-  @OnPostApplyBlock(-100)
+  @OnBlockApplied(1000)
   public async onNewBlock(
     block: SignedAndChainedBlockType & { relays?: number },
     broadcast: boolean
   ) {
     if (broadcast) {
-      const broadhash = this.systemModule.broadhash;
+      const broadhash = block.previousBlock;
       block = _.cloneDeep(block);
       block.relays = block.relays || 0;
       if (block.relays < this.broadcaster.maxRelays()) {

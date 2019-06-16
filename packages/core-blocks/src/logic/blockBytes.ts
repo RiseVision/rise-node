@@ -139,7 +139,7 @@ export class BlockBytes {
 
   public toBuffer(block: SignedAndChainedBlockType) {
     const header = this.signableBytes(block, true);
-    const transactions = block.transactions.map((t) =>
+    const transactions = (block.transactions || []).map((t) =>
       this.txBytes.toBuffer(t)
     );
 

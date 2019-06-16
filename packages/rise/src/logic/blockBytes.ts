@@ -41,7 +41,8 @@ export class RiseBlockBytes extends BlockBytes {
     // Otherwise fallback to previous version.
     const timestamp = readUint32();
 
-    const previousBlock = this.idsHandler.blockIdFromBytes(readSlice(8));
+    const previousBlock =
+      timestamp === 0 ? null : this.idsHandler.blockIdFromBytes(readSlice(8));
 
     const numberOfTransactions = readUint32();
 

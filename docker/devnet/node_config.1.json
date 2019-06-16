@@ -1,11 +1,63 @@
 {
   "port": 9999,
+  "consoleLogLevel": "error",
   "api": {
     "port": 9998,
     "enabled": true,
     "access": {
       "public": true
     }
+  },
+  "forging": {
+    "force": false,
+    "secret": [
+      "fluid slim diary sniff device cotton fun wonder jar submit gentle during",
+      "buddy clay absurd crunch charge hood gaze embark awesome diesel sniff tribe",
+      "diamond grain object regular enact tool gadget recipe cactus neutral nominee exile",
+      "decrease timber august arch manual jelly toilet fix distance roof crumble present",
+      "steak baby sting staff ceiling taste snow drum avoid pet paddle love",
+      "square fish depend column want sample tuition master net wise topple ship",
+      "joy river genius timber climb spin draft retire inner sort axis disagree",
+      "clutch moral energy merit century idea ritual enough raccoon soft betray rich",
+      "chunk chapter salt sustain pet penalty goat toy one boil orbit sell",
+      "anxiety clown make stick shift dad snack diesel alert game spot earn",
+      "collect intact safe parade source smooth brand worth dwarf flat output ceiling",
+      "pluck air blouse box ankle dragon awful spawn coffee rain sight truly",
+      "idea water stem mutual fluid miss tragic general attack seek federal urge",
+      "south luggage furnace illness math spin fade throw radar casual argue bracket",
+      "extra seed correct left recycle quarter cousin jealous climb estate ripple vague",
+      "chase lemon mass dwarf clarify allow era mask sauce ready secret rib",
+      "knee sample all bronze concert time sand case damage art typical sister",
+      "stone rotate idea garage equip weekend trim humor example rely together obey",
+      "empty wave enough under soon pencil rocket manual keen avocado laundry goose",
+      "prefer super artwork model staff reopen vanish task vanish bike write robot",
+      "kitchen whale airport all trouble hero volume cabin twenty zone believe text",
+      "mimic improve brush problem picnic glow birth time length limit hidden visa",
+      "foam cloth element caught antique media sight robot lamp path flower autumn",
+      "check coconut bird ankle staff better before crane discover display flight decorate",
+      "monkey soccer dust story hour fit pig valley clarify clog able family",
+      "aim crew unaware debate online nominee enable unique moral filter shell race",
+      "pencil device pink speed general confirm bless stick curve door subway film",
+      "tooth drop control mirror rebuild comfort talk clay kid chef recipe universe",
+      "pair betray local manual harbor visa trap river olive love simple lumber",
+      "sense reduce weird pluck result business unable dust garage gaze business anchor",
+      "forward trumpet door indoor crucial stamp verify fly festival almost zoo indicate",
+      "exit mobile mesh display maple imitate hotel essence oil patrol artwork garlic",
+      "circle cargo pyramid find emotion satisfy jacket fork grow ask regular lend",
+      "fashion hero child crash hard hold laundry outside approve rural cause fiction",
+      "jelly trouble word polar penalty then season retire cup salute damage emerge",
+      "victory note wrestle cigar jungle stuff afraid flip amused obtain door review",
+      "doll rich chapter toilet vivid chunk about quiz physical remove social vanish",
+      "ripple repair exile dolphin transfer point volume long husband eager decline cereal",
+      "deposit group shuffle jealous spray bean minor actual hammer lunch guilt above",
+      "impose stamp problem prize limit stable tortoise receive mandate measure list mean",
+      "trust pig absent turkey uncle exile useless police snow annual protect figure",
+      "open spirit fresh impulse hidden vapor runway castle salmon farm foster catch",
+      "couch affair hour slice skin obvious loyal flight elite middle march then",
+      "leg again elder alcohol reduce size thought invest mask budget harsh install",
+      "average lesson debris sketch garage flat zoo tomato arrive suffer entire add",
+      "dose try wing phone large identify phone kangaroo wear tool second final"
+    ]
   },
   "db": {
     "host": "postgres_1",
@@ -21,7 +73,7 @@
   "peers": {
     "enabled": true,
     "trustProxy": false,
-    "seeds": ["rise_2:9999"],
+    "seeds": ["172.16.238.102:9999"],
     "access": {
       "blackList": []
     },

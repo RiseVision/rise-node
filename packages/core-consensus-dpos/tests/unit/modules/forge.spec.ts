@@ -470,6 +470,7 @@ describe('modules/forge', () => {
       let getComputedStub: SinonStub;
       let getSlotNumberStub: SinonStub;
       let getPeersStub: SinonStub;
+      let processBlockStub: SinonStub;
       let genBlockStub: SinonStub;
 
       beforeEach(() => {
@@ -492,17 +493,23 @@ describe('modules/forge', () => {
         getPeersStub = sandbox.stub(peersModule, 'getPeers').resolves();
         genBlockStub = sandbox
           .stub(blocksProcessModuleStub, 'generateBlock')
+          .resolves('banane');
+
+        processBlockStub = sandbox
+          .stub(blocksProcessModuleStub, 'processBlock')
           .resolves();
       });
 
-      it('should call broadcasterLogic.getPeers (in sequence worker)', async () => {
+      it('should call processBlock', async () => {
         // @ts-ignore
         await instance.forge();
-        // TODO: REplace with peersModule.updateConsensus
-        // expect(getPeersStub.calledOnce).to.be.true;
-        // expect(getPeersStub.firstCall.args[0]).to.be.deep.equal({
-        //   limit: constants.maxPeers,
-        // });
+        expect(processBlockStub.called).true;
+        expect(
+          processBlockStub.calledWith('banane', {
+            broadcast: true,
+            saveBlock: true,
+          })
+        ).true;
       });
 
       it('should call appState.getComputed (in sequence worker)', async () => {

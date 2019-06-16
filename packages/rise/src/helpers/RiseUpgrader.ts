@@ -2,8 +2,8 @@ import { OnBlockchainReady } from '@risevision/core';
 import {
   BlocksModule,
   BlocksSymbols,
+  OnBlockApplied,
   OnDestroyBlock,
-  OnPostApplyBlock,
 } from '@risevision/core-blocks';
 import { dPoSSymbols, RoundChanges } from '@risevision/core-consensus-dpos';
 import { SignedAndChainedBlockType, Symbols } from '@risevision/core-types';
@@ -42,7 +42,7 @@ export class RiseUpgrader extends Extendable {
     this.switchDposFees(this.blocksModule.lastBlock.height);
   }
 
-  @OnPostApplyBlock()
+  @OnBlockApplied()
   public onPostApplyBlock(block: SignedAndChainedBlockType) {
     const cur = block.height;
     const dposFeesSwitchHeight = this.riseContants['@risevision/rise']

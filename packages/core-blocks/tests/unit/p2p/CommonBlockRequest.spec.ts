@@ -71,7 +71,7 @@ describe('apis/requests/CommonBlockRequest', () => {
         'Invalid block id sequence'
       );
       await expect(
-        createRequest({ ids: '1,2,3,4,5,6,7,8,9,0,1' })
+        createRequest({ ids: '1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6' })
       ).rejectedWith('Invalid block id sequence');
     });
     it('should return common: null and properly call database', async () => {

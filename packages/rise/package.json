@@ -33,7 +33,7 @@
     "bech32-buffer": "^0.1.2",
     "bigint-buffer": "^1.1.2",
     "bytebuffer": "=5.0.1",
-    "dpos-offline": "=2.0.7",
+    "dpos-offline": "=3.0.0",
     "inversify": "5.0.1",
     "lodash": "4.17.11",
     "mangiafuoco": "1.2.3",

@@ -53,7 +53,7 @@ export class CommonBlockRequest extends BaseProtobufTransportMethod<
       .split(',')
       // Reject any non-numeric values
       .filter((id) => /^[0-9]+$/.test(id));
-    if (excapedIds.length === 0 || excapedIds.length > 10) {
+    if (excapedIds.length === 0 || excapedIds.length > 15) {
       throw new Error('Invalid block id sequence');
     }
 

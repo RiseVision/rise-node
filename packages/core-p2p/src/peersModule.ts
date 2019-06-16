@@ -253,6 +253,7 @@ export class PeersModule implements IPeersModule {
       // only matching states
       .filter((p) => allowedStates.indexOf(p.state) !== -1);
 
+    // TODO: Next line should be useless as peers are inserted only if they're acceptable.
     peersList = this.peersLogic.acceptable(peersList);
     peersList = peersList.slice(0, options.limit);
 

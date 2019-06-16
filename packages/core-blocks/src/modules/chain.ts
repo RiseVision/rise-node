@@ -20,6 +20,7 @@ import {
 } from '@risevision/core-types';
 import {
   catchToLoggerAndRemapError,
+  logOnly,
   wait,
   WrapInBalanceSequence,
 } from '@risevision/core-utils';
@@ -32,6 +33,7 @@ import { Op, Transaction } from 'sequelize';
 import { BlocksSymbols } from '../blocksSymbols';
 import {
   ApplyBlockDBOps,
+  OnBlockApplied,
   OnDestroyBlock,
   OnPostApplyBlock,
   OnTransactionsSaved,
@@ -233,6 +235,9 @@ export class BlocksModuleChain {
         false
       );
     });
+    await this.hookSystem
+      .do_action(OnBlockApplied.name, this.blocksModule.lastBlock, false)
+      .catch(logOnly(this.logger, 'warn'));
   }
 
   @WrapInBalanceSequence
@@ -362,6 +367,9 @@ export class BlocksModuleChain {
       );
     }
 
+    await this.hookSystem
+      .do_action(OnBlockApplied.name, this.blocksModule.lastBlock, broadcast)
+      .catch(logOnly(this.logger, 'warn'));
     // remove overlapping txs from unconfirmed and move it to queued to allow re-process
     // If some of the overlapping txs are now "invalid" they will be discared within the next
     // txPool.processBundled loop.
