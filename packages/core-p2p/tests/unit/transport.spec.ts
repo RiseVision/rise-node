@@ -245,7 +245,9 @@ describe('src/modules/transport.ts', () => {
       expect(removePeerStub.firstCall.args[0].code).to.be.deep.equal(
         'HTTPERROR'
       );
-      expect(removePeerStub.firstCall.args[1]).to.be.equal(error.message);
+      expect(removePeerStub.firstCall.args[1]).to.be.equal(
+        `${error.message} - When requesting url.com`
+      );
     });
 
     it('should call removePeer and return rejected promise if req.status !== 200', async () => {
@@ -280,9 +282,9 @@ describe('src/modules/transport.ts', () => {
     it('should validate response headers against schema and eventually removePeer', async () => {
       res.headers.nethash = 'meow';
       await expect(inst.getFromPeer(peer, options)).to.be.rejectedWith(
-        'Invalid response headers {"height":100,"nethash":"meow","port":' +
+        'Invalid response headers {"height":"100","nethash":"meow","port":"' +
           peer.port +
-          ',"version":"1.1.1","state":1} put http://127.0.0.1:' +
+          '","version":"1.1.1"} put http://127.0.0.1:' +
           peer.port +
           'url.com'
       );
