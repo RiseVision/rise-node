@@ -13,18 +13,6 @@ import { checkReturnObjKeyVal } from './utils';
 describe('api/loader/status', () => {
   initializer.setup();
 
-  describe('/', () => {
-    checkReturnObjKeyVal('loaded', true, '/api/loader/status');
-    it('should return loaded false if blockchain is not ready', async () => {
-      return supertest(initializer.apiExpress)
-        .get('/api/loader/status')
-        .expect(200)
-        .then((response) => {
-          expect(response.body.loaded).is.true;
-        });
-    });
-  });
-
   describe('/sync', () => {
     checkReturnObjKeyVal(
       'broadhash',
@@ -33,11 +21,7 @@ describe('api/loader/status', () => {
     );
     checkReturnObjKeyVal('height', 1, '/api/loader/status/sync');
     checkReturnObjKeyVal('syncing', false, '/api/loader/status/sync');
-  });
-
-  describe('/ping', () => {
-    // cause last block is too old
-    checkReturnObjKeyVal('success', false, '/api/loader/status/ping');
+    checkReturnObjKeyVal('isStale', true, '/api/loader/status/sync');
     it('should return success true if lastblock is within staleAgeThreshold', async () => {
       const blocksModule = initializer.appManager.container.get<BlocksModule>(
         Symbols.modules.blocks
@@ -54,12 +38,17 @@ describe('api/loader/status', () => {
         Math.floor(Date.now() / 1000) -
         (timeToEpoch.getTime() + blocksModule.lastBlock.timestamp);
       return supertest(initializer.apiExpress)
-        .get('/api/loader/status/ping')
+        .get('/api/loader/status/sync')
         .expect(200)
         .then((response) => {
-          expect(response.body.success).is.true;
+          expect(response.body.isStale).is.false;
           consts.staleAgeThreshold = 45;
         });
     });
+  });
+
+  describe('/ping', () => {
+    // cause last block is too old
+    checkReturnObjKeyVal('success', true, '/api/loader/status/ping');
   });
 });

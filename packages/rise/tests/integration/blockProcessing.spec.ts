@@ -123,8 +123,8 @@ describe('blockProcessing', async function() {
           Rise.calcAddress(account.publicKey, 'main', 'v0')
         );
         expect(res.body.account.balance).is.deep.eq('0');
-        expect(res.body.account.username).is.undefined;
-        expect(res.body.account.secondSignature).is.eq(0);
+        expect(res.body.account.username).is.null;
+        expect(res.body.account.secondSignature).is.eq(false);
         expect(res.body.account.secondPublicKey).is.null;
         expect(res.body.account.unconfirmedBalance).is.deep.eq('0');
       }

@@ -57,15 +57,8 @@ export class AccountsAPI {
   public async getAccount(@SchemaValid(accountSchema.getAccount)
   @QueryParams()
   query: {
-    address?: string;
+    address: string;
   }) {
-    if (isEmpty(query.address)) {
-      throw new HTTPError(
-        'Missing required property: address or publicKey',
-        200
-      );
-    }
-
     const accData = await this.accountsModule.getAccount({
       address: query.address,
     });

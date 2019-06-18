@@ -182,15 +182,14 @@ export class TransactionsAPI {
   @QueryParams()
   params: {
     address?: string;
+    queryType?: 'all' | 'sender' | 'receiver';
   }) {
     const txs = this.pool.pending.txList({ reverse: true });
 
     return {
       count: txs.length,
       transactions: txs
-        .filter((tx) =>
-          params.address ? params.address === tx.recipientId : true
-        )
+        .filter((tx) => this.filterTransaction(tx, params))
         .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
@@ -215,15 +214,14 @@ export class TransactionsAPI {
   @QueryParams()
   params: {
     address?: string;
+    queryType?: 'all' | 'sender' | 'receiver';
   }) {
     const txs = this.pool.queued.txList({ reverse: true });
 
     return {
       count: txs.length,
       transactions: txs
-        .filter((tx) =>
-          params.address ? params.address === tx.recipientId : true
-        )
+        .filter((tx) => this.filterTransaction(tx, params))
         .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
@@ -248,16 +246,13 @@ export class TransactionsAPI {
   @QueryParams()
   params: {
     address?: string;
+    queryType?: 'all' | 'sender' | 'receiver';
   }) {
     const txs = this.pool.unconfirmed.txList({ reverse: true });
     return {
       count: txs.length,
       transactions: txs
-        .filter((tx) => {
-          // Either senderPublicKey or address matching as recipientId
-          // or all if no params were set.
-          return params.address ? params.address === tx.recipientId : true;
-        })
+        .filter((tx) => this.filterTransaction(tx, params))
         .map((tx) => this.TXModel.toTransportTransaction(tx)),
     };
   }
@@ -297,7 +292,7 @@ export class TransactionsAPI {
     const transaction = RiseV2.txs.createAndSign(
       {
         amount: `${body.amount}`,
-        kind: 'send',
+        kind: 'send-v2',
         recipient: body.recipientId as Address,
       },
       kp,
@@ -393,6 +388,27 @@ export class TransactionsAPI {
     return { accepted: validTxsIDs, invalid: invalidTxsWithReasons };
   }
 
+  private filterTransaction(
+    tx: IBaseTransaction<any, bigint>,
+    filter: {
+      address?: string;
+      queryType?: 'all' | 'sender' | 'receiver';
+    }
+  ): boolean {
+    if (filter.address) {
+      const isSender = tx.senderId === filter.address;
+      const isReceiver = tx.recipientId === filter.address;
+
+      if (!filter.queryType || filter.queryType === 'all') {
+        return isSender || isReceiver;
+      } else if (filter.queryType === 'sender') {
+        return isSender;
+      } else {
+        return isReceiver;
+      }
+    }
+    return true;
+  }
   // tslint:disable-next-line cognitive-complexity
   private createWhereClause(body: any) {
     const whereClause = {

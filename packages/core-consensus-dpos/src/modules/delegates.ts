@@ -337,6 +337,31 @@ export class DelegatesModule {
     return { rankV1, rankV2, approval, productivity };
   }
 
+  public async findByForgingKey(forgingPK: Buffer & As<'publicKey'>) {
+    const m = await this.delegatesModel.findOne({
+      include: [
+        {
+          attributes: ['senderId'],
+          model: this.transactionsModel,
+        },
+      ],
+      raw: true,
+      // @ts-ignore apparently there's a bug in sequelize type definition.
+      where: { forgingPK },
+    });
+    if (!m) {
+      throw new Error(
+        `Delegate with forging Key not found: ${forgingPK.toString('hex')}`
+      );
+    }
+    const address = m['tx.senderId'];
+    const delegate = await this.accountsModel.findOne({
+      raw: true,
+      where: { address },
+    });
+    return this.getDelegate(delegate.username);
+  }
+
   public async getDelegate(username: string) {
     const delegate = await this.accountsModel.findOne({
       raw: true,
@@ -369,7 +394,7 @@ export class DelegatesModule {
       query.limit || this.dposConstants.activeDelegates
     );
     const offset = query.offset || 0;
-    return await this.accountsModel.findAll({
+    return await this.accountsModel.scope(null).findAll({
       attributes: [
         'address',
         'cmb',

@@ -60,7 +60,7 @@
         "maxLength": 250
       }
     },
-    "additionalProperties": false
+    "required": ["address"]
   },
   "top": {
     "id": "accounts.top",

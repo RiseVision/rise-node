@@ -1,5 +1,6 @@
 import { OnCheckIntegrity, RecreateAccountsTables } from '@risevision/core';
 import { AccountsSymbols } from '@risevision/core-accounts';
+import { FilterAPIGetAccount } from '@risevision/core-accounts';
 import {
   ApplyBlockDBOps,
   BlocksConstantsType,
@@ -10,7 +11,6 @@ import {
 } from '@risevision/core-blocks';
 import { ModelSymbols } from '@risevision/core-models';
 import {
-  ConstantsType,
   DBOp,
   ILogger,
   SignedAndChainedBlockType,
@@ -60,6 +60,18 @@ export class DelegatesHooks extends Extendable {
 
   @inject(dPoSSymbols.constants)
   private dposConstants: DposConstantsType;
+
+  /**
+   * @codesample filterHookApply
+   */
+  @FilterAPIGetAccount()
+  public add2ndSignatureToAccount(accData: any, model: AccountsModelForDPOS) {
+    return {
+      ...accData,
+      forgingPK: model.forgingPK,
+      username: model.username,
+    };
+  }
 
   @OnCheckIntegrity()
   private async checkLoadingIntegrity(totalBlocks: number) {

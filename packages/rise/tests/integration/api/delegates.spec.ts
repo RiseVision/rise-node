@@ -148,23 +148,6 @@ describe('api/delegates', () => {
     });
   });
 
-  describe('/fee', () => {
-    checkIntParam('height', '/api/delegates/fee', { min: 1 });
-    checkReturnObjKeyVal('fromHeight', 1, '/api/delegates/fee');
-    checkReturnObjKeyVal('toHeight', null, '/api/delegates/fee');
-    checkReturnObjKeyVal('height', 103, '/api/delegates/fee');
-
-    it('should return fee value for delegate', async () => {
-      return supertest(initializer.apiExpress)
-        .get('/api/delegates/fee')
-        .expect(200)
-        .then((response) => {
-          expect(response.body.success).is.true;
-          expect(response.body.fee).to.be.deep.equal('2500000000');
-        });
-    });
-  });
-
   describe('/rewards', () => {
     checkIntParam(
       'from',
@@ -208,7 +191,7 @@ describe('api/delegates', () => {
               },
               details: [
                 {
-                  forgingKey:
+                  forgingPK:
                     'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
                   fromHeight: 1,
                   fees: '0',
@@ -243,7 +226,7 @@ describe('api/delegates', () => {
             });
             expect(response.body.details).deep.eq([
               {
-                forgingKey:
+                forgingPK:
                   'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
                 fromHeight: 1,
                 fees: '0',
@@ -305,7 +288,7 @@ describe('api/delegates', () => {
         cumulative: { fees: '0', rewards: '7500000000', totalBlocks: 5 },
         details: [
           {
-            forgingKey:
+            forgingPK:
               'b1cb14cd2e0d349943fdf4d4f1661a5af8e3c3e8b5868d428b9a383d47aa98c3',
             fromHeight: 1,
             fees: '0',
@@ -313,7 +296,7 @@ describe('api/delegates', () => {
             totalBlocks: 2,
           },
           {
-            forgingKey: acct.publicKey.toString('hex'),
+            forgingPK: acct.publicKey.toString('hex'),
             fromHeight: 103,
             fees: '0',
             rewards: '4500000000',
@@ -350,7 +333,7 @@ describe('api/delegates', () => {
           expect(response.body.success).is.true;
           expect(response.body).deep.eq({
             success: true,
-            account: {
+            delegate: {
               address: '15048500907174916103R',
               balance: '108912391000000',
               cmb: 0,
@@ -605,9 +588,6 @@ describe('api/delegates', () => {
       publicKey:
         '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
     });
-    checkPostPubKey('publicKey', '/api/delegates/forging/enable', {
-      secret: 'aaa',
-    });
 
     it('should disallow request from unallowed ip', async () => {
       cfg.api.access.restrictedWhiteList = [];
@@ -623,13 +603,11 @@ describe('api/delegates', () => {
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
-          publicKey:
-            '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
           secret: 'sensereduceweirdpluck',
         })
         .expect(200)
         .then((response) => {
-          expect(response.body.error).to.be.equal('Invalid passphrase');
+          expect(response.body.error).to.be.equal('Account not found');
         });
     });
 
@@ -637,8 +615,6 @@ describe('api/delegates', () => {
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
-          publicKey:
-            '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
           secret:
             'sense reduce weird pluck result business unable dust garage gaze business anchor',
         })
@@ -647,8 +623,6 @@ describe('api/delegates', () => {
           return supertest(initializer.apiExpress)
             .post('/api/delegates/forging/enable')
             .send({
-              publicKey:
-                '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
               secret:
                 'sense reduce weird pluck result business unable dust garage gaze business anchor',
             })
@@ -664,8 +638,6 @@ describe('api/delegates', () => {
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/enable')
         .send({
-          publicKey:
-            '0cf75c0afa655b7658d971765d4989d8553d639eeed57eaa45b1991b61db1856',
           secret:
             'unable dust garage gaze business anchor sense reduce weird pluck result business',
         })
@@ -709,9 +681,6 @@ describe('api/delegates', () => {
     });
 
     checkPostRequiredParam('secret', '/api/delegates/forging/disable', {});
-    checkPostPubKey('publicKey', '/api/delegates/forging/disable', {
-      secret: 'aaa',
-    });
 
     it('should disallow request from unallowed ip', async () => {
       cfg.api.access.restrictedWhiteList = [];
@@ -723,26 +692,10 @@ describe('api/delegates', () => {
         });
     });
 
-    it('should throw error if given publicKey differs from computed pk', async () => {
-      return supertest(initializer.apiExpress)
-        .post('/api/delegates/forging/disable')
-        .send({
-          publicKey:
-            '241cca788519fd0913265ebf1265d9d79eded91520d62b8c1ce700ebd15aff14',
-          secret: 'sensereduceweirdpluck',
-        })
-        .expect(200)
-        .then((response) => {
-          expect(response.body.error).to.be.equal('Invalid passphrase');
-        });
-    });
-
     it('should throw error if forging is already disabled for such account', async () => {
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
-          publicKey:
-            '21ba4bd249c3369c1a1c15a2f309ce993db9396c55d519f17d0138fafee36d66',
           secret:
             'chunk torch ice snow lunar cute school trigger portion gift home canal',
         })
@@ -751,8 +704,6 @@ describe('api/delegates', () => {
           return supertest(initializer.apiExpress)
             .post('/api/delegates/forging/disable')
             .send({
-              publicKey:
-                '21ba4bd249c3369c1a1c15a2f309ce993db9396c55d519f17d0138fafee36d66',
               secret:
                 'chunk torch ice snow lunar cute school trigger portion gift home canal',
             })
@@ -780,8 +731,6 @@ describe('api/delegates', () => {
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
-          publicKey:
-            'b7717adf51800bce03b1aebdad444220734c423f0014944bfcdb8d615641c61e',
           secret:
             'pluck result dust unable garage gaze business anchor sense reduce weird business',
         })
@@ -814,7 +763,6 @@ describe('api/delegates', () => {
       return supertest(initializer.apiExpress)
         .post('/api/delegates/forging/disable')
         .send({
-          publicKey: wallet.publicKey.toString('hex'),
           secret,
         })
         .expect(200)

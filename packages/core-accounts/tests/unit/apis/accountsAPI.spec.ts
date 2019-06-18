@@ -58,14 +58,8 @@ describe('apis/accountsAPI', () => {
         "address - Object didn't pass"
       );
       await expect(instance.getAccount({} as any)).rejectedWith(
-        'Missing required property: address or publicKey'
+        'Missing required property: address'
       );
-      await expect(
-        instance.getAccount({
-          address: '1R',
-          extra: 'data',
-        } as any)
-      ).rejectedWith('Additional properties not allowed: extra');
     });
 
     it('should query accountsModule', async () => {

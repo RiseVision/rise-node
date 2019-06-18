@@ -97,6 +97,81 @@ export class DelegatesAPI {
         : this.dposConstants.activeDelegates;
   }
 
+  @Get('/')
+  @ValidateSchema()
+  public async getDelegates(@SchemaValid(schema.getDelegates, {
+    castNumbers: true,
+  })
+  @QueryParams()
+  data: {
+    orderBy: string;
+    limit: number;
+    offset: number;
+  }) {
+    const delegates: Array<
+      BaseDelegateData & { infos?: any }
+    > = await this.delegatesModule.getDelegates(data);
+    for (const d of delegates) {
+      d.infos = await this.delegatesModule.calcDelegateInfo(d, delegates);
+    }
+
+    const totalCount = await this.AccountsModel.count({
+      where: { isDelegate: 1 },
+    });
+    return {
+      delegates: OrderBy(data.orderBy)(delegates).slice(
+        0,
+        data.limit || Number.MAX_SAFE_INTEGER
+      ),
+      totalCount,
+    };
+  }
+
+  @Get('/get')
+  @ValidateSchema()
+  public async getDelegate(@SchemaValid(schema.getDelegate)
+  @QueryParams()
+  params: {
+    username?: string;
+    publicKey?: string;
+  }) {
+    const r = await (() => {
+      if (params.username) {
+        return this.delegatesModule
+          .getDelegate(params.username)
+          .catch(() => null);
+      } else if (params.publicKey) {
+        return this.delegatesModule
+          .findByForgingKey(Buffer.from(params.publicKey, 'hex') as Buffer &
+            As<'publicKey'>)
+          .catch(() => null);
+      }
+      throw new HTTPError('Missing parameters', 500);
+    })();
+    if (!r) {
+      throw new HTTPError('Delegate not found', 404);
+    }
+    const forgingPKs = await this.delegatesModule.loadForgingPKByDelegate(
+      r.account.address
+    );
+
+    return {
+      delegate: {
+        address: r.account.address,
+        balance: r.account.balance,
+        cmb: r.account.cmb,
+        missedBlocks: r.account.missedblocks,
+        producedBlocks: r.account.producedblocks,
+        rewards: r.account.rewards,
+        username: r.account.username,
+        vote: r.account.vote,
+        votesWeight: r.account.votesWeight,
+      },
+      forgingPKs,
+      info: await this.delegatesModule.calcDelegateInfo(r.account),
+    };
+  }
+
   @Get('/rewards')
   @ValidateSchema()
   public async rewards(@SchemaValid(schema.getRewards, { castNumbers: true })
@@ -119,7 +194,7 @@ export class DelegatesAPI {
     const rewards = [];
     for (const fk of forgingKeys) {
       rewards.push({
-        forgingKey: fk.forgingPK.toString('hex'),
+        forgingPK: fk.forgingPK.toString('hex'),
         fromHeight: fk.height,
         ...(await this.blocksAPI.getRewards({
           from: params.from,
@@ -141,74 +216,6 @@ export class DelegatesAPI {
         { fees: 0n, rewards: 0n, totalBlocks: 0 }
       );
     return { cumulative, details: rewards };
-  }
-
-  @Get('/')
-  @ValidateSchema()
-  public async getDelegates(@SchemaValid(schema.getDelegates, {
-    castNumbers: true,
-  })
-  @QueryParams()
-  data: {
-    orderBy: string;
-    limit: number;
-    offset: number;
-  }) {
-    const delegates: Array<
-      BaseDelegateData & { infos?: any }
-    > = await this.delegatesModule.getDelegates(data);
-    for (const d of delegates) {
-      d.infos = await this.delegatesModule.calcDelegateInfo(d, delegates);
-    }
-    return {
-      delegates: OrderBy(data.orderBy)(delegates).slice(
-        0,
-        data.limit || Number.MAX_SAFE_INTEGER
-      ),
-    };
-  }
-
-  @Get('/fee')
-  @ValidateSchema()
-  public async getFee(@SchemaValid(schema.getFee, { castNumbers: true })
-  @QueryParams()
-  params: {
-    height?: number;
-  }) {
-    const f = this.system.getFees(params.height);
-    const { delegate } = f.fees;
-    delete f.fees;
-    return { ...f, ...{ fee: delegate } };
-  }
-
-  @Get('/get')
-  @ValidateSchema()
-  public async getDelegate(@SchemaValid(schema.getDelegate)
-  @QueryParams()
-  params: {
-    username: string;
-  }) {
-    const r = await this.delegatesModule
-      .getDelegate(params.username)
-      .catch(() => null);
-    if (!r) {
-      throw new HTTPError('Delegate not found', 404);
-    }
-    return {
-      ...r,
-      account: {
-        address: r.account.address,
-        balance: r.account.balance,
-        cmb: r.account.cmb,
-        missedBlocks: r.account.missedblocks,
-        producedBlocks: r.account.producedblocks,
-        rewards: r.account.rewards,
-        username: r.account.username,
-        vote: r.account.vote,
-        votesWeight: r.account.votesWeight,
-      },
-      info: await this.delegatesModule.calcDelegateInfo(r.account),
-    };
   }
 
   @Get('/voters')
@@ -327,7 +334,7 @@ export class DelegatesAPI {
   public async getForgingStatus(@SchemaValid(schema.forgingStatus)
   @QueryParams()
   params: {
-    publicKey: publicKey;
+    publicKey?: publicKey;
   }) {
     if (params.publicKey) {
       return {
@@ -350,7 +357,6 @@ export class DelegatesAPI {
   @Body()
   params: {
     secret: string;
-    publicKey: string;
   }) {
     const kp = this.crypto.makeKeyPair(
       crypto
@@ -360,9 +366,6 @@ export class DelegatesAPI {
     );
 
     const pk = kp.publicKey.toString('hex');
-    if (params.publicKey && pk !== params.publicKey) {
-      throw new HTTPError('Invalid passphrase', 200);
-    }
 
     if (this.forgeModule.isForgeEnabledOn(pk)) {
       throw new HTTPError('Forging is already enabled', 200);

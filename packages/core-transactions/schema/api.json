@@ -199,6 +199,10 @@
         "format": "address",
         "minLength": 1,
         "maxLength": 250
+      },
+      "queryType": {
+        "type": "string",
+        "enum": ["all", "sender", "receiver"]
       }
     }
   },

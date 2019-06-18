@@ -223,7 +223,7 @@ export class BlocksAPI {
   public async getFees(@SchemaValid(blocksSchema.getFees, { castNumbers: true })
   @QueryParams()
   params: {
-    height: number;
+    height?: number;
   }) {
     return this.systemModule.getFees(params.height);
   }

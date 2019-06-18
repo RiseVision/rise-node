@@ -54,7 +54,7 @@ describe('api/accounts', () => {
         .then((response) => {
           expect(response.body.success).is.false;
           expect(response.body.error).to.be.eq(
-            'Missing required property: address or publicKey'
+            '#/ - Missing required property: address'
           );
         });
     });
@@ -79,14 +79,13 @@ describe('api/accounts', () => {
           expect(response.body.account).to.be.deep.eq({
             address: '12333350760210376657R',
             balance: '108910891000000',
-            // multisignatures: null,
-            // publicKey:
-            //   'f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d',
             secondPublicKey: null,
-            secondSignature: 0,
-            // u_multisignatures: null,
+            secondSignature: false,
             unconfirmedBalance: '108910891000000',
-            unconfirmedSignature: 0,
+            unconfirmedSignature: false,
+            username: 'genesisDelegate1',
+            forgingPK:
+              'f4654563e34c93a22a90bcdb12dbe1edc42fc148cee5f21dde668748acf5f89d',
           });
         });
     });
@@ -112,15 +111,14 @@ describe('api/accounts', () => {
           expect(response.body.account).to.be.deep.eq({
             address,
             balance: '9500000000',
-            // multisignatures: null,
-            // publicKey: account.publicKey,
             secondPublicKey: (tx.asset as any).signature.publicKey.toString(
               'hex'
             ),
-            secondSignature: 1,
-            // u_multisignatures: null,
+            secondSignature: true,
             unconfirmedBalance: '9500000000',
-            unconfirmedSignature: 0,
+            unconfirmedSignature: false,
+            username: null,
+            forgingPK: null,
           });
         });
     });

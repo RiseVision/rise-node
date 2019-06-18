@@ -58,14 +58,6 @@ describe('apis/loaderAPI', () => {
     sandbox.restore();
   });
 
-  describe('getStatus', () => {
-    it("should return an object with the property 'loaded' equal to true", () => {
-      const ret = instance.getStatus();
-
-      expect(ret).to.be.deep.equal({ loaded: true });
-    });
-  });
-
   describe('getStatusSync', () => {
     it('should return an object with the properties: broadhash, consensus, height and syncing', () => {
       const appStateGet = sandbox
@@ -80,34 +72,19 @@ describe('apis/loaderAPI', () => {
         broadhash: 'fakeId',
         consensus: 'consensus',
         height: 1,
+        isStale: false,
         syncing: 'consensus',
       });
     });
   });
 
   describe('ping', () => {
-    it('should return false status if this.blocksModule.lastBlock in null', async () => {
+    it('should return empty obj', async () => {
       blocksModule.lastBlock = null;
 
       const ret = await instance.ping();
 
-      expect(ret).to.be.deep.equal({ success: false });
-    });
-
-    it('should return true status if secondsAgo < constants.blockReceiptTimeOut', async () => {
-      blocksModule.lastBlock.timestamp = 1000000000;
-
-      const ret = await instance.ping();
-
-      expect(ret).to.be.deep.equal({ success: true });
-    });
-
-    it('should return false status if secondsAgo >= constants.blockReceiptTimeOut', async () => {
-      blocksModule.lastBlock.timestamp = 0;
-
-      const ret = await instance.ping();
-
-      expect(ret).to.be.deep.equal({ success: false });
+      expect(ret).to.be.deep.equal({});
     });
   });
 });

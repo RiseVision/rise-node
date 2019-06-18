@@ -70,8 +70,8 @@ export class SignHooksListener extends ExtendableClass {
     return {
       ...accData,
       secondPublicKey: model.secondPublicKey,
-      secondSignature: model.secondSignature,
-      unconfirmedSignature: model.u_secondSignature,
+      secondSignature: model.secondSignature === 1,
+      unconfirmedSignature: model.u_secondSignature === 1,
     };
   }
 }

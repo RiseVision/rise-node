@@ -29,27 +29,19 @@ export class LoaderAPI {
   @inject(Symbols.modules.system)
   private systemModule: ISystemModule;
 
-  @Get('/')
-  public getStatus() {
-    // To remove? useless.
-    return {
-      loaded: true,
-    };
-  }
-
   @Get('/sync')
   public getStatusSync() {
     return {
       broadhash: this.systemModule.broadhash,
       consensus: this.appState.get('node.consensus'),
       height: this.blocksModule.lastBlock.height,
+      isStale: this.blocksModule.isStale(),
       syncing: this.loaderModule.isSyncing,
     };
   }
 
   @Get('/ping')
   public async ping() {
-    const isStale = this.blocksModule.isStale();
-    return { success: !isStale };
+    return {};
   }
 }
