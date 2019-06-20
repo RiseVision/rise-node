@@ -5,7 +5,6 @@ export const p2pSymbols = {
   constants: Symbol.for('rise.p2p.p2pConstants'),
   express: Symbol.for('rise.p2p.express'),
   server: Symbol.for('rise.p2p.server'),
-  socketIO: Symbols.generic.socketIO,
   // Tag your HTTP controller with this.
   controller: Symbol.for('rise.p2p.controller'),
   middleware: Symbol.for('rise.p2p.middleware'),

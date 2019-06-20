@@ -136,9 +136,7 @@ export class CoreModule extends BaseCoreModule<P2pConfig> {
       .bind(p2pSymbols.modules.transport)
       .to(TransportModule)
       .inSingletonScope();
-    this.container
-      .bind(p2pSymbols.socketIO)
-      .toConstantValue(socketIO(this.srv));
+
     this.container.bind(p2pSymbols.helpers.protoBuf).to(ProtoBufHelper);
 
     // Request factories.

@@ -48,7 +48,9 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .bind(APISymbols.class)
       .toConstantValue(limitsMiddleware)
       .whenTargetNamed(APISymbols.applyLimitsMiddleware);
-
+    this.container
+      .bind(APISymbols.socketIO)
+      .toConstantValue(socketIO(this.srv));
     this.container
       .bind(APISymbols.socketIOAPI)
       .to(SocketIOAPI)
