@@ -10,6 +10,7 @@ import {
   useContainer as useContainerForHTTP,
   useExpressServer,
 } from 'routing-controllers';
+import * as SocketIO from 'socket.io';
 import { APIConfig, APISymbols, limitsMiddleware, middleware } from './helpers';
 import { SocketIOAPI } from './socketio';
 import {
@@ -50,7 +51,7 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .whenTargetNamed(APISymbols.applyLimitsMiddleware);
     this.container
       .bind(APISymbols.socketIO)
-      .toConstantValue(socketIO(this.srv));
+      .toConstantValue(SocketIO(this.srv));
     this.container
       .bind(APISymbols.socketIOAPI)
       .to(SocketIOAPI)
