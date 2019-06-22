@@ -91,7 +91,7 @@ export class TransactionsAPI {
           [
             'senderIds',
             'recipientIds',
-            'senderPublicKeys',
+            'senderPubDatas',
             'recipientPublicKeys',
           ],
           param
@@ -417,7 +417,7 @@ export class TransactionsAPI {
       height: {},
       recipientId: {},
       senderId: {},
-      senderPublicKey: {},
+      senderPubData: {},
       timestamp: {},
       type: {},
     };
@@ -433,8 +433,8 @@ export class TransactionsAPI {
 
     whereClause.senderId[Op.eq] = body.senderId;
 
-    whereClause.senderPublicKey[Op.eq] = body.senderPublicKey
-      ? Buffer.from(body.senderPublicKey, 'hex')
+    whereClause.senderPubData[Op.eq] = body.senderPubData
+      ? Buffer.from(body.senderPubData, 'hex')
       : undefined;
 
     whereClause.timestamp[Op.lte] = body.toTimestamp;
@@ -487,13 +487,13 @@ export class TransactionsAPI {
       }
     }
 
-    if (Array.isArray(body.senderPublicKeys)) {
-      whereClause.senderPublicKey = {
-        [Op.in]: body.senderPublicKeys.map((pk) => Buffer.from(pk, 'hex')),
+    if (Array.isArray(body.senderPubDatas)) {
+      whereClause.senderPubData = {
+        [Op.in]: body.senderPubDatas.map((pk) => Buffer.from(pk, 'hex')),
       };
-      if (body.senderPublicKey) {
-        whereClause.senderPublicKey[Op.in].push(
-          Buffer.from(body.senderPublicKey, 'hex')
+      if (body.senderPubData) {
+        whereClause.senderPubData[Op.in].push(
+          Buffer.from(body.senderPubData, 'hex')
         );
       }
     }
