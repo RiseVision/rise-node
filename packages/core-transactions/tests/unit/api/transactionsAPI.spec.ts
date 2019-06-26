@@ -125,21 +125,15 @@ describe('apis/transactionsAPI', () => {
         { toHeight: '-1' },
         { fromUnixTime: '-1' },
         { toUnixTime: '-1' },
-        { height: '-1' },
-        { height: '0' },
         { recipientId: 'not an address' },
         { recipientIds: 'not an address,1R' },
-        { senderPublicKey: 'not a pkey' },
-        {
-          senderPublicKeys:
-            'not a pkey,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        },
-        { invalidParam: 'whatever' },
         { orderBy: 'not an ordering mechanism' },
       ];
 
       for (const invalid of invalidEntries) {
-        await expect(instance.getTransactions(invalid)).to.be.rejected;
+        await expect(instance.getTransactions(invalid)).to.be.rejectedWith(
+          `#/${Object.keys(invalid)[0]}`
+        );
       }
     });
 
