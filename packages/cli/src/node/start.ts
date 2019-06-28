@@ -3,7 +3,17 @@ import { leaf, option } from '@carnesen/cli';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getNodeDir, log, MIN, NETWORKS, NODE_DIR } from '../misc';
+import {
+  checkLernaExists,
+  checkNodeDirExists,
+  extractRiseNodeFile,
+  getLernaFilePath,
+  getNodeDir,
+  log,
+  MIN,
+  NETWORKS,
+  NODE_DIR,
+} from '../misc';
 
 export default leaf({
   commandName: 'start',
@@ -37,7 +47,10 @@ export default leaf({
   },
 
   async action({ config, network, foreground, show_logs }) {
-    if (!checkNodeDirExists() || !checkLernaExists()) {
+    if (!checkNodeDirExists(true)) {
+      extractRiseNodeFile();
+    }
+    if (!checkLernaExists()) {
       return;
     }
     if (!fs.existsSync(config)) {
@@ -52,7 +65,7 @@ export default leaf({
       let ready = false;
       await new Promise((resolve, reject) => {
         const cmd =
-          getLernaPath() +
+          getLernaFilePath() +
           ' run ' +
           `start:${network} ` +
           '--stream ' +
@@ -103,30 +116,3 @@ export default leaf({
     }
   },
 });
-
-function checkNodeDirExists(): boolean {
-  if (!fs.existsSync(NODE_DIR) || !fs.lstatSync(NODE_DIR).isDirectory()) {
-    console.log(`Error: directory '${NODE_DIR}' doesn't exist.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise node download');
-    return false;
-  }
-  return true;
-}
-
-function checkLernaExists(): boolean {
-  const file = getLernaPath();
-  if (!fs.existsSync(file)) {
-    console.log("Error: can't find lerna exacutable in 'rise-node'.");
-    console.log('You can download the latest version using:');
-    console.log('  ./rise node download');
-    return false;
-  }
-  return true;
-}
-
-function getLernaPath(): string {
-  return path.resolve(
-    path.join(__dirname, NODE_DIR, 'node_modules', '.bin', 'lerna')
-  );
-}

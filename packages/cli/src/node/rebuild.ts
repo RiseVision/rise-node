@@ -1,16 +1,19 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import * as fs from 'fs';
-import { getNodeDir, NODE_DIR } from '../misc';
+import {
+  checkNodeDirExists,
+  extractRiseNodeFile,
+  getNodeDir,
+} from '../misc';
 
 export default leaf({
   commandName: 'rebuild',
   description: 'Rebuilds the native node_modules for the current OS.',
 
   async action() {
-    if (!checkNodeDirExists()) {
-      return;
+    if (!checkNodeDirExists(true)) {
+      extractRiseNodeFile();
     }
 
     try {
@@ -19,20 +22,11 @@ export default leaf({
       });
     } catch (err) {
       console.log(
-        'Error while building the container. Examine the log using --show_logs.'
+        'Error while rebuilding native node modules. ' +
+          'Examine the log using --show_logs.'
       );
       console.error(err);
       process.exit(1);
     }
   },
 });
-
-function checkNodeDirExists(): boolean {
-  if (!fs.existsSync(NODE_DIR) || !fs.lstatSync(NODE_DIR).isDirectory()) {
-    console.log(`Error: directory '${NODE_DIR}' doesn't exist.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise node download');
-    return false;
-  }
-  return true;
-}

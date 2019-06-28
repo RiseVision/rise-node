@@ -1,8 +1,12 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
-import * as fs from 'fs';
-import { DOCKER_DIR, getDockerDir, log, MIN } from '../misc';
+import {
+  checkDockerDirExists,
+  getDockerDir,
+  log,
+  MIN,
+} from '../misc';
 
 export default leaf({
   commandName: 'build',
@@ -97,14 +101,4 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
 
   log('build done');
   console.log('Build complete');
-}
-
-function checkDockerDirExists(): boolean {
-  if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
-    console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise docker download');
-    return false;
-  }
-  return true;
 }

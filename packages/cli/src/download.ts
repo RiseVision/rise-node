@@ -7,9 +7,8 @@ import * as https from 'https';
 import {
   DOCKER_FILE,
   DOCKER_URL,
-  getDockerDir,
+  extractRiseNodeFile,
   isDevEnd,
-  NODE_FILE,
   NODE_VERSION,
 } from './misc';
 
@@ -58,8 +57,7 @@ export default leaf({
     console.log(`Extracting ${DOCKER_FILE}`);
     execSync(`tar -zxf ${DOCKER_FILE}`);
 
-    console.log(`Extracting ${NODE_FILE}`);
-    execSync(`cd ${getDockerDir()} && tar -zxf ${NODE_FILE}`);
+    extractRiseNodeFile();
 
     await new Promise((resolve) => {
       fs.unlink(DOCKER_FILE, resolve);
