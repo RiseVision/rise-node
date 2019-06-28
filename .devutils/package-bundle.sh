@@ -3,7 +3,7 @@
 echo "Creating /dist/rise-node"
 
 # cleanup
-mkdir -p /dist
+mkdir -p dist
 rm -Rf dist/*
 
 NODE=dist/rise-docker/rise-node
