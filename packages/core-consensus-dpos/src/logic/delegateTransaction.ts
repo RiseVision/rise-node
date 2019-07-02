@@ -28,10 +28,10 @@ import { AccountsModelForDPOS, DelegatesModel } from '../models/';
 const delegateAssetSchema = require('../../schema/asset.json');
 
 // tslint:disable-next-line interface-over-type-literal
-export type DelegateAsset = {
+export type DelegateAsset<T = Buffer> = {
   delegate: {
     username: string;
-    forgingPK: Buffer & As<'publicKey'>;
+    forgingPK: T & As<'publicKey'>;
   };
 };
 
@@ -357,10 +357,16 @@ export class RegisterDelegateTransaction extends BaseTx<
   }
 
   public objectNormalize(
-    tx: IBaseTransaction<DelegateAsset, bigint>
-  ): IBaseTransaction<DelegateAsset, bigint> {
+    tx: IBaseTransaction<DelegateAsset<Buffer | string>, bigint>
+  ): IBaseTransaction<DelegateAsset<Buffer>, bigint> {
     removeEmptyObjKeys(tx.asset.delegate);
 
+    if (typeof tx.asset.delegate.forgingPK === 'string') {
+      tx.asset.delegate.forgingPK = Buffer.from(
+        tx.asset.delegate.forgingPK,
+        'hex'
+      ) as Buffer & As<'publicKey'>;
+    }
     const report = this.schema.validate(tx.asset.delegate, delegateAssetSchema);
     if (!report) {
       throw new Error(
@@ -371,7 +377,7 @@ export class RegisterDelegateTransaction extends BaseTx<
       );
     }
 
-    return tx;
+    return tx as IBaseTransaction<DelegateAsset<Buffer>, bigint>;
   }
 
   // tslint:disable-next-line max-line-length

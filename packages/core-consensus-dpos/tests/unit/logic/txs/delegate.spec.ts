@@ -460,6 +460,21 @@ describe('logic/transactions/delegate', () => {
         instance.objectNormalize(tx);
       }).to.throw(/Failed to validate delegate schema/);
     });
+    it('should convert string forgingPK to Buffer', () => {
+      const origPubKey = tx.asset.delegate.forgingPK;
+      // @ts-ignore
+      tx.asset.delegate.forgingPK = tx.asset.delegate.forgingPK.toString('hex');
+      const toRet = instance.objectNormalize(tx);
+      expect(toRet.asset.delegate.forgingPK).deep.eq(origPubKey);
+    });
+    it('should fail ifstring forgingPK is not a valid Buffer pubkey', () => {
+      // @ts-ignore
+      tx.asset.delegate.forgingPK =
+        tx.asset.delegate.forgingPK.toString('hex') + 'aa';
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw(/pass validation for format publicKey/);
+    });
   });
 
   describe('dbSave', () => {
