@@ -69,9 +69,9 @@ export function checkDockerDirExists(): boolean {
 }
 
 export function extractRiseNodeFile() {
-  const path = getNodeFilePath()
-  if (!fs.existsSync(path)) {
-    throw new Error(`File ${path} doesn't exist`);
+  const filePath = getNodeFilePath();
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File ${filePath} doesn't exist`);
   }
 
   console.log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
@@ -91,7 +91,5 @@ export function getLernaFilePath(): string {
  * Returns the path to the rise-node.tar.gz file.
  */
 export function getNodeFilePath(): string {
-  return path.resolve(
-    path.join(__dirname, DOCKER_DIR, NODE_FILE)
-  );
+  return path.resolve(path.join(__dirname, DOCKER_DIR, NODE_FILE));
 }

@@ -1,11 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import {
-  checkNodeDirExists,
-  extractRiseNodeFile,
-  getNodeDir,
-} from '../misc';
+import { checkNodeDirExists, extractRiseNodeFile, getNodeDir } from '../misc';
 
 export default leaf({
   commandName: 'rebuild',

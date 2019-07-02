@@ -1,12 +1,7 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
-import {
-  checkDockerDirExists,
-  getDockerDir,
-  log,
-  MIN,
-} from '../misc';
+import { checkDockerDirExists, getDockerDir, log, MIN } from '../misc';
 
 export default leaf({
   commandName: 'build',
