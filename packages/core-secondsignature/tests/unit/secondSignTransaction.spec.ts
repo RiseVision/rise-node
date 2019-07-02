@@ -355,6 +355,30 @@ describe('logic/transactions/secondSignature', () => {
       const retVal = instance.objectNormalize(tx);
       expect(retVal).to.be.deep.equal(tx);
     });
+    it('should parse publicKey as hex if valid', () => {
+      const origPubKey = tx.asset.signature.publicKey;
+      // @ts-ignore
+      tx.asset.signature.publicKey = tx.asset.signature.publicKey.toString(
+        'hex'
+      );
+      const retVal = instance.objectNormalize(tx);
+      expect(retVal.asset.signature.publicKey).deep.eq(origPubKey);
+
+      // lets try with an invalid hex encoded pubkey
+      // @ts-ignore
+      tx.asset.signature.publicKey = origPubKey.toString('hex') + 'aa';
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw(/Object didn't pass validation for format publicKeyBuf/);
+
+      // and another one
+      // @ts-ignore
+      tx.asset.signature.publicKey =
+        origPubKey.toString('hex').slice(0, -1) + 'l';
+      expect(() => {
+        instance.objectNormalize(tx);
+      }).to.throw(/Object didn't pass validation for format publicKeyBuf/);
+    });
   });
 
   describe('dbSave', () => {

@@ -22,7 +22,7 @@ const secondSignatureSchema = require('../schema/secondSignature.json');
 // tslint:disable-next-line interface-over-type-literal
 export type SecondSignatureAsset<T = Buffer> = {
   signature: {
-    publicKey: Buffer;
+    publicKey: T;
   };
 };
 
@@ -218,16 +218,17 @@ export class SecondSignatureTransaction extends BaseTx<
   public objectNormalize(
     tx: IBaseTransaction<SecondSignatureAsset<string | Buffer>, bigint>
   ): IBaseTransaction<SecondSignatureAsset, bigint> {
-    const report = this.schema.validate(
-      tx.asset.signature,
-      secondSignatureSchema
-    );
     if (typeof tx.asset.signature.publicKey === 'string') {
       tx.asset.signature.publicKey = Buffer.from(
         tx.asset.signature.publicKey,
         'hex'
       );
     }
+
+    const report = this.schema.validate(
+      tx.asset.signature,
+      secondSignatureSchema
+    );
     if (!report) {
       throw new Error(
         `Failed to validate signature schema: ${this.schema
@@ -237,7 +238,7 @@ export class SecondSignatureTransaction extends BaseTx<
       );
     }
 
-    return tx;
+    return tx as IBaseTransaction<SecondSignatureAsset<Buffer>, bigint>;
   }
 
   // tslint:disable-next-line max-line-length
