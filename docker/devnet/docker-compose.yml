@@ -42,6 +42,8 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: rise
       POSTGRES_DB: rise_db
+    ports:
+      - '5432:5432'
     networks:
       - overlay
     restart: on-failure
