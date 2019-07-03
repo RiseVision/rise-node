@@ -28,7 +28,7 @@ export default leaf({
 
   async action({ version }) {
     const url = isDevEnd()
-      ? 'http://localhost:8080/rise-docker.tar.gz'
+      ? `http://localhost:8080/${DOCKER_FILE}`
       : DOCKER_URL + version + '/' + DOCKER_FILE;
 
     console.log(`Downloading ${url}`);

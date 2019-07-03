@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
-echo "Creating /dist/rise-node"
-
-# cleanup
-mkdir -p dist
-rm -Rf dist/*
-
+DIST=dist
 NODE=dist/rise-docker/rise-node
 DOCKER=dist/rise-docker
+
+echo "Creating ./dist/rise-node"
+
+# cleanup
+mkdir -p $DIST
+rm -Rf $DIST/*
 
 ## create rise-docker.tar.gz
 mkdir -p $NODE
@@ -24,19 +25,19 @@ rsync -Rr packages/**/sql $NODE
 rsync -Rr packages/**/package.json $NODE
 
 # copy the rise manager file to the dist root
-cp packages/cli/dist/rise dist
+cp packages/cli/dist/rise $DIST
 # copy current node_modules as cache to the node root
 cp -R node_modules $NODE
 
 echo "Creating rise-node.tar.gz"
-pushd $DOCKER
+pushd $DOCKER || exit
 tar -czf rise-node.tar.gz rise-node
 rm -R rise-node
-popd
+popd || exit
 
 ## create rise-docker.tar.gz
 echo "Creating /dist/rise-docker"
-pushd docker/bundle
+pushd docker/bundle || exit
 
 # copy docker files
 cp config.json ../../$DOCKER
@@ -44,14 +45,14 @@ cp docker-compose.yml ../../$DOCKER
 cp Dockerfile ../../$DOCKER
 cp Dockerfile.postgres ../../$DOCKER
 
-popd
+popd || exit
 
 echo "Creating rise-docker.tar.gz"
-pushd dist
+pushd dist || exit
 
 tar -czf rise-docker.tar.gz rise-docker rise
 
-popd
+popd || exit
 
 # cleanup
 rm -R $DOCKER
