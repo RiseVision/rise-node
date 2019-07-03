@@ -10,13 +10,14 @@ import download from './download';
 import { VERSION } from './misc';
 import nodeRebuild from './node/rebuild';
 import nodeStart from './node/start';
+import nodeStop from './node/stop';
 
 dot.config();
 
 export const node = branch({
   commandName: 'node',
   description: 'Running a node in the host OS',
-  subcommands: [nodeStart, nodeRebuild],
+  subcommands: [nodeStart, nodeRebuild, nodeStop],
 });
 
 export const docker = branch({

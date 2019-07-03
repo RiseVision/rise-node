@@ -20,6 +20,7 @@ export const DOCKER_DIR = 'rise-docker';
 export const DOCKER_URL =
   'https://github.com/RiseVision/rise-node-priv/releases/download/';
 export const DOCKER_FILE = 'rise-docker.tar.gz';
+export const PID_FILE = '/tmp/rise-node.pid';
 
 export function isDevEnd() {
   return process.env.DEV;

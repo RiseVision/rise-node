@@ -13,6 +13,7 @@ import {
   MIN,
   NETWORKS,
   NODE_DIR,
+  PID_FILE,
 } from '../misc';
 
 export default leaf({
@@ -79,6 +80,7 @@ export default leaf({
           timeout: 2 * MIN,
         });
 
+        // TODO extract
         function line(data: string) {
           // output
           if (showLogs) {
@@ -96,6 +98,8 @@ export default leaf({
           }
         }
 
+        // save the PID
+        fs.writeFileSync(PID_FILE, proc.pid, { encoding: 'utf8' });
         proc.stdout.on('data', line);
         proc.stderr.on('data', line);
         proc.on('close', (code) => {
