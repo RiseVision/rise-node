@@ -16,7 +16,9 @@ EXPOSE 9998
 EXPOSE 9229
 
 # rebuild native modules
-# uncomment and run once, on one node only (docker-compose.yml)
+# - uncomment and run once
+# - on one node only (docker-compose.yml)
+# - comment out any other CMD commands (in this file)
 #CMD npm rebuild
 
 # debug with --inspect
