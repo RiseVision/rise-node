@@ -9,6 +9,7 @@ import {
   extractRiseNodeFile,
   getLernaFilePath,
   getNodeDir,
+  isDevEnv,
   log,
   MIN,
   NETWORKS,
@@ -77,7 +78,7 @@ export default leaf({
         // run the command
         const proc = exec(cmd, {
           cwd: getNodeDir(),
-          timeout: 2 * MIN,
+          timeout: foreground ? null : 2 * MIN,
         });
 
         // TODO extract
@@ -98,8 +99,10 @@ export default leaf({
           }
         }
 
-        // save the PID
-        fs.writeFileSync(PID_FILE, proc.pid, { encoding: 'utf8' });
+        // save the PID (not in DEV)
+        if (!isDevEnv()) {
+          fs.writeFileSync(PID_FILE, proc.pid, { encoding: 'utf8' });
+        }
         proc.stdout.on('data', line);
         proc.stderr.on('data', line);
         proc.on('close', (code) => {
