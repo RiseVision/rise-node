@@ -53,7 +53,15 @@ export async function createContainer(
   ),
   block: SignedAndChainedBlockType = JSON.parse(
     fs.readFileSync(`${__dirname}/../assets/genesisBlock.json`, 'utf8')
-  )
+  ),
+  constants: any = {
+    '@risevision/core-accounts': {
+      addressRegex: '^(([0-9]{1,20}R)|(tise1[a-z0-9]{10,}))$',
+    },
+    '@risevision/core-transactions': {
+      txIDRegex: '^[0-9]+$',
+    },
+  }
 ): Promise<Container> {
   await tearDownContainer();
   // global.gc();
@@ -69,6 +77,12 @@ export async function createContainer(
   for (const sortedModule of sortedModules) {
     sortedModule.config = config;
     sortedModule.container = container;
+    if (constants[sortedModule.name]) {
+      sortedModule.constants = {
+        ...sortedModule.constants,
+        ...constants[sortedModule.name],
+      };
+    }
     sortedModule.sortedModules = sortedModules;
     sortedModule.addElementsToContainer();
   }

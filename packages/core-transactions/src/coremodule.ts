@@ -2,6 +2,7 @@ import { APISymbols } from '@risevision/core-apis';
 import { ModelSymbols } from '@risevision/core-models';
 import { p2pSymbols } from '@risevision/core-p2p';
 import { BaseCoreModule, Symbols } from '@risevision/core-types';
+import * as z_schema from 'z-schema';
 import { TransactionsAPI } from './api';
 import { constants } from './helpers';
 import { TXLoader } from './loader';
@@ -87,6 +88,14 @@ export class CoreModule extends BaseCoreModule {
       .inSingletonScope();
 
     this.container.bind(TXSymbols.constants).toConstantValue(this.constants);
+
+    if (!this.constants.txIDRegex) {
+      throw new Error('txIDRegex not provided in constants');
+    }
+    const txIDRegexObj = new RegExp(this.constants.txIDRegex);
+    z_schema.registerFormat('txId', (value: string) => {
+      return txIDRegexObj.test(value);
+    });
   }
 
   public async initAppElements() {
