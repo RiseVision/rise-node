@@ -144,17 +144,6 @@ export class CoreModule extends BaseCoreModule<any> {
       toSet[type] = tx;
     }
 
-    // Register schema validators
-    z_schema.registerFormat('txId', (value: string) => {
-      return /^[0-9]+$/.test(value);
-    });
-
-    z_schema.registerFormat('address', (str: string) => {
-      // tslint:disable-next-line
-      // TODO fix validation for the v2 address format
-      return /^(([0-9]{1,20}R)|((t|r)ise1[a-z0-9]{10,}))$/.test(str);
-    });
-
     await this.container
       .get<TransactionsHooks>(RISESymbols.hooks.txHooks)
       .hookMethods();
