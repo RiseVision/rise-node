@@ -21,12 +21,14 @@ import {
   TXSymbols,
 } from '@risevision/core-transactions';
 import { Address, IAccountsModule, Symbols } from '@risevision/core-types';
-import { IKeypair, Rise } from 'dpos-offline';
+import { dposOffline, IKeypair, Rise } from 'dpos-offline';
 import { Op } from 'sequelize';
 import {
   confirmTransactions,
   createRandomWallet,
   createRegDelegateTransactionV2,
+  createSendTransactionV1,
+  createWalletV2,
   getRandomDelegateWallet,
   tempDelegateWallets,
 } from '../common/utils';
@@ -61,6 +63,30 @@ describe('delegatesWithMultipleForgingKEys', () => {
     });
     delegateUsername = acc.username;
     expect(delegateUsername).not.empty;
+  });
+
+  it('should allow registering a delegate', async () => {
+    const testWallet = dposOffline.Rise.deriveKeypair(
+      'spawn patient federal oxygen despair liquid protect desert check warfare shuffle truly'
+    );
+
+    const addr = dposOffline.Rise.calcAddress(testWallet.publicKey);
+    await createSendTransactionV1(1, 1e10, delegateWallet, addr);
+
+    // createSendTransactionV1(1, 1e10, delegateWallet)
+    const tx = await createRegDelegateTransactionV2(
+      testWallet,
+      'test',
+      Buffer.from(
+        'c3c78ef27a9cf7937c09ee4e4ea49aabdaf6bbf5f48d21df35b9d26347729e10',
+        'hex'
+      ) as any
+    );
+    await confirmTransactions([tx], false);
+
+    const delegate = await delegatesModule.getDelegate('test');
+    expect(delegate.account.isDelegate).eq(1);
+    expect(delegate.account.username).eq('test');
   });
 
   it('should return one forgingPK.', async () => {

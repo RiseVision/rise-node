@@ -4,6 +4,9 @@ module.exports = {
     dposFeesSwitchHeight: 2000000,
     dposRandSwitchRound: 2000000,
   },
+  '@risevision/core-accounts': {
+    addressRegex: '^(([0-9]{1,20}R)|((t|r)ise1[a-z0-9]{10,}))$',
+  },
   '@risevision/core': {
     amountBytes: 8,
     epochTime: new Date('2016-05-24T17:00:00.000Z'),
@@ -103,5 +106,6 @@ module.exports = {
     maxSharedTxs: 300,
     txTimeout: 10800,
     unconfirmedInPool: 30,
+    txIDRegex: '^[0-9]+$',
   },
 };

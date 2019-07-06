@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { Rise, RiseV1Transaction, RiseV2Transaction } from 'dpos-offline';
 import { Sequelize } from 'sequelize-typescript';
 import * as sinon from 'sinon';
 import { SinonSandbox } from 'sinon';
@@ -32,7 +33,7 @@ import {
   SignedAndChainedBlockType,
   Symbols,
 } from '@risevision/core-types';
-import { Address, IKeypair, RiseTransaction } from 'dpos-offline';
+import { Address, IKeypair } from 'dpos-offline';
 import { As } from 'type-tagger';
 import {
   confirmTransactions,
@@ -271,7 +272,7 @@ describe('attackVectors/edgeCases', () => {
           senderAccount,
           createRandomWallet().address
         );
-        tx.amount = -1;
+        tx.amount = '-1';
         const tx2 = await createSendTransactionV1(
           0,
           2,
@@ -650,7 +651,7 @@ describe('attackVectors/edgeCases', () => {
 
   describe('account balance protection (<0)', () => {
     const fee = 10000000;
-    let tx: RiseTransaction<any>;
+    let tx: RiseV2Transaction<any>;
     let chainModule: BlocksModuleChain;
     let block: SignedAndChainedBlockType;
     let accsMap: any;
@@ -737,7 +738,7 @@ describe('attackVectors/edgeCases', () => {
   });
 
   describe('block with an invalid tx', () => {
-    let tx: RiseTransaction<any>;
+    let tx: RiseV2Transaction<any>;
     let chainModule: BlocksModuleChain;
     let block: SignedAndChainedBlockType;
     let accsMap: any;
@@ -763,7 +764,7 @@ describe('attackVectors/edgeCases', () => {
       sandbox.restore();
     });
     it('databaselayer should reject whole block if tx has negative amount', async () => {
-      tx.amount = -1;
+      tx.amount = '-1';
       sandbox.stub(blockLogic, 'objectNormalize').callsFake((t) => t as any);
       block = await initializer.generateBlock([tx]);
       await expect(
@@ -787,7 +788,7 @@ describe('attackVectors/edgeCases', () => {
       expect(recAcc.balance).eq(funds);
     });
     it('databaselayer should reject whole block if tx has negative amount', async () => {
-      tx.fee = -1;
+      tx.fee = '-1';
       sandbox.stub(blockLogic, 'objectNormalize').callsFake((t) => t as any);
       block = await initializer.generateBlock([tx]);
       await expect(
@@ -812,10 +813,22 @@ describe('attackVectors/edgeCases', () => {
 
   it('should disallow tx with invalid sign', async () => {
     const tx = await createSendTransactionV1(0, 10, senderAccount, '1R');
-    tx.signature = Buffer.alloc(64).fill(0xab) as Buffer & As<'signature'>;
+    tx.signatures = [Buffer.alloc(64).fill(0xab) as Buffer & As<'signature'>];
 
     await expect(confirmTransactions([tx], false)).rejectedWith(
       'signature is not valid'
+    );
+  });
+
+  it('should disallow tx with recipient on another network', async () => {
+    const tx = await createSendTransactionV1(
+      0,
+      10,
+      senderAccount,
+      Rise.calcAddress(senderAccount.publicKey, 'dev')
+    );
+    await expect(confirmTransactions([tx], false)).rejectedWith(
+      'format address'
     );
   });
 });

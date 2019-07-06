@@ -16,7 +16,7 @@ import { AccountsSymbols } from './symbols';
 
 export class CoreModule extends BaseCoreModule<AppConfig> {
   public configSchema = {};
-  public constants = {};
+  public constants: { addressRegex: string } = { addressRegex: null };
 
   public addElementsToContainer(): void {
     this.container
@@ -40,6 +40,15 @@ export class CoreModule extends BaseCoreModule<AppConfig> {
       .bind(AccountsSymbols.__internal.loaderHooks)
       .to(AccountsLoaderSubscriber)
       .inSingletonScope();
+
+    if (!this.constants.addressRegex) {
+      throw new Error('Address Regexp not provided in constants file');
+    }
+
+    const addressRegexObj = new RegExp(this.constants.addressRegex);
+    z_schema.registerFormat('address', (str: string) => {
+      return addressRegexObj.test(str);
+    });
   }
 
   public async initAppElements() {
