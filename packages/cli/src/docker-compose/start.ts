@@ -117,7 +117,9 @@ async function dockerRun(
   foreground: boolean,
   showLogs: boolean
 ) {
-  console.log('Starting the container...');
+  console.log(`Using config ${config}`)
+
+  console.log('Starting containers...');
   let ready = false;
   await new Promise((resolve, reject) => {
     const cmd = 'docker-compose up';

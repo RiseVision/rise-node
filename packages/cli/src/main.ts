@@ -11,24 +11,25 @@ import { VERSION } from './misc';
 import nodeRebuild from './node/rebuild';
 import nodeStart from './node/start';
 import nodeStop from './node/stop';
+import exportDB from './node/export-db';
 
 dot.config();
 
 export const node = branch({
   commandName: 'node',
-  description: 'Running a node in the host OS',
-  subcommands: [nodeStart, nodeRebuild, nodeStop],
+  description: 'Node running on the host OS',
+  subcommands: [nodeStart, nodeRebuild, nodeStop, exportDB],
 });
 
 export const docker = branch({
   commandName: 'docker',
-  description: 'Running a node in Docker',
+  description: 'Node running in Docker',
   subcommands: [dockerStart, dockerStop, dockerBuild],
 });
 
 export const dockerCompose = branch({
   commandName: 'docker-compose',
-  description: 'Running the DB and a node in Docker',
+  description: 'Node and DB running in Docker',
   subcommands: [dockerComposeStart, dockerComposeStop],
 });
 
@@ -51,7 +52,9 @@ export const root = branch({
 
     # running a node in the host OS
     ./rise node start
+    ./rise node stop
     ./rise node rebuild-native
+    ./rise node export-db
 
     # running a node in Docker
     ./rise docker build

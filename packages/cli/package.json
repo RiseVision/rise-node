@@ -32,6 +32,8 @@
   "dependencies": {
     "dotenv": "^8.0.0",
     "env": "^0.0.2",
-    "fs-extra": "^8.0.1"
+    "extend": "^3.0.2",
+    "fs-extra": "^8.0.1",
+    "mkdirp": "^0.5.1"
   }
 }

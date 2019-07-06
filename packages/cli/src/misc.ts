@@ -1,37 +1,44 @@
 // tslint:disable:no-console
 import { execSync } from 'child_process';
 import * as debug from 'debug';
+import * as extend from 'extend';
 import * as fs from 'fs';
 import * as path from 'path';
 
 export const VERSION = 'v1.0.0';
 export const NODE_VERSION = 'v2.0.0-beta2';
 
+// TODO single enum for NETWORKS and NetworkType
 export const NETWORKS = ['mainnet', 'testnet', 'devnet'];
+export type TNetworkType = 'mainnet' | 'testnet' | 'devnet';
 
 export const SEC = 1000;
 export const MIN = 60 * SEC;
 export const log = debug('rise-cli');
 
-export const NODE_DIR = 'rise-docker/rise-node';
+export const DOCKER_DIR = 'rise-docker';
+export const DIST_FILE = 'rise-docker.tar.gz';
+
+// TODO update
+export const NODE_DIR = `${DOCKER_DIR}/rise-node`;
 export const NODE_FILE = 'rise-node.tar.gz';
 
-export const DOCKER_DIR = 'rise-docker';
-export const DOCKER_URL =
-  'https://github.com/RiseVision/rise-node-priv/releases/download/';
-export const DOCKER_FILE = 'rise-docker.tar.gz';
-export const PID_FILE = '/tmp/rise-node.pid';
+export const DOWNLOAD_URL =
+  'https://github.com/RiseVision/rise-node/releases/download/';
+export const LOCK_FILE = '/tmp/rise-node.pid.lock';
+export const BACKUP_LOCK_FILE = '/tmp/rise-backup.lock';
+export const BACKUPS_DIR = 'data/backups';
 
-export function isDevEnd() {
+export function isDevEnv() {
   return process.env.DEV;
 }
 
 export function getDockerDir(): string {
-  return path.resolve(__dirname, DOCKER_DIR);
+  return path.resolve(process.cwd(), DOCKER_DIR);
 }
 
 export function getNodeDir(): string {
-  return path.resolve(__dirname, DOCKER_DIR);
+  return path.resolve(process.cwd(), NODE_DIR);
 }
 
 export function checkNodeDirExists(silent = false): boolean {
@@ -84,7 +91,7 @@ export function extractRiseNodeFile() {
  */
 export function getLernaFilePath(): string {
   return path.resolve(
-    path.join(__dirname, NODE_DIR, 'node_modules', '.bin', 'lerna')
+    path.join(process.cwd(), NODE_DIR, 'node_modules', '.bin', 'lerna')
   );
 }
 
@@ -92,5 +99,106 @@ export function getLernaFilePath(): string {
  * Returns the path to the rise-node.tar.gz file.
  */
 export function getNodeFilePath(): string {
-  return path.resolve(path.join(__dirname, DOCKER_DIR, NODE_FILE));
+  return path.resolve(path.join(process.cwd(), DOCKER_DIR, NODE_FILE));
+}
+
+/**
+ * Returns the PID of currently running node.
+ *
+ * Performs garbage collection if the process isn't running any more.
+ */
+export function getPID(): string | false {
+  try {
+    const pid = fs.readFileSync(LOCK_FILE, { encoding: 'utf8' });
+    const exists = execSync(`ps -p ${pid} -o pid=`);
+    if (!exists) {
+      fs.unlinkSync(LOCK_FILE);
+      return false;
+    }
+    return pid;
+  } catch {
+    // empty
+  }
+  return false;
+}
+
+/**
+ * Checks if Postgres tools are intalled and runnable.
+ */
+export function hasLocalPostgres(): boolean {
+  const toCheck = ['dropdb', 'vacuumdb', 'createdb', 'pg_dump', 'psql'];
+  try {
+    for (const file of toCheck) {
+      execSync(`which ${file}`);
+    }
+  } catch {
+    return false;
+  }
+  return true;
+}
+
+// TODO only a partial config, ideally import from /packages/core
+export interface IConfig {
+  db: {
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    password: string;
+  };
+}
+
+/**
+ * Returns a merged config (user's + network's).
+ */
+export function mergeConfig(
+  configPath: string,
+  networtType: TNetworkType
+): IConfig {
+  checkNodeDirExists();
+  const parentConfigPath = path.resolve(
+    getNodeDir(),
+    'packages',
+    'rise',
+    'etc',
+    networtType,
+    'config.json'
+  );
+  if (!fs.existsSync(parentConfigPath)) {
+    throw new Error(`Parent config ${parentConfigPath} doesn't exist`);
+  }
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Config ${configPath} doesn't exist`);
+  }
+  const config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }));
+  const parentConfig = JSON.parse(
+    fs.readFileSync(parentConfigPath, { encoding: 'utf8' })
+  );
+  return extend(true, parentConfig, config);
+}
+
+export function getBackupsDir(): string {
+  return path.resolve(process.cwd(), BACKUPS_DIR);
+}
+
+export function getBackupLockFile(): string {
+  return path.resolve(process.cwd(), BACKUP_LOCK_FILE);
+}
+
+export function execCmd(
+  cmd: string,
+  errorMsg?: string | null,
+  envVars?: { [name: string]: string }
+): string {
+  errorMsg = errorMsg || `Command '${cmd} failed`;
+  try {
+    log(`$ ${cmd}`);
+    return execSync(cmd, {
+      env: { ...process.env, ...envVars },
+    }).toString('utf8');
+  } catch (err) {
+    log(err);
+    console.log(errorMsg);
+    throw err;
+  }
 }

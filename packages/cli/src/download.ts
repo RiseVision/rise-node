@@ -5,10 +5,10 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
 import {
-  DOCKER_FILE,
-  DOCKER_URL,
+  DIST_FILE,
+  DOWNLOAD_URL,
   extractRiseNodeFile,
-  isDevEnd,
+  isDevEnv,
   NODE_VERSION,
 } from './misc';
 
@@ -27,13 +27,13 @@ export default leaf({
   },
 
   async action({ version }) {
-    const url = isDevEnd()
-      ? `http://localhost:8080/${DOCKER_FILE}`
-      : DOCKER_URL + version + '/' + DOCKER_FILE;
+    const url = isDevEnv()
+      ? `http://localhost:8080/${DIST_FILE}`
+      : DOWNLOAD_URL + version + '/' + DIST_FILE;
 
     console.log(`Downloading ${url}`);
 
-    const file = fs.createWriteStream(DOCKER_FILE);
+    const file = fs.createWriteStream(DIST_FILE);
     // TODO show progress ?
     await new Promise((resolve, reject) => {
       // use plain http when in DEV mode
@@ -46,7 +46,7 @@ export default leaf({
           });
         })
         .on('error', (err) => {
-          fs.unlink(DOCKER_FILE, () => {
+          fs.unlink(DIST_FILE, () => {
             reject(err.message);
           });
         });
@@ -54,13 +54,13 @@ export default leaf({
 
     console.log('Download completed');
 
-    console.log(`Extracting ${DOCKER_FILE}`);
-    execSync(`tar -zxf ${DOCKER_FILE}`);
+    console.log(`Extracting ${DIST_FILE}`);
+    execSync(`tar -zxf ${DIST_FILE}`);
 
     extractRiseNodeFile();
 
     await new Promise((resolve) => {
-      fs.unlink(DOCKER_FILE, resolve);
+      fs.unlink(DIST_FILE, resolve);
     });
 
     console.log('Done');
