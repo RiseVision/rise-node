@@ -5,11 +5,13 @@ import * as fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import * as path from 'path';
 import {
+  BACKUP_LOCK_FILE,
   BACKUPS_DIR,
   checkNodeDirExists,
   execCmd,
   extractRiseNodeFile,
   getBackupLockFile,
+  getBackupPID,
   getBackupsDir,
   hasLocalPostgres,
   log,
@@ -18,6 +20,7 @@ import {
   NODE_DIR,
   TNetworkType,
 } from '../misc';
+import nodeStop from './stop';
 
 export default leaf({
   commandName: 'export-db',
@@ -42,7 +45,7 @@ export default leaf({
     if (!checkConditions(config)) {
       return false;
     }
-    // TODO create a BACKUP_LOCK_FILE
+    fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
     mkdirpSync(getBackupsDir());
     const mergedConfig = mergeConfig(config, network);
     const { host, port, database, user, password } = mergedConfig.db;
@@ -52,7 +55,6 @@ export default leaf({
     assert(database);
     assert(password);
 
-    // tslint:disable object-literal-sort-keys
     const envVars = {
       PGDATABASE: database,
       PGHOST: host,
@@ -60,55 +62,62 @@ export default leaf({
       PGPORT: port.toString(),
       PGUSER: user,
     };
-    // tslint:enable object-literal-sort-keys
 
-    // TODO catch exceptions and print a nice msg
-    execCmd(
-      `dropdb --if-exists "${targetDB}"`,
-      `Cannot drop ${targetDB}`,
-      envVars
-    );
-    execCmd(
-      `vacuumdb --analyze --full "${database}"`,
-      `Cannot vacuum ${database}`,
-      envVars
-    );
-    execCmd(`createdb "${targetDB}"`, `Cannot createdb ${targetDB}`, envVars);
-    execCmd(
-      `pg_dump "${database}" | psql "${targetDB}"`,
-      `Cannot copy ${database} to ${targetDB}`,
-      envVars
-    );
+    await nodeStop.action({});
 
-    // TODO start the node
-
-    const backupHeight = parseInt(
+    try {
       execCmd(
-        `psql -d "${targetDB}" -t -c 'select height from blocks order by height desc limit 1;' | xargs`,
-        "Couldn't get the block height",
+        `dropdb --if-exists "${targetDB}"`,
+        `Cannot drop ${targetDB}`,
         envVars
-      ),
-      10
-    );
-    log(`backupHeight: ${backupHeight}`);
-    const backupName = `backup_${database}_${backupHeight}.gz`;
-    // const latestBackupName = `latest`;
-    execCmd(
-      `pg_dump -O "${targetDB}" | gzip > ${path.resolve(
-        getBackupsDir(),
-        backupName
-      )}`,
-      "Couldn't dump the DB",
-      envVars
-    );
+      );
+      execCmd(
+        `vacuumdb --analyze --full "${database}"`,
+        `Cannot vacuum ${database}`,
+        envVars
+      );
+      execCmd(`createdb "${targetDB}"`, `Cannot createdb ${targetDB}`, envVars);
+      execCmd(
+        `pg_dump "${database}" | psql "${targetDB}"`,
+        `Cannot copy ${database} to ${targetDB}`,
+        envVars
+      );
 
-    // TODO symlink the latest backup
-    console.log(`Created a backup file ${getBackupsDir()}/${backupName}.`);
-    // TODO remove BACKUP_LOCK_FILE
+      const backupHeight = parseInt(
+        execCmd(
+          `psql -d "${targetDB}" -t -c 'select height from blocks order by height desc limit 1;' | xargs`,
+          "Couldn't get the block height",
+          envVars
+        ),
+        10
+      );
+      log(`backupHeight: ${backupHeight}`);
+      const backupName = `backup_${database}_${backupHeight}.gz`;
+      // const latestBackupName = `latest`;
+      const backupPath = path.resolve(getBackupsDir(), backupName);
+      execCmd(
+        `pg_dump -O "${targetDB}" | gzip > ${backupPath}`,
+        "Couldn't dump the DB",
+        envVars
+      );
+
+      execCmd(
+        `ln -s "${backupPath}" "${path.resolve(getBackupsDir(), 'latest')}"`,
+        `Couldn't symlink the backup file to ${getBackupsDir()}/latest`
+      );
+      console.log(`Created a backup file ${getBackupsDir()}/${backupName}.`);
+    } catch (e) {
+      console.log('Error when creating a backup');
+    }
+    fs.unlinkSync(BACKUP_LOCK_FILE);
   },
 });
 
 function checkConditions(config: string) {
+  const pid = getBackupPID();
+  if (pid) {
+    console.log(`ERROR: Active backup in PID ${pid}`);
+  }
   if (!hasLocalPostgres()) {
     console.log('ERROR: PostgreSQL not installed');
     return false;

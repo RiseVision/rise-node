@@ -9,14 +9,13 @@ import {
   extractRiseNodeFile,
   getLernaFilePath,
   getNodeDir,
-  getPID,
+  getNodePID,
   isDevEnv,
-  LOCK_FILE,
   log,
   MIN,
   NETWORKS,
   NODE_DIR,
-  TNetworkType,
+  NODE_LOCK_FILE,
 } from '../misc';
 
 export default leaf({
@@ -71,12 +70,12 @@ export default leaf({
           timeout: foreground ? 0 : 2 * MIN,
         });
 
-        // quit the child process gracefuly
+        // quit the child process gracefully
         process.on('SIGINT', handleSigInt.bind(proc));
 
         // save the PID (not in DEV)
         if (!isDevEnv()) {
-          fs.writeFileSync(LOCK_FILE, proc.pid, { encoding: 'utf8' });
+          fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
         }
         const waitForReady = createWaitForReady(
           { foreground, showLogs },
@@ -101,7 +100,7 @@ export default leaf({
         console.log('Node started');
       }
       if (foreground && !isDevEnv()) {
-        fs.unlinkSync(LOCK_FILE);
+        fs.unlinkSync(NODE_LOCK_FILE);
       }
       return true;
     } catch (e) {
@@ -167,9 +166,9 @@ function checkConditions(config: string) {
   }
   // check the PID, but not when in DEV
   if (!isDevEnv()) {
-    const pid = getPID();
+    const pid = getNodePID();
     if (!isDevEnv() && pid) {
-      console.log(`ERROR: Node already running as PID .\n${LOCK_FILE}`);
+      console.log(`ERROR: Node already running as PID .\n${NODE_LOCK_FILE}`);
       return false;
     }
   }

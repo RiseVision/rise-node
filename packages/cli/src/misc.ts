@@ -25,8 +25,8 @@ export const NODE_FILE = 'rise-node.tar.gz';
 
 export const DOWNLOAD_URL =
   'https://github.com/RiseVision/rise-node/releases/download/';
-export const LOCK_FILE = '/tmp/rise-node.pid.lock';
-export const BACKUP_LOCK_FILE = '/tmp/rise-backup.lock';
+export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
+export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
 export const BACKUPS_DIR = 'data/backups';
 
 export function isDevEnv() {
@@ -103,23 +103,36 @@ export function getNodeFilePath(): string {
 }
 
 /**
- * Returns the PID of currently running node.
+ * Gets the PID from a PID lock file.
  *
  * Performs garbage collection if the process isn't running any more.
+ *
+ * @param filePath
  */
-export function getPID(): string | false {
+export function getPID(filePath: string): number | false {
   try {
-    const pid = fs.readFileSync(LOCK_FILE, { encoding: 'utf8' });
+    const pid = fs.readFileSync(filePath, { encoding: 'utf8' });
     const exists = execSync(`ps -p ${pid} -o pid=`);
     if (!exists) {
-      fs.unlinkSync(LOCK_FILE);
+      fs.unlinkSync(NODE_LOCK_FILE);
       return false;
     }
-    return pid;
+    return parseInt(pid, 10);
   } catch {
     // empty
   }
   return false;
+}
+
+/**
+ * Returns the PID of currently running node.
+ */
+export function getNodePID(): number | false {
+  return getPID(NODE_LOCK_FILE);
+}
+
+export function getBackupPID(): number | false {
+  return getPID(BACKUP_LOCK_FILE);
 }
 
 /**
