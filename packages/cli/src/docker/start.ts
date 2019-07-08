@@ -68,7 +68,7 @@ async function dockerRun(
   foreground: boolean,
   showLogs: boolean
 ) {
-  console.log(`Using config ${config}`)
+  console.log(`Using config ${config}`);
 
   console.log('Starting the container...');
   let ready = false;

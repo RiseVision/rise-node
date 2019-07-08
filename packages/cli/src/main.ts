@@ -8,10 +8,10 @@ import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
 import download from './download';
 import { VERSION } from './misc';
+import exportDB from './node/export-db';
 import nodeRebuild from './node/rebuild';
 import nodeStart from './node/start';
 import nodeStop from './node/stop';
-import exportDB from './node/export-db';
 
 dot.config();
 

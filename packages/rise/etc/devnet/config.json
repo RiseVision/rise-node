@@ -19,12 +19,6 @@
     "reapIntervalMillis": 1000,
     "logEvents": ["error"]
   },
-  "redis": {
-    "host": "127.0.0.1",
-    "port": 6380,
-    "db": 0,
-    "password": null
-  },
   "api": {
     "enabled": true,
     "port": 9998,

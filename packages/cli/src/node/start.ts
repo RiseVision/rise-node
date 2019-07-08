@@ -6,16 +6,16 @@ import * as path from 'path';
 import {
   checkLernaExists,
   checkNodeDirExists,
-  getPID,
   extractRiseNodeFile,
   getLernaFilePath,
   getNodeDir,
+  getPID,
   isDevEnv,
+  LOCK_FILE,
   log,
   MIN,
   NETWORKS,
   NODE_DIR,
-  LOCK_FILE,
 } from '../misc';
 
 export default leaf({
@@ -49,6 +49,7 @@ export default leaf({
     }),
   },
 
+  // tslint:disable-next-line
   async action({ config, network, foreground, show_logs }): Promise<boolean> {
     if (!checkNodeDirExists(true)) {
       extractRiseNodeFile();
@@ -93,7 +94,7 @@ export default leaf({
         });
 
         // quit the child process gracefuly
-        process.on('SIGINT', function() {
+        process.on('SIGINT', () => {
           console.log('Caught interrupt signal');
           proc.kill();
 

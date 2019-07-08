@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
-import * as fs from 'fs';
 import * as assert from 'assert';
+import * as fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import * as path from 'path';
 import {
@@ -52,6 +52,7 @@ export default leaf({
     assert(database);
     assert(password);
 
+    // tslint:disable object-literal-sort-keys
     const envVars = {
       PGPORT: port.toString(),
       PGHOST: host,
@@ -59,6 +60,7 @@ export default leaf({
       PGPASSWORD: password,
       PGDATABASE: database,
     };
+    // tslint:enable object-literal-sort-keys
 
     // TODO catch exceptions and print a nice msg
     execCmd(
@@ -96,7 +98,7 @@ export default leaf({
         getBackupsDir(),
         backupName
       )}`,
-      `Couldn't dump the DB`,
+      "Couldn't dump the DB",
       envVars
     );
 
