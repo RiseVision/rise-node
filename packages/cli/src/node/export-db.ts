@@ -54,11 +54,11 @@ export default leaf({
 
     // tslint:disable object-literal-sort-keys
     const envVars = {
-      PGPORT: port.toString(),
-      PGHOST: host,
-      PGUSER: user,
-      PGPASSWORD: password,
       PGDATABASE: database,
+      PGHOST: host,
+      PGPASSWORD: password,
+      PGPORT: port.toString(),
+      PGUSER: user,
     };
     // tslint:enable object-literal-sort-keys
 
