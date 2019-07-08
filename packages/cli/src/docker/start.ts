@@ -1,43 +1,42 @@
 // tslint:disable:no-console
-import { leaf, option } from '@carnesen/cli';
+import { leaf } from '@carnesen/cli';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { DOCKER_DIR, getDockerDir, log, MIN, NETWORKS } from '../misc';
+import {
+  createWaitForReady,
+  DOCKER_DIR,
+  getDockerDir,
+  log,
+  MIN,
+  TNetworkType,
+} from '../shared/misc';
+import {
+  configOption,
+  foregroundOption,
+  IConfig,
+  IForeground,
+  INetwork,
+  IShowLogs,
+  networkOption,
+  showLogsOption,
+} from '../shared/options';
 import { dockerStop } from './build';
+
+export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
 
 export default leaf({
   commandName: 'start',
   description: 'Starts a container using the provided config',
 
   options: {
-    config: option({
-      defaultValue: `${DOCKER_DIR}/config.json`,
-      description: 'Path to the config file',
-      nullable: true,
-      typeName: 'string',
-    }),
-    foreground: option({
-      defaultValue: false,
-      description: 'Keep the process in the foreground. Implies --show_logs',
-      nullable: true,
-      typeName: 'boolean',
-    }),
-    network: option({
-      allowedValues: NETWORKS,
-      defaultValue: 'mainnet',
-      nullable: true,
-      typeName: 'string',
-    }),
-    show_logs: option({
-      defaultValue: false,
-      description: 'Stream the console output',
-      nullable: true,
-      typeName: 'boolean',
-    }),
+    ...configOption,
+    ...foregroundOption,
+    ...networkOption,
+    ...showLogsOption,
   },
 
-  async action({ config, network, foreground, show_logs }) {
+  async action({ config, network, foreground, show_logs }: TOptions) {
     if (!checkDockerDirExists()) {
       return;
     }
@@ -64,7 +63,7 @@ export default leaf({
 
 async function dockerRun(
   config: string,
-  network: string,
+  network: TNetworkType,
   foreground: boolean,
   showLogs: boolean
 ) {
@@ -84,23 +83,15 @@ async function dockerRun(
       },
       timeout: 2 * MIN,
     });
-    function line(data: string) {
-      if (showLogs) {
-        process.stdout.write(data);
-      } else {
-        log(data);
-      }
-      // check if the output reached the desired line
-      if (data.includes('Blockchain ready')) {
+    const waitForReady = createWaitForReady(
+      { foreground, showLogs },
+      () => {
         ready = true;
-        // keep streaming the output if in the foreground
-        if (!foreground) {
-          resolve();
-        }
-      }
-    }
-    proc.stdout.on('data', line);
-    proc.stderr.on('data', line);
+      },
+      resolve
+    );
+    proc.stdout.on('data', waitForReady);
+    proc.stderr.on('data', waitForReady);
     proc.on('close', (code) => {
       log('close', code);
       code ? reject(code) : resolve(code);

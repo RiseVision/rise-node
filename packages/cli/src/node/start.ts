@@ -6,55 +6,57 @@ import * as path from 'path';
 import {
   checkLernaExists,
   checkNodeDirExists,
-  extractRiseNodeFile,
+  createWaitForReady,
+  extractSourceFile,
   getLernaFilePath,
   getNodeDir,
   getNodePID,
   isDevEnv,
   log,
   MIN,
-  NETWORKS,
-  NODE_DIR,
   NODE_LOCK_FILE,
-} from '../misc';
+  TNetworkType,
+} from '../shared/misc';
+import {
+  configOption,
+  foregroundOption,
+  IConfig,
+  IForeground,
+  INetwork,
+  IShowLogs,
+  networkOption,
+  showLogsOption,
+} from '../shared/options';
+
+export type TOptions = IConfig &
+  INetwork &
+  IForeground &
+  IShowLogs;
 
 export default leaf({
   commandName: 'start',
   description: 'Starts the node using the provided config',
 
   options: {
-    config: option({
-      defaultValue: `${NODE_DIR}/config.json`,
-      description: 'Path to the config file',
-      nullable: true,
-      typeName: 'string',
-    }),
-    foreground: option({
-      defaultValue: false,
-      description: 'Keep the process in the foreground. Implies --show_logs',
-      nullable: true,
-      typeName: 'boolean',
-    }),
-    network: option({
-      allowedValues: NETWORKS,
-      defaultValue: 'mainnet',
-      nullable: true,
-      typeName: 'string',
-    }),
-    show_logs: option({
-      defaultValue: false,
-      description: 'Stream the console output',
-      nullable: true,
-      typeName: 'boolean',
-    }),
+    ...configOption,
+    ...foregroundOption,
+    ...networkOption,
+    ...showLogsOption,
   },
 
-  async action({ config, network, foreground, show_logs }): Promise<boolean> {
+  async action({
+    config,
+    network,
+    foreground,
+    show_logs,
+  }: TOptions): Promise<boolean> {
+    // TODO tmp
+    console.log('hd7asasduigfhjdfsds');
     if (!checkConditions(config)) {
       return false;
     }
     const showLogs = show_logs || foreground;
-    const configPath = path.resolve(config);
+    const configPath = config ? path.resolve(config) : null;
 
     console.log(`Using config ${configPath}`);
     console.log('Starting RISE node...');
@@ -122,30 +124,7 @@ function handleSigInt(proc) {
   }
 }
 
-function createWaitForReady(
-  params: { foreground: boolean; showLogs: boolean },
-  setReady: () => void,
-  resolve: (val?: any) => void
-) {
-  return (data: string) => {
-    // output
-    if (params.showLogs) {
-      process.stdout.write(data);
-    } else {
-      log(data);
-    }
-    // check if the output reached the desired line
-    if (data.includes('Blockchain ready')) {
-      setReady();
-      // keep streaming the output if in the foreground
-      if (!params.foreground) {
-        resolve();
-      }
-    }
-  };
-}
-
-function createCmd(network, configPath) {
+function createCmd(network: TNetworkType, configPath?: string | null) {
   return (
     getLernaFilePath() +
     ' run ' +
@@ -153,13 +132,13 @@ function createCmd(network, configPath) {
     '--stream ' +
     '--no-prefix ' +
     '-- ' +
-    `-e ${configPath}`
+    (configPath ? `-e ${configPath}` : '')
   );
 }
 
-function checkConditions(config: string) {
+function checkConditions(config: string): boolean {
   if (!checkNodeDirExists(true)) {
-    extractRiseNodeFile();
+    extractSourceFile();
   }
   if (!checkLernaExists()) {
     return false;
@@ -167,13 +146,15 @@ function checkConditions(config: string) {
   // check the PID, but not when in DEV
   if (!isDevEnv()) {
     const pid = getNodePID();
-    if (!isDevEnv() && pid) {
+    if (pid) {
       console.log(`ERROR: Node already running as PID .\n${NODE_LOCK_FILE}`);
       return false;
     }
   }
-  if (!fs.existsSync(config)) {
+  if (config && !fs.existsSync(config)) {
     console.log(`ERROR: Config file doesn't exist.\n${config}`);
     return false;
   }
+
+  return true;
 }

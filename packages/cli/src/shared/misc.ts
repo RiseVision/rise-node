@@ -16,12 +16,11 @@ export const SEC = 1000;
 export const MIN = 60 * SEC;
 export const log = debug('rise-cli');
 
-export const DOCKER_DIR = 'rise-docker';
-export const DIST_FILE = 'rise-docker.tar.gz';
+export const DOCKER_DIR = 'rise-node';
+export const DIST_FILE = 'rise-node.tar.gz';
 
-// TODO update
-export const NODE_DIR = `${DOCKER_DIR}/rise-node`;
-export const NODE_FILE = 'rise-node.tar.gz';
+export const NODE_DIR = `${DOCKER_DIR}/source`;
+export const NODE_FILE = 'source.tar.gz';
 
 export const DOWNLOAD_URL =
   'https://github.com/RiseVision/rise-node/releases/download/';
@@ -57,7 +56,7 @@ export function checkLernaExists(): boolean {
   const file = getLernaFilePath();
   if (!fs.existsSync(file)) {
     console.log(
-      `Error: can't find lerna executable in ${DOCKER_DIR}/${NODE_DIR}.`
+      `ERROR: can't find lerna executable in ${DOCKER_DIR}/${NODE_DIR}.`
     );
     console.log('You can download the latest version using:');
     console.log('  ./rise node download');
@@ -76,14 +75,17 @@ export function checkDockerDirExists(): boolean {
   return true;
 }
 
-export function extractRiseNodeFile() {
-  const filePath = getNodeFilePath();
+export function extractSourceFile() {
+  const filePath = getSourceFilePath();
   if (!fs.existsSync(filePath)) {
     throw new Error(`File ${filePath} doesn't exist`);
   }
 
   console.log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
-  execSync(`cd ${getDockerDir()} && tar -zxf ${NODE_FILE}`);
+  execCmd(
+    `cd ${getDockerDir()} && tar -zxf ${NODE_FILE}`,
+    `Couldn't extract ${getSourceFilePath()}`
+  );
 }
 
 /**
@@ -98,7 +100,7 @@ export function getLernaFilePath(): string {
 /**
  * Returns the path to the rise-node.tar.gz file.
  */
-export function getNodeFilePath(): string {
+export function getSourceFilePath(): string {
   return path.resolve(path.join(process.cwd(), DOCKER_DIR, NODE_FILE));
 }
 
@@ -151,7 +153,7 @@ export function hasLocalPostgres(): boolean {
 }
 
 // TODO only a partial config, ideally import from /packages/core
-export interface IConfig {
+export interface INodeConfig {
   db: {
     host: string;
     port: number;
@@ -161,22 +163,26 @@ export interface IConfig {
   };
 }
 
+export function getConfigPath(networkType: TNetworkType): string {
+  return path.resolve(
+    getNodeDir(),
+    'packages',
+    'rise',
+    'etc',
+    networkType,
+    'config.json'
+  );
+}
+
 /**
  * Returns a merged config (user's + network's).
  */
 export function mergeConfig(
   configPath: string,
-  networtType: TNetworkType
-): IConfig {
+  networkType: TNetworkType
+): INodeConfig {
   checkNodeDirExists();
-  const parentConfigPath = path.resolve(
-    getNodeDir(),
-    'packages',
-    'rise',
-    'etc',
-    networtType,
-    'config.json'
-  );
+  const parentConfigPath = getConfigPath(networkType);
   if (!fs.existsSync(parentConfigPath)) {
     throw new Error(`Parent config ${parentConfigPath} doesn't exist`);
   }
@@ -211,7 +217,36 @@ export function execCmd(
     }).toString('utf8');
   } catch (err) {
     log(err);
-    console.log(errorMsg);
+    console.log('ERROR: ' + errorMsg);
     throw err;
   }
+}
+
+/**
+ * Returns a function resolving once "Blockchain ready" was printed.
+ * @param params
+ * @param setReady
+ * @param resolve
+ */
+export function createWaitForReady(
+  params: { foreground: boolean; showLogs: boolean },
+  setReady: () => void,
+  resolve: (val?: any) => void
+) {
+  return (data: string) => {
+    // output
+    if (params.showLogs) {
+      process.stdout.write(data);
+    } else {
+      log(data);
+    }
+    // check if the output reached the desired line
+    if (data.includes('Blockchain ready')) {
+      setReady();
+      // keep streaming the output if in the foreground
+      if (!params.foreground) {
+        resolve();
+      }
+    }
+  };
 }

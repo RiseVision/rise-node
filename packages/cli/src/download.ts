@@ -1,16 +1,17 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
+import rebuildNative from './node/rebuild';
 import {
   DIST_FILE,
   DOWNLOAD_URL,
-  extractRiseNodeFile,
+  execCmd,
+  extractSourceFile,
   isDevEnv,
   NODE_VERSION,
-} from './misc';
+} from './shared/misc';
 
 export default leaf({
   commandName: 'download',
@@ -18,6 +19,12 @@ export default leaf({
     'Download a docker release file and extract it to the current directory.',
 
   options: {
+    skip_rebuild: option({
+      defaultValue: false,
+      description: "Don't rebuild native node modules",
+      nullable: true,
+      typeName: 'boolean',
+    }),
     version: option({
       defaultValue: NODE_VERSION,
       description: 'Version number to download, eg v2.0.0',
@@ -26,7 +33,13 @@ export default leaf({
     }),
   },
 
-  async action({ version }) {
+  async action({
+    version,
+    skip_rebuild,
+  }: {
+    version: string;
+    skip_rebuild: boolean;
+  }) {
     const url = isDevEnv()
       ? `http://localhost:8080/${DIST_FILE}`
       : DOWNLOAD_URL + version + '/' + DIST_FILE;
@@ -55,9 +68,13 @@ export default leaf({
     console.log('Download completed');
 
     console.log(`Extracting ${DIST_FILE}`);
-    execSync(`tar -zxf ${DIST_FILE}`);
+    execCmd(`tar -zxf ${DIST_FILE}`, `Couldn't extract ${DIST_FILE}`);
 
-    extractRiseNodeFile();
+    extractSourceFile();
+
+    if (!skip_rebuild) {
+      await rebuildNative.action({});
+    }
 
     await new Promise((resolve) => {
       fs.unlink(DIST_FILE, resolve);
@@ -68,7 +85,7 @@ export default leaf({
     console.log('You can start a node using:');
     console.log('  ./rise node start');
     console.log('');
-    console.log('You can start the container using:');
+    console.log('You can start a container using:');
     console.log('  ./rise docker build');
     console.log('  ./rise docker start');
   },

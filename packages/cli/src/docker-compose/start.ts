@@ -1,43 +1,35 @@
 // tslint:disable:no-console
-import { leaf, option } from '@carnesen/cli';
+import { leaf } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { dockerRemove, dockerStop } from '../docker/build';
-import { DOCKER_DIR, getDockerDir, log, MIN, NETWORKS } from '../misc';
+import { DOCKER_DIR, getDockerDir, log, MIN } from '../shared/misc';
+import {
+  configOption,
+  foregroundOption,
+  IConfig,
+  IForeground,
+  INetwork,
+  IShowLogs,
+  networkOption,
+  showLogsOption,
+} from '../shared/options';
+
+export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
 
 export default leaf({
   commandName: 'start',
   description: 'Starts a container using the provided config',
 
   options: {
-    config: option({
-      defaultValue: `${DOCKER_DIR}/config.json`,
-      description: 'Path to the config file',
-      nullable: true,
-      typeName: 'string',
-    }),
-    foreground: option({
-      defaultValue: false,
-      description: 'Keep the process in the foreground. Implies --show_logs',
-      nullable: true,
-      typeName: 'boolean',
-    }),
-    network: option({
-      allowedValues: NETWORKS,
-      defaultValue: 'mainnet',
-      nullable: true,
-      typeName: 'string',
-    }),
-    show_logs: option({
-      defaultValue: false,
-      description: 'Stream the console output',
-      nullable: true,
-      typeName: 'boolean',
-    }),
+    ...configOption,
+    ...foregroundOption,
+    ...networkOption,
+    ...showLogsOption,
   },
 
-  async action({ config, network, foreground, show_logs }) {
+  async action({ config, network, foreground, show_logs }: TOptions) {
     if (!checkDockerDirExists()) {
       return;
     }

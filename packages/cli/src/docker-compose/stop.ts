@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import { getDockerDir, log } from '../misc';
+import { getDockerDir, log } from '../shared/misc';
 
 export default leaf({
   commandName: 'stop',
@@ -10,6 +10,8 @@ export default leaf({
   async action() {
     let cmd;
     console.log('Stopping docker-compose...');
+
+    // TODO use execCmd
 
     cmd = 'docker-compose stop';
     log('$', cmd);

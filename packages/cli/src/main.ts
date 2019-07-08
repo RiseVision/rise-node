@@ -1,13 +1,14 @@
 // tslint:disable:no-console
 import { branch, cli, leaf } from '@carnesen/cli';
 import * as dot from 'dotenv';
+import configDefaults from './config-default';
 import dockerComposeStart from './docker-compose/start';
 import dockerComposeStop from './docker-compose/stop';
 import dockerBuild from './docker/build';
 import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
 import download from './download';
-import { VERSION } from './misc';
+import { VERSION } from './shared/misc';
 import exportDB from './node/export-db';
 import nodeRebuild from './node/rebuild';
 import nodeStart from './node/start';
@@ -44,7 +45,7 @@ export const version = leaf({
 export const root = branch({
   commandName: 'rise',
   description: `
-    Manage your RISE node instances, including docker images.
+    Manage your RISE node instance, including docker images.
 
     Usage:
 
@@ -63,8 +64,11 @@ export const root = branch({
 
     # running the DB and a node in Docker
     ./rise docker-compose start
-    ./rise docker-compose stop`,
-  subcommands: [download, node, docker, dockerCompose, version],
+    ./rise docker-compose stop
+
+    # printing config defaults
+    ./rise config-defaults`,
+  subcommands: [download, node, docker, dockerCompose, configDefaults, version],
 });
 
 cli(root)();

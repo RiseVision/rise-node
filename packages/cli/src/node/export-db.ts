@@ -1,5 +1,5 @@
 // tslint:disable:no-console
-import { leaf, option } from '@carnesen/cli';
+import { leaf } from '@carnesen/cli';
 import * as assert from 'assert';
 import * as fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
@@ -9,39 +9,34 @@ import {
   BACKUPS_DIR,
   checkNodeDirExists,
   execCmd,
-  extractRiseNodeFile,
+  extractSourceFile,
   getBackupLockFile,
   getBackupPID,
   getBackupsDir,
   hasLocalPostgres,
   log,
   mergeConfig,
-  NETWORKS,
-  NODE_DIR,
-  TNetworkType,
-} from '../misc';
+} from '../shared/misc';
+import {
+  configOption,
+  IConfig,
+  INetwork,
+  networkOption,
+} from '../shared/options';
 import nodeStop from './stop';
+
+export type TOptions = IConfig & INetwork;
 
 export default leaf({
   commandName: 'export-db',
   description: `Creates a DB dump using the provided config and places it in ./${BACKUPS_DIR}.`,
 
   options: {
-    config: option({
-      defaultValue: `${NODE_DIR}/config.json`,
-      description: 'Path to the config file',
-      nullable: true,
-      typeName: 'string',
-    }),
-    network: option({
-      allowedValues: NETWORKS,
-      defaultValue: 'mainnet',
-      nullable: true,
-      typeName: 'string',
-    }),
+    ...configOption,
+    ...networkOption,
   },
 
-  async action({ config, network }: { config: string; network: TNetworkType }) {
+  async action({ config, network }: TOptions) {
     if (!checkConditions(config)) {
       return false;
     }
@@ -127,7 +122,7 @@ function checkConditions(config: string) {
     return false;
   }
   if (!checkNodeDirExists(true)) {
-    extractRiseNodeFile();
+    extractSourceFile();
   }
   if (fs.existsSync(getBackupLockFile())) {
     console.log(

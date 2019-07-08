@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { getNodePID, NODE_LOCK_FILE } from '../misc';
+import { getNodePID, NODE_LOCK_FILE } from '../shared/misc';
 
 export default leaf({
   commandName: 'stop',

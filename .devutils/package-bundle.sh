@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 DIST=dist
-NODE=dist/rise-docker/rise-node
-DOCKER=dist/rise-docker
+NODE=dist/rise-node/source
+DOCKER=dist/rise-node
 
 echo "Creating ./dist/rise-node"
 
@@ -29,14 +29,13 @@ cp packages/cli/dist/rise $DIST
 # copy current node_modules as cache to the node root
 cp -R node_modules $NODE
 
-echo "Creating rise-node.tar.gz"
+echo "Packing source.tar.gz"
 pushd $DOCKER || exit
-tar -czf rise-node.tar.gz rise-node
-rm -R rise-node
+tar -czf source.tar.gz source
+rm -R source
 popd || exit
 
 ## create rise-docker.tar.gz
-echo "Creating /dist/rise-docker"
 pushd docker/bundle || exit
 
 # copy docker files
@@ -47,10 +46,10 @@ cp Dockerfile.postgres ../../$DOCKER
 
 popd || exit
 
-echo "Creating rise-docker.tar.gz"
+echo "Creating rise-node.tar.gz"
 pushd dist || exit
 
-tar -czf rise-docker.tar.gz rise-docker rise
+tar -czf rise-node.tar.gz rise-node rise
 
 popd || exit
 
@@ -59,4 +58,4 @@ rm -R $DOCKER
 
 echo ""
 echo "Ready:"
-echo "dist/rise-docker.tar.gz"
+echo "dist/rise-node.tar.gz"

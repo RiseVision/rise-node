@@ -1,6 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
+import { execCmd } from '../shared/misc';
 
 export default leaf({
   commandName: 'stop',
@@ -8,6 +9,6 @@ export default leaf({
 
   async action() {
     // TODO check is container is running and show some info
-    execSync('docker stop rise-node');
+    execCmd('docker stop rise-node', "Couldn't stop the container");
   },
 });

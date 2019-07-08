@@ -12,19 +12,19 @@ RUN mkdir -p /home/rise
 WORKDIR /home/rise
 COPY config.json config.json
 
-COPY rise-node.tar.gz .
-RUN tar -zxf rise-node.tar.gz
-RUN rm rise-node.tar.gz
+COPY source.tar.gz .
+RUN tar -zxf source.tar.gz
+RUN rm source.tar.gz
 # TODO should log to /home/rise/logs instead, fix pwd
-RUN mkdir -p /home/rise/rise-node/packages/rise/logs
+RUN mkdir -p /home/rise/source/packages/rise/logs
 # rebuild npm modules
-RUN cd rise-node && npm rebuild
+RUN cd source && npm rebuild
 
 ENV NETWORK="mainnet"
 EXPOSE 5554
 EXPOSE 5555
 
-WORKDIR /home/rise/rise-node
+WORKDIR /home/rise/source
 CMD ./node_modules/.bin/lerna run \
 	start:$NETWORK --stream --no-prefix -- \
 	-e $(pwd)/../config.json

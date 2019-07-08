@@ -1,28 +1,28 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
-import { checkDockerDirExists, getDockerDir, log, MIN } from '../misc';
+import { checkDockerDirExists, getDockerDir, log, MIN } from '../shared/misc';
+import {
+  foregroundOption,
+  IConfig,
+  IForeground,
+  INetwork,
+  IShowLogs,
+  showLogsOption,
+} from '../shared/options';
+
+export type TOptions = IForeground & IShowLogs;
 
 export default leaf({
   commandName: 'build',
   description: 'Rebuilds an image',
 
   options: {
-    foreground: option({
-      defaultValue: false,
-      description: 'Keep the process in the foreground. Implies --show_logs',
-      nullable: true,
-      typeName: 'boolean',
-    }),
-    show_logs: option({
-      defaultValue: false,
-      description: 'Stream the console output',
-      nullable: true,
-      typeName: 'boolean',
-    }),
+    ...foregroundOption,
+    ...showLogsOption,
   },
 
-  async action({ foreground, show_logs }) {
+  async action({ foreground, show_logs }: TOptions) {
     if (!checkDockerDirExists()) {
       return;
     }
