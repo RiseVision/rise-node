@@ -16,7 +16,7 @@ mkdir -p $NODE/packages/rise/logs
 cp package.json $NODE
 cp yarn.lock $NODE
 cp lerna.json $NODE
-cp docker/bundle/config.json $NODE
+#cp docker/bundle/config.json $NODE
 rsync -Rr packages/**/dist $NODE
 rsync -Rr packages/**/etc $NODE
 rsync -Rr packages/**/proto $NODE
@@ -39,7 +39,7 @@ popd || exit
 pushd docker/bundle || exit
 
 # copy docker files
-cp config.json ../../$DOCKER
+#cp config.json ../../$DOCKER
 cp docker-compose.yml ../../$DOCKER
 cp Dockerfile ../../$DOCKER
 cp Dockerfile.postgres ../../$DOCKER
