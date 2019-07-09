@@ -67,11 +67,9 @@ export default leaf({
         log('$', cmd + ' ' + params.join(' '));
 
         // run the command
-        const proc = spawn(cmd, ['--net', network, '-e', configPath], {
+        const proc = spawn(cmd, params, {
           cwd: getCoreRiseDir(),
           shell: true,
-          // TODO implement manually
-          // timeout: foreground ? 0 : 2 * MIN,
         });
 
         // quit the child process gracefully
