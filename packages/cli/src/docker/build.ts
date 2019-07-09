@@ -6,6 +6,8 @@ import * as path from 'path';
 import {
   checkDockerDirExists,
   DOCKER_CONFIG_FILE,
+  DOCKER_CONTAINER_NAME,
+  DOCKER_IMAGE_NAME,
   getDockerDir,
   log,
   MIN,
@@ -23,7 +25,7 @@ export type TOptions = IConfig & IForeground & IShowLogs;
 
 export default leaf({
   commandName: 'build',
-  description: 'Rebuilds an image',
+  description: 'Rebuilds the image',
 
   options: {
     ...configOption,
@@ -77,7 +79,7 @@ function createEmptyConfig() {
 export async function dockerStop(): Promise<void> {
   console.log('Stopping the previous container...');
 
-  const cmd = 'docker stop rise-node';
+  const cmd = `docker stop ${DOCKER_CONTAINER_NAME}`;
   log('$', cmd);
   try {
     execSync(cmd);
@@ -90,7 +92,7 @@ export async function dockerStop(): Promise<void> {
 export async function dockerRemove(): Promise<void> {
   console.log('Removing the previous container...');
 
-  const cmd = 'docker rm rise-node';
+  const cmd = `docker rm ${DOCKER_CONTAINER_NAME}`;
   log('$', cmd);
   try {
     execSync(cmd);
@@ -105,10 +107,11 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
   // build
   await new Promise((resolve, reject) => {
     const cmd = 'docker';
-    const params = ['build', '-t', 'rise-local/node', '.'];
-    log('$', cmd + params.join(' '));
+    const params = ['build', '-t', DOCKER_IMAGE_NAME, '.'];
+    log('$', cmd + ' ' + params.join(' '));
     const proc = spawn(cmd, params, {
       cwd: getDockerDir(),
+      shell: true,
     });
     function line(data: string) {
       if (showLogs) {

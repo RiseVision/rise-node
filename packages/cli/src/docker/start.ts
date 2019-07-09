@@ -5,7 +5,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   createWaitForReady,
+  DOCKER_CONTAINER_NAME,
   DOCKER_DIR,
+  DOCKER_IMAGE_NAME,
   getDockerDir,
   log,
   MIN,
@@ -21,7 +23,7 @@ import {
   networkOption,
   showLogsOption,
 } from '../shared/options';
-import { dockerStop } from './build';
+import { dockerRemove, dockerStop } from './build';
 
 export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
 
@@ -40,8 +42,8 @@ export default leaf({
     if (!checkDockerDirExists()) {
       return;
     }
-    const configPath = path.resolve(config);
-    if (!fs.existsSync(configPath)) {
+    const configPath = config ? path.resolve(config) : null;
+    if (configPath && !fs.existsSync(configPath)) {
       console.log("ERROR: Config file doesn't exist.");
       return;
     }
@@ -50,6 +52,7 @@ export default leaf({
     // TODO check if docker is running
     try {
       await dockerStop();
+      await dockerRemove();
       await dockerRun(configPath, network, foreground, showLogs);
     } catch (err) {
       console.log(
@@ -67,7 +70,9 @@ async function dockerRun(
   foreground: boolean,
   showLogs: boolean
 ) {
-  console.log(`Using config ${config}`);
+  if (config) {
+    console.log(`Using config ${config}`);
+  }
 
   console.log('Starting the container...');
   let ready = false;
@@ -76,10 +81,9 @@ async function dockerRun(
     const params = [
       'run',
       '--name',
-      'rise-node',
-      '-v',
-      `${config}:/home/rise/config.json`,
-      'rise-local/node',
+      DOCKER_CONTAINER_NAME,
+      ...(config ? ['-v', `${config}:/home/rise/config.json`] : []),
+      DOCKER_IMAGE_NAME,
     ];
     log('$', cmd + ' ' + params.join(' '));
     const proc = spawn(cmd, params, {

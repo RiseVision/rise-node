@@ -18,6 +18,8 @@ export const log = debug('rise-cli');
 
 export const DOCKER_DIR = 'rise-node';
 export const DIST_FILE = 'rise-node.tar.gz';
+export const DOCKER_IMAGE_NAME = 'rise-local-node';
+export const DOCKER_CONTAINER_NAME = 'rise-node';
 export const DOCKER_CONFIG_FILE = DOCKER_DIR + '/config-docker.json';
 
 export const NODE_DIR = `${DOCKER_DIR}/source`;
