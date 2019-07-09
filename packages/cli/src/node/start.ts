@@ -60,7 +60,10 @@ export default leaf({
       let ready = false;
       await new Promise((resolve, reject) => {
         const cmd = getLaunchpadFilePath();
-        const params = ['--net', network, '-e', configPath];
+        const params = ['--net', network];
+        if (configPath) {
+          params.push('-e', configPath);
+        }
         log('$', cmd + ' ' + params.join(' '));
 
         // run the command
