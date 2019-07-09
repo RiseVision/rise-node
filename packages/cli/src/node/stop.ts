@@ -9,7 +9,7 @@ export default leaf({
   async action() {
     const pid = getNodePID();
     if (!pid) {
-      console.log(`ERROR: Lock file doesn't exist.\n${NODE_LOCK_FILE}`);
+      console.log('ERROR: No node running...');
       return;
     }
     console.log(`Killing RISE node with PID ${pid}`);

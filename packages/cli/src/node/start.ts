@@ -144,7 +144,7 @@ function checkConditions(config: string): boolean {
   if (!isDevEnv()) {
     const pid = getNodePID();
     if (pid) {
-      console.log(`ERROR: Node already running as PID .\n${NODE_LOCK_FILE}`);
+      console.log(`ERROR: Node already running as PID ${pid}.`);
       return false;
     }
   }
