@@ -108,7 +108,7 @@ export default leaf({
   },
 });
 
-function checkConditions(config: string) {
+function checkConditions(config: string | null) {
   const pid = getBackupPID();
   if (pid) {
     console.log(`ERROR: Active backup in PID ${pid}`);
@@ -117,7 +117,7 @@ function checkConditions(config: string) {
     console.log('ERROR: PostgreSQL not installed');
     return false;
   }
-  if (!fs.existsSync(config)) {
+  if (config && !fs.existsSync(config)) {
     console.log(`ERROR: Config file doesn't exist.\n${config}`);
     return false;
   }

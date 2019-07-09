@@ -1,21 +1,21 @@
 // tslint:disable:no-console
-import { leaf, option } from '@carnesen/cli';
-import { exec } from 'child_process';
+import { leaf } from '@carnesen/cli';
+import * as assert from 'assert';
+import { ChildProcess, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-  checkLernaExists,
+  checkLaunchpadExists,
   checkNodeDirExists,
   createWaitForReady,
   extractSourceFile,
-  getLernaFilePath,
-  getNodeDir,
+  getCoreRiseDir,
+  getLaunchpadFilePath,
   getNodePID,
   isDevEnv,
   log,
   MIN,
   NODE_LOCK_FILE,
-  TNetworkType,
 } from '../shared/misc';
 import {
   configOption,
@@ -28,10 +28,7 @@ import {
   showLogsOption,
 } from '../shared/options';
 
-export type TOptions = IConfig &
-  INetwork &
-  IForeground &
-  IShowLogs;
+export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
 
 export default leaf({
   commandName: 'start',
@@ -50,8 +47,6 @@ export default leaf({
     foreground,
     show_logs,
   }: TOptions): Promise<boolean> {
-    // TODO tmp
-    console.log('hd7asasduigfhjdfsds');
     if (!checkConditions(config)) {
       return false;
     }
@@ -64,16 +59,20 @@ export default leaf({
     try {
       let ready = false;
       await new Promise((resolve, reject) => {
-        const cmd = createCmd(network, configPath);
-        log('$', cmd);
+        const cmd = getLaunchpadFilePath();
+        const params = ['--net', network, '-e', configPath];
+        log('$', cmd + ' ' + params.join(' '));
+
         // run the command
-        const proc = exec(cmd, {
-          cwd: getNodeDir(),
-          timeout: foreground ? 0 : 2 * MIN,
+        const proc = spawn(cmd, ['--net', network, '-e', configPath], {
+          cwd: getCoreRiseDir(),
+          shell: true,
+          // TODO implement manually
+          // timeout: foreground ? 0 : 2 * MIN,
         });
 
         // quit the child process gracefully
-        process.on('SIGINT', handleSigInt.bind(proc));
+        process.on('SIGINT', () => handleSigInt(proc));
 
         // save the PID (not in DEV)
         if (!isDevEnv()) {
@@ -86,10 +85,16 @@ export default leaf({
           },
           resolve
         );
+        const timer = setTimeout(() => {
+          if (!proc.killed) {
+            proc.kill();
+          }
+        }, 2 * MIN);
         proc.stdout.on('data', waitForReady);
         proc.stderr.on('data', waitForReady);
         proc.on('close', (code) => {
           log('close', code);
+          clearTimeout(timer);
           code ? reject(code) : resolve(code);
         });
       });
@@ -113,8 +118,9 @@ export default leaf({
   },
 });
 
-function handleSigInt(proc) {
-  console.log('Caught interrupt signal');
+function handleSigInt(proc: ChildProcess) {
+  log('Caught a SIGINT');
+  assert(proc);
   proc.kill();
 
   if (proc.killed) {
@@ -124,23 +130,11 @@ function handleSigInt(proc) {
   }
 }
 
-function createCmd(network: TNetworkType, configPath?: string | null) {
-  return (
-    getLernaFilePath() +
-    ' run ' +
-    `start:${network} ` +
-    '--stream ' +
-    '--no-prefix ' +
-    '-- ' +
-    (configPath ? `-e ${configPath}` : '')
-  );
-}
-
 function checkConditions(config: string): boolean {
   if (!checkNodeDirExists(true)) {
     extractSourceFile();
   }
-  if (!checkLernaExists()) {
+  if (!checkLaunchpadExists()) {
     return false;
   }
   // check the PID, but not when in DEV

@@ -18,6 +18,7 @@ export const log = debug('rise-cli');
 
 export const DOCKER_DIR = 'rise-node';
 export const DIST_FILE = 'rise-node.tar.gz';
+export const DOCKER_CONFIG_FILE = DOCKER_DIR + '/config-docker.json';
 
 export const NODE_DIR = `${DOCKER_DIR}/source`;
 export const NODE_FILE = 'source.tar.gz';
@@ -52,8 +53,8 @@ export function checkNodeDirExists(silent = false): boolean {
   return true;
 }
 
-export function checkLernaExists(): boolean {
-  const file = getLernaFilePath();
+export function checkLaunchpadExists(): boolean {
+  const file = getLaunchpadFilePath();
   if (!fs.existsSync(file)) {
     console.log(
       `ERROR: can't find lerna executable in ${DOCKER_DIR}/${NODE_DIR}.`
@@ -91,9 +92,9 @@ export function extractSourceFile() {
 /**
  * Returns the path to the lerna CLI file.
  */
-export function getLernaFilePath(): string {
+export function getLaunchpadFilePath(): string {
   return path.resolve(
-    path.join(process.cwd(), NODE_DIR, 'node_modules', '.bin', 'lerna')
+    path.join(process.cwd(), NODE_DIR, 'node_modules', '.bin', 'rise-launchpad')
   );
 }
 
@@ -249,4 +250,8 @@ export function createWaitForReady(
       }
     }
   };
+}
+
+export function getCoreRiseDir(): string {
+  return path.resolve(process.cwd(), NODE_DIR, 'packages', 'rise');
 }

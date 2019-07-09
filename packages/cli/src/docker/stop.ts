@@ -1,6 +1,5 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import { execCmd } from '../shared/misc';
 
 export default leaf({

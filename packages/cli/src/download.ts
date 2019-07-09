@@ -16,7 +16,8 @@ import {
 export default leaf({
   commandName: 'download',
   description:
-    'Download a docker release file and extract it to the current directory.',
+    'Download a docker release file and extract it to the current directory.\n' +
+    'Automatically rebuilds native node modules (optional).',
 
   options: {
     skip_rebuild: option({

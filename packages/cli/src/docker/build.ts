@@ -1,30 +1,52 @@
 // tslint:disable:no-console
-import { leaf, option } from '@carnesen/cli';
-import { exec, execSync } from 'child_process';
-import { checkDockerDirExists, getDockerDir, log, MIN } from '../shared/misc';
+import { leaf } from '@carnesen/cli';
+import { execSync, spawn } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
+  checkDockerDirExists,
+  DOCKER_CONFIG_FILE,
+  getDockerDir,
+  log,
+  MIN,
+} from '../shared/misc';
+import {
+  configOption,
   foregroundOption,
   IConfig,
   IForeground,
-  INetwork,
   IShowLogs,
   showLogsOption,
 } from '../shared/options';
 
-export type TOptions = IForeground & IShowLogs;
+export type TOptions = IConfig & IForeground & IShowLogs;
 
 export default leaf({
   commandName: 'build',
   description: 'Rebuilds an image',
 
   options: {
+    ...configOption,
     ...foregroundOption,
     ...showLogsOption,
   },
 
-  async action({ foreground, show_logs }: TOptions) {
+  async action({ config, foreground, show_logs }: TOptions) {
     if (!checkDockerDirExists()) {
       return;
+    }
+    // handle the config
+    if (config) {
+      try {
+        fs.unlinkSync(DOCKER_CONFIG_FILE);
+      } catch {
+        // empty
+      }
+      const configFile = path.resolve(config);
+      log(`Using config: ${configFile}`);
+      fs.copyFileSync(path.resolve(config), DOCKER_CONFIG_FILE);
+    } else {
+      createEmptyConfig();
     }
     const showLogs = show_logs || foreground;
 
@@ -39,9 +61,18 @@ export default leaf({
       );
       console.error(err);
       process.exit(1);
+    } finally {
+      // remove the temp config
+      fs.unlinkSync(DOCKER_CONFIG_FILE);
     }
   },
 });
+
+function createEmptyConfig() {
+  fs.writeFileSync(DOCKER_CONFIG_FILE, '{}', {
+    encoding: 'utf8',
+  });
+}
 
 export async function dockerStop(): Promise<void> {
   console.log('Stopping the previous container...');
@@ -73,11 +104,11 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
 
   // build
   await new Promise((resolve, reject) => {
-    const cmd = 'docker build -t rise-local/node .';
-    log('$', cmd);
-    const proc = exec(cmd, {
+    const cmd = 'docker';
+    const params = ['build', '-t', 'rise-local/node', '.'];
+    log('$', cmd + params.join(' '));
+    const proc = spawn(cmd, params, {
       cwd: getDockerDir(),
-      timeout: 5 * MIN,
     });
     function line(data: string) {
       if (showLogs) {
@@ -86,10 +117,16 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
         log(data);
       }
     }
+    const timer = setTimeout(() => {
+      if (!proc.killed) {
+        proc.kill();
+      }
+    }, 2 * MIN);
     proc.stdout.on('data', line);
     proc.stderr.on('data', line);
     proc.on('close', (code) => {
       log('close', code);
+      clearTimeout(timer);
       code ? reject(code) : resolve(code);
     });
   });

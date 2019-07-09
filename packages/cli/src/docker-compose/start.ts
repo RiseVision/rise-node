@@ -2,13 +2,10 @@
 import { leaf } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
 import * as fs from 'fs';
-import * as path from 'path';
 import { dockerRemove, dockerStop } from '../docker/build';
 import { DOCKER_DIR, getDockerDir, log, MIN } from '../shared/misc';
 import {
-  configOption,
   foregroundOption,
-  IConfig,
   IForeground,
   INetwork,
   IShowLogs,
@@ -16,26 +13,20 @@ import {
   showLogsOption,
 } from '../shared/options';
 
-export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
+export type TOptions = INetwork & IForeground & IShowLogs;
 
 export default leaf({
   commandName: 'start',
   description: 'Starts a container using the provided config',
 
   options: {
-    ...configOption,
     ...foregroundOption,
     ...networkOption,
     ...showLogsOption,
   },
 
-  async action({ config, network, foreground, show_logs }: TOptions) {
+  async action({ network, foreground, show_logs }: TOptions) {
     if (!checkDockerDirExists()) {
-      return;
-    }
-    const configPath = path.resolve(config);
-    if (!fs.existsSync(configPath)) {
-      console.log("ERROR: Config file doesn't exist.");
       return;
     }
     const showLogs = show_logs || foreground;
@@ -46,7 +37,7 @@ export default leaf({
       await dockerStop();
       await dockerRemove();
       await dockerBuild(showLogs);
-      await dockerRun(configPath, network, foreground, showLogs);
+      await dockerRun(network, foreground, showLogs);
     } catch (err) {
       console.log(
         'Error while building the container. Examine the log using --show_logs.'
@@ -82,7 +73,7 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
     log('$', cmd);
     const proc = exec(cmd, {
       cwd: getDockerDir(),
-      timeout: 5 * MIN,
+      timeout: 15 * MIN,
     });
     function line(data: string) {
       if (showLogs) {
@@ -104,13 +95,10 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
 }
 
 async function dockerRun(
-  config: string,
   network: string,
   foreground: boolean,
   showLogs: boolean
 ) {
-  console.log(`Using config ${config}`);
-
   console.log('Starting containers...');
   let ready = false;
   await new Promise((resolve, reject) => {
@@ -151,6 +139,7 @@ async function dockerRun(
     process.exit(1);
   }
   console.log('Container started');
+  // TODO print the IP and the hostname for the node
 }
 
 function checkDockerDirExists(): boolean {

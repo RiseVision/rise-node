@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -72,16 +72,22 @@ async function dockerRun(
   console.log('Starting the container...');
   let ready = false;
   await new Promise((resolve, reject) => {
-    const cmd =
-      'docker run --name rise-node ' +
-      `-v ${config}:/home/rise/config.json rise-local/node`;
-    log('$', cmd);
-    const proc = exec(cmd, {
+    const cmd = 'docker';
+    const params = [
+      'run',
+      '--name',
+      'rise-node',
+      '-v',
+      `${config}:/home/rise/config.json`,
+      'rise-local/node',
+    ];
+    log('$', cmd + ' ' + params.join(' '));
+    const proc = spawn(cmd, params, {
       cwd: getDockerDir(),
       env: {
         NETWORK: network,
       },
-      timeout: 2 * MIN,
+      shell: true,
     });
     const waitForReady = createWaitForReady(
       { foreground, showLogs },
@@ -90,10 +96,16 @@ async function dockerRun(
       },
       resolve
     );
+    const timer = setTimeout(() => {
+      if (!proc.killed) {
+        proc.kill();
+      }
+    }, 2 * MIN);
     proc.stdout.on('data', waitForReady);
     proc.stderr.on('data', waitForReady);
     proc.on('close', (code) => {
       log('close', code);
+      clearTimeout(timer);
       code ? reject(code) : resolve(code);
     });
   });

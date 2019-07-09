@@ -10,7 +10,7 @@ RUN mkdir -p /home/rise
 #RUN mkdir -p /home/rise/logs
 
 WORKDIR /home/rise
-COPY config.json config.json
+COPY config-docker.json config.json
 
 COPY source.tar.gz .
 RUN tar -zxf source.tar.gz
