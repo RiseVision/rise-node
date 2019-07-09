@@ -10,9 +10,9 @@ import {
   checkNodeDirExists,
   execCmd,
   extractSourceFile,
-  getBackupLockFile,
   getBackupPID,
   getBackupsDir,
+  getNodePID,
   hasLocalPostgres,
   log,
   mergeConfig,
@@ -42,7 +42,7 @@ export default leaf({
     }
     fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
     mkdirpSync(getBackupsDir());
-    const mergedConfig = mergeConfig(config, network);
+    const mergedConfig = mergeConfig(network, config);
     const { host, port, database, user, password } = mergedConfig.db;
     const targetDB = `${database}_snap`;
     assert(host);
@@ -87,6 +87,9 @@ export default leaf({
         10
       );
       log(`backupHeight: ${backupHeight}`);
+      if (!backupHeight) {
+        throw new Error("ERROR: Couldn't get the block height");
+      }
       const backupName = `backup_${database}_${backupHeight}.gz`;
       // const latestBackupName = `latest`;
       const backupPath = path.resolve(getBackupsDir(), backupName);
@@ -96,22 +99,26 @@ export default leaf({
         envVars
       );
 
+      const latestFile = path.join(process.cwd(), 'latest');
+      const symlinkSrc = path.relative(latestFile, backupPath);
+
       execCmd(
-        `ln -s "${backupPath}" "${path.resolve(getBackupsDir(), 'latest')}"`,
-        `Couldn't symlink the backup file to ${getBackupsDir()}/latest`
+        `ln -sf "${symlinkSrc}" "${latestFile}"`,
+        `Couldn't symlink ${process.cwd()}/latest to the backup file`
       );
-      console.log(`Created a backup file ${getBackupsDir()}/${backupName}.`);
+      console.log(`Created a backup file ${process.cwd()}/${backupName}.`);
     } catch (e) {
-      console.log('Error when creating a backup');
+      console.log('Error when creating the backup file');
     }
     fs.unlinkSync(BACKUP_LOCK_FILE);
   },
 });
 
 function checkConditions(config: string | null) {
-  const pid = getBackupPID();
-  if (pid) {
-    console.log(`ERROR: Active backup in PID ${pid}`);
+  const backupPID = getBackupPID();
+  if (backupPID) {
+    console.log(`ERROR: Active backup with PID ${backupPID}`);
+    return false;
   }
   if (!hasLocalPostgres()) {
     console.log('ERROR: PostgreSQL not installed');
@@ -124,17 +131,10 @@ function checkConditions(config: string | null) {
   if (!checkNodeDirExists(true)) {
     extractSourceFile();
   }
-  if (fs.existsSync(getBackupLockFile())) {
-    console.log(
-      `ERROR: Lock file ${getBackupLockFile()} exists.` +
-        'Remove it to continue.'
-    );
-    return false;
+  const nodePID = getNodePID();
+  if (nodePID) {
+    console.log(`Stopping RISE node with PID ${nodePID}`);
+    execCmd(`kill ${nodePID}`, "Couldn't kill the running node");
   }
-  // TODO stop the node (or a container)
-  // if (getPID()) {
-  //   console.log('TODO stop the running ndoe');
-  //   return false;
-  // }
   return true;
 }

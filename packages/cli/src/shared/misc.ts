@@ -181,21 +181,26 @@ export function getConfigPath(networkType: TNetworkType): string {
  * Returns a merged config (user's + network's).
  */
 export function mergeConfig(
-  configPath: string,
-  networkType: TNetworkType
+  networkType: TNetworkType,
+  configPath?: string | null
 ): INodeConfig {
   checkNodeDirExists();
   const parentConfigPath = getConfigPath(networkType);
   if (!fs.existsSync(parentConfigPath)) {
     throw new Error(`Parent config ${parentConfigPath} doesn't exist`);
   }
+  const parentConfig = JSON.parse(
+    fs.readFileSync(parentConfigPath, { encoding: 'utf8' })
+  );
+  // return only the parent config
+  if (!configPath) {
+    return parentConfig;
+  }
+  // merge the passed config
   if (!fs.existsSync(configPath)) {
     throw new Error(`Config ${configPath} doesn't exist`);
   }
   const config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }));
-  const parentConfig = JSON.parse(
-    fs.readFileSync(parentConfigPath, { encoding: 'utf8' })
-  );
   return extend(true, parentConfig, config);
 }
 
