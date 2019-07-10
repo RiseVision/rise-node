@@ -30,6 +30,7 @@
     "typescript": "3.4.5"
   },
   "dependencies": {
+    "delay": "^4.3.0",
     "dotenv": "^8.0.0",
     "env": "^0.0.2",
     "extend": "^3.0.2",

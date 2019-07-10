@@ -3,7 +3,7 @@ import { leaf, option } from '@carnesen/cli';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
-import rebuildNative from './node/rebuild';
+import { rebuildNative } from './node/rebuild-native';
 import {
   DIST_FILE,
   DOWNLOAD_URL,
@@ -74,7 +74,7 @@ export default leaf({
     extractSourceFile();
 
     if (!skip_rebuild) {
-      await rebuildNative.action({});
+      await rebuildNative({ show_logs: false });
     }
 
     await new Promise((resolve) => {

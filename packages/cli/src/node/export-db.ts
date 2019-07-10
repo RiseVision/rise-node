@@ -1,6 +1,5 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import * as assert from 'assert';
 import * as fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import * as path from 'path';
@@ -11,10 +10,11 @@ import {
   extractSourceFile,
   getBackupPID,
   getBackupsDir,
+  getDBVars,
   getNodePID,
   hasLocalPostgres,
   log,
-  mergeConfig,
+  printUsingConfig,
   removeBackupLock,
   setBackupLock,
 } from '../shared/misc';
@@ -24,7 +24,7 @@ import {
   INetwork,
   networkOption,
 } from '../shared/options';
-import nodeStop from './stop';
+import { nodeStop } from './stop';
 
 export type TOptions = IConfig & INetwork;
 
@@ -39,29 +39,17 @@ export default leaf({
 
   async action({ config, network }: TOptions) {
     if (!checkConditions(config)) {
-      return false;
+      return;
     }
-    console.log(`Using config ${config || 'default'}`);
+    printUsingConfig(network, config);
     setBackupLock();
     mkdirpSync(getBackupsDir());
-    const mergedConfig = mergeConfig(network, config);
-    const { host, port, database, user, password } = mergedConfig.db;
+    const envVars = getDBVars(network, config);
+    const database = envVars.PGDATABASE;
     // TODO drop the _snap db after exporting?
     const targetDB = `${database}_snap`;
-    assert(host);
-    assert(port);
-    assert(database);
-    assert(password);
 
-    const envVars = {
-      PGDATABASE: database,
-      PGHOST: host,
-      PGPASSWORD: password,
-      PGPORT: port.toString(),
-      PGUSER: user,
-    };
-
-    await nodeStop.action({});
+    nodeStop(false);
 
     log(envVars);
 
@@ -111,7 +99,7 @@ export default leaf({
         null,
         { cwd: getBackupsDir() }
       );
-      console.log(`Created a backup file ${process.cwd()}/${backupName}.`);
+      console.log(`Created a DB backup file "./${backupName}".`);
     } catch (e) {
       console.log('Error when creating the backup file');
     }

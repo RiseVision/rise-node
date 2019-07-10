@@ -1,6 +1,5 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
-import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -9,9 +8,9 @@ import {
   execCmd,
   extractSourceFile,
   getBackupPID,
+  getDBVars,
   getNodePID,
   hasLocalPostgres,
-  mergeConfig,
   removeBackupLock,
   setBackupLock,
 } from '../shared/misc';
@@ -21,7 +20,7 @@ import {
   INetwork,
   networkOption,
 } from '../shared/options';
-import nodeStop from './stop';
+import { nodeStop } from './stop';
 
 export type TOptions = IConfig & INetwork & { file: string };
 
@@ -42,25 +41,13 @@ export default leaf({
 
   async action({ config, network, file }: TOptions) {
     if (!checkConditions(config, file)) {
-      return false;
+      return;
     }
     setBackupLock();
-    const mergedConfig = mergeConfig(network, config);
-    const { host, port, database, user, password } = mergedConfig.db;
-    assert(host);
-    assert(port);
-    assert(database);
-    assert(password);
+    const envVars = getDBVars(network, config);
+    const database = envVars.PGDATABASE;
 
-    const envVars = {
-      PGDATABASE: database,
-      PGHOST: host,
-      PGPASSWORD: password,
-      PGPORT: port.toString(),
-      PGUSER: user,
-    };
-
-    await nodeStop.action({});
+    nodeStop(false);
 
     try {
       // TODO extract to `db init`
@@ -80,7 +67,7 @@ export default leaf({
         `Cannot import "${file}"`,
         envVars
       );
-      console.log(`Imported "${file}".`);
+      console.log(`Imported "./${file}" into the DB.`);
     } catch (e) {
       console.log('Error when importing the backup file');
     }
