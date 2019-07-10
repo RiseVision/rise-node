@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import * as path from 'path';
 import {
-  BACKUP_LOCK_FILE,
   BACKUPS_DIR,
   checkNodeDirExists,
   execCmd,
@@ -16,6 +15,8 @@ import {
   hasLocalPostgres,
   log,
   mergeConfig,
+  removeBackupLock,
+  setBackupLock,
 } from '../shared/misc';
 import {
   configOption,
@@ -40,10 +41,12 @@ export default leaf({
     if (!checkConditions(config)) {
       return false;
     }
-    fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
+    console.log(`Using config ${config || 'default'}`);
+    setBackupLock();
     mkdirpSync(getBackupsDir());
     const mergedConfig = mergeConfig(network, config);
     const { host, port, database, user, password } = mergedConfig.db;
+    // TODO drop the _snap db after exporting?
     const targetDB = `${database}_snap`;
     assert(host);
     assert(port);
@@ -59,6 +62,8 @@ export default leaf({
     };
 
     await nodeStop.action({});
+
+    log(envVars);
 
     try {
       execCmd(
@@ -99,18 +104,18 @@ export default leaf({
         envVars
       );
 
-      const latestFile = path.join(process.cwd(), 'latest');
-      const symlinkSrc = path.relative(latestFile, backupPath);
-
+      // link the `latest` file
       execCmd(
-        `ln -sf "${symlinkSrc}" "${latestFile}"`,
-        `Couldn't symlink ${process.cwd()}/latest to the backup file`
+        `ln -sf ${backupName} latest`,
+        `Couldn't symlink ${process.cwd()}/latest to the backup file`,
+        null,
+        { cwd: getBackupsDir() }
       );
       console.log(`Created a backup file ${process.cwd()}/${backupName}.`);
     } catch (e) {
       console.log('Error when creating the backup file');
     }
-    fs.unlinkSync(BACKUP_LOCK_FILE);
+    removeBackupLock();
   },
 });
 

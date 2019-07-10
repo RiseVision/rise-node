@@ -53,7 +53,7 @@ export default leaf({
     const showLogs = show_logs || foreground;
     const configPath = config ? path.resolve(config) : null;
 
-    console.log(`Using config ${configPath}`);
+    console.log(`Using config ${config || 'default'}`);
     console.log('Starting RISE node...');
 
     try {
@@ -94,7 +94,7 @@ export default leaf({
         proc.stdout.on('data', waitForReady);
         proc.stderr.on('data', waitForReady);
         proc.on('close', (code) => {
-          log('close', code);
+          log('close, exit code = ', code);
           clearTimeout(timer);
           code ? reject(code) : resolve(code);
         });

@@ -9,6 +9,7 @@ import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
 import download from './download';
 import exportDB from './node/export-db';
+import importDB from './node/import-db';
 import nodeRebuild from './node/rebuild';
 import nodeStart from './node/start';
 import nodeStop from './node/stop';
@@ -19,7 +20,7 @@ dot.config();
 export const node = branch({
   commandName: 'node',
   description: 'Node running on the host OS',
-  subcommands: [nodeStart, nodeRebuild, nodeStop, exportDB],
+  subcommands: [nodeStart, nodeRebuild, nodeStop, exportDB, importDB],
 });
 
 export const docker = branch({

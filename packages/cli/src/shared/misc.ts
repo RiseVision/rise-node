@@ -1,5 +1,5 @@
 // tslint:disable:no-console
-import { execSync } from 'child_process';
+import { execSync, ExecSyncOptions } from 'child_process';
 import * as debug from 'debug';
 import * as extend from 'extend';
 import * as fs from 'fs';
@@ -208,20 +208,26 @@ export function getBackupsDir(): string {
   return path.resolve(process.cwd(), BACKUPS_DIR);
 }
 
-export function getBackupLockFile(): string {
-  return path.resolve(process.cwd(), BACKUP_LOCK_FILE);
+export function setBackupLock() {
+  fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
+}
+
+export function removeBackupLock() {
+  fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
 export function execCmd(
   cmd: string,
   errorMsg?: string | null,
-  envVars?: { [name: string]: string }
+  envVars?: { [name: string]: string } | null,
+  options?: ExecSyncOptions
 ): string {
   errorMsg = errorMsg || `Command '${cmd} failed`;
   try {
     log(`$ ${cmd}`);
     return execSync(cmd, {
       env: { ...process.env, ...envVars },
+      ...options,
     }).toString('utf8');
   } catch (err) {
     log(err);

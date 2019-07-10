@@ -71,7 +71,7 @@ async function dockerRun(
   showLogs: boolean
 ) {
   if (config) {
-    console.log(`Using config ${config}`);
+    console.log(`Using config ${config || 'default'}`);
   }
 
   console.log('Starting the container...');
