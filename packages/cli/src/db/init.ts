@@ -71,12 +71,6 @@ export default leaf({
       // wait just in case
       await delay(3 * SEC);
 
-      // execCmd(
-      //   `createuser --superuser ${envVars.PGUSER}`,
-      //   `Couldn't create a new user ${envVars.PGUSER}.`,
-      //   envVars
-      // );
-
       // optionally add the user
       try {
         execCmd(

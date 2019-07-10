@@ -92,6 +92,7 @@ export default leaf({
         // timeout
         const timer = setTimeout(() => {
           if (!ready && !proc.killed) {
+            console.log(`Timeout (${2 * MIN} secs)`);
             proc.kill();
           }
         }, 2 * MIN);

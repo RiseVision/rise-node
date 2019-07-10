@@ -75,10 +75,10 @@ export const root = branch({
     # RISE node on the host OS
     ./rise node start
     ./rise node stop
-    ./rise node rebuild-native
-    ./rise node install-deps
     ./rise node export-db
     ./rise node import-db
+    ./rise node install-deps
+    ./rise node rebuild-native
 
     # RISE node in Docker (experimental)
     ./rise docker build
@@ -90,10 +90,10 @@ export const root = branch({
     ./rise docker-compose stop
 
     # local DB
+    ./rise db install
     ./rise db init
     ./rise db start
     ./rise db stop
-    ./rise db install
 
     # printing config defaults
     ./rise config-defaults`,
