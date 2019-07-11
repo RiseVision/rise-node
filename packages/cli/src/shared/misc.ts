@@ -1,5 +1,6 @@
 // tslint:disable:no-console
-import { execSync } from 'child_process';
+import * as assert from 'assert';
+import { execSync, ExecSyncOptions } from 'child_process';
 import * as debug from 'debug';
 import * as extend from 'extend';
 import * as fs from 'fs';
@@ -24,12 +25,16 @@ export const DOCKER_CONFIG_FILE = DOCKER_DIR + '/config-docker.json';
 
 export const NODE_DIR = `${DOCKER_DIR}/source`;
 export const NODE_FILE = 'source.tar.gz';
+export const DATA_DIR = 'data';
+export const DB_DATA_DIR = DATA_DIR + '/db';
+export const DB_LOG_FILE = DATA_DIR + '/db.log';
+export const DB_LOCK_FILE = DB_DATA_DIR + '/postmaster.pid';
 
 export const DOWNLOAD_URL =
   'https://github.com/RiseVision/rise-node/releases/download/';
 export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
 export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
-export const BACKUPS_DIR = 'data/backups';
+export const BACKUPS_DIR = DATA_DIR + '/backups';
 
 export function isDevEnv() {
   return process.env.DEV;
@@ -116,8 +121,13 @@ export function getSourceFilePath(): string {
  */
 export function getPID(filePath: string): number | false {
   try {
-    const pid = fs.readFileSync(filePath, { encoding: 'utf8' });
-    const exists = execSync(`ps -p ${pid} -o pid=`);
+    const pid = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n')[0];
+    let exists: string;
+    try {
+      exists = execSync(`ps -p ${pid} -o pid=`).toString('utf8');
+    } catch {
+      // empty
+    }
     if (!exists) {
       fs.unlinkSync(NODE_LOCK_FILE);
       return false;
@@ -208,20 +218,26 @@ export function getBackupsDir(): string {
   return path.resolve(process.cwd(), BACKUPS_DIR);
 }
 
-export function getBackupLockFile(): string {
-  return path.resolve(process.cwd(), BACKUP_LOCK_FILE);
+export function setBackupLock() {
+  fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
+}
+
+export function removeBackupLock() {
+  fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
 export function execCmd(
   cmd: string,
   errorMsg?: string | null,
-  envVars?: { [name: string]: string }
+  envVars?: { [name: string]: string } | null,
+  options?: ExecSyncOptions
 ): string {
   errorMsg = errorMsg || `Command '${cmd} failed`;
   try {
     log(`$ ${cmd}`);
     return execSync(cmd, {
       env: { ...process.env, ...envVars },
+      ...options,
     }).toString('utf8');
   } catch (err) {
     log(err);
@@ -250,6 +266,7 @@ export function createWaitForReady(
     }
     // check if the output reached the desired line
     if (data.includes('Blockchain ready')) {
+      console.log('Blockchain ready');
       setReady();
       // keep streaming the output if in the foreground
       if (!params.foreground) {
@@ -261,4 +278,33 @@ export function createWaitForReady(
 
 export function getCoreRiseDir(): string {
   return path.resolve(process.cwd(), NODE_DIR, 'packages', 'rise');
+}
+
+export const cmdSilenceString = '>> /dev/null 2>&1';
+
+export function getDBVars(network: TNetworkType, config: string | null) {
+  const mergedConfig = mergeConfig(network, config);
+  const { host, port, database, user, password } = mergedConfig.db;
+  assert(host);
+  assert(port);
+  assert(database);
+  assert(password);
+
+  return {
+    PGDATABASE: database,
+    PGHOST: host,
+    PGPASSWORD: password,
+    PGPORT: port.toString(),
+    PGUSER: user,
+  };
+}
+
+export function printUsingConfig(network: TNetworkType, config: string | null) {
+  if (config) {
+    console.log(
+      `Using the config from ./${config} and inheriting from network "${network}".`
+    );
+  } else {
+    console.log(`Using the default config for network "${network}".`);
+  }
 }

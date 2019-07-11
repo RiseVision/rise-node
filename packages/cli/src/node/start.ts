@@ -16,6 +16,7 @@ import {
   log,
   MIN,
   NODE_LOCK_FILE,
+  printUsingConfig,
 } from '../shared/misc';
 import {
   configOption,
@@ -48,13 +49,14 @@ export default leaf({
     show_logs,
   }: TOptions): Promise<boolean> {
     if (!checkConditions(config)) {
-      return false;
+      return;
     }
     const showLogs = show_logs || foreground;
     const configPath = config ? path.resolve(config) : null;
 
-    console.log(`Using config ${configPath}`);
+    printUsingConfig(network, config);
     console.log('Starting RISE node...');
+    console.log(`PID ${process.pid}`);
 
     try {
       let ready = false;
@@ -79,6 +81,7 @@ export default leaf({
         if (!isDevEnv()) {
           fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
         }
+        // wait for "Blockchain ready"
         const waitForReady = createWaitForReady(
           { foreground, showLogs },
           () => {
@@ -86,15 +89,17 @@ export default leaf({
           },
           resolve
         );
+        // timeout
         const timer = setTimeout(() => {
-          if (!proc.killed) {
+          if (!ready && !proc.killed) {
+            console.log(`Timeout (${2 * MIN} secs)`);
             proc.kill();
           }
         }, 2 * MIN);
         proc.stdout.on('data', waitForReady);
         proc.stderr.on('data', waitForReady);
         proc.on('close', (code) => {
-          log('close', code);
+          log('close, exit code = ', code);
           clearTimeout(timer);
           code ? reject(code) : resolve(code);
         });
@@ -110,10 +115,9 @@ export default leaf({
       if (foreground && !isDevEnv()) {
         fs.unlinkSync(NODE_LOCK_FILE);
       }
-      return true;
+      return;
     } catch (e) {
       console.log('Something went wrong. Examine the log using --show_logs.');
-      console.error(e);
       process.exit(1);
     }
   },

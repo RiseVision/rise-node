@@ -1,19 +1,32 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { getNodePID, NODE_LOCK_FILE } from '../shared/misc';
+import { getNodePID } from '../shared/misc';
 
 export default leaf({
   commandName: 'stop',
   description: 'Stops the node using the PID file',
 
-  async action() {
-    const pid = getNodePID();
-    if (!pid) {
-      console.log('ERROR: No node running...');
-      return;
+  action() {
+    try {
+      nodeStop();
+    } catch {
+      console.log(
+        '\nError while stopping the node. Examine the log using --show_logs.'
+      );
+      process.exit(1);
     }
-    console.log(`Killing RISE node with PID ${pid}`);
-
-    process.kill(pid);
   },
 });
+
+export function nodeStop(showErrors = true) {
+  const pid = getNodePID();
+  if (!pid) {
+    if (showErrors) {
+      console.log('ERROR: No node running...');
+    }
+    return;
+  }
+  console.log(`Killing RISE node with PID ${pid}`);
+
+  process.kill(pid);
+}

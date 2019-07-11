@@ -11,6 +11,7 @@ import {
   getDockerDir,
   log,
   MIN,
+  printUsingConfig,
   TNetworkType,
 } from '../shared/misc';
 import {
@@ -71,7 +72,7 @@ async function dockerRun(
   showLogs: boolean
 ) {
   if (config) {
-    console.log(`Using config ${config}`);
+    printUsingConfig(network, config);
   }
 
   console.log('Starting the container...');

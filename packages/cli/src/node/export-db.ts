@@ -1,21 +1,22 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import * as assert from 'assert';
 import * as fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import * as path from 'path';
 import {
-  BACKUP_LOCK_FILE,
   BACKUPS_DIR,
   checkNodeDirExists,
   execCmd,
   extractSourceFile,
   getBackupPID,
   getBackupsDir,
+  getDBVars,
   getNodePID,
   hasLocalPostgres,
   log,
-  mergeConfig,
+  printUsingConfig,
+  removeBackupLock,
+  setBackupLock,
 } from '../shared/misc';
 import {
   configOption,
@@ -23,7 +24,7 @@ import {
   INetwork,
   networkOption,
 } from '../shared/options';
-import nodeStop from './stop';
+import { nodeStop } from './stop';
 
 export type TOptions = IConfig & INetwork;
 
@@ -38,27 +39,19 @@ export default leaf({
 
   async action({ config, network }: TOptions) {
     if (!checkConditions(config)) {
-      return false;
+      return;
     }
-    fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
+    printUsingConfig(network, config);
+    setBackupLock();
     mkdirpSync(getBackupsDir());
-    const mergedConfig = mergeConfig(network, config);
-    const { host, port, database, user, password } = mergedConfig.db;
+    const envVars = getDBVars(network, config);
+    const database = envVars.PGDATABASE;
+    // TODO drop the _snap db after exporting?
     const targetDB = `${database}_snap`;
-    assert(host);
-    assert(port);
-    assert(database);
-    assert(password);
 
-    const envVars = {
-      PGDATABASE: database,
-      PGHOST: host,
-      PGPASSWORD: password,
-      PGPORT: port.toString(),
-      PGUSER: user,
-    };
+    nodeStop(false);
 
-    await nodeStop.action({});
+    log(envVars);
 
     try {
       execCmd(
@@ -99,18 +92,18 @@ export default leaf({
         envVars
       );
 
-      const latestFile = path.join(process.cwd(), 'latest');
-      const symlinkSrc = path.relative(latestFile, backupPath);
-
+      // link the `latest` file
       execCmd(
-        `ln -sf "${symlinkSrc}" "${latestFile}"`,
-        `Couldn't symlink ${process.cwd()}/latest to the backup file`
+        `ln -sf ${backupName} latest`,
+        `Couldn't symlink ${process.cwd()}/latest to the backup file`,
+        null,
+        { cwd: getBackupsDir() }
       );
-      console.log(`Created a backup file ${process.cwd()}/${backupName}.`);
+      console.log(`Created a DB backup file "./${backupName}".`);
     } catch (e) {
       console.log('Error when creating the backup file');
     }
-    fs.unlinkSync(BACKUP_LOCK_FILE);
+    removeBackupLock();
   },
 });
 
