@@ -7,6 +7,7 @@ import {
   DB_DATA_DIR,
   DB_LOCK_FILE,
   DB_LOG_FILE,
+  DB_PG_CTL,
   execCmd,
   extractSourceFile,
   getDBVars,
@@ -47,8 +48,8 @@ export default leaf({
 });
 
 export async function dbStart({ config, network, show_logs }: TOptions) {
-  if (!checkNodeDirExists(true)) {
-    extractSourceFile();
+  if (!checkNodeDirExists(false, true)) {
+    extractSourceFile(true);
   }
   if (getPID(DB_LOCK_FILE)) {
     console.log('DB already running');
@@ -57,7 +58,7 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
   printUsingConfig(network, config);
 
   const silent = show_logs ? '' : cmdSilenceString;
-  const envVars = getDBVars(network, config);
+  const envVars = getDBVars(network, config, true);
 
   console.log(
     'Starting the DB...\n' +
@@ -70,7 +71,7 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
   log(envVars);
 
   execCmd(
-    `pg_ctl -D ${DB_DATA_DIR} -l ${DB_LOG_FILE} start ${silent}`,
+    `${DB_PG_CTL} -D ${DB_DATA_DIR} -l ${DB_LOG_FILE} start ${silent}`,
     `Examine the log using --show_logs and check ${DB_LOG_FILE}.`,
     envVars
   );

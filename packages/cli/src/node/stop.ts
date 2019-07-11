@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { getNodePID } from '../shared/misc';
+import { getNodePID, log } from '../shared/misc';
 
 export default leaf({
   commandName: 'stop',
@@ -19,6 +19,7 @@ export default leaf({
 });
 
 export function nodeStop(showErrors = true) {
+  log('nodeStop');
   const pid = getNodePID();
   if (!pid) {
     if (showErrors) {

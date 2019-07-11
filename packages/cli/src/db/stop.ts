@@ -5,7 +5,7 @@ import {
   cmdSilenceString,
   DB_DATA_DIR,
   DB_LOCK_FILE,
-  DB_LOG_FILE,
+  DB_LOG_FILE, DB_PG_CTL,
   execCmd,
   extractSourceFile,
   getDBVars,
@@ -46,8 +46,8 @@ export default leaf({
 });
 
 export async function dbStop({ config, network, show_logs }: TOptions) {
-  if (!checkNodeDirExists(true)) {
-    extractSourceFile();
+  if (!checkNodeDirExists(true, true)) {
+    extractSourceFile(true);
   }
   if (!getPID(DB_LOCK_FILE)) {
     console.log('DB not running');
@@ -56,12 +56,12 @@ export async function dbStop({ config, network, show_logs }: TOptions) {
   printUsingConfig(network, config);
 
   const silent = show_logs ? '' : cmdSilenceString;
-  const envVars = getDBVars(network, config);
+  const envVars = getDBVars(network, config, true);
 
   log(envVars);
 
   execCmd(
-    `pg_ctl -D ${DB_DATA_DIR} -l ${DB_LOG_FILE} stop ${silent}`,
+    `${DB_PG_CTL} -D ${DB_DATA_DIR} -l ${DB_LOG_FILE} stop ${silent}`,
     "Couldn't stop the DB.",
     envVars
   );

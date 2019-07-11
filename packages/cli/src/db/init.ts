@@ -1,12 +1,14 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import delay from 'delay';
+import * as path from 'path';
 import { nodeStop } from '../node/stop';
 import {
   checkNodeDirExists,
   cmdSilenceString,
   DB_DATA_DIR,
   DB_LOG_FILE,
+  DB_PG_CTL,
   execCmd,
   extractSourceFile,
   getDBVars,
@@ -38,13 +40,13 @@ export default leaf({
 
   async action({ config, network, show_logs }: TOptions) {
     try {
-      if (!checkNodeDirExists(true)) {
-        extractSourceFile();
+      if (!checkNodeDirExists(false, true)) {
+        extractSourceFile(true);
       }
       printUsingConfig(network, config);
 
       const silent = show_logs ? '' : cmdSilenceString;
-      const envVars = getDBVars(network, config);
+      const envVars = getDBVars(network, config, true);
 
       // stop the node and DB
       nodeStop(false);
@@ -59,7 +61,7 @@ export default leaf({
       );
 
       execCmd(
-        `pg_ctl init -D ${DB_DATA_DIR} ${silent}`,
+        `${DB_PG_CTL} init -D ${DB_DATA_DIR} ${silent}`,
         `Couldn't init a new DB data dir in ${DB_DATA_DIR}.`,
         envVars
       );
@@ -101,9 +103,9 @@ export default leaf({
       );
 
       execCmd(
-        `psql -c "ALTER USER rise WITH PASSWORD '${envVars.PGPASSWORD}';" -d ${
-          envVars.PGDATABASE
-        }`,
+        `psql -c "ALTER USER ${envVars.PGUSER} WITH PASSWORD '${
+          envVars.PGPASSWORD
+        }';" -d ${envVars.PGDATABASE}`,
         `Couldn't set the password for user ${envVars.PGUSER}.`,
         {
           PGHOST: envVars.PGHOST,
@@ -113,13 +115,40 @@ export default leaf({
 
       console.log('DB succesfully initialized and running.');
     } catch {
+      let cmd = path.resolve(__dirname, 'rise') + ' db init';
+      if (config) {
+        cmd += ` --config=${config}`;
+      }
+      if (network !== 'mainnet') {
+        cmd += ` --network=${network}`;
+      }
+
       console.log(
         '\nError while initializing a PostgreSQL database.\n' +
-          'Make sure you\'re the "postgres" user:\n' +
-          '$ sudo su - postgres\n\n' +
+          getLinuxHelpMsg(config, network) +
           `Examine the log using --show_logs and check ${DB_LOG_FILE}.`
       );
       process.exit(1);
     }
   },
 });
+
+function getLinuxHelpMsg(config, network) {
+  if (process.platform !== 'linux') {
+    return '';
+  }
+  let cmd = path.resolve(__dirname, 'rise') + ' db init';
+  if (config) {
+    cmd += ` --config=${path.resolve(__dirname, config)}`;
+  }
+  if (network !== 'mainnet') {
+    cmd += ` --network=${network}`;
+  }
+  return (
+    'Make sure you\'re logged in as "postgres" user:\n' +
+    '$ sudo su - postgres\n\n' +
+    'Then run the following command:\n' +
+    cmd +
+    '\n'
+  );
+}

@@ -21,12 +21,16 @@ export default leaf({
     const silent = show_logs ? '' : cmdSilenceString;
 
     try {
+      const cmd =
+        'apt-get install -y build-essential python postgresql-server-dev-all';
+
       execCmd(
-        'apt-get install -y build-essential python ' +
-          `postgresql-server-dev-all ${silent}`,
+        cmd + ' ' + silent,
         "Couldn't install required dependencies.\n\n" +
-          "Make sure you're using `sudo`" +
-          '$ sudo ./rise node install-deps'
+          "Make sure you're using `sudo`:\n" +
+          '$ sudo ./rise node install-deps\n' +
+          'Alternatively run the following command manually:\n' +
+          `$ sudo ${cmd}`
       );
 
       console.log('RISE node dependencies have been installed.');

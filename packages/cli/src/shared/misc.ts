@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export const VERSION = 'v1.0.0';
-export const NODE_VERSION = 'v2.0.0-beta2';
+export const NODE_VERSION = 'v2.0.0-beta3';
 
 // TODO single enum for NETWORKS and NetworkType
 export const NETWORKS = ['mainnet', 'testnet', 'devnet'];
@@ -29,6 +29,8 @@ export const DATA_DIR = 'data';
 export const DB_DATA_DIR = DATA_DIR + '/db';
 export const DB_LOG_FILE = DATA_DIR + '/db.log';
 export const DB_LOCK_FILE = DB_DATA_DIR + '/postmaster.pid';
+export const DB_PG_CTL =
+  process.platform === 'linux' ? '/usr/lib/postgresql/11/bin/pg_ctl' : 'pg_ctl';
 
 export const DOWNLOAD_URL =
   'https://github.com/RiseVision/rise-node/releases/download/';
@@ -40,18 +42,24 @@ export function isDevEnv() {
   return process.env.DEV;
 }
 
-export function getDockerDir(): string {
-  return path.resolve(process.cwd(), DOCKER_DIR);
+export function getDockerDir(relativeToCLI = false): string {
+  const root = relativeToCLI ? __dirname : process.cwd();
+  return path.resolve(root, DOCKER_DIR);
 }
 
-export function getNodeDir(): string {
-  return path.resolve(process.cwd(), NODE_DIR);
+export function getNodeDir(relativeToCLI = false): string {
+  const root = relativeToCLI ? __dirname : process.cwd();
+  return path.resolve(root, NODE_DIR);
 }
 
-export function checkNodeDirExists(silent = false): boolean {
-  if (!fs.existsSync(NODE_DIR) || !fs.lstatSync(NODE_DIR).isDirectory()) {
+export function checkNodeDirExists(
+  silent = false,
+  relativeToCLI = false
+): boolean {
+  const dirPath = relativeToCLI ? path.resolve(__dirname, NODE_DIR) : NODE_DIR;
+  if (!fs.existsSync(dirPath) || !fs.lstatSync(dirPath).isDirectory()) {
     if (!silent) {
-      console.log(`Error: directory '${NODE_DIR}' doesn't exist.`);
+      console.log(`Error: directory '${dirPath}' doesn't exist.`);
       console.log('You can download the latest version using:');
       console.log('  ./rise node download');
     }
@@ -83,16 +91,16 @@ export function checkDockerDirExists(): boolean {
   return true;
 }
 
-export function extractSourceFile() {
-  const filePath = getSourceFilePath();
+export function extractSourceFile(relativeToCLI = false) {
+  const filePath = getSourceFilePath(relativeToCLI);
   if (!fs.existsSync(filePath)) {
     throw new Error(`File ${filePath} doesn't exist`);
   }
 
   console.log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
   execCmd(
-    `cd ${getDockerDir()} && tar -zxf ${NODE_FILE}`,
-    `Couldn't extract ${getSourceFilePath()}`
+    `cd ${getDockerDir(relativeToCLI)} && tar -zxf ${NODE_FILE}`,
+    `Couldn't extract ${getSourceFilePath(relativeToCLI)}`
   );
 }
 
@@ -108,8 +116,9 @@ export function getLaunchpadFilePath(): string {
 /**
  * Returns the path to the rise-node.tar.gz file.
  */
-export function getSourceFilePath(): string {
-  return path.resolve(path.join(process.cwd(), DOCKER_DIR, NODE_FILE));
+export function getSourceFilePath(relativeToCLI = false): string {
+  const root = relativeToCLI ? __dirname : process.cwd();
+  return path.resolve(root, DOCKER_DIR, NODE_FILE);
 }
 
 /**
@@ -176,9 +185,12 @@ export interface INodeConfig {
   };
 }
 
-export function getConfigPath(networkType: TNetworkType): string {
+export function getConfigPath(
+  networkType: TNetworkType,
+  relativeToCLI = false
+): string {
   return path.resolve(
-    getNodeDir(),
+    getNodeDir(relativeToCLI),
     'packages',
     'rise',
     'etc',
@@ -192,10 +204,11 @@ export function getConfigPath(networkType: TNetworkType): string {
  */
 export function mergeConfig(
   networkType: TNetworkType,
-  configPath?: string | null
+  configPath?: string | null,
+  relativeToCLI = false
 ): INodeConfig {
-  checkNodeDirExists();
-  const parentConfigPath = getConfigPath(networkType);
+  checkNodeDirExists(false, relativeToCLI);
+  const parentConfigPath = getConfigPath(networkType, relativeToCLI);
   if (!fs.existsSync(parentConfigPath)) {
     throw new Error(`Parent config ${parentConfigPath} doesn't exist`);
   }
@@ -282,8 +295,12 @@ export function getCoreRiseDir(): string {
 
 export const cmdSilenceString = '>> /dev/null 2>&1';
 
-export function getDBVars(network: TNetworkType, config: string | null) {
-  const mergedConfig = mergeConfig(network, config);
+export function getDBVars(
+  network: TNetworkType,
+  config: string | null,
+  relativeToCLI = false
+) {
+  const mergedConfig = mergeConfig(network, config, relativeToCLI);
   const { host, port, database, user, password } = mergedConfig.db;
   assert(host);
   assert(port);
@@ -302,7 +319,7 @@ export function getDBVars(network: TNetworkType, config: string | null) {
 export function printUsingConfig(network: TNetworkType, config: string | null) {
   if (config) {
     console.log(
-      `Using the config from ./${config} and inheriting from network "${network}".`
+      `Using the config from "${config}" and inheriting from network "${network}".`
     );
   } else {
     console.log(`Using the default config for network "${network}".`);
