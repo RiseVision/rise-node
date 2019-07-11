@@ -47,22 +47,26 @@ export class ValidatePeerHeaders implements ITransportMiddleware {
       !this.systemModule.networkCompatible(request.headers.nethash as string)
     ) {
       this.removePeer(request);
-      // TODO: convert this into an error.
-      return next({
-        expected: this.systemModule.getNethash(),
-        message: 'Request is made on the wrong network',
-        received: request.headers.nethash,
-      });
+      // tslint:disable-next-line
+      return next(
+        new Error(
+          `Request is made on the wrong network: Expected: ${this.systemModule.getNethash()} - Received: ${
+            request.headers.nethash
+          }`
+        )
+      );
     }
 
     if (!this.systemModule.versionCompatible(request.headers.version)) {
       this.removePeer(request);
-      // TODO: Convert this into an error
-      return next({
-        expected: this.systemModule.getMinVersion(),
-        message: 'Request is made from incompatible version',
-        received: request.headers.version,
-      });
+      // tslint:disable-next-line
+      return next(
+        new Error(
+          `Request is made from incompatible version: Expected: ${this.systemModule.getMinVersion()} - Received: ${
+            request.headers.version
+          }`
+        )
+      );
     }
 
     // Add peer only if not firewalled
