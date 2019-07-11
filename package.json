@@ -60,7 +60,7 @@
     "js-flock": "=3.5.3",
     "json-schema": "=0.2.3",
     "jsonpath": "^1.0.0",
-    "lodash": "4.17.11",
+    "lodash": "4.17.13",
     "long": "=4.0.0",
     "pg-native": "^3.0.0",
     "pg-promise": "=7.3.2",

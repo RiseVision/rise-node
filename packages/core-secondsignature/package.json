@@ -24,7 +24,7 @@
     "@risevision/core-types": "^1.0.0",
     "@risevision/core-utils": "^1.0.0",
     "inversify": "5.0.1",
-    "lodash": "4.17.11",
+    "lodash": "4.17.13",
     "mangiafuoco": "1.2.3",
     "reflect-metadata": "^0.1.10",
     "routing-controllers": "=0.7.7",
