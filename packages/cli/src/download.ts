@@ -6,6 +6,7 @@ import * as https from 'https';
 import { rebuildNative } from './node/rebuild-native';
 import {
   DIST_FILE,
+  DOCKER_DIR,
   DOWNLOAD_URL,
   execCmd,
   extractSourceFile,
@@ -69,6 +70,10 @@ export default leaf({
     console.log('Download completed');
 
     console.log(`Extracting ${DIST_FILE}`);
+    execCmd(
+      `rm -Rf ${DOCKER_DIR}`,
+      `Couldn't remove the old version in ${DOCKER_DIR}`
+    );
     execCmd(`tar -zxf ${DIST_FILE}`, `Couldn't extract ${DIST_FILE}`);
 
     extractSourceFile();
