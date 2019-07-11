@@ -1,11 +1,10 @@
 module.exports = {
   '@risevision/rise': {
-    // TODO: changeme
-    dposFeesSwitchHeight: 2000000,
-    dposRandSwitchRound: 2000000,
+    dposFeesSwitchHeight: 102,
+    dposRandSwitchRound: 10,
   },
   '@risevision/core-accounts': {
-    addressRegex: '^(([0-9]{1,20}R)|((t|r)ise1[a-z0-9]{10,}))$',
+    addressRegex: '^(([0-9]{1,20}R)|(dise1[a-z0-9]{10,}))$',
   },
   '@risevision/core': {
     amountBytes: 8,
