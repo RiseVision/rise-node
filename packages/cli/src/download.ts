@@ -3,7 +3,6 @@ import { leaf, option } from '@carnesen/cli';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
-import { rebuildNative } from './node/rebuild-native';
 import {
   DIST_FILE,
   DOCKER_DIR,
@@ -21,12 +20,6 @@ export default leaf({
     'Automatically rebuilds native node modules (optional).',
 
   options: {
-    skip_rebuild: option({
-      defaultValue: false,
-      description: "Don't rebuild native node modules",
-      nullable: true,
-      typeName: 'boolean',
-    }),
     version: option({
       defaultValue: NODE_VERSION,
       description: 'Version number to download, eg v2.0.0',
@@ -35,13 +28,7 @@ export default leaf({
     }),
   },
 
-  async action({
-    version,
-    skip_rebuild,
-  }: {
-    version: string;
-    skip_rebuild: boolean;
-  }) {
+  async action({ version }: { version: string; skip_rebuild: boolean }) {
     const url = isDevEnv()
       ? `http://localhost:8080/${DIST_FILE}`
       : DOWNLOAD_URL + version + '/' + DIST_FILE;
@@ -78,10 +65,6 @@ export default leaf({
 
     extractSourceFile();
 
-    if (!skip_rebuild) {
-      await rebuildNative({ show_logs: false });
-    }
-
     await new Promise((resolve) => {
       fs.unlink(DIST_FILE, resolve);
     });
@@ -89,6 +72,7 @@ export default leaf({
     console.log('Done');
     console.log('');
     console.log('You can start a node using:');
+    console.log('  ./rise node install-deps');
     console.log('  ./rise node start');
     console.log('');
     console.log('You can start a container using:');

@@ -7,14 +7,19 @@ import * as path from 'path';
 import {
   checkLaunchpadExists,
   checkNodeDirExists,
-  createWaitForReady,
+  createParseNodeOutput,
+  DBConnectionError,
+  dbConnectionInfo,
+  ConditionsNotMetError,
   extractSourceFile,
   getCoreRiseDir,
+  getDBEnvVars,
   getLaunchpadFilePath,
   getNodePID,
   isDevEnv,
   log,
   MIN,
+  NativeModulesError,
   NODE_LOCK_FILE,
   printUsingConfig,
 } from '../shared/misc';
@@ -28,6 +33,7 @@ import {
   networkOption,
   showLogsOption,
 } from '../shared/options';
+import { nodeRebuildNative } from './rebuild-native';
 
 export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
 
@@ -42,86 +48,134 @@ export default leaf({
     ...showLogsOption,
   },
 
-  async action({
-    config,
-    network,
-    foreground,
-    show_logs,
-  }: TOptions): Promise<boolean> {
-    if (!checkConditions(config)) {
-      return;
-    }
-    const showLogs = show_logs || foreground;
-    const configPath = config ? path.resolve(config) : null;
-
-    printUsingConfig(network, config);
-    console.log('Starting RISE node...');
-    console.log(`PID ${process.pid}`);
-
+  async action(options: TOptions) {
     try {
-      let ready = false;
-      await new Promise((resolve, reject) => {
-        const cmd = getLaunchpadFilePath();
-        const params = ['--net', network];
-        if (configPath) {
-          params.push('-e', configPath);
-        }
-        log('$', cmd + ' ' + params.join(' '));
-
-        // run the command
-        const proc = spawn(cmd, params, {
-          cwd: getCoreRiseDir(),
-          shell: true,
-        });
-
-        // quit the child process gracefully
-        process.on('SIGINT', () => handleSigInt(proc));
-
-        // save the PID (not in DEV)
-        if (!isDevEnv()) {
-          fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
-        }
-        // wait for "Blockchain ready"
-        const waitForReady = createWaitForReady(
-          { foreground, showLogs },
-          () => {
-            ready = true;
-          },
-          resolve
-        );
-        // timeout
-        const timer = setTimeout(() => {
-          if (!ready && !proc.killed) {
-            console.log(`Timeout (${2 * MIN} secs)`);
-            proc.kill();
-          }
-        }, 2 * MIN);
-        proc.stdout.on('data', waitForReady);
-        proc.stderr.on('data', waitForReady);
-        proc.on('close', (code) => {
-          log('close, exit code = ', code);
-          clearTimeout(timer);
-          code ? reject(code) : resolve(code);
-        });
-      });
-      log('done');
-      if (!ready || foreground) {
-        console.log('Something went wrong. Examine the log using --show_logs.');
-        process.exit(1);
-      }
-      if (!foreground) {
-        console.log('Node started');
-      }
-      if (foreground && !isDevEnv()) {
-        fs.unlinkSync(NODE_LOCK_FILE);
-      }
-      return;
+      await nodeStart(options);
     } catch (e) {
+      log(e);
       console.log('Something went wrong. Examine the log using --show_logs.');
       process.exit(1);
     }
   },
 });
+
+/**
+ * Starts a node or throws an exception.
+ */
+export async function nodeStart(
+  { config, foreground, network, show_logs }: TOptions,
+  rebuildNative = true,
+  skipPIDCheck = false
+) {
+  checkConditions(config, skipPIDCheck);
+
+  show_logs = show_logs || foreground;
+
+  printUsingConfig(network, config);
+  console.log('Starting RISE node...');
+
+  let ready = false;
+  try {
+    await startLaunchpad(
+      {
+        config,
+        foreground,
+        network,
+        show_logs,
+      },
+      () => {
+        ready = true;
+      }
+    );
+    if (!ready || foreground) {
+      throw new Error('Never reached "Blockchain ready"');
+    }
+    if (!foreground) {
+      console.log('Node started');
+    }
+    if (foreground && !isDevEnv()) {
+      fs.unlinkSync(NODE_LOCK_FILE);
+    }
+    log('nodeStart done');
+  } catch (err) {
+    log(err);
+    if (err instanceof NativeModulesError) {
+      console.log('Native modules need rebuilding');
+      if (rebuildNative) {
+        await nodeRebuildNative({ show_logs });
+        // try to start the node again, but skipping the rebuild and the
+        // PID check
+        await nodeStart(
+          { config, foreground, network, show_logs },
+          false,
+          true
+        );
+      } else {
+        log('Automatic rebuild-native failed');
+        throw err;
+      }
+    } else if (err instanceof DBConnectionError) {
+      console.log("ERROR: Couldn't connect to the DB");
+      console.log(dbConnectionInfo(getDBEnvVars(network, config)));
+      throw err;
+    }
+  }
+}
+
+function startLaunchpad(
+  { config, network, foreground, show_logs }: TOptions,
+  setReady: () => void
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    try {
+      const cmd = getLaunchpadFilePath();
+      const params = ['--net', network];
+      if (config) {
+        params.push('-e', path.resolve(config));
+      }
+      log('$', cmd + ' ' + params.join(' '));
+
+      // wait for "Blockchain ready"
+      const parseNodeOutput = createParseNodeOutput(
+        { foreground, show_logs },
+        setReady,
+        resolve,
+        reject
+      );
+      // run the command
+      const proc = spawn(cmd, params, {
+        cwd: getCoreRiseDir(),
+        shell: true,
+      });
+      console.log(`PID ${proc.pid}`);
+      // timeout
+      const timer = setTimeout(() => {
+        if (!proc.killed) {
+          console.log(`Timeout (${2 * MIN} secs)`);
+          proc.kill();
+        }
+      }, 2 * MIN);
+      proc.stdout.on('data', parseNodeOutput);
+      proc.stderr.on('data', parseNodeOutput);
+      proc.on('close', (code) => {
+        log('close, exit code = ', code);
+        clearTimeout(timer);
+        code ? reject(code) : resolve(code);
+      });
+
+      // quit the child process gracefully
+      process.on('SIGINT', () => handleSigInt(proc));
+
+      // save the PID (not in DEV)
+      if (!isDevEnv()) {
+        log(`Creating lock file ${NODE_LOCK_FILE} (${proc.pid})`);
+        fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
 
 function handleSigInt(proc: ChildProcess) {
   log('Caught a SIGINT');
@@ -135,25 +189,23 @@ function handleSigInt(proc: ChildProcess) {
   }
 }
 
-function checkConditions(config: string): boolean {
+function checkConditions(config: string, skipPIDCheck = false) {
   if (!checkNodeDirExists(true)) {
     extractSourceFile();
   }
-  if (!checkLaunchpadExists()) {
-    return false;
-  }
+  checkLaunchpadExists();
   // check the PID, but not when in DEV
-  if (!isDevEnv()) {
+  if (!isDevEnv() && !skipPIDCheck) {
     const pid = getNodePID();
     if (pid) {
-      console.log(`ERROR: Node already running as PID ${pid}.`);
-      return false;
+      throw new ConditionsNotMetError(
+        `ERROR: Node already running as PID ${pid}.`
+      );
     }
   }
   if (config && !fs.existsSync(config)) {
-    console.log(`ERROR: Config file doesn't exist.\n${config}`);
-    return false;
+    throw new ConditionsNotMetError(
+      `ERROR: Config file doesn't exist.\n${config}`
+    );
   }
-
-  return true;
 }

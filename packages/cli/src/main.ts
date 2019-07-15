@@ -17,6 +17,7 @@ import nodeImportDB from './node/import-db';
 import nodeInstallDeps from './node/install-deps';
 import nodeRebuildNative from './node/rebuild-native';
 import nodeStart from './node/start';
+import nodeStatus from './node/status';
 import nodeStop from './node/stop';
 import { VERSION } from './shared/misc';
 
@@ -27,11 +28,12 @@ export const node = branch({
   description: 'RISE node on the host OS',
   subcommands: [
     nodeStart,
-    nodeRebuildNative,
     nodeStop,
+    nodeStatus,
     nodeExportDB,
     nodeImportDB,
     nodeInstallDeps,
+    nodeRebuildNative,
   ],
 });
 
@@ -75,6 +77,7 @@ export const root = branch({
     # RISE node on the host OS
     ./rise node start
     ./rise node stop
+    ./rise node status
     ./rise node export-db
     ./rise node import-db
     ./rise node install-deps

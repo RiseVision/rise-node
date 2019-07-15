@@ -8,7 +8,7 @@ import {
   execCmd,
   extractSourceFile,
   getBackupPID,
-  getDBVars,
+  getDBEnvVars,
   getNodePID,
   hasLocalPostgres,
   removeBackupLock,
@@ -44,13 +44,12 @@ export default leaf({
       return;
     }
     setBackupLock();
-    const envVars = getDBVars(network, config);
+    const envVars = getDBEnvVars(network, config);
     const database = envVars.PGDATABASE;
 
     nodeStop(false);
 
     try {
-      // TODO extract to `db init`
       execCmd(
         `dropdb --if-exists ${database}`,
         `Couldn't drop DB ${database}`,

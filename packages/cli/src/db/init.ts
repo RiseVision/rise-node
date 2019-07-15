@@ -11,7 +11,7 @@ import {
   DB_PG_CTL,
   execCmd,
   extractSourceFile,
-  getDBVars,
+  getDBEnvVars,
   log,
   printUsingConfig,
   SEC,
@@ -46,7 +46,7 @@ export default leaf({
       printUsingConfig(network, config);
 
       const silent = show_logs ? '' : cmdSilenceString;
-      const envVars = getDBVars(network, config, true);
+      const envVars = getDBEnvVars(network, config, true);
 
       // stop the node and DB
       nodeStop(false);

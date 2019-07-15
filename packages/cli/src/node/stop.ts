@@ -23,7 +23,7 @@ export function nodeStop(showErrors = true) {
   const pid = getNodePID();
   if (!pid) {
     if (showErrors) {
-      console.log('ERROR: No node running...');
+      console.log("RISE node isn't running");
     }
     return;
   }

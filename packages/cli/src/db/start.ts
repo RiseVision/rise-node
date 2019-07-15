@@ -8,9 +8,10 @@ import {
   DB_LOCK_FILE,
   DB_LOG_FILE,
   DB_PG_CTL,
+  dbConnectionInfo,
   execCmd,
   extractSourceFile,
-  getDBVars,
+  getDBEnvVars,
   getPID,
   log,
   printUsingConfig,
@@ -58,13 +59,9 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
   printUsingConfig(network, config);
 
   const silent = show_logs ? '' : cmdSilenceString;
-  const envVars = getDBVars(network, config, true);
+  const envVars = getDBEnvVars(network, config, true);
 
-  console.log(
-    'Starting the DB...\n' +
-      `Host: ${envVars.PGHOST}\n` +
-      `Port: ${envVars.PGPORT}`
-  );
+  console.log('Starting the DB...\n' + dbConnectionInfo(envVars));
 
   nodeStop(false);
 

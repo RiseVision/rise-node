@@ -16,7 +16,7 @@ export default leaf({
 
   async action({ show_logs }: IShowLogs) {
     try {
-      rebuildNative({ show_logs });
+      nodeRebuildNative({ show_logs });
     } catch {
       console.log(
         '\nError while rebuilding native node modules. ' +
@@ -27,13 +27,14 @@ export default leaf({
   },
 });
 
-export function rebuildNative({ show_logs }: IShowLogs) {
+export function nodeRebuildNative({ show_logs }: IShowLogs) {
   if (!checkNodeDirExists(true)) {
     extractSourceFile();
   }
 
   const silent = show_logs ? '' : cmdSilenceString;
 
+  console.log('Rebuilding native modules...');
   execCmd(
     `npm rebuild ${silent}`,
     "Couldn't rebuild native modules.\n\n" +

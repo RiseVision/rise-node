@@ -5,10 +5,11 @@ import {
   cmdSilenceString,
   DB_DATA_DIR,
   DB_LOCK_FILE,
-  DB_LOG_FILE, DB_PG_CTL,
+  DB_LOG_FILE,
+  DB_PG_CTL,
   execCmd,
   extractSourceFile,
-  getDBVars,
+  getDBEnvVars,
   getPID,
   log,
   printUsingConfig,
@@ -56,7 +57,7 @@ export async function dbStop({ config, network, show_logs }: TOptions) {
   printUsingConfig(network, config);
 
   const silent = show_logs ? '' : cmdSilenceString;
-  const envVars = getDBVars(network, config, true);
+  const envVars = getDBEnvVars(network, config, true);
 
   log(envVars);
 

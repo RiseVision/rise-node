@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-  createWaitForReady,
+  createParseNodeOutput,
   DOCKER_CONTAINER_NAME,
   DOCKER_DIR,
   DOCKER_IMAGE_NAME,
@@ -48,13 +48,13 @@ export default leaf({
       console.log("ERROR: Config file doesn't exist.");
       return;
     }
-    const showLogs = show_logs || foreground;
+    show_logs = show_logs || foreground;
 
     // TODO check if docker is running
     try {
       await dockerStop();
       await dockerRemove();
-      await dockerRun(configPath, network, foreground, showLogs);
+      await dockerRun({ config: configPath, network, foreground, show_logs });
     } catch (err) {
       console.log(
         'Error while building the container. Examine the log using --show_logs.'
@@ -65,12 +65,7 @@ export default leaf({
   },
 });
 
-async function dockerRun(
-  config: string,
-  network: TNetworkType,
-  foreground: boolean,
-  showLogs: boolean
-) {
+async function dockerRun({ config, network, foreground, show_logs }: TOptions) {
   if (config) {
     printUsingConfig(network, config);
   }
@@ -94,12 +89,13 @@ async function dockerRun(
       },
       shell: true,
     });
-    const waitForReady = createWaitForReady(
-      { foreground, showLogs },
+    const waitForReady = createParseNodeOutput(
+      { foreground, show_logs },
       () => {
         ready = true;
       },
-      resolve
+      resolve,
+      reject
     );
     const timer = setTimeout(() => {
       if (!proc.killed) {

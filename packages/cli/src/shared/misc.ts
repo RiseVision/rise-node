@@ -1,10 +1,12 @@
 // tslint:disable:no-console
+// tslint:disable:max-classes-per-file
 import * as assert from 'assert';
 import { execSync, ExecSyncOptions } from 'child_process';
 import * as debug from 'debug';
 import * as extend from 'extend';
 import * as fs from 'fs';
 import * as path from 'path';
+import { IForeground, IShowLogs } from './options';
 
 export const VERSION = 'v1.0.0';
 export const NODE_VERSION = 'v2.0.0-beta3';
@@ -71,9 +73,8 @@ export function checkNodeDirExists(
 export function checkLaunchpadExists(): boolean {
   const file = getLaunchpadFilePath();
   if (!fs.existsSync(file)) {
-    console.log(
-      `ERROR: can't find lerna executable in ${DOCKER_DIR}/${NODE_DIR}.`
-    );
+    log(`Missing: ${file}`);
+    console.log(`ERROR: can't find launchpad executable in ${NODE_DIR}.`);
     console.log('You can download the latest version using:');
     console.log('  ./rise node download');
     return false;
@@ -109,7 +110,11 @@ export function extractSourceFile(relativeToCLI = false) {
  */
 export function getLaunchpadFilePath(): string {
   return path.resolve(
-    path.join(process.cwd(), NODE_DIR, 'node_modules', '.bin', 'rise-launchpad')
+    process.cwd(),
+    NODE_DIR,
+    'node_modules',
+    '.bin',
+    'rise-launchpad'
   );
 }
 
@@ -239,10 +244,13 @@ export function removeBackupLock() {
   fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
+// TODO rewrite to use `spawn`
+// TODO support show_logs
 export function execCmd(
   cmd: string,
   errorMsg?: string | null,
-  envVars?: { [name: string]: string } | null,
+  // TODO IDBEnvVars shouldnt have to be specified here
+  envVars?: { [name: string]: string } | IDBEnvVars | null,
   options?: ExecSyncOptions
 ): string {
   errorMsg = errorMsg || `Command '${cmd} failed`;
@@ -261,18 +269,20 @@ export function execCmd(
 
 /**
  * Returns a function resolving once "Blockchain ready" was printed.
- * @param params
- * @param setReady
- * @param resolve
+ *
+ * Detects errors and passed to reject():
+ * - NativeModulesError
+ * - DBConnectionError
  */
-export function createWaitForReady(
-  params: { foreground: boolean; showLogs: boolean },
+export function createParseNodeOutput(
+  { foreground, show_logs }: IForeground & IShowLogs,
   setReady: () => void,
-  resolve: (val?: any) => void
-) {
-  return (data: string) => {
+  resolve: (val?: any) => void,
+  reject: (err?: Error) => void
+): (data: Buffer) => void {
+  return (data: Buffer) => {
     // output
-    if (params.showLogs) {
+    if (show_logs) {
       process.stdout.write(data);
     } else {
       log(data);
@@ -282,11 +292,35 @@ export function createWaitForReady(
       console.log('Blockchain ready');
       setReady();
       // keep streaming the output if in the foreground
-      if (!params.foreground) {
+      if (!foreground) {
         resolve();
       }
     }
+    // handle native modules errors
+    if (
+      data.includes('Error: dlopen') ||
+      data.includes('Error: Could not locate the bindings file')
+    ) {
+      log('NativeModulesError');
+      reject(new NativeModulesError());
+    }
+    if (data.includes('SequelizeConnectionError')) {
+      log('DBConnectionError');
+      reject(new DBConnectionError());
+    }
   };
+}
+
+export class NativeModulesError extends Error {
+  constructor() {
+    super('Native modules need rebuilding');
+  }
+}
+
+export class DBConnectionError extends Error {
+  constructor() {
+    super("Couldn't connect to the DB");
+  }
 }
 
 export function getCoreRiseDir(): string {
@@ -295,11 +329,11 @@ export function getCoreRiseDir(): string {
 
 export const cmdSilenceString = '>> /dev/null 2>&1';
 
-export function getDBVars(
+export function getDBEnvVars(
   network: TNetworkType,
   config: string | null,
   relativeToCLI = false
-) {
+): IDBEnvVars {
   const mergedConfig = mergeConfig(network, config, relativeToCLI);
   const { host, port, database, user, password } = mergedConfig.db;
   assert(host);
@@ -316,12 +350,52 @@ export function getDBVars(
   };
 }
 
+export interface IDBEnvVars {
+  PGDATABASE: string;
+  PGHOST: string;
+  PGPASSWORD: string;
+  PGPORT: string;
+  PGUSER: string;
+}
+
+export function dbConnectionInfo(vars: IDBEnvVars): string {
+  return [
+    `Host: ${vars.PGHOST}`,
+    `Port: ${vars.PGPORT}`,
+    `User: ${vars.PGUSER}`,
+    `DB: ${vars.PGDATABASE}`,
+  ].join('\n');
+}
+
 export function printUsingConfig(network: TNetworkType, config: string | null) {
   if (config) {
     console.log(
-      `Using the config from "${config}" and inheriting from network "${network}".`
+      `Config: using "${config}" and inheriting from network "${network}".`
     );
   } else {
-    console.log(`Using the default config for network "${network}".`);
+    console.log(`Config: default config for network "${network}".`);
   }
+}
+
+export class ConditionsNotMetError extends Error {
+  public name = 'ErrorCmdConditionsNotMet';
+}
+
+export function getBlockHeight(
+  network: TNetworkType,
+  config?: string
+): number | null {
+  const envVars = getDBEnvVars(network, config);
+  const blockHeight = parseInt(
+    execCmd(
+      `psql -d "${
+        envVars.PGDATABASE
+      }" -t -c 'select height from blocks order by height desc limit 1;' | xargs`,
+      "Couldn't get the block height",
+      envVars
+    ),
+    10
+  );
+  log(`block height: ${blockHeight}`);
+  return blockHeight || null;
 }

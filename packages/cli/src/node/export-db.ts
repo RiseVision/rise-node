@@ -10,7 +10,8 @@ import {
   extractSourceFile,
   getBackupPID,
   getBackupsDir,
-  getDBVars,
+  getBlockHeight,
+  getDBEnvVars,
   getNodePID,
   hasLocalPostgres,
   log,
@@ -44,7 +45,7 @@ export default leaf({
     printUsingConfig(network, config);
     setBackupLock();
     mkdirpSync(getBackupsDir());
-    const envVars = getDBVars(network, config);
+    const envVars = getDBEnvVars(network, config);
     const database = envVars.PGDATABASE;
     // TODO drop the _snap db after exporting?
     const targetDB = `${database}_snap`;
@@ -71,19 +72,11 @@ export default leaf({
         envVars
       );
 
-      const backupHeight = parseInt(
-        execCmd(
-          `psql -d "${targetDB}" -t -c 'select height from blocks order by height desc limit 1;' | xargs`,
-          "Couldn't get the block height",
-          envVars
-        ),
-        10
-      );
-      log(`backupHeight: ${backupHeight}`);
-      if (!backupHeight) {
+      const blockHeight = getBlockHeight(network, config);
+      if (!blockHeight) {
         throw new Error("ERROR: Couldn't get the block height");
       }
-      const backupName = `backup_${database}_${backupHeight}.gz`;
+      const backupName = `backup_${database}_${blockHeight}.gz`;
       // const latestBackupName = `latest`;
       const backupPath = path.resolve(getBackupsDir(), backupName);
       execCmd(
