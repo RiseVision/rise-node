@@ -1,5 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import { execSync } from 'child_process';
 import * as fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import * as path from 'path';
@@ -23,11 +24,13 @@ import {
   configOption,
   IConfig,
   INetwork,
+  IShowLogs,
   networkOption,
+  showLogsOption,
 } from '../shared/options';
 import { nodeStop } from './stop';
 
-export type TOptions = IConfig & INetwork;
+export type TOptions = IConfig & INetwork & IShowLogs;
 
 export default leaf({
   commandName: 'export-db',
@@ -36,16 +39,18 @@ export default leaf({
   options: {
     ...configOption,
     ...networkOption,
+    ...showLogsOption,
   },
 
-  async action({ config, network }: TOptions) {
-    if (!checkConditions(config)) {
+  async action({ config, network, show_logs }: TOptions) {
+    if (!(await checkConditions(config))) {
       return;
     }
     printUsingConfig(network, config);
     setBackupLock();
     mkdirpSync(getBackupsDir());
     const envVars = getDBEnvVars(network, config);
+    const env = { ...process.env, ...envVars };
     const database = envVars.PGDATABASE;
     // TODO drop the _snap db after exporting?
     const targetDB = `${database}_snap`;
@@ -55,52 +60,75 @@ export default leaf({
     log(envVars);
 
     try {
-      execCmd(
-        `dropdb --if-exists "${targetDB}"`,
+      await execCmd(
+        'dropdb',
+        ['--if-exists', targetDB],
         `Cannot drop ${targetDB}`,
-        envVars
+        { env },
+        show_logs
       );
-      execCmd(
-        `vacuumdb --analyze --full "${database}"`,
+      await execCmd(
+        'vacuumdb',
+        ['--analyze', '--full', database],
         `Cannot vacuum ${database}`,
-        envVars
+        { env },
+        show_logs
       );
-      execCmd(`createdb "${targetDB}"`, `Cannot createdb ${targetDB}`, envVars);
-      execCmd(
-        `pg_dump "${database}" | psql "${targetDB}"`,
-        `Cannot copy ${database} to ${targetDB}`,
-        envVars
+      await execCmd(
+        'createdb',
+        [targetDB],
+        `Cannot createdb ${targetDB}`,
+        { env },
+        show_logs
       );
+      // TODO unify with others by piping manually
+      try {
+        execSync(`pg_dump "${database}" | psql "${targetDB}"`, {
+          env,
+        });
+      } catch (e) {
+        console.log(`Cannot copy ${database} to ${targetDB}`);
+      }
 
-      const blockHeight = getBlockHeight(network, config);
+      const blockHeight = await getBlockHeight(network, config);
       if (!blockHeight) {
         throw new Error("ERROR: Couldn't get the block height");
       }
+
       const backupName = `backup_${database}_${blockHeight}.gz`;
-      // const latestBackupName = `latest`;
       const backupPath = path.resolve(getBackupsDir(), backupName);
-      execCmd(
-        `pg_dump -O "${targetDB}" | gzip > ${backupPath}`,
-        "Couldn't dump the DB",
-        envVars
-      );
+      // TODO unify with others by piping manually
+      try {
+        execSync(`pg_dump -O "${targetDB}" | gzip > ${backupPath}`, {
+          env,
+        });
+      } catch (e) {
+        console.log("Couldn't dump the DB");
+      }
 
       // link the `latest` file
-      execCmd(
-        `ln -sf ${backupName} latest`,
+      await execCmd(
+        'ln',
+        ['-sf', backupName, 'latest'],
         `Couldn't symlink ${process.cwd()}/latest to the backup file`,
-        null,
-        { cwd: getBackupsDir() }
+        {
+          cwd: getBackupsDir(),
+        }
       );
       console.log(`Created a DB backup file "./${backupName}".`);
     } catch (e) {
       console.log('Error when creating the backup file');
+      console.log(
+        '\nError when creating the backup file.\n' +
+          'Examine the log using --show_logs.'
+      );
+      process.exit(1);
     }
     removeBackupLock();
   },
 });
 
-function checkConditions(config: string | null) {
+async function checkConditions(config: string | null) {
   const backupPID = getBackupPID();
   if (backupPID) {
     console.log(`ERROR: Active backup with PID ${backupPID}`);
@@ -115,12 +143,17 @@ function checkConditions(config: string | null) {
     return false;
   }
   if (!checkNodeDirExists(true)) {
-    extractSourceFile();
+    await extractSourceFile();
   }
+  // TODO use nodeStop() ?
   const nodePID = getNodePID();
   if (nodePID) {
     console.log(`Stopping RISE node with PID ${nodePID}`);
-    execCmd(`kill ${nodePID}`, "Couldn't kill the running node");
+    await execCmd(
+      'kill',
+      [nodePID.toString()],
+      "Couldn't kill the running node"
+    );
   }
   return true;
 }

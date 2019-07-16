@@ -39,7 +39,7 @@
   "peers": {
     "enabled": true,
     "trustProxy": false,
-    "seeds": ["5.135.72.62:9999"],
+    "seeds": ["devnet.node.rise.vision:9999"],
     "access": {
       "blackList": []
     },

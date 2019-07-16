@@ -5,7 +5,6 @@ import * as path from 'path';
 import { nodeStop } from '../node/stop';
 import {
   checkNodeDirExists,
-  cmdSilenceString,
   DB_DATA_DIR,
   DB_LOG_FILE,
   DB_PG_CTL,
@@ -41,12 +40,17 @@ export default leaf({
   async action({ config, network, show_logs }: TOptions) {
     try {
       if (!checkNodeDirExists(false, true)) {
-        extractSourceFile(true);
+        await extractSourceFile(true);
       }
       printUsingConfig(network, config);
 
-      const silent = show_logs ? '' : cmdSilenceString;
       const envVars = getDBEnvVars(network, config, true);
+      const env = { ...process.env, ...envVars };
+      const envHostPort = {
+        ...process.env,
+        PGHOST: envVars.PGHOST,
+        PGPORT: envVars.PGPORT,
+      };
 
       // stop the node and DB
       nodeStop(false);
@@ -54,16 +58,20 @@ export default leaf({
 
       log(envVars);
 
-      execCmd(
-        `rm -Rf ${DB_DATA_DIR} ${silent}`,
+      await execCmd(
+        'rm',
+        ['-Rf', DB_DATA_DIR],
         `Couldn't remove the data dir ${DB_DATA_DIR}.`,
-        envVars
+        { env },
+        show_logs
       );
 
-      execCmd(
-        `${DB_PG_CTL} init -D ${DB_DATA_DIR} ${silent}`,
+      await execCmd(
+        DB_PG_CTL,
+        ['init', '-D', DB_DATA_DIR],
         `Couldn't init a new DB data dir in ${DB_DATA_DIR}.`,
-        envVars
+        { env },
+        show_logs
       );
 
       await delay(2 * SEC);
@@ -75,13 +83,14 @@ export default leaf({
 
       // optionally add the user
       try {
-        execCmd(
-          `createuser --superuser ${envVars.PGUSER}`,
+        await execCmd(
+          'createuser',
+          ['--superuser', envVars.PGUSER],
           `Couldn't create a new user ${envVars.PGUSER}.`,
           {
-            PGHOST: envVars.PGHOST,
-            PGPORT: envVars.PGPORT,
-          }
+            env: envHostPort,
+          },
+          show_logs
         );
       } catch (err) {
         const alreadyExists = err
@@ -93,28 +102,33 @@ export default leaf({
         }
       }
 
-      execCmd(
-        `createdb ${envVars.PGDATABASE}`,
+      await execCmd(
+        'createdb',
+        [envVars.PGDATABASE],
         `Couldn't create a new database ${envVars.PGDATABASE}.`,
         {
-          PGHOST: envVars.PGHOST,
-          PGPORT: envVars.PGPORT,
-        }
+          env: envHostPort,
+        },
+        show_logs
       );
 
-      execCmd(
-        `psql -c "ALTER USER ${envVars.PGUSER} WITH PASSWORD '${
-          envVars.PGPASSWORD
-        }';" -d ${envVars.PGDATABASE}`,
+      const alterPasswdQuery = `"ALTER USER ${envVars.PGUSER} WITH PASSWORD '${
+        envVars.PGPASSWORD
+      }';"`;
+
+      await execCmd(
+        'psql',
+        ['-c', alterPasswdQuery, '-d', envVars.PGDATABASE],
         `Couldn't set the password for user ${envVars.PGUSER}.`,
         {
-          PGHOST: envVars.PGHOST,
-          PGPORT: envVars.PGPORT,
-        }
+          env: envHostPort,
+        },
+        show_logs
       );
 
-      console.log('DB succesfully initialized and running.');
-    } catch {
+      console.log('DB successfully initialized and running.');
+    } catch (err) {
+      log(err);
       let cmd = path.resolve(__dirname, 'rise') + ' db init';
       if (config) {
         cmd += ` --config=${config}`;

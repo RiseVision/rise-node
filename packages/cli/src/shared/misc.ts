@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 // tslint:disable:max-classes-per-file
 import * as assert from 'assert';
-import { execSync, ExecSyncOptions } from 'child_process';
+import { execSync, spawn, SpawnOptions } from 'child_process';
 import * as debug from 'debug';
 import * as extend from 'extend';
 import * as fs from 'fs';
@@ -92,16 +92,24 @@ export function checkDockerDirExists(): boolean {
   return true;
 }
 
-export function extractSourceFile(relativeToCLI = false) {
+export async function extractSourceFile(
+  relativeToCLI = false,
+  streamOutput = false
+) {
   const filePath = getSourceFilePath(relativeToCLI);
   if (!fs.existsSync(filePath)) {
     throw new Error(`File ${filePath} doesn't exist`);
   }
 
   console.log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
-  execCmd(
-    `cd ${getDockerDir(relativeToCLI)} && tar -zxf ${NODE_FILE}`,
-    `Couldn't extract ${getSourceFilePath(relativeToCLI)}`
+  await execCmd(
+    'tar',
+    ['-zxf', NODE_FILE],
+    `Couldn't extract ${getSourceFilePath(relativeToCLI)}`,
+    {
+      cwd: getDockerDir(relativeToCLI),
+    },
+    streamOutput
   );
 }
 
@@ -244,27 +252,70 @@ export function removeBackupLock() {
   fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
-// TODO rewrite to use `spawn`
-// TODO support show_logs
 export function execCmd(
-  cmd: string,
+  file: string,
+  params: string[],
   errorMsg?: string | null,
-  // TODO IDBEnvVars shouldnt have to be specified here
-  envVars?: { [name: string]: string } | IDBEnvVars | null,
-  options?: ExecSyncOptions
-): string {
-  errorMsg = errorMsg || `Command '${cmd} failed`;
-  try {
-    log(`$ ${cmd}`);
-    return execSync(cmd, {
-      env: { ...process.env, ...envVars },
-      ...options,
-    }).toString('utf8');
-  } catch (err) {
-    log(err);
-    console.log('ERROR: ' + errorMsg);
-    throw err;
-  }
+  options?: SpawnOptions,
+  streamOutput = false,
+  timeout?: number
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      const cmd = file + ' ' + params.join(' ');
+      let output = '';
+      let errors = '';
+      // run the command
+      const proc = spawn(file, params, {
+        shell: true,
+        ...options,
+      });
+      log(`$ ${cmd}`);
+      // timeout
+      const timer = timeout
+        ? setTimeout(() => {
+            if (!proc.killed) {
+              console.log(`Timeout (${2 * MIN} secs)`);
+              proc.kill();
+            }
+          }, timeout)
+        : null;
+      const appendOutput = (data: Buffer) => {
+        if (streamOutput) {
+          process.stdout.write(data);
+        }
+        output += data.toString('utf8');
+      };
+      proc.stdout.on('data', appendOutput);
+      proc.stderr.on('data', appendOutput);
+      proc.on('error', (error) => {
+        reject(error);
+      });
+      proc.stderr.on('data', (data: Buffer) => {
+        errors += data.toString('utf8');
+      });
+      errorMsg = errorMsg || `Command '${cmd}' failed`;
+      proc.on('close', (code) => {
+        if (code) {
+          errors = errors.replace(/\n+$/, '');
+          if (timeout) {
+            clearTimeout(timer);
+          }
+          log(`cmd-error: ${errors}`);
+          log(`cmd-exit-code: ${code}`);
+          if (errors) {
+            log(errors);
+          }
+          console.log('ERROR: ' + errorMsg);
+          reject(errorMsg);
+        } else {
+          resolve(output);
+        }
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 /**
@@ -327,8 +378,6 @@ export function getCoreRiseDir(): string {
   return path.resolve(process.cwd(), NODE_DIR, 'packages', 'rise');
 }
 
-export const cmdSilenceString = '>> /dev/null 2>&1';
-
 export function getDBEnvVars(
   network: TNetworkType,
   config: string | null,
@@ -381,21 +430,28 @@ export class ConditionsNotMetError extends Error {
   public name = 'ErrorCmdConditionsNotMet';
 }
 
-export function getBlockHeight(
+export async function getBlockHeight(
   network: TNetworkType,
   config?: string
-): number | null {
+): Promise<number | null> {
   const envVars = getDBEnvVars(network, config);
-  const blockHeight = parseInt(
-    execCmd(
-      `psql -d "${
-        envVars.PGDATABASE
-      }" -t -c 'select height from blocks order by height desc limit 1;' | xargs`,
-      "Couldn't get the block height",
-      envVars
-    ),
-    10
+  // TODO check output
+  const output = await execCmd(
+    'psql',
+    [
+      '-d',
+      envVars.PGDATABASE,
+      '-t',
+      '-c',
+      'select height from blocks order by height desc limit 1;',
+    ],
+    "Couldn't get the block height",
+    {
+      env: { ...process.env, ...envVars },
+    }
   );
+  console.log('height output', output);
+  const blockHeight = parseInt(output, 10);
   log(`block height: ${blockHeight}`);
   return blockHeight || null;
 }

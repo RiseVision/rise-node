@@ -2,7 +2,6 @@
 import { leaf } from '@carnesen/cli';
 import {
   checkNodeDirExists,
-  cmdSilenceString,
   execCmd,
   extractSourceFile,
   getNodeDir,
@@ -16,7 +15,7 @@ export default leaf({
 
   async action({ show_logs }: IShowLogs) {
     try {
-      nodeRebuildNative({ show_logs });
+      await nodeRebuildNative({ show_logs });
     } catch {
       console.log(
         '\nError while rebuilding native node modules. ' +
@@ -27,24 +26,19 @@ export default leaf({
   },
 });
 
-export function nodeRebuildNative({ show_logs }: IShowLogs) {
+export async function nodeRebuildNative({ show_logs }: IShowLogs) {
   if (!checkNodeDirExists(true)) {
-    extractSourceFile();
+    await extractSourceFile();
   }
 
-  const silent = show_logs ? '' : cmdSilenceString;
-
   console.log('Rebuilding native modules...');
-  execCmd(
-    `npm rebuild ${silent}`,
+
+  const errorMsg =
     "Couldn't rebuild native modules.\n\n" +
-      'Make sure you have all the dependencies installed by running:\n' +
-      '$ sudo ./rise node install-deps',
-    null,
-    {
-      cwd: getNodeDir(),
-    }
-  );
+    'Make sure you have all the dependencies installed by running:\n' +
+    '$ sudo ./rise node install-deps';
+
+  await execCmd('npm', ['rebuild'], errorMsg, { cwd: getNodeDir() }, show_logs);
 
   console.log('Native node_modules have been rebuilt.');
 }

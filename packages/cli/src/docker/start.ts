@@ -12,7 +12,6 @@ import {
   log,
   MIN,
   printUsingConfig,
-  TNetworkType,
 } from '../shared/misc';
 import {
   configOption,

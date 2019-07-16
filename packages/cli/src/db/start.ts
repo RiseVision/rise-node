@@ -3,7 +3,6 @@ import { leaf } from '@carnesen/cli';
 import { nodeStop } from '../node/stop';
 import {
   checkNodeDirExists,
-  cmdSilenceString,
   DB_DATA_DIR,
   DB_LOCK_FILE,
   DB_LOG_FILE,
@@ -50,7 +49,7 @@ export default leaf({
 
 export async function dbStart({ config, network, show_logs }: TOptions) {
   if (!checkNodeDirExists(false, true)) {
-    extractSourceFile(true);
+    await extractSourceFile(true);
   }
   if (getPID(DB_LOCK_FILE)) {
     console.log('DB already running');
@@ -58,8 +57,8 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
   }
   printUsingConfig(network, config);
 
-  const silent = show_logs ? '' : cmdSilenceString;
   const envVars = getDBEnvVars(network, config, true);
+  const env = { ...process.env, ...envVars };
 
   console.log('Starting the DB...\n' + dbConnectionInfo(envVars));
 
@@ -67,10 +66,12 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
 
   log(envVars);
 
-  execCmd(
-    `${DB_PG_CTL} -D ${DB_DATA_DIR} -l ${DB_LOG_FILE} start ${silent}`,
+  await execCmd(
+    DB_PG_CTL,
+    ['-D', DB_DATA_DIR, '-l', DB_LOG_FILE, 'start'],
     `Examine the log using --show_logs and check ${DB_LOG_FILE}.`,
-    envVars
+    { env },
+    show_logs
   );
 
   console.log('DB started');

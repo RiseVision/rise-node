@@ -8,6 +8,10 @@ export default leaf({
 
   async action() {
     // TODO check is container is running and show some info
-    execCmd('docker stop rise-node', "Couldn't stop the container");
+    await execCmd(
+      'docker',
+      ['stop', 'rise-node'],
+      "Couldn't stop the container"
+    );
   },
 });

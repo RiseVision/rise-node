@@ -58,7 +58,7 @@ export async function nodeStatus({ config, network }: TOptions) {
   console.log(`PID: ${pid}`);
   log('Getting block height from the DB...');
 
-  const blockHeight = getBlockHeight(network, config);
+  const blockHeight = await getBlockHeight(network, config);
   if (!blockHeight) {
     throw new Error("ERROR: Couldn't get the block height");
   }

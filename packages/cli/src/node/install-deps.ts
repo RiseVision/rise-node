@@ -1,11 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import {
-  checkNodeDirExists,
-  cmdSilenceString,
-  execCmd,
-  extractSourceFile,
-} from '../shared/misc';
+import { checkNodeDirExists, execCmd, extractSourceFile } from '../shared/misc';
 import { IShowLogs, showLogsOption } from '../shared/options';
 
 export default leaf({
@@ -15,23 +10,26 @@ export default leaf({
 
   async action({ show_logs }: IShowLogs) {
     if (!checkNodeDirExists(true)) {
-      extractSourceFile();
+      await extractSourceFile();
     }
 
-    const silent = show_logs ? '' : cmdSilenceString;
-
     try {
-      const cmd =
-        'apt-get install -y build-essential python postgresql-server-dev-all';
-
-      execCmd(
-        cmd + ' ' + silent,
+      const file = 'apt-get';
+      const params = [
+        'install',
+        '-y',
+        'build-essential',
+        'python',
+        'postgresql-server-dev-all',
+      ];
+      const errorMsg =
         "Couldn't install required dependencies.\n\n" +
-          "Make sure you're using `sudo`:\n" +
-          '$ sudo ./rise node install-deps\n' +
-          'Alternatively run the following command manually:\n' +
-          `$ sudo ${cmd}`
-      );
+        "Make sure you're using `sudo`:\n" +
+        '$ sudo ./rise node install-deps\n' +
+        'Alternatively run the following command manually:\n' +
+        `$ sudo ${file} ${params.join(' ')}`;
+
+      await execCmd(file, params, errorMsg, null, show_logs);
 
       console.log('RISE node dependencies have been installed.');
     } catch {

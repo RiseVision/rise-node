@@ -1,5 +1,6 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
+import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -18,11 +19,12 @@ import {
   configOption,
   IConfig,
   INetwork,
+  IShowLogs,
   networkOption,
 } from '../shared/options';
 import { nodeStop } from './stop';
 
-export type TOptions = IConfig & INetwork & { file: string };
+export type TOptions = IConfig & INetwork & { file: string } & IShowLogs;
 
 export default leaf({
   commandName: 'import-db',
@@ -39,42 +41,50 @@ export default leaf({
     }),
   },
 
-  async action({ config, network, file }: TOptions) {
-    if (!checkConditions(config, file)) {
+  async action({ config, network, file, show_logs }: TOptions) {
+    if (!(await checkConditions(config, file))) {
       return;
     }
     setBackupLock();
     const envVars = getDBEnvVars(network, config);
+    const env = { ...process.env, ...envVars };
     const database = envVars.PGDATABASE;
 
     nodeStop(false);
 
     try {
-      execCmd(
-        `dropdb --if-exists ${database}`,
+      await execCmd(
+        'dropdb',
+        ['--if-exists', database],
         `Couldn't drop DB ${database}`,
-        envVars
+        { env },
+        show_logs
       );
-      execCmd(
-        `createdb ${database}`,
+      await execCmd(
+        'createdb',
+        [database],
         `Couldn't create DB ${database}`,
-        envVars
+        { env },
+        show_logs
       );
-      // extract end
-      execCmd(
-        `gunzip -c "${file}" | psql > /dev/null`,
-        `Cannot import "${file}"`,
-        envVars
-      );
+      // TODO unify with others by piping manually
+      try {
+        execSync(`gunzip -c "${file}" | psql > /dev/null`, {
+          env,
+        });
+      } catch (e) {
+        console.log(`Cannot import "${file}"`);
+      }
       console.log(`Imported "./${file}" into the DB.`);
     } catch (e) {
       console.log('Error when importing the backup file');
+      process.exit(1);
     }
     removeBackupLock();
   },
 });
 
-function checkConditions(config: string | null, file: string) {
+async function checkConditions(config: string | null, file: string) {
   const backupPID = getBackupPID();
   if (backupPID) {
     console.log(`ERROR: Active backup with PID ${backupPID}`);
@@ -93,12 +103,17 @@ function checkConditions(config: string | null, file: string) {
     return false;
   }
   if (!checkNodeDirExists(true)) {
-    extractSourceFile();
+    await extractSourceFile();
   }
+  // TODO use nodeStop() ?
   const nodePID = getNodePID();
   if (nodePID) {
     console.log(`Stopping RISE node with PID ${nodePID}`);
-    execCmd(`kill ${nodePID}`, "Couldn't kill the running node");
+    await execCmd(
+      'kill',
+      [nodePID.toString()],
+      "Couldn't kill the running node"
+    );
   }
   return true;
 }

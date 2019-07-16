@@ -7,10 +7,10 @@ import * as path from 'path';
 import {
   checkLaunchpadExists,
   checkNodeDirExists,
+  ConditionsNotMetError,
   createParseNodeOutput,
   DBConnectionError,
   dbConnectionInfo,
-  ConditionsNotMetError,
   extractSourceFile,
   getCoreRiseDir,
   getDBEnvVars,
@@ -53,7 +53,7 @@ export default leaf({
       await nodeStart(options);
     } catch (e) {
       log(e);
-      console.log('Something went wrong. Examine the log using --show_logs.');
+      console.log('\nSomething went wrong. Examine the log using --show_logs.');
       process.exit(1);
     }
   },
@@ -122,6 +122,7 @@ export async function nodeStart(
   }
 }
 
+// tslint:disable-next-line:cognitive-complexity
 function startLaunchpad(
   { config, network, foreground, show_logs }: TOptions,
   setReady: () => void
@@ -138,7 +139,12 @@ function startLaunchpad(
       // wait for "Blockchain ready"
       const parseNodeOutput = createParseNodeOutput(
         { foreground, show_logs },
-        setReady,
+        () => {
+          setReady();
+          if (!foreground) {
+            resolve();
+          }
+        },
         resolve,
         reject
       );
@@ -148,18 +154,25 @@ function startLaunchpad(
         shell: true,
       });
       console.log(`PID ${proc.pid}`);
-      // timeout
-      const timer = setTimeout(() => {
-        if (!proc.killed) {
-          console.log(`Timeout (${2 * MIN} secs)`);
-          proc.kill();
-        }
-      }, 2 * MIN);
+      // timeout (not when in foreground)
+      const timer = !foreground
+        ? setTimeout(() => {
+            if (!proc.killed) {
+              console.log(`Timeout (${2 * MIN} secs)`);
+              proc.kill();
+            }
+          }, 2 * MIN)
+        : null;
       proc.stdout.on('data', parseNodeOutput);
       proc.stderr.on('data', parseNodeOutput);
+      proc.on('error', (error) => {
+        reject(error);
+      });
       proc.on('close', (code) => {
         log('close, exit code = ', code);
-        clearTimeout(timer);
+        if (!foreground) {
+          clearTimeout(timer);
+        }
         code ? reject(code) : resolve(code);
       });
 
@@ -180,7 +193,7 @@ function startLaunchpad(
 function handleSigInt(proc: ChildProcess) {
   log('Caught a SIGINT');
   assert(proc);
-  proc.kill();
+  process.kill(proc.pid);
 
   if (proc.killed) {
     process.exit();
