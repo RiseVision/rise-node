@@ -67,7 +67,7 @@ export async function nodeStart(
   rebuildNative = true,
   skipPIDCheck = false
 ) {
-  checkConditions(config, skipPIDCheck);
+  await checkConditions(config, skipPIDCheck);
 
   show_logs = show_logs || foreground;
 
@@ -87,16 +87,19 @@ export async function nodeStart(
         ready = true;
       }
     );
-    if (!ready || foreground) {
-      throw new Error('Never reached "Blockchain ready"');
-    }
     if (!foreground) {
-      console.log('Node started');
+      if (ready) {
+        console.log('RISE node started');
+      } else {
+        console.log('RISE node NOT started');
+      }
     }
-    if (foreground && !isDevEnv()) {
+    if (!isDevEnv()) {
       fs.unlinkSync(NODE_LOCK_FILE);
     }
-    log('nodeStart done');
+    if (!ready) {
+      throw new Error('Never reached "Blockchain ready"');
+    }
   } catch (err) {
     log(err);
     if (err instanceof NativeModulesError) {
@@ -117,6 +120,8 @@ export async function nodeStart(
     } else if (err instanceof DBConnectionError) {
       console.log("ERROR: Couldn't connect to the DB");
       console.log(dbConnectionInfo(getDBEnvVars(network, config)));
+      throw err;
+    } else {
       throw err;
     }
   }
@@ -153,7 +158,7 @@ function startLaunchpad(
         cwd: getCoreRiseDir(),
         shell: true,
       });
-      console.log(`PID ${proc.pid}`);
+      console.log(`Started as PID ${proc.pid}`);
       // timeout (not when in foreground)
       const timer = !foreground
         ? setTimeout(() => {
@@ -202,9 +207,9 @@ function handleSigInt(proc: ChildProcess) {
   }
 }
 
-function checkConditions(config: string, skipPIDCheck = false) {
+async function checkConditions(config: string, skipPIDCheck = false) {
   if (!checkNodeDirExists(true)) {
-    extractSourceFile();
+    await extractSourceFile();
   }
   checkLaunchpadExists();
   // check the PID, but not when in DEV

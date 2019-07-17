@@ -14,10 +14,12 @@ import {
   configOption,
   IConfig,
   INetwork,
+  IShowLogs,
   networkOption,
+  showLogsOption,
 } from '../shared/options';
 
-export type TOptions = IConfig & INetwork;
+export type TOptions = IConfig & INetwork & IShowLogs;
 
 export default leaf({
   commandName: 'status',
@@ -26,6 +28,7 @@ export default leaf({
   options: {
     ...configOption,
     ...networkOption,
+    ...showLogsOption,
   },
 
   async action(options: TOptions) {
@@ -33,7 +36,7 @@ export default leaf({
       await nodeStatus(options);
     } catch (e) {
       log(e);
-      console.log('Something went wrong.');
+      console.log('Something went wrong. Examine the log using --show_logs.');
       process.exit(1);
     }
   },
@@ -42,8 +45,8 @@ export default leaf({
 /**
  * Starts a node or throws an exception.
  */
-export async function nodeStatus({ config, network }: TOptions) {
-  checkConditions(config);
+export async function nodeStatus({ config, network, show_logs }: TOptions) {
+  await checkConditions(config);
 
   printUsingConfig(network, config);
 
@@ -58,7 +61,7 @@ export async function nodeStatus({ config, network }: TOptions) {
   console.log(`PID: ${pid}`);
   log('Getting block height from the DB...');
 
-  const blockHeight = await getBlockHeight(network, config);
+  const blockHeight = await getBlockHeight(network, config, show_logs);
   if (!blockHeight) {
     throw new Error("ERROR: Couldn't get the block height");
   }
@@ -66,9 +69,9 @@ export async function nodeStatus({ config, network }: TOptions) {
   console.log(`Block height: ${blockHeight}`);
 }
 
-function checkConditions(config: string) {
+async function checkConditions(config: string) {
   if (!checkNodeDirExists(true)) {
-    extractSourceFile();
+    await extractSourceFile();
   }
   if (config && !fs.existsSync(config)) {
     throw new ConditionsNotMetError(

@@ -54,6 +54,11 @@ export function getNodeDir(relativeToCLI = false): string {
   return path.resolve(root, NODE_DIR);
 }
 
+/**
+ * TODO unify with extractSourceFile
+ * @param silent
+ * @param relativeToCLI
+ */
 export function checkNodeDirExists(
   silent = false,
   relativeToCLI = false
@@ -98,7 +103,7 @@ export async function extractSourceFile(
 ) {
   const filePath = getSourceFilePath(relativeToCLI);
   if (!fs.existsSync(filePath)) {
-    throw new Error(`File ${filePath} doesn't exist`);
+    throw new NoRiseDistFileError();
   }
 
   console.log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
@@ -252,6 +257,7 @@ export function removeBackupLock() {
   fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
+// tslint:disable-next-line:cognitive-complexity
 export function execCmd(
   file: string,
   params: string[],
@@ -350,12 +356,14 @@ export function createParseNodeOutput(
     // handle native modules errors
     if (
       data.includes('Error: dlopen') ||
-      data.includes('Error: Could not locate the bindings file')
+      data.includes('Error: Could not locate the bindings file') ||
+      data.includes('invalid ELF header')
     ) {
       log('NativeModulesError');
       reject(new NativeModulesError());
     }
-    if (data.includes('SequelizeConnectionError')) {
+    const sqlError = /Sequelize(\w*)Error/;
+    if (sqlError.test(data.toString('utf8'))) {
       log('DBConnectionError');
       reject(new DBConnectionError());
     }
@@ -371,6 +379,16 @@ export class NativeModulesError extends Error {
 export class DBConnectionError extends Error {
   constructor() {
     super("Couldn't connect to the DB");
+  }
+}
+
+export class NoRiseDistFileError extends Error {
+  constructor() {
+    super(
+      'ERROR: rise source missing.\n' +
+        'You can download the latest version using:\n' +
+        '  ./rise node download'
+    );
   }
 }
 
@@ -432,7 +450,8 @@ export class ConditionsNotMetError extends Error {
 
 export async function getBlockHeight(
   network: TNetworkType,
-  config?: string
+  config?: string,
+  streamOutput = false
 ): Promise<number | null> {
   const envVars = getDBEnvVars(network, config);
   // TODO check output
@@ -443,14 +462,14 @@ export async function getBlockHeight(
       envVars.PGDATABASE,
       '-t',
       '-c',
-      'select height from blocks order by height desc limit 1;',
+      '"select height from blocks order by height desc limit 1;"',
     ],
     "Couldn't get the block height",
     {
       env: { ...process.env, ...envVars },
-    }
+    },
+    streamOutput
   );
-  console.log('height output', output);
   const blockHeight = parseInt(output, 10);
   log(`block height: ${blockHeight}`);
   return blockHeight || null;

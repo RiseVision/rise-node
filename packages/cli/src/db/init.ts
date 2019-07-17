@@ -12,6 +12,7 @@ import {
   extractSourceFile,
   getDBEnvVars,
   log,
+  NoRiseDistFileError,
   printUsingConfig,
   SEC,
 } from '../shared/misc';
@@ -39,7 +40,7 @@ export default leaf({
 
   async action({ config, network, show_logs }: TOptions) {
     try {
-      if (!checkNodeDirExists(false, true)) {
+      if (!checkNodeDirExists(true, true)) {
         await extractSourceFile(true);
       }
       printUsingConfig(network, config);
@@ -129,19 +130,23 @@ export default leaf({
       console.log('DB successfully initialized and running.');
     } catch (err) {
       log(err);
-      let cmd = path.resolve(__dirname, 'rise') + ' db init';
-      if (config) {
-        cmd += ` --config=${config}`;
-      }
-      if (network !== 'mainnet') {
-        cmd += ` --network=${network}`;
-      }
+      if (err instanceof NoRiseDistFileError) {
+        console.log(err.message);
+      } else {
+        let cmd = path.resolve(__dirname, 'rise') + ' db init';
+        if (config) {
+          cmd += ` --config=${config}`;
+        }
+        if (network !== 'mainnet') {
+          cmd += ` --network=${network}`;
+        }
 
-      console.log(
-        '\nError while initializing a PostgreSQL database.\n' +
-          getLinuxHelpMsg(config, network) +
-          `Examine the log using --show_logs and check ${DB_LOG_FILE}.`
-      );
+        console.log(
+          '\nError while initializing a PostgreSQL database.\n' +
+            getLinuxHelpMsg(config, network) +
+            `\nExamine the log using --show_logs and check ${DB_LOG_FILE}.`
+        );
+      }
       process.exit(1);
     }
   },
@@ -151,18 +156,14 @@ function getLinuxHelpMsg(config, network) {
   if (process.platform !== 'linux') {
     return '';
   }
-  let cmd = path.resolve(__dirname, 'rise') + ' db init';
+  let cmd = '$ ' + path.resolve(__dirname, 'rise') + ' db init';
   if (config) {
-    cmd += ` --config=${path.resolve(__dirname, config)}`;
+    cmd += ` --config ${path.resolve(__dirname, config)}`;
   }
   if (network !== 'mainnet') {
-    cmd += ` --network=${network}`;
+    cmd += ` --network ${network}`;
   }
   return (
-    'Make sure you\'re logged in as "postgres" user:\n' +
-    '$ sudo su - postgres\n\n' +
-    'Then run the following command:\n' +
-    cmd +
-    '\n'
+    '\nRun the following commands:\n' + '$ sudo su - postgres\n' + cmd + '\n'
   );
 }

@@ -55,7 +55,9 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
     console.log('DB already running');
     return;
   }
-  printUsingConfig(network, config);
+  if (show_logs) {
+    printUsingConfig(network, config);
+  }
 
   const envVars = getDBEnvVars(network, config, true);
   const env = { ...process.env, ...envVars };
@@ -74,5 +76,5 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
     show_logs
   );
 
-  console.log('DB started');
+  console.log('\nDB started');
 }

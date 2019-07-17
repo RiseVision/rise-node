@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { checkNodeDirExists, execCmd, extractSourceFile } from '../shared/misc';
+import { execCmd } from '../shared/misc';
 import { IShowLogs, showLogsOption } from '../shared/options';
 
 export default leaf({
@@ -9,10 +9,6 @@ export default leaf({
   options: showLogsOption,
 
   async action({ show_logs }: IShowLogs) {
-    if (!checkNodeDirExists(true)) {
-      await extractSourceFile();
-    }
-
     try {
       const file = 'apt-get';
       const params = [
@@ -26,6 +22,7 @@ export default leaf({
         "Couldn't install required dependencies.\n\n" +
         "Make sure you're using `sudo`:\n" +
         '$ sudo ./rise node install-deps\n' +
+        '\n' +
         'Alternatively run the following command manually:\n' +
         `$ sudo ${file} ${params.join(' ')}`;
 

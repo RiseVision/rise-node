@@ -9,7 +9,6 @@ import {
   DOWNLOAD_URL,
   execCmd,
   extractSourceFile,
-  isDevEnv,
   log,
   NODE_VERSION,
 } from './shared/misc';
@@ -38,9 +37,9 @@ export default leaf({
       console.log('  ./rise node install-deps');
       console.log('  ./rise node start');
       console.log('');
-      console.log('You can start a Docker container using:');
-      console.log('  ./rise docker build');
-      console.log('  ./rise docker start');
+      // console.log('You can start a Docker container using:');
+      // console.log('  ./rise docker build');
+      // console.log('  ./rise docker start');
     } catch (e) {
       log(e);
       console.log('\nThere was an error.');
@@ -50,8 +49,8 @@ export default leaf({
 });
 
 async function download({ version }) {
-  const url = isDevEnv()
-    ? `http://localhost:8080/${DIST_FILE}`
+  const url = process.env.DOWNLOAD_URL
+    ? process.env.DOWNLOAD_URL
     : DOWNLOAD_URL + version + '/' + DIST_FILE;
 
   log(url);
@@ -62,7 +61,7 @@ async function download({ version }) {
   // TODO show progress
   await new Promise((resolve, reject) => {
     // use plain http when in DEV mode
-    (process.env.DEV ? http : https)
+    (process.env.DOWNLOAD_URL ? http : https)
       .get(url, (response) => {
         const { statusCode } = response;
         const isError = ['4', '5'].includes(statusCode.toString()[0]);
