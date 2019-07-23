@@ -5,6 +5,7 @@ import { ChildProcess, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
+  AddressInUseError,
   checkLaunchpadExists,
   checkNodeDirExists,
   ConditionsNotMetError,
@@ -29,13 +30,13 @@ import {
   IConfig,
   IForeground,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 import { nodeRebuildNative } from './rebuild-native';
 
-export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
+export type TOptions = IConfig & INetwork & IForeground & IVerbose;
 
 export default leaf({
   commandName: 'start',
@@ -45,15 +46,18 @@ export default leaf({
     ...configOption,
     ...foregroundOption,
     ...networkOption,
-    ...showLogsOption,
+    ...verboseOption,
   },
 
   async action(options: TOptions) {
     try {
       await nodeStart(options);
-    } catch (e) {
-      log(e);
-      console.log('\nSomething went wrong. Examine the log using --show_logs.');
+    } catch (err) {
+      log(err);
+      if (options.verbose) {
+        console.log(err);
+      }
+      console.log('\nSomething went wrong. Examine the log using --verbose.');
       process.exit(1);
     }
   },
@@ -63,15 +67,15 @@ export default leaf({
  * Starts a node or throws an exception.
  */
 export async function nodeStart(
-  { config, foreground, network, show_logs }: TOptions,
+  { config, foreground, network, verbose }: TOptions,
   rebuildNative = true,
   skipPIDCheck = false
 ) {
   await checkConditions(config, skipPIDCheck);
 
-  show_logs = show_logs || foreground;
-
-  printUsingConfig(network, config);
+  if (verbose) {
+    printUsingConfig(network, config);
+  }
   console.log('Starting RISE node...');
 
   let ready = false;
@@ -81,7 +85,7 @@ export async function nodeStart(
         config,
         foreground,
         network,
-        show_logs,
+        verbose,
       },
       () => {
         ready = true;
@@ -105,14 +109,10 @@ export async function nodeStart(
     if (err instanceof NativeModulesError) {
       console.log('Native modules need rebuilding');
       if (rebuildNative) {
-        await nodeRebuildNative({ show_logs });
+        await nodeRebuildNative({ verbose });
         // try to start the node again, but skipping the rebuild and the
         // PID check
-        await nodeStart(
-          { config, foreground, network, show_logs },
-          false,
-          true
-        );
+        await nodeStart({ config, foreground, network, verbose }, false, true);
       } else {
         log('Automatic rebuild-native failed');
         throw err;
@@ -120,6 +120,9 @@ export async function nodeStart(
     } else if (err instanceof DBConnectionError) {
       console.log("ERROR: Couldn't connect to the DB");
       console.log(dbConnectionInfo(getDBEnvVars(network, config)));
+      throw err;
+    } else if (err instanceof AddressInUseError) {
+      console.log('ERROR: Address currently in use. Another node running?');
       throw err;
     } else {
       throw err;
@@ -129,7 +132,7 @@ export async function nodeStart(
 
 // tslint:disable-next-line:cognitive-complexity
 function startLaunchpad(
-  { config, network, foreground, show_logs }: TOptions,
+  { config, network, foreground, verbose }: TOptions,
   setReady: () => void
 ): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -143,7 +146,7 @@ function startLaunchpad(
 
       // wait for "Blockchain ready"
       const parseNodeOutput = createParseNodeOutput(
-        { foreground, show_logs },
+        { foreground, verbose },
         () => {
           setReady();
           if (!foreground) {

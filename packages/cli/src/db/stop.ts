@@ -17,35 +17,35 @@ import {
   configOption,
   IConfig,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 
-export type TOptions = INetwork & IConfig & IShowLogs;
+export type TOptions = INetwork & IConfig & IVerbose;
 
 export default leaf({
   commandName: 'stop',
   description: 'Stop a DB instance defined in the config',
   options: {
     ...configOption,
-    ...showLogsOption,
+    ...verboseOption,
     ...networkOption,
   },
 
-  async action({ config, network, show_logs }: TOptions) {
+  async action({ config, network, verbose }: TOptions) {
     try {
-      await dbStop({ config, network, show_logs });
+      await dbStop({ config, network, verbose });
     } catch {
       console.log(
-        '\nError while stopping the DB. Examine the log using --show_logs.'
+        '\nError while stopping the DB. Examine the log using --verbose.'
       );
       process.exit(1);
     }
   },
 });
 
-export async function dbStop({ config, network, show_logs }: TOptions) {
+export async function dbStop({ config, network, verbose }: TOptions) {
   if (!checkNodeDirExists(true, true)) {
     await extractSourceFile(true);
   }
@@ -53,7 +53,9 @@ export async function dbStop({ config, network, show_logs }: TOptions) {
     console.log('DB not running');
     return;
   }
-  printUsingConfig(network, config);
+  if (verbose) {
+    printUsingConfig(network, config);
+  }
 
   const envVars = getDBEnvVars(network, config, true);
   const env = { ...process.env, ...envVars };
@@ -65,7 +67,7 @@ export async function dbStop({ config, network, show_logs }: TOptions) {
     ['-D', DB_DATA_DIR, '-l', DB_LOG_FILE, 'stop'],
     "Couldn't stop the DB.",
     { env },
-    show_logs
+    verbose
   );
 
   console.log('DB stopped');

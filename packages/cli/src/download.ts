@@ -6,11 +6,11 @@ import * as https from 'https';
 import {
   DIST_FILE,
   DOCKER_DIR,
-  DOWNLOAD_URL,
   execCmd,
   extractSourceFile,
+  getDownloadURL,
   log,
-  NODE_VERSION,
+  VERSION_RISE,
 } from './shared/misc';
 
 export default leaf({
@@ -21,7 +21,7 @@ export default leaf({
 
   options: {
     version: option({
-      defaultValue: NODE_VERSION,
+      defaultValue: VERSION_RISE,
       description: 'Version number to download, eg v2.0.0',
       nullable: true,
       typeName: 'string',
@@ -51,7 +51,7 @@ export default leaf({
 async function download({ version }) {
   const url = process.env.DOWNLOAD_URL
     ? process.env.DOWNLOAD_URL
-    : DOWNLOAD_URL + version + '/' + DIST_FILE;
+    : getDownloadURL(DIST_FILE, version);
 
   log(url);
   console.log(`Downloading ${url}`);
@@ -77,7 +77,7 @@ async function download({ version }) {
       })
       .on('error', (err) => {
         fs.unlinkSync(DIST_FILE);
-        reject(err.message);
+        reject(new Error(err.message));
       });
   });
 

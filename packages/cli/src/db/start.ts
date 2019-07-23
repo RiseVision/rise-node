@@ -19,35 +19,35 @@ import {
   configOption,
   IConfig,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 
-export type TOptions = INetwork & IConfig & IShowLogs;
+export type TOptions = INetwork & IConfig & IVerbose;
 
 export default leaf({
   commandName: 'start',
   description: 'Start a DB instance defined in the config',
   options: {
     ...configOption,
-    ...showLogsOption,
+    ...verboseOption,
     ...networkOption,
   },
 
-  async action({ config, network, show_logs }: TOptions) {
+  async action({ config, network, verbose }: TOptions) {
     try {
-      await dbStart({ config, network, show_logs });
+      await dbStart({ config, network, verbose });
     } catch {
       console.log(
-        '\nError while starting the DB. Examine the log using --show_logs.'
+        '\nError while starting the DB. Examine the log using --verbose.'
       );
       process.exit(1);
     }
   },
 });
 
-export async function dbStart({ config, network, show_logs }: TOptions) {
+export async function dbStart({ config, network, verbose }: TOptions) {
   if (!checkNodeDirExists(false, true)) {
     await extractSourceFile(true);
   }
@@ -55,7 +55,7 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
     console.log('DB already running');
     return;
   }
-  if (show_logs) {
+  if (verbose) {
     printUsingConfig(network, config);
   }
 
@@ -64,16 +64,16 @@ export async function dbStart({ config, network, show_logs }: TOptions) {
 
   console.log('Starting the DB...\n' + dbConnectionInfo(envVars));
 
-  nodeStop(false);
+  await nodeStop({verbose});
 
   log(envVars);
 
   await execCmd(
     DB_PG_CTL,
     ['-D', DB_DATA_DIR, '-l', DB_LOG_FILE, 'start'],
-    `Examine the log using --show_logs and check ${DB_LOG_FILE}.`,
+    `Examine the log using --verbose and check ${DB_LOG_FILE}.`,
     { env },
-    show_logs
+    verbose
   );
 
   console.log('\nDB started');

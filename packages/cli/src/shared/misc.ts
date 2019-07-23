@@ -6,10 +6,10 @@ import * as debug from 'debug';
 import * as extend from 'extend';
 import * as fs from 'fs';
 import * as path from 'path';
-import { IForeground, IShowLogs } from './options';
+import { IForeground, IVerbose } from './options';
 
-export const VERSION = 'v1.0.0';
-export const NODE_VERSION = 'v2.0.0-beta3';
+export const VERSION_CLI = 'v1.0.0';
+export const VERSION_RISE = 'latest';
 
 // TODO single enum for NETWORKS and NetworkType
 export const NETWORKS = ['mainnet', 'testnet', 'devnet'];
@@ -35,10 +35,14 @@ export const DB_PG_CTL =
   process.platform === 'linux' ? '/usr/lib/postgresql/11/bin/pg_ctl' : 'pg_ctl';
 
 export const DOWNLOAD_URL =
-  'https://github.com/RiseVision/rise-node/releases/download/';
+  'https://github.com/RiseVision/rise-node/releases';
 export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
 export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
 export const BACKUPS_DIR = DATA_DIR + '/backups';
+
+export function getDownloadURL(file: string, version = VERSION_RISE) {
+  return DOWNLOAD_URL + version + '/download/' + file;
+}
 
 export function isDevEnv() {
   return process.env.DEV;
@@ -332,14 +336,14 @@ export function execCmd(
  * - DBConnectionError
  */
 export function createParseNodeOutput(
-  { foreground, show_logs }: IForeground & IShowLogs,
+  { foreground, verbose }: IForeground & IVerbose,
   setReady: () => void,
   resolve: (val?: any) => void,
   reject: (err?: Error) => void
 ): (data: Buffer) => void {
   return (data: Buffer) => {
     // output
-    if (show_logs) {
+    if (foreground || verbose) {
       process.stdout.write(data);
     } else {
       log(data);
@@ -361,11 +365,19 @@ export function createParseNodeOutput(
     ) {
       log('NativeModulesError');
       reject(new NativeModulesError());
+      return;
+    }
+    // handle address in use error
+    if (data.includes('EADDRINUSE')) {
+      log('AddressInUseError');
+      reject(new AddressInUseError());
+      return;
     }
     const sqlError = /Sequelize(\w*)Error/;
     if (sqlError.test(data.toString('utf8'))) {
       log('DBConnectionError');
       reject(new DBConnectionError());
+      return;
     }
   };
 }
@@ -373,6 +385,12 @@ export function createParseNodeOutput(
 export class NativeModulesError extends Error {
   constructor() {
     super('Native modules need rebuilding');
+  }
+}
+
+export class AddressInUseError extends Error {
+  constructor() {
+    super('Address in use');
   }
 }
 

@@ -20,30 +20,32 @@ import {
   configOption,
   IConfig,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 import { dbStart } from './start';
 import { dbStop } from './stop';
 
-export type TOptions = INetwork & IConfig & IShowLogs;
+export type TOptions = INetwork & IConfig & IVerbose;
 
 export default leaf({
   commandName: 'init',
   description: 'Initialize a fresh DB and start it',
   options: {
     ...configOption,
-    ...showLogsOption,
+    ...verboseOption,
     ...networkOption,
   },
 
-  async action({ config, network, show_logs }: TOptions) {
+  async action({ config, network, verbose }: TOptions) {
     try {
       if (!checkNodeDirExists(true, true)) {
         await extractSourceFile(true);
       }
-      printUsingConfig(network, config);
+      if (verbose) {
+        printUsingConfig(network, config);
+      }
 
       const envVars = getDBEnvVars(network, config, true);
       const env = { ...process.env, ...envVars };
@@ -54,8 +56,8 @@ export default leaf({
       };
 
       // stop the node and DB
-      nodeStop(false);
-      await dbStop({ config, network, show_logs });
+      await nodeStop({ verbose });
+      await dbStop({ config, network, verbose });
 
       log(envVars);
 
@@ -64,7 +66,7 @@ export default leaf({
         ['-Rf', DB_DATA_DIR],
         `Couldn't remove the data dir ${DB_DATA_DIR}.`,
         { env },
-        show_logs
+        verbose
       );
 
       await execCmd(
@@ -72,13 +74,13 @@ export default leaf({
         ['init', '-D', DB_DATA_DIR],
         `Couldn't init a new DB data dir in ${DB_DATA_DIR}.`,
         { env },
-        show_logs
+        verbose
       );
 
       await delay(2 * SEC);
 
       // start the DB
-      await dbStart({ config, network, show_logs });
+      await dbStart({ config, network, verbose });
       // wait just in case
       await delay(3 * SEC);
 
@@ -91,7 +93,7 @@ export default leaf({
           {
             env: envHostPort,
           },
-          show_logs
+          verbose
         );
       } catch (err) {
         const alreadyExists = err
@@ -110,7 +112,7 @@ export default leaf({
         {
           env: envHostPort,
         },
-        show_logs
+        verbose
       );
 
       const alterPasswdQuery = `"ALTER USER ${envVars.PGUSER} WITH PASSWORD '${
@@ -124,7 +126,7 @@ export default leaf({
         {
           env: envHostPort,
         },
-        show_logs
+        verbose
       );
 
       console.log('DB successfully initialized and running.');
@@ -144,7 +146,7 @@ export default leaf({
         console.log(
           '\nError while initializing a PostgreSQL database.\n' +
             getLinuxHelpMsg(config, network) +
-            `\nExamine the log using --show_logs and check ${DB_LOG_FILE}.`
+            `\nExamine the log using --verbose and check ${DB_LOG_FILE}.`
         );
       }
       process.exit(1);

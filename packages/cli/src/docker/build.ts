@@ -17,11 +17,11 @@ import {
   foregroundOption,
   IConfig,
   IForeground,
-  IShowLogs,
-  showLogsOption,
+  IVerbose,
+  verboseOption,
 } from '../shared/options';
 
-export type TOptions = IConfig & IForeground & IShowLogs;
+export type TOptions = IConfig & IForeground & IVerbose;
 
 export default leaf({
   commandName: 'build',
@@ -30,10 +30,10 @@ export default leaf({
   options: {
     ...configOption,
     ...foregroundOption,
-    ...showLogsOption,
+    ...verboseOption,
   },
 
-  async action({ config, foreground, show_logs }: TOptions) {
+  async action({ config, foreground, verbose }: TOptions) {
     if (!checkDockerDirExists()) {
       return;
     }
@@ -50,16 +50,16 @@ export default leaf({
     } else {
       createEmptyConfig();
     }
-    const showLogs = show_logs || foreground;
+    verbose = verbose || foreground;
 
     // TODO check if docker is running
     try {
       await dockerStop();
       await dockerRemove();
-      await dockerBuild(showLogs);
+      await dockerBuild(verbose);
     } catch (err) {
       console.log(
-        'Error while building the container. Examine the log using --show_logs.'
+        'Error while building the container. Examine the log using --verbose.'
       );
       console.error(err);
       process.exit(1);
@@ -101,7 +101,7 @@ export async function dockerRemove(): Promise<void> {
   }
 }
 
-async function dockerBuild(showLogs: boolean): Promise<void> {
+async function dockerBuild(verbose: boolean): Promise<void> {
   console.log('Building the image...');
 
   // build
@@ -114,7 +114,7 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
       shell: true,
     });
     function line(data: string) {
-      if (showLogs) {
+      if (verbose) {
         process.stdout.write(data);
       } else {
         log(data);

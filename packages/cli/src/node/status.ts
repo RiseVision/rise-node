@@ -14,12 +14,12 @@ import {
   configOption,
   IConfig,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 
-export type TOptions = IConfig & INetwork & IShowLogs;
+export type TOptions = IConfig & INetwork & IVerbose;
 
 export default leaf({
   commandName: 'status',
@@ -28,7 +28,7 @@ export default leaf({
   options: {
     ...configOption,
     ...networkOption,
-    ...showLogsOption,
+    ...verboseOption,
   },
 
   async action(options: TOptions) {
@@ -36,7 +36,7 @@ export default leaf({
       await nodeStatus(options);
     } catch (e) {
       log(e);
-      console.log('Something went wrong. Examine the log using --show_logs.');
+      console.log('Something went wrong. Examine the log using --verbose.');
       process.exit(1);
     }
   },
@@ -45,10 +45,12 @@ export default leaf({
 /**
  * Starts a node or throws an exception.
  */
-export async function nodeStatus({ config, network, show_logs }: TOptions) {
+export async function nodeStatus({ config, network, verbose }: TOptions) {
   await checkConditions(config);
 
-  printUsingConfig(network, config);
+  if (verbose) {
+    printUsingConfig(network, config);
+  }
 
   // check the PID, but not when in DEV
   const pid = getNodePID();
@@ -57,11 +59,10 @@ export async function nodeStatus({ config, network, show_logs }: TOptions) {
     return;
   }
 
-  console.log('Status');
   console.log(`PID: ${pid}`);
   log('Getting block height from the DB...');
 
-  const blockHeight = await getBlockHeight(network, config, show_logs);
+  const blockHeight = await getBlockHeight(network, config, verbose);
   if (!blockHeight) {
     throw new Error("ERROR: Couldn't get the block height");
   }

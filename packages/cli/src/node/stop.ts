@@ -1,33 +1,47 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import * as kill from 'tree-kill';
+import { promisify } from 'util';
 import { getNodePID, log } from '../shared/misc';
+import { IVerbose, verboseOption } from '../shared/options';
+
+const killAsync = promisify(kill);
+
+export type TOptions = IVerbose;
 
 export default leaf({
   commandName: 'stop',
   description: 'Stops the node using the PID file',
 
-  action() {
+  options: {
+    ...verboseOption,
+  },
+
+  async action({ verbose }: TOptions) {
     try {
-      nodeStop();
-    } catch {
+      await nodeStop({ verbose });
+    } catch (err) {
+      if (verbose) {
+        console.log(err);
+      }
       console.log(
-        '\nError while stopping the node. Examine the log using --show_logs.'
+        '\nError while stopping the node. Examine the log using --verbose.'
       );
       process.exit(1);
     }
   },
 });
 
-export function nodeStop(showErrors = true) {
+export async function nodeStop({ verbose }: TOptions) {
   log('nodeStop');
   const pid = getNodePID();
   if (!pid) {
-    if (showErrors) {
+    if (verbose) {
       console.log("RISE node isn't running");
     }
     return;
   }
   console.log(`Killing RISE node with PID ${pid}`);
 
-  process.kill(pid);
+  await killAsync(pid);
 }

@@ -19,7 +19,7 @@ import nodeRebuildNative from './node/rebuild-native';
 import nodeStart from './node/start';
 import nodeStatus from './node/status';
 import nodeStop from './node/stop';
-import { VERSION } from './shared/misc';
+import { VERSION_CLI } from './shared/misc';
 
 dot.config();
 
@@ -59,7 +59,7 @@ export const version = leaf({
   commandName: 'version',
   description: 'Version of the app',
   action() {
-    console.log(VERSION);
+    console.log(VERSION_CLI);
   },
 });
 

@@ -24,13 +24,13 @@ import {
   configOption,
   IConfig,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 import { nodeStop } from './stop';
 
-export type TOptions = IConfig & INetwork & IShowLogs;
+export type TOptions = IConfig & INetwork & IVerbose;
 
 export default leaf({
   commandName: 'export-db',
@@ -39,14 +39,16 @@ export default leaf({
   options: {
     ...configOption,
     ...networkOption,
-    ...showLogsOption,
+    ...verboseOption,
   },
 
-  async action({ config, network, show_logs }: TOptions) {
-    if (!(await checkConditions(config))) {
+  async action({ config, network, verbose }: TOptions) {
+    if (!(await checkConditions({ config }))) {
       return;
     }
-    printUsingConfig(network, config);
+    if (verbose) {
+      printUsingConfig(network, config);
+    }
     setBackupLock();
     mkdirpSync(getBackupsDir());
     const envVars = getDBEnvVars(network, config);
@@ -55,9 +57,10 @@ export default leaf({
     // TODO drop the _snap db after exporting?
     const targetDB = `${database}_snap`;
 
-    nodeStop(false);
+    await nodeStop({ verbose });
 
     log(envVars);
+    console.log('Starting the export...');
 
     try {
       await execCmd(
@@ -65,21 +68,21 @@ export default leaf({
         ['--if-exists', targetDB],
         `Cannot drop ${targetDB}`,
         { env },
-        show_logs
+        verbose
       );
       await execCmd(
         'vacuumdb',
         ['--analyze', '--full', database],
         `Cannot vacuum ${database}`,
         { env },
-        show_logs
+        verbose
       );
       await execCmd(
         'createdb',
         [targetDB],
         `Cannot createdb ${targetDB}`,
         { env },
-        show_logs
+        verbose
       );
       // TODO unify with others by piping manually
       try {
@@ -110,25 +113,22 @@ export default leaf({
       await execCmd(
         'ln',
         ['-sf', backupName, 'latest'],
-        `Couldn't symlink ${process.cwd()}/latest to the backup file`,
+        `Couldn't symlink ${getBackupsDir()}/latest to the backup file`,
         {
           cwd: getBackupsDir(),
         }
       );
-      console.log(`Created a DB backup file "./${backupName}".`);
+      console.log(`Created a DB backup file "${BACKUPS_DIR}/${backupName}".`);
     } catch (e) {
-      console.log('Error when creating the backup file');
-      console.log(
-        '\nError when creating the backup file.\n' +
-          'Examine the log using --show_logs.'
-      );
+      console.log('Error when creating the backup file.');
+      console.log('Examine the log using --verbose.');
       process.exit(1);
     }
     removeBackupLock();
   },
 });
 
-async function checkConditions(config: string | null) {
+async function checkConditions({ config }: IConfig) {
   const backupPID = getBackupPID();
   if (backupPID) {
     console.log(`ERROR: Active backup with PID ${backupPID}`);
@@ -144,16 +144,6 @@ async function checkConditions(config: string | null) {
   }
   if (!checkNodeDirExists(true)) {
     await extractSourceFile();
-  }
-  // TODO use nodeStop() ?
-  const nodePID = getNodePID();
-  if (nodePID) {
-    console.log(`Stopping RISE node with PID ${nodePID}`);
-    await execCmd(
-      'kill',
-      [nodePID.toString()],
-      "Couldn't kill the running node"
-    );
   }
   return true;
 }

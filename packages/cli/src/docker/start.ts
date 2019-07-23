@@ -19,13 +19,13 @@ import {
   IConfig,
   IForeground,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 import { dockerRemove, dockerStop } from './build';
 
-export type TOptions = IConfig & INetwork & IForeground & IShowLogs;
+export type TOptions = IConfig & INetwork & IForeground & IVerbose;
 
 export default leaf({
   commandName: 'start',
@@ -35,10 +35,10 @@ export default leaf({
     ...configOption,
     ...foregroundOption,
     ...networkOption,
-    ...showLogsOption,
+    ...verboseOption,
   },
 
-  async action({ config, network, foreground, show_logs }: TOptions) {
+  async action({ config, network, foreground, verbose }: TOptions) {
     if (!checkDockerDirExists()) {
       return;
     }
@@ -47,16 +47,16 @@ export default leaf({
       console.log("ERROR: Config file doesn't exist.");
       return;
     }
-    show_logs = show_logs || foreground;
+    verbose = verbose || foreground;
 
     // TODO check if docker is running
     try {
       await dockerStop();
       await dockerRemove();
-      await dockerRun({ config: configPath, network, foreground, show_logs });
+      await dockerRun({ config: configPath, network, foreground, verbose });
     } catch (err) {
       console.log(
-        'Error while building the container. Examine the log using --show_logs.'
+        'Error while building the container. Examine the log using --verbose.'
       );
       console.error(err);
       process.exit(1);
@@ -64,8 +64,8 @@ export default leaf({
   },
 });
 
-async function dockerRun({ config, network, foreground, show_logs }: TOptions) {
-  if (config) {
+async function dockerRun({ config, network, foreground, verbose }: TOptions) {
+  if (verbose) {
     printUsingConfig(network, config);
   }
 
@@ -89,7 +89,7 @@ async function dockerRun({ config, network, foreground, show_logs }: TOptions) {
       shell: true,
     });
     const waitForReady = createParseNodeOutput(
-      { foreground, show_logs },
+      { foreground, verbose },
       () => {
         ready = true;
       },
@@ -111,7 +111,7 @@ async function dockerRun({ config, network, foreground, show_logs }: TOptions) {
   });
   log('run done');
   if (!ready) {
-    console.log('Something went wrong. Examine the log using --show_logs.');
+    console.log('Something went wrong. Examine the log using --verbose.');
     process.exit(1);
   }
   console.log('Container started');

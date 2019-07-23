@@ -9,6 +9,7 @@ import {
   execCmd,
   extractSourceFile,
   getBackupPID,
+  getBlockHeight,
   getDBEnvVars,
   getNodePID,
   hasLocalPostgres,
@@ -19,12 +20,12 @@ import {
   configOption,
   IConfig,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
 } from '../shared/options';
 import { nodeStop } from './stop';
 
-export type TOptions = IConfig & INetwork & { file: string } & IShowLogs;
+export type TOptions = IConfig & INetwork & { file: string } & IVerbose;
 
 export default leaf({
   commandName: 'import-db',
@@ -41,7 +42,7 @@ export default leaf({
     }),
   },
 
-  async action({ config, network, file, show_logs }: TOptions) {
+  async action({ config, network, file, verbose }: TOptions) {
     if (!(await checkConditions(config, file))) {
       return;
     }
@@ -50,7 +51,7 @@ export default leaf({
     const env = { ...process.env, ...envVars };
     const database = envVars.PGDATABASE;
 
-    nodeStop(false);
+    await nodeStop({ verbose });
 
     try {
       await execCmd(
@@ -58,14 +59,14 @@ export default leaf({
         ['--if-exists', database],
         `Couldn't drop DB ${database}`,
         { env },
-        show_logs
+        verbose
       );
       await execCmd(
         'createdb',
         [database],
         `Couldn't create DB ${database}`,
         { env },
-        show_logs
+        verbose
       );
       // TODO unify with others by piping manually
       try {
@@ -75,9 +76,16 @@ export default leaf({
       } catch (e) {
         console.log(`Cannot import "${file}"`);
       }
+      const blockHeight = await getBlockHeight(network, config, verbose);
       console.log(`Imported "./${file}" into the DB.`);
-    } catch (e) {
-      console.log('Error when importing the backup file');
+      console.log(`Block height: ${blockHeight}`);
+    } catch (err) {
+      if (verbose) {
+        console.log(err);
+      }
+      console.log(
+        'Error when importing the backup file. Examine the log using --verbose.'
+      );
       process.exit(1);
     }
     removeBackupLock();

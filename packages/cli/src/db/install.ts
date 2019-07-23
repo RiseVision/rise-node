@@ -1,14 +1,14 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execCmd } from '../shared/misc';
-import { IShowLogs, showLogsOption } from '../shared/options';
+import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({
   commandName: 'install',
   description: 'Install PostgreSQL database on Ubuntu',
-  options: showLogsOption,
+  options: verboseOption,
 
-  async action({ show_logs }: IShowLogs) {
+  async action({ verbose }: IVerbose) {
     try {
       const file = 'apt-get';
       const params = ['install', '-y', 'postgresql', 'postgresql-contrib'];
@@ -20,7 +20,7 @@ export default leaf({
         'Alternatively run the following command manually:\n' +
         `$ sudo ${file} ${params.join(' ')}`;
 
-      await execCmd(file, params, errorMsg, null, show_logs);
+      await execCmd(file, params, errorMsg, null, verbose);
     } catch {
       process.exit(1);
     }

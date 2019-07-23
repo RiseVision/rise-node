@@ -6,27 +6,27 @@ import {
   extractSourceFile,
   getNodeDir,
 } from '../shared/misc';
-import { IShowLogs, showLogsOption } from '../shared/options';
+import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({
   commandName: 'rebuild-native',
   description: 'Rebuilds the native node_modules for the current OS.',
-  options: showLogsOption,
+  options: verboseOption,
 
-  async action({ show_logs }: IShowLogs) {
+  async action({ verbose }: IVerbose) {
     try {
-      await nodeRebuildNative({ show_logs });
+      await nodeRebuildNative({ verbose });
     } catch {
       console.log(
         '\nError while rebuilding native node modules. ' +
-          'Examine the log using --show_logs.'
+          'Examine the log using --verbose.'
       );
       process.exit(1);
     }
   },
 });
 
-export async function nodeRebuildNative({ show_logs }: IShowLogs) {
+export async function nodeRebuildNative({ verbose }: IVerbose) {
   if (!checkNodeDirExists(true)) {
     await extractSourceFile();
   }
@@ -38,7 +38,7 @@ export async function nodeRebuildNative({ show_logs }: IShowLogs) {
     'Make sure you have all the dependencies installed by running:\n' +
     '$ sudo ./rise node install-deps';
 
-  await execCmd('npm', ['rebuild'], errorMsg, { cwd: getNodeDir() }, show_logs);
+  await execCmd('npm', ['rebuild'], errorMsg, { cwd: getNodeDir() }, verbose);
 
   console.log('Native node_modules have been rebuilt.');
 }

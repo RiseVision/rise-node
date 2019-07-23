@@ -8,12 +8,12 @@ import {
   foregroundOption,
   IForeground,
   INetwork,
-  IShowLogs,
+  IVerbose,
   networkOption,
-  showLogsOption,
+  verboseOption,
 } from '../shared/options';
 
-export type TOptions = INetwork & IForeground & IShowLogs;
+export type TOptions = INetwork & IForeground & IVerbose;
 
 export default leaf({
   commandName: 'start',
@@ -22,25 +22,25 @@ export default leaf({
   options: {
     ...foregroundOption,
     ...networkOption,
-    ...showLogsOption,
+    ...verboseOption,
   },
 
-  async action({ network, foreground, show_logs }: TOptions) {
+  async action({ network, foreground, verbose }: TOptions) {
     if (!checkDockerDirExists()) {
       return;
     }
-    const showLogs = show_logs || foreground;
+    verbose = verbose || foreground;
 
     // TODO check if docker is running
     try {
       await dockerComposeStop();
       await dockerStop();
       await dockerRemove();
-      await dockerBuild(showLogs);
-      await dockerRun(network, foreground, showLogs);
+      await dockerBuild(verbose);
+      await dockerRun(network, foreground, verbose);
     } catch (err) {
       console.log(
-        'Error while building the container. Examine the log using --show_logs.'
+        'Error while building the container. Examine the log using --verbose.'
       );
       console.error(err);
       process.exit(1);
@@ -64,7 +64,7 @@ async function dockerComposeStop(): Promise<void> {
   }
 }
 
-async function dockerBuild(showLogs: boolean): Promise<void> {
+async function dockerBuild(verbose: boolean): Promise<void> {
   console.log('Building the image...');
 
   // build
@@ -76,7 +76,7 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
       timeout: 15 * MIN,
     });
     function line(data: string) {
-      if (showLogs) {
+      if (verbose) {
         process.stdout.write(data);
       } else {
         log(data);
@@ -97,7 +97,7 @@ async function dockerBuild(showLogs: boolean): Promise<void> {
 async function dockerRun(
   network: string,
   foreground: boolean,
-  showLogs: boolean
+  verbose: boolean
 ) {
   console.log('Starting containers...');
   let ready = false;
@@ -112,7 +112,7 @@ async function dockerRun(
       timeout: 2 * MIN,
     });
     function line(data: string) {
-      if (showLogs) {
+      if (verbose) {
         process.stdout.write(data);
       } else {
         log(data);
@@ -135,7 +135,7 @@ async function dockerRun(
   });
   log('run done');
   if (!ready) {
-    console.log('Something went wrong. Examine the log using --show_logs.');
+    console.log('Something went wrong. Examine the log using --verbose.');
     process.exit(1);
   }
   console.log('Container started');
