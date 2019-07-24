@@ -34,8 +34,7 @@ export const DB_LOCK_FILE = DB_DATA_DIR + '/postmaster.pid';
 export const DB_PG_CTL =
   process.platform === 'linux' ? '/usr/lib/postgresql/11/bin/pg_ctl' : 'pg_ctl';
 
-export const DOWNLOAD_URL =
-  'https://github.com/RiseVision/rise-node/releases';
+export const DOWNLOAD_URL = 'https://github.com/RiseVision/rise-node/releases/';
 export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
 export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
 export const BACKUPS_DIR = DATA_DIR + '/backups';
@@ -299,6 +298,7 @@ export function execCmd(
       proc.stdout.on('data', appendOutput);
       proc.stderr.on('data', appendOutput);
       proc.on('error', (error) => {
+        // TODO reject only in 'close' listener
         reject(error);
       });
       proc.stderr.on('data', (data: Buffer) => {
@@ -317,6 +317,7 @@ export function execCmd(
             log(errors);
           }
           console.log('ERROR: ' + errorMsg);
+          // TODO Error instance and include the original error msg
           reject(errorMsg);
         } else {
           resolve(output);
@@ -491,4 +492,10 @@ export async function getBlockHeight(
   const blockHeight = parseInt(output, 10);
   log(`block height: ${blockHeight}`);
   return blockHeight || null;
+}
+
+export function unlinkLockFile() {
+  if (!isDevEnv() && fs.existsSync(NODE_LOCK_FILE)) {
+    fs.unlinkSync(NODE_LOCK_FILE);
+  }
 }

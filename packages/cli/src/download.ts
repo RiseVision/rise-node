@@ -1,8 +1,7 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import * as fs from 'fs';
-import * as http from 'http';
-import * as https from 'https';
+import { http, https } from 'follow-redirects';
 import {
   DIST_FILE,
   DOCKER_DIR,
@@ -12,6 +11,9 @@ import {
   log,
   VERSION_RISE,
 } from './shared/misc';
+import { IVerbose, verboseOption } from './shared/options';
+
+export type TOptions = { version: string } & IVerbose;
 
 export default leaf({
   commandName: 'download',
@@ -26,9 +28,10 @@ export default leaf({
       nullable: true,
       typeName: 'string',
     }),
+    ...verboseOption,
   },
 
-  async action({ version }: { version: string }) {
+  async action({ version, verbose }: TOptions) {
     try {
       await download({ version });
       console.log('Done');
@@ -36,12 +39,15 @@ export default leaf({
       console.log('You can start RISE node using:');
       console.log('  ./rise node install-deps');
       console.log('  ./rise node start');
-      console.log('');
+      // console.log('');
       // console.log('You can start a Docker container using:');
       // console.log('  ./rise docker build');
       // console.log('  ./rise docker start');
-    } catch (e) {
-      log(e);
+    } catch (err) {
+      log(err);
+      if (verbose) {
+        console.log(err);
+      }
       console.log('\nThere was an error.');
       process.exit(1);
     }

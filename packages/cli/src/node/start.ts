@@ -23,6 +23,7 @@ import {
   NativeModulesError,
   NODE_LOCK_FILE,
   printUsingConfig,
+  unlinkLockFile,
 } from '../shared/misc';
 import {
   configOption,
@@ -80,6 +81,7 @@ export async function nodeStart(
 
   let ready = false;
   try {
+    unlinkLockFile();
     await startLaunchpad(
       {
         config,
@@ -97,9 +99,6 @@ export async function nodeStart(
       } else {
         console.log('RISE node NOT started');
       }
-    }
-    if (!isDevEnv()) {
-      fs.unlinkSync(NODE_LOCK_FILE);
     }
     if (!ready) {
       throw new Error('Never reached "Blockchain ready"');
@@ -161,6 +160,13 @@ function startLaunchpad(
         cwd: getCoreRiseDir(),
         shell: true,
       });
+
+      // save the PID (not in DEV)
+      if (!isDevEnv()) {
+        log(`Creating lock file ${NODE_LOCK_FILE} (${proc.pid})`);
+        fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
+      }
+
       console.log(`Started as PID ${proc.pid}`);
       // timeout (not when in foreground)
       const timer = !foreground
@@ -186,12 +192,6 @@ function startLaunchpad(
 
       // quit the child process gracefully
       process.on('SIGINT', () => handleSigInt(proc));
-
-      // save the PID (not in DEV)
-      if (!isDevEnv()) {
-        log(`Creating lock file ${NODE_LOCK_FILE} (${proc.pid})`);
-        fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
-      }
     } catch (e) {
       reject(e);
     }
@@ -208,6 +208,8 @@ function handleSigInt(proc: ChildProcess) {
   } else {
     console.log('Waiting for RISE node to quit...');
   }
+
+  unlinkLockFile();
 }
 
 async function checkConditions(config: string, skipPIDCheck = false) {

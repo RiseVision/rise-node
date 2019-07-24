@@ -64,7 +64,7 @@ export async function dbStart({ config, network, verbose }: TOptions) {
 
   console.log('Starting the DB...\n' + dbConnectionInfo(envVars));
 
-  await nodeStop({verbose});
+  await nodeStop({ verbose });
 
   log(envVars);
 

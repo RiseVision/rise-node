@@ -30,10 +30,12 @@
     "typescript": "3.4.5"
   },
   "dependencies": {
+    "@types/follow-redirects": "^1.5.0",
     "delay": "^4.3.0",
     "dotenv": "^8.0.0",
     "env": "^0.0.2",
     "extend": "=3.0.2",
+    "follow-redirects": "^1.7.0",
     "fs-extra": "^8.0.1",
     "mkdirp": "^0.5.1",
     "tree-kill": "^1.2.1"
