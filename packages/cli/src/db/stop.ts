@@ -1,13 +1,14 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import {
-  checkNodeDirExists,
   DB_DATA_DIR,
   DB_LOCK_FILE,
   DB_LOG_FILE,
   DB_PG_CTL,
+} from '../shared/constants';
+import {
+  checkSourceDir,
   execCmd,
-  extractSourceFile,
   getDBEnvVars,
   getPID,
   log,
@@ -36,9 +37,14 @@ export default leaf({
   async action({ config, network, verbose }: TOptions) {
     try {
       await dbStop({ config, network, verbose });
-    } catch {
+    } catch (err) {
+      log(err);
+      if (verbose) {
+        console.log(err);
+      }
       console.log(
-        '\nError while stopping the DB. Examine the log using --verbose.'
+        '\nError while stopping the DB.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
     }
@@ -46,9 +52,7 @@ export default leaf({
 });
 
 export async function dbStop({ config, network, verbose }: TOptions) {
-  if (!checkNodeDirExists(true, true)) {
-    await extractSourceFile(true);
-  }
+  await checkSourceDir(true);
   if (!getPID(DB_LOCK_FILE)) {
     console.log('DB not running');
     return;

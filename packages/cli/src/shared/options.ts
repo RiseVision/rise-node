@@ -1,9 +1,9 @@
 import { option } from '@carnesen/cli';
-import { NETWORKS, TNetworkType } from './misc';
+import { NETWORKS, TNetworkType } from './constants';
 
 export const configOption = {
   config: option({
-    description: 'Path to the config file',
+    description: 'Path to the config file (optional)',
     nullable: true,
     typeName: 'string',
   }),
@@ -17,6 +17,7 @@ export const networkOption = {
   network: option({
     allowedValues: NETWORKS,
     defaultValue: 'mainnet',
+    description: 'Network type (optional)',
     nullable: true,
     typeName: 'string',
   }),
@@ -29,7 +30,7 @@ export interface INetwork {
 export const verboseOption = {
   verbose: option({
     defaultValue: false,
-    description: 'Show as much information as possible',
+    description: 'Show as much information as possible (optional)',
     nullable: true,
     typeName: 'boolean',
   }),
@@ -42,7 +43,8 @@ export interface IVerbose {
 export const foregroundOption = {
   foreground: option({
     defaultValue: false,
-    description: 'Keep the process in the foreground and stream the output',
+    description:
+      'Keep the process in the foreground and stream the output (optional)',
     nullable: true,
     typeName: 'boolean',
   }),

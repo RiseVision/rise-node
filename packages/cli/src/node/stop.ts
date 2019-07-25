@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import * as kill from 'tree-kill';
+import kill from 'tree-kill';
 import { promisify } from 'util';
 import { getNodePID, log } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
@@ -25,7 +25,8 @@ export default leaf({
         console.log(err);
       }
       console.log(
-        '\nError while stopping the node. Examine the log using --verbose.'
+        '\nError while stopping the node.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
     }

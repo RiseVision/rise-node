@@ -1,27 +1,27 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import * as assert from 'assert';
+import assert from 'assert';
 import { ChildProcess, spawn } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
+import { MIN, NODE_LOCK_FILE } from '../shared/constants';
 import {
   AddressInUseError,
-  checkLaunchpadExists,
-  checkNodeDirExists,
   ConditionsNotMetError,
-  createParseNodeOutput,
   DBConnectionError,
+  NativeModulesError,
+} from '../shared/exceptions';
+import {
+  checkLaunchpadExists,
+  checkSourceDir,
+  createParseNodeOutput,
   dbConnectionInfo,
-  extractSourceFile,
   getCoreRiseDir,
   getDBEnvVars,
   getLaunchpadFilePath,
   getNodePID,
   isDevEnv,
   log,
-  MIN,
-  NativeModulesError,
-  NODE_LOCK_FILE,
   printUsingConfig,
   unlinkLockFile,
 } from '../shared/misc';
@@ -58,7 +58,10 @@ export default leaf({
       if (options.verbose) {
         console.log(err);
       }
-      console.log('\nSomething went wrong. Examine the log using --verbose.');
+      console.log(
+        '\nSomething went wrong.' +
+          (options.verbose ? '' : 'Examine the log using --verbose.')
+      );
       process.exit(1);
     }
   },
@@ -72,15 +75,15 @@ export async function nodeStart(
   rebuildNative = true,
   skipPIDCheck = false
 ) {
-  await checkConditions(config, skipPIDCheck);
-
-  if (verbose) {
-    printUsingConfig(network, config);
-  }
-  console.log('Starting RISE node...');
-
-  let ready = false;
   try {
+    await checkConditions(config, skipPIDCheck);
+
+    if (verbose) {
+      printUsingConfig(network, config);
+    }
+    console.log('Starting RISE node...');
+
+    let ready = false;
     unlinkLockFile();
     await startLaunchpad(
       {
@@ -129,11 +132,13 @@ export async function nodeStart(
   }
 }
 
+// TODO simplify
 // tslint:disable-next-line:cognitive-complexity
 function startLaunchpad(
   { config, network, foreground, verbose }: TOptions,
   setReady: () => void
 ): Promise<any> {
+  const timeout = 2 * MIN;
   return new Promise((resolve, reject) => {
     try {
       const cmd = getLaunchpadFilePath();
@@ -167,15 +172,15 @@ function startLaunchpad(
         fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
       }
 
-      console.log(`Started as PID ${proc.pid}`);
+      console.log(`Starting as PID ${proc.pid}...`);
       // timeout (not when in foreground)
       const timer = !foreground
         ? setTimeout(() => {
             if (!proc.killed) {
-              console.log(`Timeout (${2 * MIN} secs)`);
+              console.log(`Timeout (${timeout} secs)`);
               proc.kill();
             }
-          }, 2 * MIN)
+          }, timeout)
         : null;
       proc.stdout.on('data', parseNodeOutput);
       proc.stderr.on('data', parseNodeOutput);
@@ -213,9 +218,7 @@ function handleSigInt(proc: ChildProcess) {
 }
 
 async function checkConditions(config: string, skipPIDCheck = false) {
-  if (!checkNodeDirExists(true)) {
-    await extractSourceFile();
-  }
+  await checkSourceDir();
   checkLaunchpadExists();
   // check the PID, but not when in DEV
   if (!isDevEnv() && !skipPIDCheck) {

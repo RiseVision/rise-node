@@ -1,43 +1,32 @@
 // tslint:disable:no-console
 // tslint:disable:max-classes-per-file
-import * as assert from 'assert';
+import assert from 'assert';
 import { execSync, spawn, SpawnOptions } from 'child_process';
-import * as debug from 'debug';
-import * as extend from 'extend';
-import * as fs from 'fs';
-import * as path from 'path';
+import { debug } from 'debug';
+import extend from 'extend';
+import fs from 'fs';
+import path from 'path';
+import {
+  BACKUP_LOCK_FILE,
+  BACKUPS_DIR,
+  DOCKER_DIR,
+  DOWNLOAD_URL,
+  MIN,
+  NODE_DIR,
+  NODE_FILE,
+  NODE_LOCK_FILE,
+  TNetworkType,
+  VERSION_RISE,
+} from './constants';
+import {
+  AddressInUseError,
+  DBConnectionError,
+  NativeModulesError,
+  NoRiseDistFileError,
+} from './exceptions';
 import { IForeground, IVerbose } from './options';
 
-export const VERSION_CLI = 'v1.0.0';
-export const VERSION_RISE = 'latest';
-
-// TODO single enum for NETWORKS and NetworkType
-export const NETWORKS = ['mainnet', 'testnet', 'devnet'];
-export type TNetworkType = 'mainnet' | 'testnet' | 'devnet';
-
-export const SEC = 1000;
-export const MIN = 60 * SEC;
 export const log = debug('rise-cli');
-
-export const DOCKER_DIR = 'rise-node';
-export const DIST_FILE = 'rise-node.tar.gz';
-export const DOCKER_IMAGE_NAME = 'rise-local-node';
-export const DOCKER_CONTAINER_NAME = 'rise-node';
-export const DOCKER_CONFIG_FILE = DOCKER_DIR + '/config-docker.json';
-
-export const NODE_DIR = `${DOCKER_DIR}/source`;
-export const NODE_FILE = 'source.tar.gz';
-export const DATA_DIR = 'data';
-export const DB_DATA_DIR = DATA_DIR + '/db';
-export const DB_LOG_FILE = DATA_DIR + '/db.log';
-export const DB_LOCK_FILE = DB_DATA_DIR + '/postmaster.pid';
-export const DB_PG_CTL =
-  process.platform === 'linux' ? '/usr/lib/postgresql/11/bin/pg_ctl' : 'pg_ctl';
-
-export const DOWNLOAD_URL = 'https://github.com/RiseVision/rise-node/releases/';
-export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
-export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
-export const BACKUPS_DIR = DATA_DIR + '/backups';
 
 export function getDownloadURL(file: string, version = VERSION_RISE) {
   return DOWNLOAD_URL + version + '/download/' + file;
@@ -62,20 +51,11 @@ export function getNodeDir(relativeToCLI = false): string {
  * @param silent
  * @param relativeToCLI
  */
-export function checkNodeDirExists(
-  silent = false,
-  relativeToCLI = false
-): boolean {
+export async function checkSourceDir(relativeToCLI = false) {
   const dirPath = relativeToCLI ? path.resolve(__dirname, NODE_DIR) : NODE_DIR;
   if (!fs.existsSync(dirPath) || !fs.lstatSync(dirPath).isDirectory()) {
-    if (!silent) {
-      console.log(`Error: directory '${dirPath}' doesn't exist.`);
-      console.log('You can download the latest version using:');
-      console.log('  ./rise node download');
-    }
-    return false;
+    await extractSourceFile();
   }
-  return true;
 }
 
 export function checkLaunchpadExists(): boolean {
@@ -106,6 +86,9 @@ export async function extractSourceFile(
 ) {
   const filePath = getSourceFilePath(relativeToCLI);
   if (!fs.existsSync(filePath)) {
+    console.log(`ERROR: File ${DOCKER_DIR}/${NODE_FILE} missing`);
+    console.log('You can download the latest version using:');
+    console.log('  ./rise node download');
     throw new NoRiseDistFileError();
   }
 
@@ -228,7 +211,10 @@ export function mergeConfig(
   configPath?: string | null,
   relativeToCLI = false
 ): INodeConfig {
-  checkNodeDirExists(false, relativeToCLI);
+  const root = relativeToCLI ? __dirname : process.cwd();
+  if (!fs.existsSync(path.resolve(root, NODE_DIR))) {
+    throw new Error(`${NODE_DIR} missing`);
+  }
   const parentConfigPath = getConfigPath(networkType, relativeToCLI);
   if (!fs.existsSync(parentConfigPath)) {
     throw new Error(`Parent config ${parentConfigPath} doesn't exist`);
@@ -297,8 +283,7 @@ export function execCmd(
       };
       proc.stdout.on('data', appendOutput);
       proc.stderr.on('data', appendOutput);
-      proc.on('error', (error) => {
-        // TODO reject only in 'close' listener
+      proc.on('error', (error: Error) => {
         reject(error);
       });
       proc.stderr.on('data', (data: Buffer) => {
@@ -317,8 +302,7 @@ export function execCmd(
             log(errors);
           }
           console.log('ERROR: ' + errorMsg);
-          // TODO Error instance and include the original error msg
-          reject(errorMsg);
+          reject(new Error(errorMsg));
         } else {
           resolve(output);
         }
@@ -383,34 +367,6 @@ export function createParseNodeOutput(
   };
 }
 
-export class NativeModulesError extends Error {
-  constructor() {
-    super('Native modules need rebuilding');
-  }
-}
-
-export class AddressInUseError extends Error {
-  constructor() {
-    super('Address in use');
-  }
-}
-
-export class DBConnectionError extends Error {
-  constructor() {
-    super("Couldn't connect to the DB");
-  }
-}
-
-export class NoRiseDistFileError extends Error {
-  constructor() {
-    super(
-      'ERROR: rise source missing.\n' +
-        'You can download the latest version using:\n' +
-        '  ./rise node download'
-    );
-  }
-}
-
 export function getCoreRiseDir(): string {
   return path.resolve(process.cwd(), NODE_DIR, 'packages', 'rise');
 }
@@ -461,10 +417,6 @@ export function printUsingConfig(network: TNetworkType, config: string | null) {
   } else {
     console.log(`Config: default config for network "${network}".`);
   }
-}
-
-export class ConditionsNotMetError extends Error {
-  public name = 'ErrorCmdConditionsNotMet';
 }
 
 export async function getBlockHeight(

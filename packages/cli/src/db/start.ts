@@ -2,14 +2,15 @@
 import { leaf } from '@carnesen/cli';
 import { nodeStop } from '../node/stop';
 import {
-  checkNodeDirExists,
   DB_DATA_DIR,
   DB_LOCK_FILE,
   DB_LOG_FILE,
   DB_PG_CTL,
+} from '../shared/constants';
+import {
+  checkSourceDir,
   dbConnectionInfo,
   execCmd,
-  extractSourceFile,
   getDBEnvVars,
   getPID,
   log,
@@ -38,9 +39,14 @@ export default leaf({
   async action({ config, network, verbose }: TOptions) {
     try {
       await dbStart({ config, network, verbose });
-    } catch {
+    } catch (err) {
+      log(err);
+      if (verbose) {
+        console.log(err);
+      }
       console.log(
-        '\nError while starting the DB. Examine the log using --verbose.'
+        '\nError while starting the DB.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
     }
@@ -48,9 +54,7 @@ export default leaf({
 });
 
 export async function dbStart({ config, network, verbose }: TOptions) {
-  if (!checkNodeDirExists(false, true)) {
-    await extractSourceFile(true);
-  }
+  await checkSourceDir(true);
   if (getPID(DB_LOCK_FILE)) {
     console.log('DB already running');
     return;

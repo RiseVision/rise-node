@@ -1,10 +1,9 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import * as fs from 'fs';
+import fs from 'fs';
+import { ConditionsNotMetError } from '../shared/exceptions';
 import {
-  checkNodeDirExists,
-  ConditionsNotMetError,
-  extractSourceFile,
+  checkSourceDir,
   getBlockHeight,
   getNodePID,
   log,
@@ -34,9 +33,15 @@ export default leaf({
   async action(options: TOptions) {
     try {
       await nodeStatus(options);
-    } catch (e) {
-      log(e);
-      console.log('Something went wrong. Examine the log using --verbose.');
+    } catch (err) {
+      log(err);
+      if (options.verbose) {
+        console.log(err);
+      }
+      console.log(
+        'Something went wrong.' +
+          (options.verbose ? '' : 'Examine the log using --verbose.')
+      );
       process.exit(1);
     }
   },
@@ -71,9 +76,7 @@ export async function nodeStatus({ config, network, verbose }: TOptions) {
 }
 
 async function checkConditions(config: string) {
-  if (!checkNodeDirExists(true)) {
-    await extractSourceFile();
-  }
+  await checkSourceDir();
   if (config && !fs.existsSync(config)) {
     throw new ConditionsNotMetError(
       `ERROR: Config file doesn't exist.\n${config}`

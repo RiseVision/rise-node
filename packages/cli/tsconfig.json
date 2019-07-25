@@ -1,7 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./build"
+    "noEmit": true,
+    "target": "esnext",
+    "allowSyntheticDefaultImports": true
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["tests", "public", "dist", "build", "coverage", "node_modules"]

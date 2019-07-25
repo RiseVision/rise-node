@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execCmd } from '../shared/misc';
+import { execCmd, log } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({
@@ -10,31 +10,39 @@ export default leaf({
 
   async action({ verbose }: IVerbose) {
     try {
-      const file = 'apt-get';
-      const params = [
-        'install',
-        '-y',
-        'build-essential',
-        'python',
-        'postgresql-server-dev-all',
-      ];
-      const errorMsg =
-        "Couldn't install required dependencies.\n\n" +
-        "Make sure you're using `sudo`:\n" +
-        '$ sudo ./rise node install-deps\n' +
-        '\n' +
-        'Alternatively run the following command manually:\n' +
-        `$ sudo ${file} ${params.join(' ')}`;
-
-      await execCmd(file, params, errorMsg, null, verbose);
-
-      console.log('RISE node dependencies have been installed.');
-    } catch {
+      await nodeInstallDeps({ verbose });
+    } catch (err) {
+      log(err);
+      if (verbose) {
+        console.log(err);
+      }
       console.log(
-        '\nError while rebuilding native node modules. ' +
-          'Examine the log using --verbose.'
+        '\nError while rebuilding native node modules.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
     }
   },
 });
+
+export async function nodeInstallDeps({ verbose }: IVerbose) {
+  const file = 'apt-get';
+  const params = [
+    'install',
+    '-y',
+    'build-essential',
+    'python',
+    'postgresql-server-dev-all',
+  ];
+  const errorMsg =
+    "Couldn't install required dependencies.\n\n" +
+    "Make sure you're using `sudo`:\n" +
+    '$ sudo ./rise node install-deps\n' +
+    '\n' +
+    'Alternatively run the following command manually:\n' +
+    `$ sudo ${file} ${params.join(' ')}`;
+
+  await execCmd(file, params, errorMsg, null, verbose);
+
+  console.log('RISE node dependencies have been installed.');
+}

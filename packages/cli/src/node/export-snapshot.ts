@@ -31,8 +31,8 @@ import { nodeStop } from './stop';
 export type TOptions = IConfig & INetwork & IVerbose;
 
 export default leaf({
-  commandName: 'export-db',
-  description: `Creates a DB dump using the provided config and places it in ./${BACKUPS_DIR}.`,
+  commandName: 'export-snapshot',
+  description: `Creates an optimized database snapshot using the provided config and places it in ./${BACKUPS_DIR}.`,
 
   options: {
     ...configOption,

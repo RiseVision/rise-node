@@ -1,8 +1,15 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import * as fs from 'fs';
-import { getConfigPath } from './shared/misc';
-import { INetwork, networkOption } from './shared/options';
+import fs from 'fs';
+import { getConfigPath, log } from './shared/misc';
+import {
+  INetwork,
+  IVerbose,
+  networkOption,
+  verboseOption,
+} from './shared/options';
+
+export type TOptions = INetwork & IVerbose;
 
 export default leaf({
   commandName: 'config-defaults',
@@ -11,13 +18,26 @@ export default leaf({
 
   options: {
     ...networkOption,
+    ...verboseOption,
   },
 
-  action({ network }: INetwork) {
-    process.stdout.write(
-      fs.readFileSync(getConfigPath(network), {
-        encoding: 'utf8',
-      })
-    );
+  async action({ network, verbose }: TOptions) {
+    try {
+      process.stdout.write(
+        fs.readFileSync(getConfigPath(network), {
+          encoding: 'utf8',
+        })
+      );
+    } catch (err) {
+      log(err);
+      if (verbose) {
+        console.log(err);
+      }
+      console.log(
+        '\nSomething went wrong.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
+      );
+      process.exit(1);
+    }
   },
 });

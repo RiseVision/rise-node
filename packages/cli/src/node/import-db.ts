@@ -1,13 +1,12 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
+import { BACKUPS_DIR } from '../shared/constants';
 import {
-  BACKUPS_DIR,
-  checkNodeDirExists,
+  checkSourceDir,
   execCmd,
-  extractSourceFile,
   getBackupPID,
   getBlockHeight,
   getDBEnvVars,
@@ -22,6 +21,7 @@ import {
   INetwork,
   IVerbose,
   networkOption,
+  verboseOption,
 } from '../shared/options';
 import { nodeStop } from './stop';
 
@@ -34,6 +34,7 @@ export default leaf({
   options: {
     ...configOption,
     ...networkOption,
+    ...verboseOption,
     file: option({
       defaultValue: path.join(BACKUPS_DIR, 'latest'),
       description: 'Path to the backup file',
@@ -43,54 +44,64 @@ export default leaf({
   },
 
   async action({ config, network, file, verbose }: TOptions) {
-    if (!(await checkConditions(config, file))) {
-      return;
-    }
-    setBackupLock();
-    const envVars = getDBEnvVars(network, config);
-    const env = { ...process.env, ...envVars };
-    const database = envVars.PGDATABASE;
-
-    await nodeStop({ verbose });
-
     try {
-      await execCmd(
-        'dropdb',
-        ['--if-exists', database],
-        `Couldn't drop DB ${database}`,
-        { env },
-        verbose
-      );
-      await execCmd(
-        'createdb',
-        [database],
-        `Couldn't create DB ${database}`,
-        { env },
-        verbose
-      );
-      // TODO unify with others by piping manually
-      try {
-        execSync(`gunzip -c "${file}" | psql > /dev/null`, {
-          env,
-        });
-      } catch (e) {
-        console.log(`Cannot import "${file}"`);
-      }
-      const blockHeight = await getBlockHeight(network, config, verbose);
-      console.log(`Imported "./${file}" into the DB.`);
-      console.log(`Block height: ${blockHeight}`);
+      await nodeImportDB({ config, network, file, verbose });
     } catch (err) {
       if (verbose) {
         console.log(err);
       }
       console.log(
-        'Error when importing the backup file. Examine the log using --verbose.'
+        'Error when importing the backup file.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
     }
     removeBackupLock();
   },
 });
+
+export async function nodeImportDB({
+  config,
+  network,
+  file,
+  verbose,
+}: TOptions) {
+  if (!(await checkConditions(config, file))) {
+    return;
+  }
+  setBackupLock();
+  const envVars = getDBEnvVars(network, config);
+  const env = { ...process.env, ...envVars };
+  const database = envVars.PGDATABASE;
+
+  await nodeStop({ verbose });
+
+  await execCmd(
+    'dropdb',
+    ['--if-exists', database],
+    `Couldn't drop DB ${database}`,
+    { env },
+    verbose
+  );
+  await execCmd(
+    'createdb',
+    [database],
+    `Couldn't create DB ${database}`,
+    { env },
+    verbose
+  );
+  // TODO unify with others by piping manually
+  try {
+    execSync(`gunzip -c "${file}" | psql > /dev/null`, {
+      env,
+    });
+  } catch (e) {
+    console.log(`Cannot import "${file}"`);
+  }
+  const blockHeight = await getBlockHeight(network, config, verbose);
+  console.log(`Imported "./${file}" into the DB.`);
+  console.log(`Block height: ${blockHeight}`);
+}
 
 async function checkConditions(config: string | null, file: string) {
   const backupPID = getBackupPID();
@@ -110,9 +121,7 @@ async function checkConditions(config: string | null, file: string) {
     console.log(`ERROR: Config file doesn't exist.\n${config}`);
     return false;
   }
-  if (!checkNodeDirExists(true)) {
-    await extractSourceFile();
-  }
+  await checkSourceDir();
   // TODO use nodeStop() ?
   const nodePID = getNodePID();
   if (nodePID) {

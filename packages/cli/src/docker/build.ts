@@ -1,17 +1,15 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync, spawn } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 import {
-  checkDockerDirExists,
   DOCKER_CONFIG_FILE,
   DOCKER_CONTAINER_NAME,
   DOCKER_IMAGE_NAME,
-  getDockerDir,
-  log,
   MIN,
-} from '../shared/misc';
+} from '../shared/constants';
+import { checkDockerDirExists, getDockerDir, log } from '../shared/misc';
 import {
   configOption,
   foregroundOption,
@@ -59,7 +57,8 @@ export default leaf({
       await dockerBuild(verbose);
     } catch (err) {
       console.log(
-        'Error while building the container. Examine the log using --verbose.'
+        'Error while building the container.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
       );
       console.error(err);
       process.exit(1);

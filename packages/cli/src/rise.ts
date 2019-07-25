@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import { branch, cli, leaf } from '@carnesen/cli';
-import * as dot from 'dotenv';
+import dot from 'dotenv';
 import configDefaults from './config-default';
 import dbInit from './db/init';
 import dbInstall from './db/install';
@@ -19,7 +19,7 @@ import nodeRebuildNative from './node/rebuild-native';
 import nodeStart from './node/start';
 import nodeStatus from './node/status';
 import nodeStop from './node/stop';
-import { VERSION_CLI } from './shared/misc';
+import { VERSION_CLI } from './shared/constants';
 
 dot.config();
 

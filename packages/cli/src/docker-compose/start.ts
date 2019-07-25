@@ -1,9 +1,10 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { exec, execSync } from 'child_process';
-import * as fs from 'fs';
+import fs from 'fs';
 import { dockerRemove, dockerStop } from '../docker/build';
-import { DOCKER_DIR, getDockerDir, log, MIN } from '../shared/misc';
+import { DOCKER_DIR, MIN } from '../shared/constants';
+import { getDockerDir, log } from '../shared/misc';
 import {
   foregroundOption,
   IForeground,
@@ -40,7 +41,8 @@ export default leaf({
       await dockerRun(network, foreground, verbose);
     } catch (err) {
       console.log(
-        'Error while building the container. Examine the log using --verbose.'
+        'Error while building the container.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
       );
       console.error(err);
       process.exit(1);
@@ -135,7 +137,10 @@ async function dockerRun(
   });
   log('run done');
   if (!ready) {
-    console.log('Something went wrong. Examine the log using --verbose.');
+    console.log(
+      'Something went wrong.' +
+        (verbose ? '' : 'Examine the log using --verbose.')
+    );
     process.exit(1);
   }
   console.log('Container started');

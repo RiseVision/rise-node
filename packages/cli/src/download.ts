@@ -1,16 +1,9 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
-import * as fs from 'fs';
 import { http, https } from 'follow-redirects';
-import {
-  DIST_FILE,
-  DOCKER_DIR,
-  execCmd,
-  extractSourceFile,
-  getDownloadURL,
-  log,
-  VERSION_RISE,
-} from './shared/misc';
+import fs from 'fs';
+import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
+import { execCmd, extractSourceFile, getDownloadURL, log } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
 
 export type TOptions = { version: string } & IVerbose;
@@ -24,7 +17,7 @@ export default leaf({
   options: {
     version: option({
       defaultValue: VERSION_RISE,
-      description: 'Version number to download, eg v2.0.0',
+      description: 'Version number to download, eg v2.0.0 (optional)',
       nullable: true,
       typeName: 'string',
     }),
