@@ -16,6 +16,7 @@ import {
   checkSourceDir,
   getCoreRiseDir,
   getLaunchpadFilePath,
+  getNodePID,
   removeNodeLock,
   setNodeLock,
 } from '../shared/fs-ops';
@@ -23,7 +24,6 @@ import {
   createParseNodeOutput,
   dbConnectionInfo,
   getDBEnvVars,
-  getNodePID,
   isDevEnv,
   log,
   printUsingConfig,

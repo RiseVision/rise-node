@@ -7,12 +7,11 @@ import {
   DB_LOG_FILE,
   DB_PG_CTL,
 } from '../shared/constants';
-import { checkSourceDir } from '../shared/fs-ops';
+import { checkSourceDir, getPID } from '../shared/fs-ops';
 import {
   dbConnectionInfo,
   execCmd,
   getDBEnvVars,
-  getPID,
   log,
   printUsingConfig,
 } from '../shared/misc';

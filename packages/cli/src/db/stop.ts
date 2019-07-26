@@ -6,14 +6,8 @@ import {
   DB_LOG_FILE,
   DB_PG_CTL,
 } from '../shared/constants';
-import { checkSourceDir } from '../shared/fs-ops';
-import {
-  execCmd,
-  getDBEnvVars,
-  getPID,
-  log,
-  printUsingConfig,
-} from '../shared/misc';
+import { checkSourceDir, getPID } from '../shared/fs-ops';
+import { execCmd, getDBEnvVars, log, printUsingConfig } from '../shared/misc';
 import {
   configOption,
   IConfig,

@@ -1,4 +1,5 @@
 // tslint:disable:no-console
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -13,11 +14,6 @@ import {
 import { NoRiseDistFileError } from './exceptions';
 import { execCmd, isDevEnv, log } from './misc';
 
-/**
- * TODO unify with extractSourceFile
- * @param silent
- * @param relativeToCLI
- */
 export async function checkSourceDir(relativeToCLI = false) {
   const dirPath = relativeToCLI ? path.resolve(__dirname, NODE_DIR) : NODE_DIR;
   if (!fs.existsSync(dirPath) || !fs.lstatSync(dirPath).isDirectory()) {
@@ -141,4 +137,42 @@ export function removeNodeLock() {
   if (!isDevEnv() && fs.existsSync(NODE_LOCK_FILE)) {
     fs.unlinkSync(NODE_LOCK_FILE);
   }
+}
+
+/**
+ * Gets the PID from a PID lock file.
+ *
+ * Performs garbage collection if the process isn't running any more.
+ *
+ * @param filePath
+ */
+export function getPID(filePath: string): number | false {
+  try {
+    const pid = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n')[0];
+    let exists: string;
+    try {
+      exists = execSync(`ps -p ${pid} -o pid=`).toString('utf8');
+    } catch {
+      // empty
+    }
+    if (!exists) {
+      fs.unlinkSync(filePath);
+      return false;
+    }
+    return parseInt(pid, 10);
+  } catch {
+    // empty
+  }
+  return false;
+}
+
+/**
+ * Returns the PID of currently running node.
+ */
+export function getNodePID(): number | false {
+  return getPID(NODE_LOCK_FILE);
+}
+
+export function getBackupPID(): number | false {
+  return getPID(BACKUP_LOCK_FILE);
 }

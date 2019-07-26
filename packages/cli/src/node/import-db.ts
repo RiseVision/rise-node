@@ -6,15 +6,15 @@ import path from 'path';
 import { BACKUPS_DIR } from '../shared/constants';
 import {
   checkSourceDir,
+  getBackupPID,
+  getNodePID,
   removeBackupLock,
   setBackupLock,
 } from '../shared/fs-ops';
 import {
   execCmd,
-  getBackupPID,
   getBlockHeight,
   getDBEnvVars,
-  getNodePID,
   hasLocalPostgres,
 } from '../shared/misc';
 import {

@@ -7,13 +7,13 @@ import path from 'path';
 import { BACKUPS_DIR } from '../shared/constants';
 import {
   checkSourceDir,
+  getBackupPID,
   getBackupsDir,
   removeBackupLock,
   setBackupLock,
 } from '../shared/fs-ops';
 import {
   execCmd,
-  getBackupPID,
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,

@@ -2,7 +2,8 @@
 import { leaf } from '@carnesen/cli';
 import kill from 'tree-kill';
 import { promisify } from 'util';
-import { getNodePID, log } from '../shared/misc';
+import { getNodePID } from '../shared/fs-ops';
+import { log } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 const killAsync = promisify(kill);
