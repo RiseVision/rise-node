@@ -9,12 +9,8 @@ import {
   DOCKER_IMAGE_NAME,
   MIN,
 } from '../shared/constants';
-import {
-  createParseNodeOutput,
-  getDockerDir,
-  log,
-  printUsingConfig,
-} from '../shared/misc';
+import { getDockerDir } from '../shared/fs-ops';
+import { createParseNodeOutput, log, printUsingConfig } from '../shared/misc';
 import {
   configOption,
   foregroundOption,

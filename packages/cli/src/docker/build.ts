@@ -9,7 +9,8 @@ import {
   DOCKER_IMAGE_NAME,
   MIN,
 } from '../shared/constants';
-import { checkDockerDirExists, getDockerDir, log } from '../shared/misc';
+import { checkDockerDirExists, getDockerDir } from '../shared/fs-ops';
+import { log } from '../shared/misc';
 import {
   configOption,
   foregroundOption,

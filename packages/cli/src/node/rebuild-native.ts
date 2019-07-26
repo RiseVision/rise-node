@@ -1,6 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { checkSourceDir, execCmd, getNodeDir, log } from '../shared/misc';
+import { checkSourceDir, getNodeDir } from '../shared/fs-ops';
+import { execCmd, log } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({

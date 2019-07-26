@@ -1,7 +1,8 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import { getDockerDir, log } from '../shared/misc';
+import { getDockerDir } from '../shared/fs-ops';
+import { log } from '../shared/misc';
 
 export default leaf({
   commandName: 'stop',

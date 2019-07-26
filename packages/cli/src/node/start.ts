@@ -4,7 +4,7 @@ import assert from 'assert';
 import { ChildProcess, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { MIN, NODE_LOCK_FILE } from '../shared/constants';
+import { MIN } from '../shared/constants';
 import {
   AddressInUseError,
   ConditionsNotMetError,
@@ -14,16 +14,19 @@ import {
 import {
   checkLaunchpadExists,
   checkSourceDir,
+  getCoreRiseDir,
+  getLaunchpadFilePath,
+  removeNodeLock,
+  setNodeLock,
+} from '../shared/fs-ops';
+import {
   createParseNodeOutput,
   dbConnectionInfo,
-  getCoreRiseDir,
   getDBEnvVars,
-  getLaunchpadFilePath,
   getNodePID,
   isDevEnv,
   log,
   printUsingConfig,
-  unlinkLockFile,
 } from '../shared/misc';
 import {
   configOption,
@@ -84,7 +87,7 @@ export async function nodeStart(
     console.log('Starting RISE node...');
 
     let ready = false;
-    unlinkLockFile();
+    removeNodeLock();
     await startLaunchpad(
       {
         config,
@@ -168,8 +171,7 @@ function startLaunchpad(
 
       // save the PID (not in DEV)
       if (!isDevEnv()) {
-        log(`Creating lock file ${NODE_LOCK_FILE} (${proc.pid})`);
-        fs.writeFileSync(NODE_LOCK_FILE, proc.pid, { encoding: 'utf8' });
+        setNodeLock(proc.pid);
       }
 
       console.log(`Starting as PID ${proc.pid}...`);
@@ -214,7 +216,7 @@ function handleSigInt(proc: ChildProcess) {
     console.log('Waiting for RISE node to quit...');
   }
 
-  unlinkLockFile();
+  removeNodeLock();
 }
 
 async function checkConditions(config: string, skipPIDCheck = false) {

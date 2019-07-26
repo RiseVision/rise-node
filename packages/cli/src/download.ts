@@ -3,7 +3,8 @@ import { leaf, option } from '@carnesen/cli';
 import { http, https } from 'follow-redirects';
 import fs from 'fs';
 import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
-import { execCmd, extractSourceFile, getDownloadURL, log } from './shared/misc';
+import { extractSourceFile } from './shared/fs-ops';
+import { execCmd, getDownloadURL, log } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
 
 export type TOptions = { version: string } & IVerbose;

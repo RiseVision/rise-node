@@ -2,8 +2,8 @@
 import { leaf } from '@carnesen/cli';
 import fs from 'fs';
 import { ConditionsNotMetError } from '../shared/exceptions';
+import { checkSourceDir } from '../shared/fs-ops';
 import {
-  checkSourceDir,
   getBlockHeight,
   getNodePID,
   log,

@@ -1,7 +1,8 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import fs from 'fs';
-import { getConfigPath, log } from './shared/misc';
+import { getConfigPath } from './shared/fs-ops';
+import { log } from './shared/misc';
 import {
   INetwork,
   IVerbose,

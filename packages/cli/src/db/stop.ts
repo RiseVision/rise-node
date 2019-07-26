@@ -6,8 +6,8 @@ import {
   DB_LOG_FILE,
   DB_PG_CTL,
 } from '../shared/constants';
+import { checkSourceDir } from '../shared/fs-ops';
 import {
-  checkSourceDir,
   execCmd,
   getDBEnvVars,
   getPID,

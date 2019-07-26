@@ -7,16 +7,18 @@ import path from 'path';
 import { BACKUPS_DIR } from '../shared/constants';
 import {
   checkSourceDir,
+  getBackupsDir,
+  removeBackupLock,
+  setBackupLock,
+} from '../shared/fs-ops';
+import {
   execCmd,
   getBackupPID,
-  getBackupsDir,
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
   log,
   printUsingConfig,
-  removeBackupLock,
-  setBackupLock,
 } from '../shared/misc';
 import {
   configOption,

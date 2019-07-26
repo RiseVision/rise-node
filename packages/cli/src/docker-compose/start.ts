@@ -4,7 +4,8 @@ import { exec, execSync } from 'child_process';
 import fs from 'fs';
 import { dockerRemove, dockerStop } from '../docker/build';
 import { DOCKER_DIR, MIN } from '../shared/constants';
-import { getDockerDir, log } from '../shared/misc';
+import { getDockerDir } from '../shared/fs-ops';
+import { log } from '../shared/misc';
 import {
   foregroundOption,
   IForeground,

@@ -1,5 +1,4 @@
 // tslint:disable:no-console
-// tslint:disable:max-classes-per-file
 import assert from 'assert';
 import { execSync, spawn, SpawnOptions } from 'child_process';
 import { debug } from 'debug';
@@ -8,12 +7,9 @@ import fs from 'fs';
 import path from 'path';
 import {
   BACKUP_LOCK_FILE,
-  BACKUPS_DIR,
-  DOCKER_DIR,
   DOWNLOAD_URL,
   MIN,
   NODE_DIR,
-  NODE_FILE,
   NODE_LOCK_FILE,
   TNetworkType,
   VERSION_RISE,
@@ -22,8 +18,8 @@ import {
   AddressInUseError,
   DBConnectionError,
   NativeModulesError,
-  NoRiseDistFileError,
 } from './exceptions';
+import { getConfigPath } from './fs-ops';
 import { IForeground, IVerbose } from './options';
 
 export const log = debug('rise-cli');
@@ -34,95 +30,6 @@ export function getDownloadURL(file: string, version = VERSION_RISE) {
 
 export function isDevEnv() {
   return process.env.DEV;
-}
-
-export function getDockerDir(relativeToCLI = false): string {
-  const root = relativeToCLI ? __dirname : process.cwd();
-  return path.resolve(root, DOCKER_DIR);
-}
-
-export function getNodeDir(relativeToCLI = false): string {
-  const root = relativeToCLI ? __dirname : process.cwd();
-  return path.resolve(root, NODE_DIR);
-}
-
-/**
- * TODO unify with extractSourceFile
- * @param silent
- * @param relativeToCLI
- */
-export async function checkSourceDir(relativeToCLI = false) {
-  const dirPath = relativeToCLI ? path.resolve(__dirname, NODE_DIR) : NODE_DIR;
-  if (!fs.existsSync(dirPath) || !fs.lstatSync(dirPath).isDirectory()) {
-    await extractSourceFile();
-  }
-}
-
-export function checkLaunchpadExists(): boolean {
-  const file = getLaunchpadFilePath();
-  if (!fs.existsSync(file)) {
-    log(`Missing: ${file}`);
-    console.log(`ERROR: can't find launchpad executable in ${NODE_DIR}.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise node download');
-    return false;
-  }
-  return true;
-}
-
-export function checkDockerDirExists(): boolean {
-  if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
-    console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise docker download');
-    return false;
-  }
-  return true;
-}
-
-export async function extractSourceFile(
-  relativeToCLI = false,
-  streamOutput = false
-) {
-  const filePath = getSourceFilePath(relativeToCLI);
-  if (!fs.existsSync(filePath)) {
-    console.log(`ERROR: File ${DOCKER_DIR}/${NODE_FILE} missing`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise node download');
-    throw new NoRiseDistFileError();
-  }
-
-  console.log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
-  await execCmd(
-    'tar',
-    ['-zxf', NODE_FILE],
-    `Couldn't extract ${getSourceFilePath(relativeToCLI)}`,
-    {
-      cwd: getDockerDir(relativeToCLI),
-    },
-    streamOutput
-  );
-}
-
-/**
- * Returns the path to the lerna CLI file.
- */
-export function getLaunchpadFilePath(): string {
-  return path.resolve(
-    process.cwd(),
-    NODE_DIR,
-    'node_modules',
-    '.bin',
-    'rise-launchpad'
-  );
-}
-
-/**
- * Returns the path to the rise-node.tar.gz file.
- */
-export function getSourceFilePath(relativeToCLI = false): string {
-  const root = relativeToCLI ? __dirname : process.cwd();
-  return path.resolve(root, DOCKER_DIR, NODE_FILE);
 }
 
 /**
@@ -142,7 +49,7 @@ export function getPID(filePath: string): number | false {
       // empty
     }
     if (!exists) {
-      fs.unlinkSync(NODE_LOCK_FILE);
+      fs.unlinkSync(filePath);
       return false;
     }
     return parseInt(pid, 10);
@@ -189,20 +96,6 @@ export interface INodeConfig {
   };
 }
 
-export function getConfigPath(
-  networkType: TNetworkType,
-  relativeToCLI = false
-): string {
-  return path.resolve(
-    getNodeDir(relativeToCLI),
-    'packages',
-    'rise',
-    'etc',
-    networkType,
-    'config.json'
-  );
-}
-
 /**
  * Returns a merged config (user's + network's).
  */
@@ -232,18 +125,6 @@ export function mergeConfig(
   }
   const config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }));
   return extend(true, parentConfig, config);
-}
-
-export function getBackupsDir(): string {
-  return path.resolve(process.cwd(), BACKUPS_DIR);
-}
-
-export function setBackupLock() {
-  fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
-}
-
-export function removeBackupLock() {
-  fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
 // tslint:disable-next-line:cognitive-complexity
@@ -367,10 +248,6 @@ export function createParseNodeOutput(
   };
 }
 
-export function getCoreRiseDir(): string {
-  return path.resolve(process.cwd(), NODE_DIR, 'packages', 'rise');
-}
-
 export function getDBEnvVars(
   network: TNetworkType,
   config: string | null,
@@ -444,10 +321,4 @@ export async function getBlockHeight(
   const blockHeight = parseInt(output, 10);
   log(`block height: ${blockHeight}`);
   return blockHeight || null;
-}
-
-export function unlinkLockFile() {
-  if (!isDevEnv() && fs.existsSync(NODE_LOCK_FILE)) {
-    fs.unlinkSync(NODE_LOCK_FILE);
-  }
 }

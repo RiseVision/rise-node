@@ -5,13 +5,8 @@ import path from 'path';
 import { nodeStop } from '../node/stop';
 import { DB_DATA_DIR, DB_LOG_FILE, DB_PG_CTL, SEC } from '../shared/constants';
 import { NoRiseDistFileError } from '../shared/exceptions';
-import {
-  checkSourceDir,
-  execCmd,
-  getDBEnvVars,
-  log,
-  printUsingConfig,
-} from '../shared/misc';
+import { checkSourceDir } from '../shared/fs-ops';
+import { execCmd, getDBEnvVars, log, printUsingConfig } from '../shared/misc';
 import {
   configOption,
   IConfig,
