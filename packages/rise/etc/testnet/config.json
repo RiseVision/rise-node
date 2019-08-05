@@ -20,6 +20,7 @@
     "logEvents": ["error"]
   },
   "api": {
+    "port": 5565,
     "enabled": true,
     "access": {
       "public": false,
