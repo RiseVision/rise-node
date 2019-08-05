@@ -116,6 +116,7 @@ export function execCmd(
             }
           }, timeout)
         : null;
+
       const appendOutput = (data: Buffer) => {
         if (streamOutput) {
           process.stdout.write(data);

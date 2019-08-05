@@ -1,4 +1,4 @@
-export const VERSION_CLI = 'v1.0.0';
+export const VERSION_CLI = 'v1.0.1';
 export const VERSION_RISE = 'latest';
 // TODO single enum for NETWORKS and NetworkType
 export const NETWORKS = ['mainnet', 'testnet', 'devnet'];
