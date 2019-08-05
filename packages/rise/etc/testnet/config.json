@@ -24,9 +24,9 @@
     "enabled": true,
     "access": {
       "public": false,
+      "restrictedAPIwhiteList": ["127.0.0.1"],
       "whiteList": ["127.0.0.1"]
     },
-    "restrictedWhiteList": ["127.0.0.1"],
     "options": {
       "limits": {
         "max": 0,
@@ -38,6 +38,7 @@
   },
   "peers": {
     "enabled": true,
+    "trustProxy": false,
     "banTime": 90000,
     "seeds": ["45.63.91.77:5566", "108.61.99.202:5566", "194.135.95.105:5566"],
     "access": {
@@ -63,6 +64,7 @@
   "transactions": {
     "maxTxsPerQueue": 1000,
     "bundledInterval": 1000,
+    "processQueueInterval": 1000,
     "expiryInterval": 60000,
     "bundleLimit": 100
   },
@@ -70,7 +72,7 @@
     "force": false,
     "secret": [],
     "access": {
-      "whiteList": ["127.0.0.1"]
+      "whiteList": ["127.0.0.1", "::ffff:127.0.0.1"]
     }
   },
   "loading": {
