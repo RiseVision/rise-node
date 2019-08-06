@@ -26,6 +26,7 @@ import {
   getDBEnvVars,
   isDevEnv,
   log,
+  mergeConfig,
   printUsingConfig,
 } from '../shared/misc';
 import {
@@ -142,10 +143,15 @@ function startLaunchpad(
   setReady: () => void
 ): Promise<any> {
   const timeout = 2 * MIN;
+  const mergedConfig = mergeConfig(network, config);
   return new Promise((resolve, reject) => {
     try {
       const cmd = getLaunchpadFilePath();
       const params = ['--net', network];
+      // increase the log level to properly read the console output
+      if (mergedConfig.consoleLogLevel === 'error') {
+        params.push('--override-config', 'consoleLogLevel="info"');
+      }
       if (config) {
         params.push('-e', path.resolve(config));
       }

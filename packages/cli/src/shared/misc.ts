@@ -47,6 +47,7 @@ export function hasLocalPostgres(): boolean {
 
 // TODO only a partial config, ideally import from /packages/core
 export interface INodeConfig {
+  consoleLogLevel: 'info' | 'debug' | 'error';
   db: {
     host: string;
     port: number;
