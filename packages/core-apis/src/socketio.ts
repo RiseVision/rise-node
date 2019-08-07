@@ -9,7 +9,6 @@ import {
   WordPressHookSystem,
   WPHooksSubscriber,
 } from 'mangiafuoco';
-import { Transaction } from 'sequelize';
 import * as SocketIO from 'socket.io';
 
 const Extendable = WPHooksSubscriber(Object);
