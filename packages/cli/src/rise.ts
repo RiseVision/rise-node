@@ -12,6 +12,7 @@ import dockerBuild from './docker/build';
 import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
 import download from './download';
+import migrate from './migrate';
 import nodeExportDB from './node/export-db';
 import nodeImportDB from './node/import-db';
 import nodeInstallDeps from './node/install-deps';
@@ -106,6 +107,7 @@ export const root = branch({
     docker,
     dockerCompose,
     db,
+    migrate,
     configDefaults,
     version,
   ],

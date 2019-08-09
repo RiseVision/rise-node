@@ -42,7 +42,10 @@ export default leaf({
       if (verbose) {
         console.log(err);
       }
-      console.log('\nThere was an error.');
+      console.log(
+        '\nSomething went wrong.' +
+          (verbose ? '' : 'Examine the log using --verbose.')
+      );
       process.exit(1);
     }
   },
