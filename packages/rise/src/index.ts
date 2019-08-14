@@ -42,9 +42,7 @@ export class CoreModule extends BaseCoreModule<any> {
 
   public get constants() {
     if (!this._constants) {
-      this._constants = require(`${__dirname}/../etc/${
-        process.env.NETWORK
-      }/constants.js`);
+      this._constants = require(`${__dirname}/../etc/${process.env.NETWORK}/constants.js`);
     }
     return this._constants;
   }

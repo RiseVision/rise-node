@@ -1,7 +1,7 @@
 import { ExceptionsManager } from './exceptionManager';
 // tslint:disable ban-types
 export type FNProps<T> = ({
-  [P in keyof T]: T[P] extends Function ? P : never
+  [P in keyof T]: T[P] extends Function ? P : never;
 })[keyof T];
 
 function createExceptionWrapper(

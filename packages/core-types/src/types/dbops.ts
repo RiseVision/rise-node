@@ -10,7 +10,7 @@ export type FilteredModelAttributes<T extends Model<T>> = RecursivePartial<
 export type FilteredModelAttributesWithLiteral<T extends Model<T>> = {
   [P in keyof FilteredModelAttributes<T>]?:
     | FilteredModelAttributes<T>[P]
-    | Literal
+    | Literal;
 };
 
 // tslint:disable-next-line interface-name

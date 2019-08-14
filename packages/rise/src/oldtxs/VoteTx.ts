@@ -105,9 +105,7 @@ export class OldVoteTx extends OldBaseTx<VoteAsset, OldVoteTxModel> {
       tx.asset.votes.length > this.dposConstants.maxVotesPerTransaction
     ) {
       throw new Error(
-        `Voting limit exceeded. Maximum is ${
-          this.dposConstants.maxVotesPerTransaction
-        } votes per transaction`
+        `Voting limit exceeded. Maximum is ${this.dposConstants.maxVotesPerTransaction} votes per transaction`
       );
     }
 

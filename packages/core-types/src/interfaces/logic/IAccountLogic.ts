@@ -17,7 +17,7 @@ export type AccountFilterData<T extends IAccountsModel = IAccountsModel> = Omit<
 };
 
 export type AccountDiffType<IAM = IAccountsModel> = {
-  [k in keyof IAM]?: IAM[k]
+  [k in keyof IAM]?: IAM[k];
 } & { round?: number };
 
 export interface IAccountLogic<T extends IAccountsModel = IAccountsModel> {

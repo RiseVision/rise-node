@@ -147,9 +147,7 @@ export class TransactionsModule implements ITransactionsModule {
     });
     // tslint:disable-next-line max-line-length
     this.logger.debug(
-      `Undoing unconfirmed transaction ${transaction.id} - AM: ${
-        transaction.amount
-      } - SB: ${sender.u_balance}`
+      `Undoing unconfirmed transaction ${transaction.id} - AM: ${transaction.amount} - SB: ${sender.u_balance}`
     );
     await this.dbHelper.performOps(
       await this.transactionLogic.undoUnconfirmed(transaction, sender)

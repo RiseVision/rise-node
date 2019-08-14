@@ -158,9 +158,7 @@ export class BlocksModuleProcess {
 
     if (matchingCount === 0) {
       throw new Error(
-        `Chain comparison failed with peer: ${peer.string} using block ${
-          commonResp.common.id
-        }`
+        `Chain comparison failed with peer: ${peer.string} using block ${commonResp.common.id}`
       );
     }
 

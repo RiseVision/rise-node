@@ -39,9 +39,7 @@ export abstract class OldBaseTx<T, M extends Model<any>> extends BaseTx<T, M> {
     );
     if (tx.fee !== calcFee) {
       throw new Error(
-        `Invalid fees for tx[type=${tx.type}]. Expected ${calcFee} - Received ${
-          tx.fee
-        }`
+        `Invalid fees for tx[type=${tx.type}]. Expected ${calcFee} - Received ${tx.fee}`
       );
     }
 

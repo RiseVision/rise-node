@@ -24,7 +24,7 @@ export const networkOption = {
 };
 
 export interface INetwork {
-  network: TNetworkType;
+  network?: TNetworkType;
 }
 
 export const verboseOption = {
@@ -37,7 +37,7 @@ export const verboseOption = {
 };
 
 export interface IVerbose {
-  verbose: boolean;
+  verbose?: boolean;
 }
 
 export const foregroundOption = {
@@ -51,5 +51,5 @@ export const foregroundOption = {
 };
 
 export interface IForeground {
-  foreground: boolean;
+  foreground?: boolean;
 }

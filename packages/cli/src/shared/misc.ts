@@ -263,24 +263,31 @@ export async function getBlockHeight(
   config?: string,
   streamOutput = false
 ): Promise<number | null> {
-  const envVars = getDBEnvVars(network, config);
-  // TODO check output
-  const output = await execCmd(
-    'psql',
-    [
-      '-d',
-      envVars.PGDATABASE,
-      '-t',
-      '-c',
-      '"select height from blocks order by height desc limit 1;"',
-    ],
-    "Couldn't get the block height",
-    {
-      env: { ...process.env, ...envVars },
-    },
+  const output = await runSQL(
+    'select height from blocks order by height desc limit 1;',
+    network,
+    config,
     streamOutput
   );
   const blockHeight = parseInt(output, 10);
   log(`block height: ${blockHeight}`);
   return blockHeight || null;
+}
+
+export async function runSQL(
+  query: string,
+  network: TNetworkType,
+  config?: string,
+  streamOutput = false
+): Promise<string> {
+  const envVars = getDBEnvVars(network, config);
+  return await execCmd(
+    'psql',
+    ['-d', envVars.PGDATABASE, '-t', '-c', `"${query}"`],
+    'SQL query failed',
+    {
+      env: { ...process.env, ...envVars },
+    },
+    streamOutput
+  );
 }

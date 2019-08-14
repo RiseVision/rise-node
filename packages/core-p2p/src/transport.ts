@@ -192,9 +192,7 @@ export class TransportModule extends Extendable {
       );
       return Promise.reject(
         new Error(
-          `Peer is not on the same network ${headers.nethash} ${req.method} ${
-            req.url
-          }`
+          `Peer is not on the same network ${headers.nethash} ${req.method} ${req.url}`
         )
       );
     }
@@ -207,9 +205,7 @@ export class TransportModule extends Extendable {
       // tslint:disable-next-line max-line-length
       return Promise.reject(
         new Error(
-          `Peer is using incompatible version ${headers.version} ${
-            req.method
-          } ${req.url}`
+          `Peer is using incompatible version ${headers.version} ${req.method} ${req.url}`
         )
       );
     }

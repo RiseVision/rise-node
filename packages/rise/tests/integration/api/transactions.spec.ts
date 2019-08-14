@@ -152,9 +152,7 @@ describe('api/transactions', () => {
       it('should filter only send tx', async () => {
         return supertest(initializer.apiExpress)
           .get(
-            `/api/transactions?type=${
-              TransactionType.SEND
-            }&and:fromHeight=2&orderBy=height:asc`
+            `/api/transactions?type=${TransactionType.SEND}&and:fromHeight=2&orderBy=height:asc`
           )
           .expect(200)
           .then((resp) => {
@@ -177,9 +175,7 @@ describe('api/transactions', () => {
       it('should filter only secondsign tx', async () => {
         return supertest(initializer.apiExpress)
           .get(
-            `/api/transactions?type=${
-              TransactionType.SIGNATURE
-            }&and:fromHeight=2`
+            `/api/transactions?type=${TransactionType.SIGNATURE}&and:fromHeight=2`
           )
           .expect(200)
           .then((resp) => {
@@ -448,9 +444,7 @@ describe('api/transactions', () => {
         // offset!
         await supertest(initializer.apiExpress)
           .get(
-            `/api/transactions?type=${
-              TransactionType.SEND
-            }&offset=1&orderBy=height:desc`
+            `/api/transactions?type=${TransactionType.SEND}&offset=1&orderBy=height:desc`
           )
           .then((resp) => {
             expect(resp.body.count).to.be.eq(count);
@@ -460,9 +454,7 @@ describe('api/transactions', () => {
         // limit and offset
         await supertest(initializer.apiExpress)
           .get(
-            `/api/transactions?type=${
-              TransactionType.SEND
-            }&offset=2&limit=1&orderBy=height:desc`
+            `/api/transactions?type=${TransactionType.SEND}&offset=2&limit=1&orderBy=height:desc`
           )
           .then((resp) => {
             expect(resp.body.count).to.be.eq(count);
@@ -731,9 +723,7 @@ describe('api/transactions', () => {
           invalid: [
             {
               id: '10',
-              reason: `Invalid transaction id - Expected ${
-                postableTx.id
-              }, Received 10`,
+              reason: `Invalid transaction id - Expected ${postableTx.id}, Received 10`,
             },
           ],
         });

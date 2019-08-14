@@ -357,9 +357,7 @@ export class BlocksModuleVerify extends Extendable {
     if (block.previousBlock && block.previousBlock !== lastBlock.id) {
       await this.forkModule.fork(block, ForkType.TYPE_1);
       return [
-        `Invalid previous block: ${block.previousBlock} expected ${
-          lastBlock.id
-        }`,
+        `Invalid previous block: ${block.previousBlock} expected ${lastBlock.id}`,
       ];
     }
     return [];

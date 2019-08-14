@@ -10,7 +10,7 @@ import {
   Symbols,
 } from '@risevision/core-types';
 import { Diff } from '@risevision/core-utils';
-import { inject, injectable, named, postConstruct } from 'inversify';
+import { inject, injectable, named } from 'inversify';
 import * as _ from 'lodash';
 import { Model } from 'sequelize-typescript';
 import * as varuint from 'varuint-bitcoin';
@@ -101,9 +101,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
     if (totalVotes.length > this.dposConstants.maxVotesPerTransaction) {
       throw new Error(
-        `Voting limit exceeded. Maximum is ${
-          this.dposConstants.maxVotesPerTransaction
-        } votes per transaction`
+        `Voting limit exceeded. Maximum is ${this.dposConstants.maxVotesPerTransaction} votes per transaction`
       );
     }
 
@@ -120,9 +118,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
 
     if (totalVotes.length > this.dposConstants.maxVotesPerTransaction) {
       throw new Error(
-        `Max votes per transaction exceeded ${totalVotes.length} casted - ${
-          this.dposConstants.maxVotesPerTransaction
-        } allowed`
+        `Max votes per transaction exceeded ${totalVotes.length} casted - ${this.dposConstants.maxVotesPerTransaction} allowed`
       );
     }
     return this.checkConfirmedDelegates(tx, sender);

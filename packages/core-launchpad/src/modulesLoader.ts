@@ -30,9 +30,7 @@ export function resolveModule(modulePath: string, modules: any): ModuleInfo {
   if (modules[name]) {
     if (modules[name].rootDirectory !== sourceModuleRootDirectory) {
       throw new Error(
-        `Requiring a different version for ${name} ${
-          modules[name].rootDirectory
-        } - ${sourceModuleRootDirectory}`
+        `Requiring a different version for ${name} ${modules[name].rootDirectory} - ${sourceModuleRootDirectory}`
       );
     }
     return modules[name];

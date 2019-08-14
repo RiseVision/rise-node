@@ -580,9 +580,7 @@ export class DelegatesModule {
     if (total > this.dposConstants.maximumVotes) {
       const exceeded = total - this.dposConstants.maximumVotes;
       throw new Error(
-        `Maximum number of ${
-          this.dposConstants.maximumVotes
-        } votes exceeded (${exceeded} too many)`
+        `Maximum number of ${this.dposConstants.maximumVotes} votes exceeded (${exceeded} too many)`
       );
     }
   }

@@ -20,7 +20,7 @@ export type ExceptionType = {
 @injectable()
 export class ExceptionsManager {
   private handlers: {
-    [k in symbol]: { [h: string]: IExceptionHandler<any> }
+    [k in symbol]: { [h: string]: IExceptionHandler<any> };
   } = {};
 
   @inject(ModelSymbols.model)
