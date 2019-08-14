@@ -1,6 +1,6 @@
 {
   "name": "Rise-node",
-  "version": "2.0.0-beta4",
+  "version": "2.0.0-beta5",
   "engine": "^10",
   "engineStrict" : true,
   "private": true,
@@ -128,7 +128,7 @@
     "mute": "^2.0.6",
     "nyc": "13.1.0",
     "pre-commit": "^1.2.2",
-    "prettier": "^1.15.3",
+    "prettier": "^1.18.2",
     "proxyquire": "^2.0.0",
     "reflect-metadata": "^0.1.10",
     "shx": "=0.3.2",
