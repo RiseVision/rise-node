@@ -131,9 +131,7 @@ export async function dbInit({ config, network, verbose }: TOptions) {
     verbose
   );
 
-  const alterPasswdQuery = `"ALTER USER ${envVars.PGUSER} WITH PASSWORD '${
-    envVars.PGPASSWORD
-  }';"`;
+  const alterPasswdQuery = `"ALTER USER ${envVars.PGUSER} WITH PASSWORD '${envVars.PGPASSWORD}';"`;
 
   await execCmd(
     'psql',

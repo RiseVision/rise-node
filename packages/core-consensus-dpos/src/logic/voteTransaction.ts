@@ -117,7 +117,7 @@ export class VoteTransaction extends BaseTx<VoteAsset, VotesModel> {
     }
 
     if (totalVotes.length > this.dposConstants.maxVotesPerTransaction) {
-      throw new Error(
+      throw new Error( // tslint:disable-next-line
         `Max votes per transaction exceeded ${totalVotes.length} casted - ${this.dposConstants.maxVotesPerTransaction} allowed`
       );
     }

@@ -248,8 +248,8 @@ export class LoaderModule implements ILoaderModule {
     );
 
     if (this.blocksModule.lastBlock.height !== blocksCount) {
-      // tslint:disable-next-line max-line-length
       this.logger.error(
+        // tslint:disable-next-line max-line-length
         `LastBlock height does not expected block. Expected: ${blocksCount} - Received: ${this.blocksModule.lastBlock.height}`
       );
       process.exit(1);
