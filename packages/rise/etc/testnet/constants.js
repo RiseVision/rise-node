@@ -5,7 +5,7 @@ module.exports = {
     dposRandSwitchRound: 2000000,
   },
   '@risevision/core-accounts': {
-    addressRegex: '^(([0-9]{1,20}R)|(tise1[a-z0-9]{10,}))$',
+    addressRegex: '^(([0-9]{1,20}R)|(tise1[a-zA-HJ-NP-Z0-9]{50,}))$',
   },
   '@risevision/core': {
     amountBytes: 8,
