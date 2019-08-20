@@ -43,7 +43,7 @@ export default leaf({
         console.log(err);
       }
       console.log(
-        '\nSomething went wrong.' +
+        '\nSomething went wrong. ' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);

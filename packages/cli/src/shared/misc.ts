@@ -15,6 +15,7 @@ import {
 import {
   AddressInUseError,
   DBConnectionError,
+  DBCorruptedError,
   NativeModulesError,
 } from './exceptions';
 import { getConfigPath } from './fs-ops';
@@ -112,7 +113,7 @@ export function execCmd(
       const timer = timeout
         ? setTimeout(() => {
             if (!proc.killed) {
-              console.log(`Timeout (${2 * MIN} secs)`);
+              console.log(`Timeout (${timeout} secs)`);
               proc.kill();
             }
           }, timeout)
@@ -134,11 +135,11 @@ export function execCmd(
       });
       errorMsg = errorMsg || `Command '${cmd}' failed`;
       proc.on('close', (code) => {
+        if (timeout) {
+          clearTimeout(timer);
+        }
         if (code) {
           errors = errors.replace(/\n+$/, '');
-          if (timeout) {
-            clearTimeout(timer);
-          }
           log(`cmd-error: ${errors}`);
           log(`cmd-exit-code: ${code}`);
           if (errors) {
@@ -174,7 +175,7 @@ export function createParseNodeOutput(
     if (foreground || verbose) {
       process.stdout.write(data);
     } else {
-      log(data);
+      log(data.toString('utf8'));
     }
     // check if the output reached the desired line
     if (data.includes('Blockchain ready')) {
@@ -201,6 +202,13 @@ export function createParseNodeOutput(
       reject(new AddressInUseError());
       return;
     }
+    // DB corrupted
+    if (data.includes('SequelizeUniqueConstraintError')) {
+      log('DBCorruptedError');
+      reject(new DBCorruptedError());
+      return;
+    }
+    // DB connection failed (catch all errors from Sequelize)
     const sqlError = /Sequelize(\w*)Error/;
     if (sqlError.test(data.toString('utf8'))) {
       log('DBConnectionError');
@@ -281,9 +289,10 @@ export async function runSQL(
   streamOutput = false
 ): Promise<string> {
   const envVars = getDBEnvVars(network, config);
+  const escaped = query.replace(/"/g, '\\"');
   return await execCmd(
     'psql',
-    ['-d', envVars.PGDATABASE, '-t', '-c', `"${query}"`],
+    ['-d', envVars.PGDATABASE, '-t', '-c', `"${escaped}"`],
     'SQL query failed',
     {
       env: { ...process.env, ...envVars },

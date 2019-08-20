@@ -17,6 +17,12 @@ export class DBConnectionError extends Error {
   }
 }
 
+export class DBCorruptedError extends Error {
+  constructor() {
+    super("DB seems to be corrupted");
+  }
+}
+
 export class NoRiseDistFileError extends Error {
   constructor() {
     super(

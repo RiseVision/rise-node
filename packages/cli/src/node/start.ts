@@ -23,6 +23,7 @@ import {
 import {
   createParseNodeOutput,
   dbConnectionInfo,
+  execCmd,
   getDBEnvVars,
   isDevEnv,
   log,
@@ -41,7 +42,10 @@ import {
 } from '../shared/options';
 import { nodeRebuildNative } from './rebuild-native';
 
-export type TOptions = IConfig & INetwork & IForeground & IVerbose;
+export type TOptions = IConfig &
+  INetwork &
+  IForeground &
+  IVerbose & { v1?: boolean };
 
 export default leaf({
   commandName: 'start',
@@ -52,6 +56,12 @@ export default leaf({
     ...foregroundOption,
     ...networkOption,
     ...verboseOption,
+    v1: {
+      defaultValue: false,
+      description: 'Use the V1 config and DB',
+      nullable: true,
+      typeName: 'boolean',
+    },
   },
 
   async action(options: TOptions) {
@@ -63,7 +73,7 @@ export default leaf({
         console.log(err);
       }
       console.log(
-        '\nSomething went wrong.' +
+        '\nSomething went wrong. ' +
           (options.verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
@@ -75,12 +85,16 @@ export default leaf({
  * Starts a node or throws an exception.
  */
 export async function nodeStart(
-  { config, foreground, network, verbose }: TOptions,
+  { config, foreground, network, verbose, v1 }: TOptions,
   rebuildNative = true,
   skipPIDCheck = false
 ) {
   try {
     await checkConditions(config, skipPIDCheck);
+
+    if (v1 && !config) {
+      config = 'etc/node_config.json';
+    }
 
     if (verbose) {
       printUsingConfig(network, config);
@@ -89,6 +103,17 @@ export async function nodeStart(
 
     let ready = false;
     removeNodeLock();
+
+    if (v1) {
+      // TODO check if in the v1 dir when --v1
+      console.log('Starting the v1 DB');
+      await execCmd(
+        './manager.sh',
+        ['start', 'db'],
+        "Couldn't start the v1 DB"
+      );
+    }
+
     await startLaunchpad(
       {
         config,

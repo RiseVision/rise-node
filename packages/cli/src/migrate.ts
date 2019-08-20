@@ -3,12 +3,17 @@ import { leaf, option } from '@carnesen/cli';
 import delay from 'delay';
 import extend from 'extend';
 import fs from 'fs';
-import treeKill from 'tree-kill';
 import { sql } from './migrate/migrate-v1-v2';
 import { nodeStart } from './node/start';
-import { MIN } from './shared/constants';
+import { MIN, SEC } from './shared/constants';
 import { checkSourceDir } from './shared/fs-ops';
-import { getBlockHeight, log, runSQL } from './shared/misc';
+import {
+  execCmd,
+  getBlockHeight,
+  getDBEnvVars,
+  log,
+  runSQL,
+} from './shared/misc';
 import {
   configOption,
   IConfig,
@@ -45,41 +50,104 @@ export default leaf({
 
   async action({ network, verbose, blockHeight, config }: TOptions) {
     try {
+      // prechecks
       if (!fs.existsSync('etc')) {
         throw new Error('no in a v1 dir');
       }
-      await checkSourceDir(true);
-      // copy the config
-      // fs.cp(config, path.resolve(config));
-      // TODO check if v1 running
-      //  - download the release if necessary
+      await checkSourceDir();
+      // TODO copy the config ???
+      // TODO use data/node_config if exists
+
+      // make sure the v1 node is running
+      await execCmd(
+        './manager.sh',
+        ['start', 'node'],
+        "Couldn't start the V1 node",
+        null,
+        verbose,
+        30 * SEC
+      );
+
+      // make sure the DB is running
+      await execCmd(
+        './manager.sh',
+        ['start', 'db'],
+        "Couldn't start the DB",
+        null,
+        verbose,
+        30 * SEC
+      );
+
+      // TODO check if db-deps are installed
+
+      // precheck end
+
+      log(getDBEnvVars(network, config));
+
       let blockHeightNow = await getBlockHeight(network, config);
+      if (!blockHeight) {
+        blockHeight = blockHeightNow + 1;
+        log(`Automatic block height ${blockHeight}`);
+      }
       if (blockHeightNow >= blockHeight) {
+        console.log('Migration block is lower then the current one');
         throw new Error('migration block too low');
       }
+
+      console.log(
+        `Waiting for block ${blockHeight} (${blockHeight -
+          blockHeightNow} blocks from now)`
+      );
+
       while (true) {
         blockHeightNow = await getBlockHeight(network, config);
         if (blockHeightNow >= blockHeight) {
+          console.log('Migration block reached, starting the process...');
           log(`found the migration block ${blockHeight}`);
           break;
         }
-        await delay(5 * MIN);
+        // TODO align with the time blocks get mined
+        await delay(10 * SEC);
       }
 
       // MIGRATE
 
-      // TODO use `manager node status`?
-      const v1PID = parseInt(
-        fs.readFileSync('pid/node.pid', { encoding: 'utf8' }),
-        10
+      console.log('Backing up the DB');
+
+      // backup the DB
+      await execCmd(
+        './manager.sh',
+        ['backup'],
+        "Couldn't start the DB",
+        null,
+        verbose,
+        3 * MIN
       );
-      await treeKill(v1PID);
+
+      console.log('Stopping the V1 node');
+
+      // stop the v1 node
+      await execCmd(
+        './manager.sh',
+        ['stop', 'node'],
+        "Couldn't stop the v1 node",
+        null,
+        verbose,
+        30 * SEC
+      );
+
+      console.log('Migrating...');
 
       await runSQL(sql, network, config);
 
-      await nodeStart({ config, network });
+      console.log('DB migration successful');
+      console.log(
+        "If you want to go back to the v1, run './manager.sh restoreBackup'"
+      );
 
-      console.log('done, call "$ rise node status" to verify');
+      await nodeStart({ config, network, verbose, v1: true });
+
+      console.log('done, call "$ ./rise node status" to verify');
 
       //  test the v1 DB and get the block height
       //  detect if ran in screen?
@@ -104,7 +172,7 @@ export default leaf({
         console.log(err);
       }
       console.log(
-        '\nSomething went wrong.' +
+        '\nSomething went wrong. ' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);

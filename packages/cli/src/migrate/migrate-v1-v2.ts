@@ -61,7 +61,6 @@ CREATE INDEX IF NOT EXISTS "idx_trs_type" ON "trs"("type");
 CREATE INDEX IF NOT EXISTS "idx_trs_timestamp" ON "trs"("timestamp");
 
 insert into "trs"
-	// tslint:disable-next-line:max-line-length
 	("id", "blockId", "height", "type", "timestamp", "senderPubData", "senderId", "recipientId", "amount", "fee", "signatures", "version")
 	SELECT trs_old.id, trs_old."blockId", height, type, trs_old."timestamp", "senderPublicKey", "senderId", "recipientId", "amount", "fee",
 		case when "signSignature" is null
