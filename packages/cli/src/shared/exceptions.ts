@@ -19,7 +19,7 @@ export class DBConnectionError extends Error {
 
 export class DBCorruptedError extends Error {
   constructor() {
-    super("DB seems to be corrupted");
+    super('DB seems to be corrupted');
   }
 }
 
