@@ -2,6 +2,7 @@ import { IBroadcasterLogic, p2pSymbols } from '@risevision/core-p2p';
 import {
   ILogger,
   ISystemModule,
+  PeerState,
   SignedAndChainedBlockType,
   Symbols,
 } from '@risevision/core-types';
@@ -47,7 +48,7 @@ export class BlocksP2P extends Extendable {
         block.relays++;
         await this.broadcaster
           .broadcast({
-            filters: { broadhash },
+            filters: { broadhash, allowedStates: [PeerState.CONNECTED] },
             options: {
               immediate: true,
               method: this.postBlockRequest,

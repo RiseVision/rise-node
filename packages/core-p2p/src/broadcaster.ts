@@ -2,6 +2,7 @@ import {
   AppConfig,
   IJobsQueue,
   ILogger,
+  PeerState,
   PeerType,
   Symbols,
 } from '@risevision/core-types';
@@ -20,6 +21,7 @@ export type BroadcastFilters = {
   limit?: number;
   broadhash?: string;
   peers?: PeerType[];
+  allowedStates?: PeerState[];
 };
 
 // tslint:disable-next-line

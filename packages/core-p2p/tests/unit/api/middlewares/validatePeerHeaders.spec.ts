@@ -109,12 +109,12 @@ describe('apis/utils/validatePeerHeaders', () => {
       request.headers.nethash = 'zxy';
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
-      expect(next.args[0][0]).to.deep.equal({
-        expected:
-          'e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6',
-        message: 'Request is made on the wrong network',
-        received: 'zxy',
-      });
+
+      expect(next.args[0][0]).instanceOf(Error);
+      expect(next.args[0][0].message).to.deep.equal(
+        // tslint:disable-next-line
+        'Request is made on the wrong network: Expected: e4c527bd888c257377c18615d021e9cedd2bc2fd6de04b369f22a8780264c2f6 - Received: zxy'
+      );
     });
 
     it('if version is NOT compatible', () => {
@@ -122,11 +122,10 @@ describe('apis/utils/validatePeerHeaders', () => {
       request.headers.version = '3.0';
       instance.use(request, false, next);
       expect(next.calledOnce).to.be.true;
-      expect(next.args[0][0]).to.deep.equal({
-        expected: '>=0.1.0',
-        message: 'Request is made from incompatible version',
-        received: '3.0',
-      });
+      expect(next.args[0][0]).instanceOf(Error);
+      expect(next.args[0][0].message).to.deep.equal(
+        'Request is made from incompatible version: Expected: >=0.1.0 - Received: 3.0'
+      );
     });
 
     it('should call to next() without parameters if everything is ok', () => {

@@ -147,7 +147,7 @@ export class PeersLogic {
   public acceptable(peers: PeerType[]): PeerType[];
   public acceptable(peers: PeerType[] | Peer[]): PeerType[] | Peer[] {
     return _(peers)
-      .uniqWith((a, b) => `${a.ip}${a.port}` === `${b.ip}${b.port}`)
+      .uniqWith((a, b) => `${a.ip}` === `${b.ip}`)
       .filter((peer) => {
         if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
           return peer.nonce !== this.systemModule.getNonce();
@@ -155,6 +155,7 @@ export class PeersLogic {
         return (
           // !ip.isPrivate(peer.ip) &&
           peer.nonce !== this.systemModule.getNonce() &&
+          peer.ip !== '0.0.0.0' &&
           peer.os !== 'lisk-js-api'
         );
       })

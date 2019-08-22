@@ -16,8 +16,7 @@ import {
   PeerType,
   Symbols,
 } from '@risevision/core-types';
-import { cbToPromise } from '@risevision/core-utils';
-import { WrapInBalanceSequence } from '@risevision/core-utils';
+import { cbToPromise, WrapInBalanceSequence } from '@risevision/core-utils';
 import { decorate, inject, injectable, named, postConstruct } from 'inversify';
 import { WordPressHookSystem, WPHooksSubscriber } from 'mangiafuoco';
 import * as popsicle from 'popsicle';
@@ -223,7 +222,7 @@ export class TransportModule extends Extendable {
     payload: SingleTransportPayload<Body, Query> | null
   ): Promise<Out | null> {
     config.limit = 1;
-    config.allowedStates = [PeerState.CONNECTED, PeerState.DISCONNECTED];
+    config.allowedStates = [PeerState.CONNECTED];
     const peers = this.peersModule.getPeers(config);
     if (peers.length === 0) {
       throw new Error('No peers available');
@@ -259,14 +258,10 @@ export class TransportModule extends Extendable {
 
         await Throttle.all(
           peers.map((p) => async () => {
-            if (
-              p &&
-              p.state !== PeerState.BANNED &&
-              (!p.updated || Date.now() - p.updated > 3000)
-            ) {
+            if (p && p.state !== PeerState.BANNED && p.hasStaleInfo) {
               this.logger.trace('Updating peer', p.string);
               try {
-                await p.makeRequest(this.pingRequest);
+                await p.pingAndUpdate();
               } catch (err) {
                 this.logger.debug(
                   `Ping failed when updating peer ${p.string}`,

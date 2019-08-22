@@ -4,15 +4,10 @@ import {
   PeerState,
   PeerType,
 } from '@risevision/core-types';
-import * as assert from 'assert';
 import { inject, injectable, named } from 'inversify';
 import * as ip from 'ip';
-import { p2pSymbols } from './helpers';
-import {
-  BaseTransportMethod,
-  ITransportMethod,
-  SingleTransportPayload,
-} from './requests/';
+import { P2PConstantsType, p2pSymbols } from './helpers';
+import { ITransportMethod, SingleTransportPayload } from './requests/';
 import { PingRequest } from './requests/PingRequest';
 import { TransportModule } from './transport';
 import { TransportWrapper } from './utils/TransportWrapper';
@@ -49,6 +44,9 @@ export class Peer implements PeerType {
   public updated: number;
   public nonce: string;
   public string: string;
+
+  @inject(p2pSymbols.constants)
+  private p2pConsts: P2PConstantsType;
 
   @inject(p2pSymbols.transportMethod)
   @named(p2pSymbols.requests.ping)
@@ -161,6 +159,17 @@ export class Peer implements PeerType {
     } else {
       throw new Error((resp as any).error);
     }
+  }
+
+  public get hasStaleInfo() {
+    if (!this.updated) {
+      return true;
+    }
+    const elapsed = Date.now() - this.updated;
+    if (this.state === PeerState.DISCONNECTED && elapsed > 60000) {
+      return true;
+    }
+    return elapsed > this.p2pConsts.stalePeerDataLimit;
   }
 
   public pingAndUpdate(): Promise<null> {

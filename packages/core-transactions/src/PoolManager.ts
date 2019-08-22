@@ -6,6 +6,7 @@ import {
   IJobsQueue,
   ILogger,
   ISequence,
+  PeerState,
   Symbols,
 } from '@risevision/core-types';
 import { logOnly, WrapInBalanceSequence } from '@risevision/core-utils';
@@ -199,7 +200,8 @@ export class PoolManager {
       if (toBroadcastTxs.length > 0) {
         this.broadcasterLogic.enqueue(
           { body: { transactions: toBroadcastTxs } },
-          this.postTransactionMethod
+          this.postTransactionMethod,
+          { allowedStates: [PeerState.CONNECTED] }
         );
       }
     }

@@ -1,7 +1,12 @@
 import { SystemModule } from '@risevision/core';
 import { AppState, JobsQueue, Sequence } from '@risevision/core-helpers';
 import { createContainer } from '@risevision/core-launchpad/tests/unit/utils/createContainer';
-import { IBlocksModule, PeerState, Symbols } from '@risevision/core-types';
+import {
+  BasePeerType,
+  IBlocksModule,
+  PeerState,
+  Symbols,
+} from '@risevision/core-types';
 import { wait } from '@risevision/core-utils';
 import { LoggerStub } from '@risevision/core-utils/tests/unit/stubs';
 import * as chai from 'chai';
@@ -10,8 +15,8 @@ import * as chaiAsPromised from 'chai-as-promised';
 import { Container } from 'inversify';
 import * as Throttle from 'promise-parallel-throttle';
 import * as proxyquire from 'proxyquire';
-import { SinonSandbox, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
+import { SinonSandbox, SinonStub } from 'sinon';
 import * as SocketIO from 'socket.io';
 import { createFakeBlock } from '../../../core-blocks/tests/unit/utils/createFakeBlocks';
 import {
@@ -21,6 +26,7 @@ import {
 import {
   BroadcasterLogic,
   p2pSymbols,
+  Peer,
   PeersLogic,
   PeersModule,
   PingRequest,
@@ -388,7 +394,7 @@ describe('src/modules/transport.ts', () => {
       expect(peersModuleGetPeersStub.calledOnce).to.be.true;
       expect(peersModuleGetPeersStub.firstCall.args.length).to.be.equal(1);
       expect(peersModuleGetPeersStub.firstCall.args[0]).to.be.deep.equal({
-        allowedStates: [PeerState.CONNECTED, PeerState.DISCONNECTED],
+        allowedStates: [PeerState.CONNECTED],
         limit: 1,
       });
     });
@@ -427,20 +433,20 @@ describe('src/modules/transport.ts', () => {
   });
 
   describe('onPeersReady', () => {
-    let peers;
+    let peers: Array<Peer & { makeRequest: SinonStub }>;
+    let peerFactory: (bp: BasePeerType) => Peer;
     let discoverPeersStub: SinonStub;
     let registerStub: SinonStub;
     let peerListStub: SinonStub;
     let pingRequest: PingRequest;
     beforeEach(() => {
-      peers = [
-        {
-          makeRequest: sandbox.stub(),
-          state: PeerState.CONNECTED,
-          string: 'string',
-          updated: false,
-        },
-      ];
+      peerFactory = container.get(p2pSymbols.logic.peerFactory);
+      peers = [peerFactory({ ip: '1.1.1.1', port: 9000 })].map((p) => {
+        p.state = PeerState.CONNECTED;
+        p.updated = 0;
+        sandbox.stub(p, 'makeRequest');
+        return p as any;
+      });
 
       throttleStub.all = sandbox.stub().callsFake((fkArray) => {
         const promiseArray: any[] = [];
@@ -550,7 +556,7 @@ describe('src/modules/transport.ts', () => {
       });
 
       it('should call pingAndUpdate(check on Date.now() - p.updated > 3000)', async () => {
-        peers[0].updated = Date.now() - 3001;
+        peers[0].updated = Date.now() - 6001;
 
         await inst.onPeersReady();
         await wait(10);
@@ -568,7 +574,7 @@ describe('src/modules/transport.ts', () => {
         expect(logger.stubs.debug.calledOnce).to.be.true;
         expect(logger.stubs.debug.firstCall.args.length).to.be.equal(2);
         expect(logger.stubs.debug.firstCall.args[0]).to.be.equal(
-          'Ping failed when updating peer string'
+          'Ping failed when updating peer 1.1.1.1:9000'
         );
         expect(logger.stubs.debug.firstCall.args[1]).to.be.deep.equal(error);
       });

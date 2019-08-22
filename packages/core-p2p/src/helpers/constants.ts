@@ -8,6 +8,7 @@ export type P2PConstantsType = {
   parallelLimit: number;
   relayLimit: number;
   releaseLimit: number;
+  stalePeerDataLimit: number;
 };
 
 export const constants: P2PConstantsType = {
@@ -19,4 +20,5 @@ export const constants: P2PConstantsType = {
   parallelLimit: 20,
   relayLimit: 2,
   releaseLimit: 25,
+  stalePeerDataLimit: 5000, // It's a good idea to set it to a fraction of blocktime
 };
