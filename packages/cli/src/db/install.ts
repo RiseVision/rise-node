@@ -26,7 +26,7 @@ export default leaf({
 });
 
 export async function dbInstall({ verbose }: IVerbose) {
-  console.log('Installing the default PostgreSQL version...');
+  console.log('Installing the default version of PostgreSQL...');
   const file = 'apt-get';
   const params = ['install', '-y', 'postgresql', 'postgresql-contrib'];
   const errorMsg =
@@ -38,5 +38,5 @@ export async function dbInstall({ verbose }: IVerbose) {
     `$ sudo ${file} ${params.join(' ')}`;
 
   await execCmd(file, params, errorMsg, null, verbose);
-  console.log('Default PostgreSQL version installed.');
+  console.log('PostgreSQL installed.');
 }

@@ -42,6 +42,7 @@ export async function nodeInstallDeps({ verbose }: IVerbose) {
     'Alternatively run the following command manually:\n' +
     `$ sudo ${file} ${params.join(' ')}`;
 
+  console.log("Installing native modules' dependencies");
   await execCmd(file, params, errorMsg, null, verbose);
 
   console.log('RISE node dependencies have been installed.');

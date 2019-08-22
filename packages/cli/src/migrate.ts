@@ -3,6 +3,7 @@ import { leaf, option } from '@carnesen/cli';
 import delay from 'delay';
 import extend from 'extend';
 import fs from 'fs';
+import { download } from './download';
 import { sql } from './migrate/migrate-v1-v2';
 import { nodeStart } from './node/start';
 import { MIN, SEC } from './shared/constants';
@@ -11,6 +12,7 @@ import {
   execCmd,
   getBlockHeight,
   getDBEnvVars,
+  hasLocalPostgres,
   log,
   runSQL,
 } from './shared/misc';
@@ -54,15 +56,23 @@ export default leaf({
       if (!fs.existsSync('etc')) {
         throw new Error('no in a v1 dir');
       }
-      await checkSourceDir();
-      // TODO copy the config ???
-      // TODO use data/node_config if exists
+      try {
+        await checkSourceDir();
+      } catch {
+        await download();
+      }
+
+      if (!hasLocalPostgres()) {
+        console.log('Install PostgreSQL first:');
+        console.log('$ sudo ./rise db install');
+        return;
+      }
 
       // make sure the v1 node is running
       await execCmd(
         './manager.sh',
         ['start', 'node'],
-        "Couldn't start the V1 node",
+        "Couldn't start the v1 node",
         null,
         verbose,
         30 * SEC
@@ -83,6 +93,8 @@ export default leaf({
       // precheck end
 
       log(getDBEnvVars(network, config));
+
+      console.log('Getting the current block height...');
 
       let blockHeightNow = await getBlockHeight(network, config);
       if (!blockHeight) {
@@ -142,30 +154,14 @@ export default leaf({
 
       console.log('DB migration successful');
       console.log(
-        "If you want to go back to the v1, run './manager.sh restoreBackup'"
+        "If you want to go back to v1, run './manager.sh restoreBackup'"
       );
 
       await nodeStart({ config, network, verbose, v1: true });
 
-      console.log('done, call "$ ./rise node status" to verify');
-
-      //  test the v1 DB and get the block height
-      //  detect if ran in screen?
-      //  test if v2 starts properly (create a config)
-      //  start watching the block height in a loop
-      //  migrate:
-      //  - kill the v1
-      //  - backup the v2 DB (!!!)
-      //  - migrate the SQL
-      //  - start the v2
-      //  - verify the block height from v2
-      // TODO
-      //  --db-only param to test the DB migration
-      //  DB
-      //  - keep using the v1 DB by default (instructions)
-      //  - export/import to v2 with --use-v2-db (verify if running)
-      //    - having a DB service using pg cluster before would be great
-      //  - expose `rise node start --v1-db`
+      console.log('DONE');
+      console.log('To verify:\n$ ./rise node status');
+      console.log(`To start:\n$ ./rise node start --v1 --network ${network}`);
     } catch (err) {
       log(err);
       if (verbose) {

@@ -51,7 +51,7 @@ export default leaf({
   },
 });
 
-async function download({ version }) {
+export async function download({ version } = { version: VERSION_RISE }) {
   const url = process.env.DOWNLOAD_URL
     ? process.env.DOWNLOAD_URL
     : getDownloadURL(DIST_FILE, version);

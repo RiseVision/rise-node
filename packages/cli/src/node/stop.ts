@@ -20,7 +20,7 @@ export default leaf({
 
   async action({ verbose }: TOptions) {
     try {
-      await nodeStop({ verbose });
+      await nodeStop();
     } catch (err) {
       if (verbose) {
         console.log(err);
@@ -34,15 +34,14 @@ export default leaf({
   },
 });
 
-export async function nodeStop({ verbose }: TOptions) {
+export async function nodeStop() {
   log('nodeStop');
   const pid = getNodePID();
   if (!pid) {
-    if (verbose) {
-      console.log("RISE node isn't running");
-    }
+    console.log("RISE node isn't running");
     return;
   }
+  log(`Killing PID tree ${pid}`);
   console.log(`Killing RISE node with PID ${pid}`);
 
   await killAsync(pid);
