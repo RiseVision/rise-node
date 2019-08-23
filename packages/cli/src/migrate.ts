@@ -132,8 +132,7 @@ export default leaf({
         ['backup'],
         "Couldn't start the DB",
         null,
-        verbose,
-        3 * MIN
+        verbose
       );
 
       console.log('Stopping the V1 node');
@@ -157,11 +156,27 @@ export default leaf({
         "If you want to go back to v1, run './manager.sh restoreBackup'"
       );
 
-      await nodeStart({ config, network, verbose, v1: true });
+      let tries = 0;
+      while (++tries <= 3) {
+        console.log('Starting the v2 node');
+        if (tries > 1) {
+          console.log(`Try ${tries}`);
+        }
+        try {
+          await nodeStart({ config, network, verbose, v1: true });
+        } catch (e) {
+          console.log('v2 node couldnt start, waiting for 3mins...');
+          await delay(3 * MIN);
+        }
+      }
 
       console.log('DONE');
       console.log('To verify:\n$ ./rise node status');
-      console.log(`To start:\n$ ./rise node start --v1 --network ${network}`);
+      if (network === 'mainnet') {
+        console.log('To start:\n$ ./rise node start --v1');
+      } else {
+        console.log(`To start:\n$ ./rise node start --v1 --network ${network}`);
+      }
     } catch (err) {
       log(err);
       if (verbose) {
