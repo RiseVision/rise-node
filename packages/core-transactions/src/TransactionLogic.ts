@@ -409,7 +409,7 @@ export class TransactionLogic implements ITransactionLogic {
     const report = this.schema.validate(tx, txSchema);
     if (!report) {
       throw new Error(
-        `Failed to validate transaction schema: ${this.schema
+        `Failed to validate transaction schema for ID "${tx.id}": ${this.schema
           .getLastErrors()
           .map((e) => e.message)
           .join(', ')}`

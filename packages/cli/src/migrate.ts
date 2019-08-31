@@ -97,6 +97,9 @@ export default leaf({
       console.log('Getting the current block height...');
 
       let blockHeightNow = await getBlockHeight(network, config);
+
+      console.log(`Block height = ${blockHeightNow}`);
+
       if (!blockHeight) {
         blockHeight = blockHeightNow + 1;
         log(`Automatic block height ${blockHeight}`);
@@ -149,7 +152,7 @@ export default leaf({
 
       console.log('Migrating...');
 
-      await runSQL(sql, network, config);
+      await runSQL(sql, network, config, verbose);
 
       console.log('DB migration successful');
       console.log(
