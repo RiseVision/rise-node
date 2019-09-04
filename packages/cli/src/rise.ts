@@ -2,6 +2,8 @@
 import { branch, cli, leaf } from '@carnesen/cli';
 import dot from 'dotenv';
 import configDefaults from './config-default';
+import crontabAdd from './crontab/add';
+import crontabRemove from './crontab/remove';
 import dbInit from './db/init';
 import dbInstall from './db/install';
 import dbStart from './db/start';
@@ -54,6 +56,12 @@ export const db = branch({
   commandName: 'db',
   description: 'Manage the local PostgreSQL database',
   subcommands: [dbInit, dbStart, dbStop, dbInstall],
+});
+
+export const crontab = branch({
+  commandName: 'crontab',
+  description: 'Manage the crontab entries',
+  subcommands: [crontabAdd, crontabRemove],
 });
 
 export const version = leaf({
@@ -109,6 +117,7 @@ export const root = branch({
     db,
     migrate,
     configDefaults,
+    crontab,
     version,
   ],
 });
