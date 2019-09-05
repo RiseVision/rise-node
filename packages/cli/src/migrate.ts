@@ -5,6 +5,7 @@ import extend from 'extend';
 import fs from 'fs';
 import { download } from './download';
 import { sql } from './migrate/migrate-v1-v2';
+import { nodeCrontab } from './node/crontab';
 import { nodeStart } from './node/start';
 import { MIN, SEC } from './shared/constants';
 import { checkSourceDir } from './shared/fs-ops';
@@ -43,9 +44,10 @@ export default leaf({
     ...v1ConfigOption,
     ...networkOption,
     blockHeight: option({
+      defaultValue: 344714,
       description: 'Migration block (0 = next one)',
-      nullable: true,
-      typeName: 'string',
+      nullable: false,
+      typeName: 'number',
     }),
     ...verboseOption,
   },
@@ -158,6 +160,9 @@ export default leaf({
       console.log(
         "If you want to go back to v1, run './manager.sh restoreBackup'"
       );
+
+      // handle crontab
+      await nodeCrontab({ verbose, v1: true });
 
       let tries = 0;
       while (++tries <= 3) {

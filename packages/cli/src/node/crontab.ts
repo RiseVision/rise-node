@@ -29,13 +29,7 @@ export default leaf({
 
   async action({ verbose, v1, removeOnly }: TOptions) {
     try {
-      await removeEntries({ verbose });
-      if (!removeOnly) {
-        await addEntries({ verbose, v1 });
-        console.log('RISE entries added to crontab');
-      } else {
-        console.log('RISE entries removed from crontab');
-      }
+      await nodeCrontab({ verbose, v1, removeOnly });
     } catch (err) {
       log(err);
       if (verbose) {
@@ -50,14 +44,18 @@ export default leaf({
   },
 });
 
-export async function addEntries({ verbose, v1 }: TOptions) {
-  let crontab = await execCmd(
-    'crontab',
-    ['-l'],
-    "Couldn't fetch crontab's content",
-    null,
-    verbose
-  );
+export async function nodeCrontab({ verbose, v1, removeOnly }: TOptions) {
+  await removeEntries({ verbose });
+  if (!removeOnly) {
+    await addEntries({ verbose, v1 });
+    console.log('RISE entries added to crontab');
+  } else {
+    console.log('RISE entries removed from crontab');
+  }
+}
+
+async function addEntries({ verbose, v1 }: TOptions) {
+  let crontab = await getCrontab(verbose);
   log('old crontab', crontab);
 
   const v1Suffix = v1 ? '--v1' : '';
@@ -71,26 +69,22 @@ export async function addEntries({ verbose, v1 }: TOptions) {
   execSync(`echo "${crontab}" | crontab -`);
 }
 
-export async function removeEntries({ verbose }: TOptions) {
+async function removeEntries({ verbose }: TOptions) {
   let crontab = await getCrontab(verbose);
-
   log('old crontab', crontab);
 
   crontab = crontab.replace(/^.+#managed_rise\n?/gm, '');
-
   log('new crontab', crontab);
 
-  execSync(`echo "${crontab}" | crontab -`);
+  execSync(`echo "${crontab.trim()}" | crontab -`);
 }
 
 async function getCrontab(verbose = false): Promise<string> {
-  const crontab = await execCmd(
+  return await execCmd(
     'crontab',
     ['-l'],
     "Couldn't fetch crontab's content",
     null,
     verbose
   );
-
-  return crontab.trim();
 }
