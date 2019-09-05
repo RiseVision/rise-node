@@ -2,7 +2,7 @@
   "name": "Rise-node",
   "version": "2.0.0-beta5",
   "engine": "^10",
-  "engineStrict" : true,
+  "engineStrict": true,
   "private": true,
   "workspaces": [
     "packages/*"

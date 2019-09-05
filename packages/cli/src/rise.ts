@@ -2,8 +2,6 @@
 import { branch, cli, leaf } from '@carnesen/cli';
 import dot from 'dotenv';
 import configDefaults from './config-default';
-import crontabAdd from './crontab/add';
-import crontabRemove from './crontab/remove';
 import dbInit from './db/init';
 import dbInstall from './db/install';
 import dbStart from './db/start';
@@ -15,6 +13,7 @@ import dockerStart from './docker/start';
 import dockerStop from './docker/stop';
 import download from './download';
 import migrate from './migrate';
+import nodeCrontab from './node/crontab';
 import nodeExportDB from './node/export-db';
 import nodeImportDB from './node/import-db';
 import nodeInstallDeps from './node/install-deps';
@@ -37,6 +36,7 @@ export const node = branch({
     nodeImportDB,
     nodeInstallDeps,
     nodeRebuildNative,
+    nodeCrontab,
   ],
 });
 
@@ -56,12 +56,6 @@ export const db = branch({
   commandName: 'db',
   description: 'Manage the local PostgreSQL database',
   subcommands: [dbInit, dbStart, dbStop, dbInstall],
-});
-
-export const crontab = branch({
-  commandName: 'crontab',
-  description: 'Manage the crontab entries',
-  subcommands: [crontabAdd, crontabRemove],
 });
 
 export const version = leaf({
@@ -89,6 +83,7 @@ export const root = branch({
     ./rise node status
     ./rise node export-db
     ./rise node import-db
+    ./rise node crontab
     ./rise node install-deps
     ./rise node rebuild-native
 
@@ -107,7 +102,7 @@ export const root = branch({
     ./rise db start
     ./rise db stop
 
-    # printing config defaults
+    # print config defaults
     ./rise config-defaults`,
   subcommands: [
     download,
@@ -117,7 +112,6 @@ export const root = branch({
     db,
     migrate,
     configDefaults,
-    crontab,
     version,
   ],
 });

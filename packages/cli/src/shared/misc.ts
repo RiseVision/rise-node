@@ -7,7 +7,6 @@ import fs from 'fs';
 import path from 'path';
 import {
   DOWNLOAD_URL,
-  MIN,
   NODE_DIR,
   TNetworkType,
   VERSION_RISE,
