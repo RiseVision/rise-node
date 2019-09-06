@@ -76,7 +76,7 @@ export async function nodeImportDB({
   const env = { ...process.env, ...envVars };
   const database = envVars.PGDATABASE;
 
-  await nodeStop({ verbose });
+  await nodeStop();
 
   await execCmd(
     'dropdb',

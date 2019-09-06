@@ -72,7 +72,7 @@ export async function dbInit({ config, network, verbose }: TOptions) {
   };
 
   // stop the node and DB
-  await nodeStop({ verbose });
+  await nodeStop();
   await dbStop({ config, network, verbose });
 
   log(envVars);

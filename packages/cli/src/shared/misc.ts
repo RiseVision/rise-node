@@ -82,6 +82,8 @@ export function mergeConfig(
   }
   // merge the passed config
   if (!fs.existsSync(configPath)) {
+    // TODO ideally print errors from exceptions in one place
+    console.log(`Config ${configPath} doesn't exist`);
     throw new Error(`Config ${configPath} doesn't exist`);
   }
   const config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }));
@@ -108,6 +110,9 @@ export function execCmd(
         ...options,
       });
       log(`$ ${cmd}`);
+      if (streamOutput) {
+        console.log(`$ ${cmd}`);
+      }
       // timeout
       const timer = timeout
         ? setTimeout(() => {

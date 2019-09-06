@@ -75,7 +75,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
   // TODO drop the _snap db after exporting?
   const targetDB = `${database}_snap`;
 
-  await nodeStop({ verbose });
+  await nodeStop();
 
   log(envVars);
   console.log('Starting the export...');

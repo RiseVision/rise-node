@@ -62,8 +62,7 @@ async function addEntries({ verbose, v1 }: TOptions) {
 
   // TODO
   // crontab += `@daily ${__dirname}${__filename} node logRotate #managed_rise`;
-  crontab +=
-    `@reboot ${__dirname}${__filename} node start ${v1Suffix} #managed_rise\n`;
+  crontab += `@reboot ${__dirname}${__filename} node start ${v1Suffix} #managed_rise\n`;
   log('new crontab', crontab);
 
   execSync(`echo "${crontab}" | crontab -`);

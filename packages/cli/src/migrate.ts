@@ -1,5 +1,6 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
+import clone from 'clone-deep';
 import delay from 'delay';
 import extend from 'extend';
 import fs from 'fs';
@@ -28,7 +29,8 @@ import {
 
 export type TOptions = INetwork & IVerbose & IConfig & { blockHeight: number };
 
-const v1ConfigOption = extend(true, configOption, {
+// extend the existing `config` option, but deep clone it, to avoid overriding
+const v1ConfigOption = extend(true, clone(configOption), {
   config: {
     defaultValue: 'etc/node_config.json',
   },

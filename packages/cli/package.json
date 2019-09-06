@@ -26,12 +26,13 @@
   "license": "GPL-3.0",
   "devDependencies": {
     "@carnesen/cli": "^0.3.3",
-    "debug": "^4.1.1",
     "parcel": "^1.12.3",
     "typescript": "3.4.5"
   },
   "dependencies": {
     "@types/follow-redirects": "^1.5.0",
+    "clone-deep": "^4.0.1",
+    "debug": "^4.1.1",
     "delay": "^4.3.0",
     "dotenv": "^8.0.0",
     "env": "^0.0.2",
