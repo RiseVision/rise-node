@@ -27,26 +27,32 @@ rsync -Rr packages/**/package.json $SOURCE
 # copy the rise manager file to the dist root
 cp packages/cli/dist/rise $DIST
 
-## compile native node_modules on ubuntu
+# NODE_MODULES
+# `yarn install` node_modules on ubuntu
 echo "Compiling native node_modules"
 
-pushd docker/bundle
+pushd docker/bundle || exit
 docker build \
 	-f Dockerfile.node_modules \
 	-t node_modules \
 	.
-mkdir -p node_modules
-popd
+# in case smthing goes wrong use --no-cache
+popd || exit
+
+# prepare the dirs
+mkdir -p node_modules.dist
+mv node_modules node_modules.host
+mv node_modules.dist node_modules
 
 docker rm --force node_modules_build
 docker run --name node_modules_build \
-	-v $(pwd)/:/home/rise/rise_node \
-	-v $(pwd)/docker/bundle/node_modules:/home/rise/dist \
+	-v $(pwd)/:/home/rise \
 	node_modules
 # copy compiled node_modules as cache to the dist source
-cp -R docker/bundle/node_modules $SOURCE
-#rm -Rf docker/bundle/node_modules
-
+cp -R node_modules $SOURCE/node_modules
+# cleanup
+mv node_modules node_modules.dist
+mv node_modules.host node_modules
 
 # PACKAGE SOURCE
 echo "Packing source.tar.gz"
