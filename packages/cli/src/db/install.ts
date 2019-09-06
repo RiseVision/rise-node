@@ -43,7 +43,7 @@ export async function dbInstall({ verbose }: IVerbose) {
 
 // TODO automate all 3 cmds
 // export async function dbInstall({ verbose }: IVerbose) {
-//   // default postgres
+//   // get the default postgres to get the repo script
 //   console.log('Installing the default PostgreSQL');
 //   await dbCmd(
 //     'apt',

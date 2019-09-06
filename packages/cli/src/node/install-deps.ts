@@ -30,9 +30,13 @@ export async function nodeInstallDeps({ verbose }: IVerbose) {
   const params = [
     'install',
     '-y',
+    // packages required to build native modules
+    // keep in sync with Docker.node_modules
     'build-essential',
     'python',
     'postgresql-server-dev-all',
+    'libtool',
+    'autoconf',
   ];
   const errorMsg =
     "Couldn't install required dependencies.\n\n" +

@@ -6,7 +6,13 @@ import { nodeStop } from '../node/stop';
 import { DB_DATA_DIR, DB_LOG_FILE, DB_PG_CTL, SEC } from '../shared/constants';
 import { NoRiseDistFileError } from '../shared/exceptions';
 import { checkSourceDir } from '../shared/fs-ops';
-import { execCmd, getDBEnvVars, log, printUsingConfig } from '../shared/misc';
+import {
+  execCmd,
+  getDBEnvVars,
+  log,
+  isLinux,
+  printUsingConfig
+} from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -146,8 +152,9 @@ export async function dbInit({ config, network, verbose }: TOptions) {
   console.log('DB successfully initialized and running.');
 }
 
-function getLinuxHelpMsg(config, network) {
-  if (process.platform !== 'linux') {
+function getLinuxHelpMsg(config, network): string {
+  // show only on linux, but not when the user already logged in as postgres
+  if (!isLinux() || process.env.USER === 'postgres') {
     return '';
   }
   let cmd = '$ ' + path.resolve(__dirname, 'rise') + ' db init';
