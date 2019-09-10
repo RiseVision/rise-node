@@ -108,7 +108,7 @@ export default leaf({
         blockHeight = blockHeightNow + 1;
         log(`Automatic block height ${blockHeight}`);
       }
-      if (blockHeightNow >= blockHeight) {
+      if (blockHeightNow > blockHeight) {
         console.log('Migration block is lower then the current one');
         throw new Error('migration block too low');
       }
