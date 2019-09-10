@@ -28,7 +28,7 @@ export class NoRiseDistFileError extends Error {
     super(
       'ERROR: rise source missing.\n' +
         'You can download the latest version using:\n' +
-        '  ./rise node download'
+        '  ./rise download'
     );
   }
 }

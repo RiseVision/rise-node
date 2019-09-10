@@ -27,7 +27,7 @@ export function checkLaunchpadExists(): boolean {
     log(`Missing: ${file}`);
     console.log(`ERROR: can't find launchpad executable in ${NODE_DIR}.`);
     console.log('You can download the latest version using:');
-    console.log('  ./rise node download');
+    console.log('  ./rise download');
     return false;
   }
   return true;
@@ -37,7 +37,7 @@ export function checkDockerDirExists(): boolean {
   if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
     console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
     console.log('You can download the latest version using:');
-    console.log('  ./rise docker download');
+    console.log('  ./rise download');
     return false;
   }
   return true;
@@ -61,7 +61,7 @@ export async function extractSourceFile(
   if (!fs.existsSync(filePath)) {
     console.log(`ERROR: File ${DOCKER_DIR}/${NODE_FILE} missing`);
     console.log('You can download the latest version using:');
-    console.log('  ./rise node download');
+    console.log('  ./rise download');
     throw new NoRiseDistFileError();
   }
 

@@ -152,7 +152,7 @@ function checkDockerDirExists(): boolean {
   if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
     console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
     console.log('You can download the latest version using:');
-    console.log('  ./rise docker download');
+    console.log('  ./rise download');
     return false;
   }
   return true;
