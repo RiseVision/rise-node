@@ -17,6 +17,7 @@ import nodeCrontab from './node/crontab';
 import nodeExportDB from './node/export-db';
 import nodeImportDB from './node/import-db';
 import nodeInstallDeps from './node/install-deps';
+import nodeKill from './node/kill';
 import nodeRebuildNative from './node/rebuild-native';
 import nodeStart from './node/start';
 import nodeStatus from './node/status';
@@ -37,6 +38,7 @@ export const node = branch({
     nodeInstallDeps,
     nodeRebuildNative,
     nodeCrontab,
+    nodeKill,
   ],
 });
 
