@@ -9,9 +9,9 @@ import { checkSourceDir } from '../shared/fs-ops';
 import {
   execCmd,
   getDBEnvVars,
-  log,
   isLinux,
-  printUsingConfig
+  log,
+  printUsingConfig,
 } from '../shared/misc';
 import {
   configOption,

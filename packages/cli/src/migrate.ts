@@ -174,6 +174,7 @@ export default leaf({
         }
         try {
           await nodeStart({ config, network, verbose, v1: true });
+          break;
         } catch (e) {
           console.log('v2 node couldnt start, waiting for 3mins...');
           await delay(3 * MIN);
