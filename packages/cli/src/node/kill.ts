@@ -35,19 +35,18 @@ export default leaf({
 
 export async function nodeKill() {
   log('nodeKill');
-  const cmdOut = await execCmd(
-    'pgrep',
-    // TODO greps too much, use `ps`
-    ['"rise-launchpad"', '-f'],
-    "Couldn't get the process IDs"
-  );
+  const list = await execCmd('ps x', null, "Couldn't get the process IDs");
 
-  const pids = cmdOut.trim().split('\n');
+  const match = 'rise-launchpad';
+  const regex = new RegExp(`^\s*(\d+).+${match}`, 'mg');
+
+  const pids = list.match(regex);
   if (!pids.length) {
     console.log("RISE node isn't running");
     return;
   }
 
+  // TODO parallel
   for (const pid of pids) {
     log(`Killing PID tree ${pid}`);
     console.log(`Killing RISE node with PID ${pid}`);
