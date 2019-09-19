@@ -40,7 +40,7 @@ export default leaf({
   },
 });
 
-export async function nodeStop({ verbose, v1 }: TOptions) {
+export async function nodeStop({ verbose, v1 }: TOptions = {}) {
   log('nodeStop');
   const pid = getNodePID();
   if (!pid) {

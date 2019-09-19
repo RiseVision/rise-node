@@ -41,11 +41,12 @@ import {
   verboseOption,
 } from '../shared/options';
 import { nodeRebuildNative } from './rebuild-native';
+import { nodeStop } from './stop';
 
 export type TOptions = IConfig &
   INetwork &
   IForeground &
-  IVerbose & { v1?: boolean };
+  IVerbose & { v1?: boolean } & { restart?: boolean };
 
 export default leaf({
   commandName: 'start',
@@ -56,6 +57,12 @@ export default leaf({
     ...foregroundOption,
     ...networkOption,
     ...verboseOption,
+    restart: {
+      defaultValue: false,
+      description: 'Stop a node if already running',
+      nullable: true,
+      typeName: 'boolean',
+    },
     v1: {
       defaultValue: false,
       description: 'Use the V1 config and DB',
@@ -85,12 +92,12 @@ export default leaf({
  * Starts a node or throws an exception.
  */
 export async function nodeStart(
-  { config, foreground, network, verbose, v1 }: TOptions,
+  { config, foreground, network, verbose, v1, restart }: TOptions,
   rebuildNative = true,
   skipPIDCheck = false
 ) {
   try {
-    await checkConditions(config, skipPIDCheck);
+    await checkConditions({ config, verbose, restart }, skipPIDCheck);
 
     if (v1 && !config) {
       config = 'etc/node_config.json';
@@ -106,6 +113,7 @@ export async function nodeStart(
 
     if (v1) {
       // TODO check if in the v1 dir when --v1
+      // TODO extract along with stop.ts
       console.log('Starting the v1 DB');
       await execCmd(
         './manager.sh',
@@ -250,16 +258,22 @@ function handleSigInt(proc: ChildProcess) {
   removeNodeLock();
 }
 
-async function checkConditions(config: string, skipPIDCheck = false) {
+async function checkConditions(
+  // TODO narrow down TOptions
+  { config, verbose, restart }: TOptions,
+  skipPIDCheck = false
+) {
   await checkSourceDir();
   checkLaunchpadExists();
   // check the PID, but not when in DEV
   if (!isDevEnv() && !skipPIDCheck) {
     const pid = getNodePID();
-    if (pid) {
+    if (pid && !restart) {
       throw new ConditionsNotMetError(
-        `ERROR: Node already running as PID ${pid}.`
+        `ERROR: Node already running as PID ${pid}, stop it or use --restart`
       );
+    } else if (pid && restart) {
+      await nodeStop({ verbose });
     }
   }
   if (config && !fs.existsSync(config)) {
