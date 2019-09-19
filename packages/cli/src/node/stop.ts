@@ -3,12 +3,12 @@ import { leaf } from '@carnesen/cli';
 import kill from 'tree-kill';
 import { promisify } from 'util';
 import { getNodePID } from '../shared/fs-ops';
-import { log } from '../shared/misc';
+import { execCmd, log } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 const killAsync = promisify(kill);
 
-export type TOptions = IVerbose;
+export type TOptions = IVerbose & { v1?: boolean };
 
 export default leaf({
   commandName: 'stop',
@@ -16,11 +16,17 @@ export default leaf({
 
   options: {
     ...verboseOption,
+    v1: {
+      defaultValue: false,
+      description: 'Stop also the v1 DB',
+      nullable: true,
+      typeName: 'boolean',
+    },
   },
 
-  async action({ verbose }: TOptions) {
+  async action({ verbose, v1 }: TOptions) {
     try {
-      await nodeStop();
+      await nodeStop({ verbose, v1 });
     } catch (err) {
       if (verbose) {
         console.log(err);
@@ -34,7 +40,7 @@ export default leaf({
   },
 });
 
-export async function nodeStop() {
+export async function nodeStop({ verbose, v1 }: TOptions) {
   log('nodeStop');
   const pid = getNodePID();
   if (!pid) {
@@ -43,6 +49,19 @@ export async function nodeStop() {
   }
   log(`Killing PID tree ${pid}`);
   console.log(`Killing RISE node with PID ${pid}`);
+
+  if (v1) {
+    // TODO check if in the v1 dir when --v1
+    // TODO extract along with start.ts
+    console.log('Stopping the v1 DB');
+    await execCmd(
+      './manager.sh',
+      ['stop', 'db'],
+      "Couldn't stop the v1 DB",
+      null,
+      verbose
+    );
+  }
 
   await killAsync(pid);
 }
