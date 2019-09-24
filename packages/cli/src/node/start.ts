@@ -36,8 +36,10 @@ import {
   IConfig,
   IForeground,
   INetwork,
+  IV1,
   IVerbose,
   networkOption,
+  v1Option,
   verboseOption,
 } from '../shared/options';
 import { nodeRebuildNative } from './rebuild-native';
@@ -46,7 +48,8 @@ import { nodeStop } from './stop';
 export type TOptions = IConfig &
   INetwork &
   IForeground &
-  IVerbose & { v1?: boolean } & { restart?: boolean };
+  IVerbose &
+  IV1 & { restart?: boolean };
 
 export default leaf({
   commandName: 'start',
@@ -63,12 +66,7 @@ export default leaf({
       nullable: true,
       typeName: 'boolean',
     },
-    v1: {
-      defaultValue: false,
-      description: 'Use the V1 config and DB',
-      nullable: true,
-      typeName: 'boolean',
-    },
+    v1Option,
   },
 
   async action(options: TOptions) {
@@ -100,6 +98,7 @@ export async function nodeStart(
     await checkConditions({ config, verbose, restart }, skipPIDCheck);
 
     if (v1 && !config) {
+      // TODO extract
       config = 'etc/node_config.json';
     }
 

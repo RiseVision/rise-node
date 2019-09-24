@@ -46,6 +46,7 @@ export default leaf({
     ...v1ConfigOption,
     ...networkOption,
     blockHeight: option({
+      // TODO take from /packages/rise/etc/[testnet|mainnet]/constants.js ???
       defaultValue: 344714,
       description: 'Migration block (0 = next one)',
       nullable: false,

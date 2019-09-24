@@ -1,6 +1,8 @@
 import { option } from '@carnesen/cli';
 import { NETWORKS, TNetworkType } from './constants';
 
+// config
+
 export const configOption = {
   config: option({
     description: 'Path to the config file (optional)',
@@ -12,6 +14,8 @@ export const configOption = {
 export interface IConfig {
   config: string;
 }
+
+// --network
 
 export const networkOption = {
   network: option({
@@ -27,6 +31,8 @@ export interface INetwork {
   network?: TNetworkType;
 }
 
+// verbose
+
 export const verboseOption = {
   verbose: option({
     defaultValue: false,
@@ -40,6 +46,8 @@ export interface IVerbose {
   verbose?: boolean;
 }
 
+// --foreground
+
 export const foregroundOption = {
   foreground: option({
     defaultValue: false,
@@ -52,4 +60,17 @@ export const foregroundOption = {
 
 export interface IForeground {
   foreground?: boolean;
+}
+
+// --v1
+
+export const v1Option: {
+  defaultValue: false;
+  description: 'Use the V1 config and DB';
+  nullable: true;
+  typeName: 'boolean';
+};
+
+export interface IV1 {
+   v1?: boolean
 }

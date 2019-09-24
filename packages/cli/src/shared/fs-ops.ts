@@ -91,6 +91,18 @@ export function getLaunchpadFilePath(): string {
 }
 
 /**
+ * Returns the path to a specific package.
+ */
+export function getPackagePath(packageName: string = null): string {
+  return path.resolve(
+    process.cwd(),
+    NODE_DIR,
+    'packages',
+    packageName
+  );
+}
+
+/**
  * Returns the path to the rise-node.tar.gz file.
  */
 export function getSourceFilePath(relativeToCLI = false): string {
