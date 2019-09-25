@@ -25,7 +25,8 @@
     "test-subpackages": "mocha --expose-gc --max-old-space-size=4096 --bail --exit --require reflect-metadata --require ts-node/register './packages/*/tests/{!(benchmarks|integration)/**,}/*.spec.ts'",
     "test-rise-integration": "mocha --expose-gc --max-old-space-size=4096 --bail --exit --require ts-node/register './packages/*/tests/{!(benchmarks|unit)/**,}/*.spec.ts'",
     "package-bundle": "./.devutils/package-bundle.sh",
-    "dist": "yarn install; yarn lerna bootstrap; yarn transpile; cd packages/cli && yarn dist; cd ../../; yarn package-bundle"
+    "node-modules-docker": "./.devutils/node-modules-docker.sh",
+    "dist": "yarn install; yarn lerna bootstrap; yarn transpile; cd packages/cli && yarn dist; yarn node-modules-docker; yarn package-bundle"
   },
   "author": "Rise Team, Lisk Foundation <admin@lisk.io>, lightcurve GmbH <admin@lightcurve.io>, Shift Team",
   "license": "GPL-3.0",
