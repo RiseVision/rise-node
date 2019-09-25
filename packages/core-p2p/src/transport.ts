@@ -191,7 +191,8 @@ export class TransportModule extends Extendable {
       );
       return Promise.reject(
         new Error(
-          `Peer is not on the same network ${headers.nethash} ${req.method} ${req.url}`
+          `Peer is not on the same network ${headers.nethash} (instead of ${
+            this.systemModule.headers.nethash}) ${req.method} ${req.url}`
         )
       );
     }
