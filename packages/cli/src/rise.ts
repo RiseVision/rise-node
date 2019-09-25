@@ -1,6 +1,7 @@
 // tslint:disable:no-console
 import { branch, cli, leaf } from '@carnesen/cli';
 import dot from 'dotenv';
+import 'source-map-support/register';
 import configDefaults from './config-default';
 import dbInit from './db/init';
 import dbInstall from './db/install';
