@@ -24,3 +24,8 @@ export const DOWNLOAD_URL = 'https://github.com/RiseVision/rise-node/releases/';
 export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
 export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
 export const BACKUPS_DIR = DATA_DIR + '/backups';
+
+export enum NodeStates {
+  STARTING = 'starting',
+  READY = 'ready',
+}

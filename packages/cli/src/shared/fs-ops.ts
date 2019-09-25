@@ -9,6 +9,7 @@ import {
   NODE_DIR,
   NODE_FILE,
   NODE_LOCK_FILE,
+  NodeStates,
   TNetworkType,
 } from './constants';
 import { NoRiseDistFileError } from './exceptions';
@@ -94,12 +95,7 @@ export function getLaunchpadFilePath(): string {
  * Returns the path to a specific package.
  */
 export function getPackagePath(packageName: string = null): string {
-  return path.resolve(
-    process.cwd(),
-    NODE_DIR,
-    'packages',
-    packageName
-  );
+  return path.resolve(process.cwd(), NODE_DIR, 'packages', packageName);
 }
 
 /**
@@ -140,9 +136,10 @@ export function removeBackupLock() {
   fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
-export function setNodeLock(pid: number) {
+export function setNodeLock(pid: number, state: NodeStates) {
   log(`Creating lock file ${NODE_LOCK_FILE} (${pid})`);
-  fs.writeFileSync(NODE_LOCK_FILE, pid, { encoding: 'utf8' });
+  const data = [pid, state].join('\n');
+  fs.writeFileSync(NODE_LOCK_FILE, data, { encoding: 'utf8' });
 }
 
 export function removeNodeLock() {
@@ -157,10 +154,13 @@ export function removeNodeLock() {
  * Performs garbage collection if the process isn't running any more.
  *
  * @param filePath
+ * @return [pid, state]
  */
-export function getPID(filePath: string): number | false {
+export function getPID(filePath: string): [number, NodeStates] | false {
   try {
-    const pid = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n')[0];
+    const [pid, state] = fs
+      .readFileSync(filePath, { encoding: 'utf8' })
+      .split('\n');
     let exists: string;
     try {
       exists = execSync(`ps -p ${pid} -o pid=`).toString('utf8');
@@ -171,7 +171,7 @@ export function getPID(filePath: string): number | false {
       fs.unlinkSync(filePath);
       return false;
     }
-    return parseInt(pid, 10);
+    return [parseInt(pid, 10), state as NodeStates];
   } catch {
     // empty
   }
@@ -182,9 +182,25 @@ export function getPID(filePath: string): number | false {
  * Returns the PID of currently running node.
  */
 export function getNodePID(): number | false {
-  return getPID(NODE_LOCK_FILE);
+  try {
+    return getPID(NODE_LOCK_FILE)[0];
+  } catch {
+    return false;
+  }
+}
+
+export function getNodeState(): NodeStates | false {
+  try {
+    return getPID(NODE_LOCK_FILE)[1];
+  } catch {
+    return false;
+  }
 }
 
 export function getBackupPID(): number | false {
-  return getPID(BACKUP_LOCK_FILE);
+  try {
+    return getPID(NODE_LOCK_FILE)[0];
+  } catch {
+    return false;
+  }
 }

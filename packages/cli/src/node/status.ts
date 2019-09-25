@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import fs from 'fs';
 import { ConditionsNotMetError } from '../shared/exceptions';
-import { checkSourceDir, getNodePID } from '../shared/fs-ops';
+import { checkSourceDir, getNodePID, getNodeState } from '../shared/fs-ops';
 import { getBlockHeight, log, printUsingConfig } from '../shared/misc';
 import {
   configOption,
@@ -59,7 +59,11 @@ export async function nodeStatus({ config, network, verbose }: TOptions) {
     return;
   }
 
+  const state = getNodeState();
+
   console.log(`PID: ${pid}`);
+  console.log(`State: ${state}`);
+
   log('Getting block height from the DB...');
 
   const blockHeight = await getBlockHeight(network, config, verbose);

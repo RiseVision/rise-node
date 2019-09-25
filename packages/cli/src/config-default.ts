@@ -15,7 +15,7 @@ export type TOptions = INetwork & IVerbose;
 export default leaf({
   commandName: 'config-defaults',
   description:
-    'Prints config default for a specific network. Useful when creating custom configs.',
+    'Prints a default config for a specific network. Useful for creating custom configs.',
 
   options: {
     ...networkOption,

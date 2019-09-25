@@ -65,7 +65,9 @@ export async function dbStart({ config, network, verbose }: TOptions) {
   const envVars = getDBEnvVars(network, config, true);
   const env = { ...process.env, ...envVars };
 
-  console.log('Starting the DB...\n' + dbConnectionInfo(envVars));
+  console.log(
+    'Starting the DB...\n' + verbose ? dbConnectionInfo(envVars) : ''
+  );
 
   await nodeStop();
 

@@ -64,13 +64,13 @@ export interface IForeground {
 
 // --v1
 
-export const v1Option: {
-  defaultValue: false;
-  description: 'Use the V1 config and DB';
-  nullable: true;
-  typeName: 'boolean';
+export const v1Option = {
+  defaultValue: false,
+  description: 'Use the V1 config and DB',
+  nullable: true,
+  typeName: 'boolean',
 };
 
 export interface IV1 {
-   v1?: boolean
+  v1?: boolean;
 }

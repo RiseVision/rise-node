@@ -4,7 +4,7 @@ import assert from 'assert';
 import { ChildProcess, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { MIN } from '../shared/constants';
+import { MIN, NodeStates } from '../shared/constants';
 import {
   AddressInUseError,
   ConditionsNotMetError,
@@ -194,6 +194,7 @@ function startLaunchpad(
         { foreground, verbose },
         () => {
           setReady();
+          setNodeLock(proc.pid, NodeStates.READY);
           if (!foreground) {
             resolve();
           }
@@ -209,7 +210,7 @@ function startLaunchpad(
 
       // save the PID (not in DEV)
       if (!isDevEnv()) {
-        setNodeLock(proc.pid);
+        setNodeLock(proc.pid, NodeStates.STARTING);
       }
 
       console.log(`Starting as PID ${proc.pid}...`);

@@ -7,7 +7,7 @@ import { extractSourceFile } from './shared/fs-ops';
 import { execCmd, getDownloadURL, log } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
 
-export type TOptions = { version: string } & IVerbose;
+export type TOptions = { version: string } & IVerbose & { localhost: boolean };
 
 export default leaf({
   commandName: 'download',
@@ -16,6 +16,12 @@ export default leaf({
     'the current directory.',
 
   options: {
+    localhost: option({
+      defaultValue: false,
+      description: 'Download from localhost:8080',
+      nullable: true,
+      typeName: 'boolean',
+    }),
     version: option({
       defaultValue: VERSION_RISE,
       description: 'Version number to download, eg v2.0.0 (optional)',
@@ -25,9 +31,9 @@ export default leaf({
     ...verboseOption,
   },
 
-  async action({ version, verbose }: TOptions) {
+  async action({ version, verbose, localhost }: TOptions) {
     try {
-      await download({ version });
+      await download({ version, localhost });
       console.log('Done');
       console.log('');
       console.log('You can start RISE node using:');
@@ -51,9 +57,13 @@ export default leaf({
   },
 });
 
-export async function download({ version } = { version: VERSION_RISE }) {
+export async function download(
+  { version, localhost }: TOptions = { version: VERSION_RISE, localhost: false }
+) {
   const url = process.env.DOWNLOAD_URL
     ? process.env.DOWNLOAD_URL
+    : localhost
+    ? `http://localhost:8080/${DIST_FILE}`
     : getDownloadURL(DIST_FILE, version);
 
   log(url);
@@ -62,9 +72,10 @@ export async function download({ version } = { version: VERSION_RISE }) {
   const file = fs.createWriteStream(DIST_FILE);
 
   // TODO show progress
+  // TODO use a decent HTTP client
   await new Promise((resolve, reject) => {
     // use plain http when in DEV mode
-    (process.env.DOWNLOAD_URL ? http : https)
+    (process.env.DOWNLOAD_URL || localhost ? http : https)
       .get(url, (response) => {
         const { statusCode } = response;
         const isError = ['4', '5'].includes(statusCode.toString()[0]);
