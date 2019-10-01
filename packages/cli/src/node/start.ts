@@ -66,7 +66,7 @@ export default leaf({
       nullable: true,
       typeName: 'boolean',
     },
-    v1Option,
+    ...v1Option,
   },
 
   async action(options: TOptions) {
@@ -105,7 +105,7 @@ export async function nodeStart(
     if (verbose) {
       printUsingConfig(network, config);
     }
-    console.log('Starting RISE node...');
+    console.log('Starting RISE Node...');
 
     let ready = false;
     removeNodeLock();
@@ -134,9 +134,9 @@ export async function nodeStart(
     );
     if (!foreground) {
       if (ready) {
-        console.log('RISE node started');
+        console.log('RISE Node started');
       } else {
-        console.log('RISE node NOT started');
+        console.log('RISE Node NOT started');
       }
     }
     if (!ready) {
@@ -252,7 +252,7 @@ function handleSigInt(proc: ChildProcess) {
   if (proc.killed) {
     process.exit();
   } else {
-    console.log('Waiting for RISE node to quit...');
+    console.log('Waiting for RISE Node to quit...');
   }
 
   removeNodeLock();

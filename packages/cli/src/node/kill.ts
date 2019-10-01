@@ -11,7 +11,7 @@ export type TOptions = IVerbose;
 
 export default leaf({
   commandName: 'kill',
-  description: 'Forcefully kills all the RISE node processes',
+  description: 'Forcefully kills all the RISE Node processes',
 
   options: {
     ...verboseOption,
@@ -42,14 +42,14 @@ export async function nodeKill() {
 
   const pids = list.match(regex);
   if (!pids.length) {
-    console.log("RISE node isn't running");
+    console.log("RISE Node isn't running");
     return;
   }
 
   // TODO parallel
   for (const pid of pids) {
     log(`Killing PID tree ${pid}`);
-    console.log(`Killing RISE node with PID ${pid}`);
+    console.log(`Killing RISE Node with PID ${pid}`);
     await killAsync(parseInt(pid, 10));
   }
 }

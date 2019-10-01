@@ -17,7 +17,7 @@ export type TOptions = IConfig & INetwork & IVerbose;
 
 export default leaf({
   commandName: 'status',
-  description: 'Show the status of a running RISE node',
+  description: 'Show the status of a running RISE Node',
 
   options: {
     ...configOption,
@@ -55,7 +55,7 @@ export async function nodeStatus({ config, network, verbose }: TOptions) {
   // check the PID, but not when in DEV
   const pid = getNodePID();
   if (!pid) {
-    console.log("RISE node isn't running");
+    console.log("RISE Node isn't running");
     return;
   }
 

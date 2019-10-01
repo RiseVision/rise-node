@@ -36,7 +36,7 @@ export default leaf({
       await download({ version, localhost });
       console.log('Done');
       console.log('');
-      console.log('You can start RISE node using:');
+      console.log('You can start RISE Node using:');
       console.log('  ./rise node install-deps');
       console.log('  ./rise node start');
       // console.log('');

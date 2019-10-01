@@ -44,11 +44,11 @@ export async function nodeStop({ verbose, v1 }: TOptions = {}) {
   log('nodeStop');
   const pid = getNodePID();
   if (!pid) {
-    console.log("RISE node isn't running");
+    console.log("RISE Node isn't running");
     return;
   }
   log(`Killing PID tree ${pid}`);
-  console.log(`Killing RISE node with PID ${pid}`);
+  console.log(`Killing RISE Node with PID ${pid}`);
 
   if (v1) {
     // TODO check if in the v1 dir when --v1

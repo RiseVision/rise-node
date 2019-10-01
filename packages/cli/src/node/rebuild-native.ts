@@ -1,8 +1,9 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { checkSourceDir, getNodeDir } from '../shared/fs-ops';
-import { execCmd, log } from '../shared/misc';
+import { execCmd, isRoot, log } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
+import { nodeInstallDeps } from './install-deps';
 
 export default leaf({
   commandName: 'rebuild-native',
@@ -31,12 +32,24 @@ export async function nodeRebuildNative({ verbose }: IVerbose) {
 
   console.log('Rebuilding native modules...');
 
+  if (isRoot()) {
+    await nodeInstallDeps({ verbose });
+  }
+
   const errorMsg =
     "Couldn't rebuild native modules.\n\n" +
     'Make sure you have all the dependencies installed by running:\n' +
     '$ sudo ./rise node install-deps';
 
-  await execCmd('npm', ['rebuild'], errorMsg, { cwd: getNodeDir() }, verbose);
+  await execCmd(
+    'npm',
+    ['rebuild'],
+    errorMsg,
+    {
+      cwd: getNodeDir(),
+    },
+    verbose
+  );
 
   console.log('Native node_modules have been rebuilt.');
 }

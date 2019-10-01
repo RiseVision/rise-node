@@ -127,7 +127,7 @@ async function checkConditions(config: string | null, file: string) {
   // TODO use nodeStop() ?
   const nodePID = getNodePID();
   if (nodePID) {
-    console.log(`Stopping RISE node with PID ${nodePID}`);
+    console.log(`Stopping RISE Node with PID ${nodePID}`);
     await execCmd(
       'kill',
       [nodePID.toString()],

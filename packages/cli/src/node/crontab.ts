@@ -8,7 +8,7 @@ export type TOptions = IVerbose & { v1?: boolean } & { removeOnly?: boolean };
 
 export default leaf({
   commandName: 'crontab',
-  description: 'Add RISE node entries to crontab',
+  description: 'Add RISE Node entries to crontab',
 
   options: {
     ...verboseOption,

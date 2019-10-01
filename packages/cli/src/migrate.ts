@@ -40,7 +40,7 @@ export default leaf({
   commandName: 'migrate',
   description:
     'Migrates from v1 to v2 at a specific block height. ' +
-    'Requires a running v1 RISE node.',
+    'Requires a running v1 RISE Node.',
 
   options: {
     ...v1ConfigOption,

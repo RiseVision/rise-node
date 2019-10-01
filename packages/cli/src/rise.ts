@@ -30,7 +30,7 @@ dot.config();
 
 export const node = branch({
   commandName: 'node',
-  description: 'RISE node on the host OS',
+  description: 'RISE Node on the host OS',
   subcommands: [
     nodeStart,
     nodeStop,
@@ -47,13 +47,13 @@ export const node = branch({
 
 export const docker = branch({
   commandName: 'docker',
-  description: 'RISE node in Docker (experimental)',
+  description: 'RISE Node in Docker (experimental)',
   subcommands: [dockerStart, dockerStop, dockerBuild],
 });
 
 export const dockerCompose = branch({
   commandName: 'docker-compose',
-  description: 'RISE node and a DB in Docker (experimental)',
+  description: 'RISE Node and a DB in Docker (experimental)',
   subcommands: [dockerComposeStart, dockerComposeStop],
 });
 
@@ -74,7 +74,7 @@ export const version = leaf({
 export const root = branch({
   commandName: 'rise',
   description: `
-    Manage your RISE node instance, including docker images.
+    Manage your RISE Node instance, including docker images.
 
     Every command provides --help.
 
@@ -82,7 +82,7 @@ export const root = branch({
 
     ./rise download
 
-    # RISE node on the host OS
+    # RISE Node on the host OS
     ./rise node start
     ./rise node stop
     ./rise node status
@@ -93,12 +93,12 @@ export const root = branch({
     ./rise node install-deps
     ./rise node rebuild-native
 
-    # RISE node in Docker (experimental)
+    # RISE Node in Docker (experimental)
     ./rise docker build
     ./rise docker start
     ./rise docker stop
 
-    # RISE node and a DB in Docker (experimental)
+    # RISE Node and a DB in Docker (experimental)
     ./rise docker-compose start
     ./rise docker-compose stop
 
