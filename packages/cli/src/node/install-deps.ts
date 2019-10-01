@@ -49,5 +49,5 @@ export async function nodeInstallDeps({ verbose }: IVerbose) {
   console.log("Installing native modules' dependencies");
   await execCmd(file, params, errorMsg, null, verbose);
 
-  console.log('RISE node dependencies have been installed.');
+  console.log('RISE Node dependencies have been installed.');
 }

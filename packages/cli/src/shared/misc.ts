@@ -309,3 +309,8 @@ export async function runSQL(
 export function isLinux() {
   return process.platform === 'linux';
 }
+
+export function isRoot() {
+  const uid = execSync('id -u').toString('utf8');
+  return uid === '0';
+}
