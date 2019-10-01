@@ -8,11 +8,11 @@ import {
   DB_PG_CTL,
 } from '../shared/constants';
 import { checkSourceDir, getPID } from '../shared/fs-ops';
+import { closeLog, debug, log } from '../shared/log';
 import {
   dbConnectionInfo,
   execCmd,
   getDBEnvVars,
-  log,
   printUsingConfig,
 } from '../shared/misc';
 import {
@@ -39,15 +39,17 @@ export default leaf({
     try {
       await dbStart({ config, network, verbose });
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nError while starting the DB.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -55,7 +57,7 @@ export default leaf({
 export async function dbStart({ config, network, verbose }: TOptions) {
   await checkSourceDir(true);
   if (getPID(DB_LOCK_FILE)) {
-    console.log('DB already running');
+    log('DB already running');
     return;
   }
   if (verbose) {
@@ -65,13 +67,11 @@ export async function dbStart({ config, network, verbose }: TOptions) {
   const envVars = getDBEnvVars(network, config, true);
   const env = { ...process.env, ...envVars };
 
-  console.log(
-    'Starting the DB...\n' + verbose ? dbConnectionInfo(envVars) : ''
-  );
+  log('Starting the DB...\n' + verbose ? dbConnectionInfo(envVars) : '');
 
   await nodeStop();
 
-  log(envVars);
+  debug(envVars);
 
   await execCmd(
     DB_PG_CTL,
@@ -81,5 +81,5 @@ export async function dbStart({ config, network, verbose }: TOptions) {
     verbose
   );
 
-  console.log('\nDB started');
+  log('\nDB started');
 }

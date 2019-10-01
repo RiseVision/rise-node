@@ -25,6 +25,7 @@ import nodeStart from './node/start';
 import nodeStatus from './node/status';
 import nodeStop from './node/stop';
 import { VERSION_CLI } from './shared/constants';
+import { log } from './shared/log';
 
 dot.config();
 
@@ -67,7 +68,7 @@ export const version = leaf({
   commandName: 'version',
   description: 'Version of the app',
   action() {
-    console.log(VERSION_CLI);
+    log(VERSION_CLI);
   },
 });
 

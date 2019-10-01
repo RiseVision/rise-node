@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import { log } from '../../shared/misc';
+import { closeLog, debug, log } from '../../shared/log';
 import {
   configOption,
   IConfig,
@@ -33,15 +33,17 @@ export default leaf({
         stdio: 'inherit',
       });
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         'Error when showing the log file using less. ' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });

@@ -10,7 +10,8 @@ import {
   MIN,
 } from '../shared/constants';
 import { getDockerDir } from '../shared/fs-ops';
-import { createParseNodeOutput, log, printUsingConfig } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
+import { createParseNodeOutput, printUsingConfig } from '../shared/misc';
 import {
   configOption,
   foregroundOption,
@@ -42,7 +43,7 @@ export default leaf({
     }
     const configPath = config ? path.resolve(config) : null;
     if (configPath && !fs.existsSync(configPath)) {
-      console.log("ERROR: Config file doesn't exist.");
+      log("ERROR: Config file doesn't exist.");
       return;
     }
     verbose = verbose || foreground;
@@ -53,12 +54,14 @@ export default leaf({
       await dockerRemove();
       await dockerRun({ config: configPath, network, foreground, verbose });
     } catch (err) {
-      console.log(
+      log(
         'Error while building the container.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       console.error(err);
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -68,7 +71,7 @@ async function dockerRun({ config, network, foreground, verbose }: TOptions) {
     printUsingConfig(network, config);
   }
 
-  console.log('Starting the container...');
+  log('Starting the container...');
   let ready = false;
   await new Promise((resolve, reject) => {
     const cmd = 'docker';
@@ -79,7 +82,7 @@ async function dockerRun({ config, network, foreground, verbose }: TOptions) {
       ...(config ? ['-v', `${config}:/home/rise/config.json`] : []),
       DOCKER_IMAGE_NAME,
     ];
-    log('$', cmd + ' ' + params.join(' '));
+    debug('$', cmd + ' ' + params.join(' '));
     const proc = spawn(cmd, params, {
       cwd: getDockerDir(),
       env: {
@@ -103,27 +106,27 @@ async function dockerRun({ config, network, foreground, verbose }: TOptions) {
     proc.stdout.on('data', waitForReady);
     proc.stderr.on('data', waitForReady);
     proc.on('close', (code) => {
-      log('close', code);
+      debug('close', code);
       clearTimeout(timer);
       code ? reject(code) : resolve(code);
     });
   });
-  log('run done');
+  debug('run done');
   if (!ready) {
-    console.log(
+    log(
       'Something went wrong.' +
         (verbose ? '' : 'Examine the log using --verbose.')
     );
     process.exit(1);
   }
-  console.log('Container started');
+  log('Container started');
 }
 
 function checkDockerDirExists(): boolean {
   if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
-    console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise download');
+    log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
+    log('You can download the latest version using:');
+    log('  ./rise download');
     return false;
   }
   return true;

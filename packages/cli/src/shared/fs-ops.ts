@@ -13,7 +13,8 @@ import {
   TNetworkType,
 } from './constants';
 import { NoRiseDistFileError } from './exceptions';
-import { execCmd, isDevEnv, log } from './misc';
+import { debug, log } from './log';
+import { execCmd, isDevEnv } from './misc';
 
 export async function checkSourceDir(relativeToCLI = false) {
   const dirPath = relativeToCLI ? path.resolve(__dirname, NODE_DIR) : NODE_DIR;
@@ -25,10 +26,10 @@ export async function checkSourceDir(relativeToCLI = false) {
 export function checkLaunchpadExists(): boolean {
   const file = getLaunchpadFilePath();
   if (!fs.existsSync(file)) {
-    log(`Missing: ${file}`);
-    console.log(`ERROR: can't find launchpad executable in ${NODE_DIR}.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise download');
+    debug(`Missing: ${file}`);
+    log(`ERROR: can't find launchpad executable in ${NODE_DIR}.`);
+    log('You can download the latest version using:');
+    log('  ./rise download');
     return false;
   }
   return true;
@@ -36,9 +37,9 @@ export function checkLaunchpadExists(): boolean {
 
 export function checkDockerDirExists(): boolean {
   if (!fs.existsSync(DOCKER_DIR) || !fs.lstatSync(DOCKER_DIR).isDirectory()) {
-    console.log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise download');
+    log(`Error: directory '${DOCKER_DIR}' doesn't exist.`);
+    log('You can download the latest version using:');
+    log('  ./rise download');
     return false;
   }
   return true;
@@ -60,13 +61,13 @@ export async function extractSourceFile(
 ) {
   const filePath = getSourceFilePath(relativeToCLI);
   if (!fs.existsSync(filePath)) {
-    console.log(`ERROR: File ${DOCKER_DIR}/${NODE_FILE} missing`);
-    console.log('You can download the latest version using:');
-    console.log('  ./rise download');
+    log(`ERROR: File ${DOCKER_DIR}/${NODE_FILE} missing`);
+    log('You can download the latest version using:');
+    log('  ./rise download');
     throw new NoRiseDistFileError();
   }
 
-  console.log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
+  log(`Extracting ${DOCKER_DIR}/${NODE_FILE}`);
   await execCmd(
     'tar',
     ['-zxf', NODE_FILE],
@@ -137,7 +138,7 @@ export function removeBackupLock() {
 }
 
 export function setNodeLock(pid: number, state: NodeStates) {
-  log(`Creating lock file ${NODE_LOCK_FILE} (${pid})`);
+  debug(`Creating lock file ${NODE_LOCK_FILE} (${pid})`);
   const data = [pid, state].join('\n');
   fs.writeFileSync(NODE_LOCK_FILE, data, { encoding: 'utf8' });
 }

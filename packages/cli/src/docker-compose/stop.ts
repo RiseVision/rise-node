@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import { getDockerDir } from '../shared/fs-ops';
-import { log } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
 
 export default leaf({
   commandName: 'stop',
@@ -10,36 +10,38 @@ export default leaf({
 
   async action() {
     let cmd;
-    console.log('Stopping docker-compose...');
+    log('Stopping docker-compose...');
 
     // TODO use execCmd
 
     cmd = 'docker-compose stop';
-    log('$', cmd);
+    debug('$', cmd);
     try {
       execSync('docker-compose stop', {
         cwd: getDockerDir(),
       });
     } catch (e) {
-      log(e);
+      debug(e);
     }
 
-    console.log('Stopping containers...');
+    log('Stopping containers...');
 
     cmd = 'docker stop rise-node';
-    log('$', cmd);
+    debug('$', cmd);
     try {
       execSync(cmd);
     } catch (e) {
-      log(e);
+      debug(e);
     }
 
     cmd = 'docker stop rise-postgres';
-    log('$', cmd);
+    debug('$', cmd);
     try {
       execSync(cmd);
     } catch (e) {
-      log(e);
+      debug(e);
     }
+
+    closeLog();
   },
 });

@@ -10,7 +10,7 @@ import {
   MIN,
 } from '../shared/constants';
 import { checkDockerDirExists, getDockerDir } from '../shared/fs-ops';
-import { log } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
 import {
   configOption,
   foregroundOption,
@@ -44,7 +44,7 @@ export default leaf({
         // empty
       }
       const configFile = path.resolve(config);
-      log(`Using config: ${configFile}`);
+      debug(`Using config: ${configFile}`);
       fs.copyFileSync(path.resolve(config), DOCKER_CONFIG_FILE);
     } else {
       createEmptyConfig();
@@ -57,7 +57,7 @@ export default leaf({
       await dockerRemove();
       await dockerBuild(verbose);
     } catch (err) {
-      console.log(
+      log(
         'Error while building the container.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
@@ -66,6 +66,7 @@ export default leaf({
     } finally {
       // remove the temp config
       fs.unlinkSync(DOCKER_CONFIG_FILE);
+      closeLog();
     }
   },
 });
@@ -77,38 +78,38 @@ function createEmptyConfig() {
 }
 
 export async function dockerStop(): Promise<void> {
-  console.log('Stopping the previous container...');
+  log('Stopping the previous container...');
 
   const cmd = `docker stop ${DOCKER_CONTAINER_NAME}`;
-  log('$', cmd);
+  debug('$', cmd);
   try {
     execSync(cmd);
   } catch (e) {
-    log(e);
+    debug(e);
   }
 }
 
 // tslint:disable-next-line:no-identical-functions
 export async function dockerRemove(): Promise<void> {
-  console.log('Removing the previous container...');
+  log('Removing the previous container...');
 
   const cmd = `docker rm ${DOCKER_CONTAINER_NAME}`;
-  log('$', cmd);
+  debug('$', cmd);
   try {
     execSync(cmd);
   } catch (e) {
-    log(e);
+    debug(e);
   }
 }
 
 async function dockerBuild(verbose: boolean): Promise<void> {
-  console.log('Building the image...');
+  log('Building the image...');
 
   // build
   await new Promise((resolve, reject) => {
     const cmd = 'docker';
     const params = ['build', '-t', DOCKER_IMAGE_NAME, '.'];
-    log('$', cmd + ' ' + params.join(' '));
+    debug('$', cmd + ' ' + params.join(' '));
     const proc = spawn(cmd, params, {
       cwd: getDockerDir(),
       shell: true,
@@ -117,7 +118,7 @@ async function dockerBuild(verbose: boolean): Promise<void> {
       if (verbose) {
         process.stdout.write(data);
       } else {
-        log(data);
+        debug(data);
       }
     }
     const timer = setTimeout(() => {
@@ -128,12 +129,12 @@ async function dockerBuild(verbose: boolean): Promise<void> {
     proc.stdout.on('data', line);
     proc.stderr.on('data', line);
     proc.on('close', (code) => {
-      log('close', code);
+      debug('close', code);
       clearTimeout(timer);
       code ? reject(code) : resolve(code);
     });
   });
 
-  log('build done');
-  console.log('Build complete');
+  debug('build done');
+  log('Build complete');
 }

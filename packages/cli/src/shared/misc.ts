@@ -1,7 +1,6 @@
 // tslint:disable:no-console
 import assert from 'assert';
 import { execSync, spawn, SpawnOptions } from 'child_process';
-import { debug } from 'debug';
 import extend from 'extend';
 import fs from 'fs';
 import path from 'path';
@@ -18,9 +17,8 @@ import {
   NativeModulesError,
 } from './exceptions';
 import { getConfigPath } from './fs-ops';
+import { debug, log } from './log';
 import { IForeground, IVerbose } from './options';
-
-export const log = debug('rise-cli');
 
 export function getDownloadURL(file: string, version = VERSION_RISE) {
   return DOWNLOAD_URL + version + '/download/' + file;
@@ -84,7 +82,7 @@ export function mergeConfig(
   // merge the passed config
   if (!fs.existsSync(configPath)) {
     // TODO ideally print errors from exceptions in one place
-    console.log(`Config ${configPath} doesn't exist`);
+    log(`Config ${configPath} doesn't exist`);
     throw new Error(`Config ${configPath} doesn't exist`);
   }
   const config = JSON.parse(fs.readFileSync(configPath, { encoding: 'utf8' }));
@@ -110,15 +108,15 @@ export function execCmd(
         shell: true,
         ...options,
       });
-      log(`$ ${cmd}`);
+      debug(`$ ${cmd}`);
       if (streamOutput) {
-        console.log(`$ ${cmd}`);
+        log(`$ ${cmd}`);
       }
       // timeout
       const timer = timeout
         ? setTimeout(() => {
             if (!proc.killed) {
-              console.log(`Timeout (${timeout} secs)`);
+              log(`Timeout (${timeout} secs)`);
               proc.kill();
             }
           }, timeout)
@@ -145,12 +143,12 @@ export function execCmd(
         }
         if (code) {
           errors = errors.replace(/\n+$/, '');
-          log(`cmd-error: ${errors}`);
-          log(`cmd-exit-code: ${code}`);
+          debug(`cmd-error: ${errors}`);
+          debug(`cmd-exit-code: ${code}`);
           if (errors) {
-            log(errors);
+            debug(errors);
           }
-          console.log('ERROR: ' + errorMsg);
+          log('ERROR: ' + errorMsg);
           reject(new Error(errorMsg));
         } else {
           resolve(output);
@@ -180,11 +178,11 @@ export function createParseNodeOutput(
     if (foreground || verbose) {
       process.stdout.write(data);
     } else {
-      log(data.toString('utf8'));
+      debug(data.toString('utf8'));
     }
     // check if the output reached the desired line
     if (data.includes('Blockchain ready')) {
-      console.log('Blockchain ready');
+      log('Blockchain ready');
       setReady();
       // keep streaming the output if in the foreground
       if (!foreground) {
@@ -197,26 +195,26 @@ export function createParseNodeOutput(
       data.includes('Error: Could not locate the bindings file') ||
       data.includes('invalid ELF header')
     ) {
-      log('NativeModulesError');
+      debug('NativeModulesError');
       reject(new NativeModulesError());
       return;
     }
     // handle address in use error
     if (data.includes('EADDRINUSE')) {
-      log('AddressInUseError');
+      debug('AddressInUseError');
       reject(new AddressInUseError());
       return;
     }
     // DB corrupted
     if (data.includes('SequelizeUniqueConstraintError')) {
-      log('DBCorruptedError');
+      debug('DBCorruptedError');
       reject(new DBCorruptedError());
       return;
     }
     // DB connection failed (catch all errors from Sequelize)
     const sqlError = /Sequelize(\w*)Error/;
     if (sqlError.test(data.toString('utf8'))) {
-      log('DBConnectionError');
+      debug('DBConnectionError');
       reject(new DBConnectionError());
       return;
     }
@@ -263,11 +261,9 @@ export function dbConnectionInfo(vars: IDBEnvVars): string {
 
 export function printUsingConfig(network: TNetworkType, config: string | null) {
   if (config) {
-    console.log(
-      `Config: using "${config}" and inheriting from network "${network}".`
-    );
+    log(`Config: using "${config}" and inheriting from network "${network}".`);
   } else {
-    console.log(`Config: default config for network "${network}".`);
+    log(`Config: default config for network "${network}".`);
   }
 }
 
@@ -283,7 +279,7 @@ export async function getBlockHeight(
     streamOutput
   );
   const blockHeight = parseInt(output, 10);
-  log(`block height: ${blockHeight}`);
+  debug(`block height: ${blockHeight}`);
   return blockHeight || null;
 }
 

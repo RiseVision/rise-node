@@ -12,12 +12,12 @@ import {
   removeBackupLock,
   setBackupLock,
 } from '../shared/fs-ops';
+import { closeLog, debug, log } from '../shared/log';
 import {
   execCmd,
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
-  log,
   printUsingConfig,
 } from '../shared/misc';
 import {
@@ -46,15 +46,17 @@ export default leaf({
     try {
       await nodeExportDB({ config, network, verbose });
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         'Error when creating the backup file.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
     removeBackupLock();
   },
@@ -77,8 +79,8 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
 
   await nodeStop();
 
-  log(envVars);
-  console.log('Starting the export...');
+  debug(envVars);
+  log('Starting the export...');
 
   await execCmd(
     'dropdb',
@@ -107,7 +109,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       env,
     });
   } catch (e) {
-    console.log(`Cannot copy ${database} to ${targetDB}`);
+    log(`Cannot copy ${database} to ${targetDB}`);
   }
 
   const blockHeight = await getBlockHeight(network, config);
@@ -123,7 +125,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       env,
     });
   } catch (e) {
-    console.log("Couldn't dump the DB");
+    log("Couldn't dump the DB");
   }
 
   // link the `latest` file
@@ -135,21 +137,21 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       cwd: getBackupsDir(),
     }
   );
-  console.log(`Created a DB backup file "${BACKUPS_DIR}/${backupName}".`);
+  log(`Created a DB backup file "${BACKUPS_DIR}/${backupName}".`);
 }
 
 async function checkConditions({ config }: IConfig) {
   const backupPID = getBackupPID();
   if (backupPID) {
-    console.log(`ERROR: Active backup with PID ${backupPID}`);
+    log(`ERROR: Active backup with PID ${backupPID}`);
     return false;
   }
   if (!hasLocalPostgres()) {
-    console.log('ERROR: PostgreSQL not installed');
+    log('ERROR: PostgreSQL not installed');
     return false;
   }
   if (config && !fs.existsSync(config)) {
-    console.log(`ERROR: Config file doesn't exist.\n${config}`);
+    log(`ERROR: Config file doesn't exist.\n${config}`);
     return false;
   }
   await checkSourceDir();

@@ -3,7 +3,8 @@ import { leaf } from '@carnesen/cli';
 import kill from 'tree-kill';
 import { promisify } from 'util';
 import { getNodePID } from '../shared/fs-ops';
-import { execCmd, log } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
+import { execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 const killAsync = promisify(kill);
@@ -29,31 +30,33 @@ export default leaf({
       await nodeStop({ verbose, v1 });
     } catch (err) {
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nError while stopping the node.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
 
 export async function nodeStop({ verbose, v1 }: TOptions = {}) {
-  log('nodeStop');
+  debug('nodeStop');
   const pid = getNodePID();
   if (!pid) {
-    console.log("RISE Node isn't running");
+    log("RISE Node isn't running");
     return;
   }
-  log(`Killing PID tree ${pid}`);
-  console.log(`Killing RISE Node with PID ${pid}`);
+  debug(`Killing PID tree ${pid}`);
+  log(`Killing RISE Node with PID ${pid}`);
 
   if (v1) {
     // TODO check if in the v1 dir when --v1
     // TODO extract along with start.ts
-    console.log('Stopping the v1 DB');
+    log('Stopping the v1 DB');
     await execCmd(
       './manager.sh',
       ['stop', 'db'],

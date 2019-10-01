@@ -19,6 +19,7 @@ export interface IConfig {
 
 export const networkOption = {
   network: option({
+    // @ts-ignore
     allowedValues: NETWORKS,
     defaultValue: 'mainnet',
     description: 'Network type (optional)',
@@ -65,10 +66,12 @@ export interface IForeground {
 // --v1
 
 export const v1Option = {
-  defaultValue: false,
-  description: 'Use the V1 config and DB',
-  nullable: true,
-  typeName: 'boolean',
+  v1: option({
+    defaultValue: false,
+    description: 'Use the V1 config and DB',
+    nullable: true,
+    typeName: 'boolean',
+  }),
 };
 
 export interface IV1 {

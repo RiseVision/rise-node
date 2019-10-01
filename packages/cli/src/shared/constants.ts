@@ -2,7 +2,7 @@
 export const VERSION_CLI = 'v1.0.4';
 export const VERSION_RISE = 'latest';
 // TODO single enum for NETWORKS and NetworkType
-export const NETWORKS = ['mainnet', 'testnet', 'devnet'];
+export const NETWORKS = ['mainnet', 'testnet', 'devnet'] as const;
 export type TNetworkType = 'mainnet' | 'testnet' | 'devnet';
 export const SEC = 1000;
 export const MIN = 60 * SEC;
@@ -24,6 +24,7 @@ export const DOWNLOAD_URL = 'https://github.com/RiseVision/rise-node/releases/';
 export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
 export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
 export const BACKUPS_DIR = DATA_DIR + '/backups';
+export const LOGS_DIR = DATA_DIR + '/logs';
 
 export enum NodeStates {
   STARTING = 'starting',

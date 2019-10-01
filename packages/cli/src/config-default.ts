@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import fs from 'fs';
 import { getConfigPath } from './shared/fs-ops';
-import { log } from './shared/misc';
+import { debug, log } from './shared/log';
 import {
   INetwork,
   IVerbose,
@@ -30,11 +30,11 @@ export default leaf({
         })
       );
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nSomething went wrong. ' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );

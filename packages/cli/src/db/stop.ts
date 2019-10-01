@@ -7,7 +7,8 @@ import {
   DB_PG_CTL,
 } from '../shared/constants';
 import { checkSourceDir, getPID } from '../shared/fs-ops';
-import { execCmd, getDBEnvVars, log, printUsingConfig } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
+import { execCmd, getDBEnvVars, printUsingConfig } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -32,15 +33,17 @@ export default leaf({
     try {
       await dbStop({ config, network, verbose });
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nError while stopping the DB.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -48,7 +51,7 @@ export default leaf({
 export async function dbStop({ config, network, verbose }: TOptions) {
   await checkSourceDir(true);
   if (!getPID(DB_LOCK_FILE)) {
-    console.log('DB not running');
+    log('DB not running');
     return;
   }
   if (verbose) {
@@ -58,7 +61,7 @@ export async function dbStop({ config, network, verbose }: TOptions) {
   const envVars = getDBEnvVars(network, config, true);
   const env = { ...process.env, ...envVars };
 
-  log(envVars);
+  debug(envVars);
 
   await execCmd(
     DB_PG_CTL,
@@ -68,5 +71,5 @@ export async function dbStop({ config, network, verbose }: TOptions) {
     verbose
   );
 
-  console.log('DB stopped');
+  log('DB stopped');
 }

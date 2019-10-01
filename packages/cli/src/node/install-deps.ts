@@ -1,6 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execCmd, log } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
+import { execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({
@@ -12,15 +13,17 @@ export default leaf({
     try {
       await nodeInstallDeps({ verbose });
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nError while rebuilding native node modules.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -46,8 +49,8 @@ export async function nodeInstallDeps({ verbose }: IVerbose) {
     'Alternatively run the following command manually:\n' +
     `$ sudo ${file} ${params.join(' ')}`;
 
-  console.log("Installing native modules' dependencies");
+  log("Installing native modules' dependencies");
   await execCmd(file, params, errorMsg, null, verbose);
 
-  console.log('RISE Node dependencies have been installed.');
+  log('RISE Node dependencies have been installed.');
 }

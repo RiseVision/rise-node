@@ -1,5 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import { closeLog } from '../shared/log';
 import { execCmd } from '../shared/misc';
 
 export default leaf({
@@ -13,5 +14,6 @@ export default leaf({
       ['stop', 'rise-node'],
       "Couldn't stop the container"
     );
+    closeLog();
   },
 });

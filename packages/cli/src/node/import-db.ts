@@ -11,6 +11,7 @@ import {
   removeBackupLock,
   setBackupLock,
 } from '../shared/fs-ops';
+import { closeLog, log } from '../shared/log';
 import {
   execCmd,
   getBlockHeight,
@@ -50,13 +51,15 @@ export default leaf({
       await nodeImportDB({ config, network, file, verbose });
     } catch (err) {
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         'Error when importing the backup file.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
     removeBackupLock();
   },
@@ -98,36 +101,36 @@ export async function nodeImportDB({
       env,
     });
   } catch (e) {
-    console.log(`Cannot import "${file}"`);
+    log(`Cannot import "${file}"`);
   }
   const blockHeight = await getBlockHeight(network, config, verbose);
-  console.log(`Imported "./${file}" into the DB.`);
-  console.log(`Block height: ${blockHeight}`);
+  log(`Imported "./${file}" into the DB.`);
+  log(`Block height: ${blockHeight}`);
 }
 
 async function checkConditions(config: string | null, file: string) {
   const backupPID = getBackupPID();
   if (backupPID) {
-    console.log(`ERROR: Active backup with PID ${backupPID}`);
+    log(`ERROR: Active backup with PID ${backupPID}`);
     return false;
   }
   if (!fs.existsSync(file)) {
-    console.log(`ERROR: Requested file "${file}" doesn't exist`);
+    log(`ERROR: Requested file "${file}" doesn't exist`);
     return false;
   }
   if (!hasLocalPostgres()) {
-    console.log('ERROR: PostgreSQL not installed');
+    log('ERROR: PostgreSQL not installed');
     return false;
   }
   if (config && !fs.existsSync(config)) {
-    console.log(`ERROR: Config file doesn't exist.\n${config}`);
+    log(`ERROR: Config file doesn't exist.\n${config}`);
     return false;
   }
   await checkSourceDir();
   // TODO use nodeStop() ?
   const nodePID = getNodePID();
   if (nodePID) {
-    console.log(`Stopping RISE Node with PID ${nodePID}`);
+    log(`Stopping RISE Node with PID ${nodePID}`);
     await execCmd(
       'kill',
       [nodePID.toString()],

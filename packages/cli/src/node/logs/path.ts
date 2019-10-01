@@ -2,7 +2,8 @@
 import { leaf } from '@carnesen/cli';
 import path from 'path';
 import { getPackagePath } from '../../shared/fs-ops';
-import { log, mergeConfig } from '../../shared/misc';
+import { closeLog, debug, log } from '../../shared/log';
+import { mergeConfig } from '../../shared/misc';
 import {
   configOption,
   IConfig,
@@ -28,17 +29,19 @@ export default leaf({
 
   async action({ verbose, network, config, v1 }: TOptions) {
     try {
-      console.log(nodeLogsPath({ network, config, v1 }));
+      log(nodeLogsPath({ network, config, v1 }));
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         "Error when getting the log's file path. " +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });

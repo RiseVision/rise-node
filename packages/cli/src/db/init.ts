@@ -6,11 +6,11 @@ import { nodeStop } from '../node/stop';
 import { DB_DATA_DIR, DB_LOG_FILE, DB_PG_CTL, SEC } from '../shared/constants';
 import { NoRiseDistFileError } from '../shared/exceptions';
 import { checkSourceDir } from '../shared/fs-ops';
+import { closeLog, debug, log } from '../shared/log';
 import {
   execCmd,
   getDBEnvVars,
   isLinux,
-  log,
   printUsingConfig,
 } from '../shared/misc';
 import {
@@ -39,9 +39,9 @@ export default leaf({
     try {
       await dbInit({ config, network, verbose });
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
       if (!(err instanceof NoRiseDistFileError)) {
         let cmd = path.resolve(__dirname, 'rise') + ' db init';
@@ -52,13 +52,15 @@ export default leaf({
           cmd += ` --network=${network}`;
         }
 
-        console.log(
+        log(
           '\nError while initializing a PostgreSQL database.\n' +
             getLinuxHelpMsg(config, network) +
             `\nExamine the log using --verbose and check ${DB_LOG_FILE}.`
         );
       }
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -81,7 +83,7 @@ export async function dbInit({ config, network, verbose }: TOptions) {
   await nodeStop();
   await dbStop({ config, network, verbose });
 
-  log(envVars);
+  debug(envVars);
 
   await execCmd(
     'rm',
@@ -149,7 +151,7 @@ export async function dbInit({ config, network, verbose }: TOptions) {
     verbose
   );
 
-  console.log('DB successfully initialized and running.');
+  log('DB successfully initialized and running.');
 }
 
 function getLinuxHelpMsg(config, network): string {

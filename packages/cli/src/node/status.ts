@@ -3,7 +3,8 @@ import { leaf } from '@carnesen/cli';
 import fs from 'fs';
 import { ConditionsNotMetError } from '../shared/exceptions';
 import { checkSourceDir, getNodePID, getNodeState } from '../shared/fs-ops';
-import { getBlockHeight, log, printUsingConfig } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
+import { getBlockHeight, printUsingConfig } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -29,15 +30,17 @@ export default leaf({
     try {
       await nodeStatus(options);
     } catch (err) {
-      log(err);
+      debug(err);
       if (options.verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         'Something went wrong.' +
           (options.verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -55,23 +58,23 @@ export async function nodeStatus({ config, network, verbose }: TOptions) {
   // check the PID, but not when in DEV
   const pid = getNodePID();
   if (!pid) {
-    console.log("RISE Node isn't running");
+    log("RISE Node isn't running");
     return;
   }
 
   const state = getNodeState();
 
-  console.log(`PID: ${pid}`);
-  console.log(`State: ${state}`);
+  log(`PID: ${pid}`);
+  log(`State: ${state}`);
 
-  log('Getting block height from the DB...');
+  debug('Getting block height from the DB...');
 
   const blockHeight = await getBlockHeight(network, config, verbose);
   if (!blockHeight) {
     throw new Error("ERROR: Couldn't get the block height");
   }
 
-  console.log(`Block height: ${blockHeight}`);
+  log(`Block height: ${blockHeight}`);
 }
 
 async function checkConditions(config: string) {

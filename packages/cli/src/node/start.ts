@@ -20,13 +20,13 @@ import {
   removeNodeLock,
   setNodeLock,
 } from '../shared/fs-ops';
+import { closeLog, debug, log } from '../shared/log';
 import {
   createParseNodeOutput,
   dbConnectionInfo,
   execCmd,
   getDBEnvVars,
   isDevEnv,
-  log,
   mergeConfig,
   printUsingConfig,
 } from '../shared/misc';
@@ -73,15 +73,17 @@ export default leaf({
     try {
       await nodeStart(options);
     } catch (err) {
-      log(err);
+      debug(err);
       if (options.verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nSomething went wrong. ' +
           (options.verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -105,7 +107,7 @@ export async function nodeStart(
     if (verbose) {
       printUsingConfig(network, config);
     }
-    console.log('Starting RISE Node...');
+    log('Starting RISE Node...');
 
     let ready = false;
     removeNodeLock();
@@ -113,7 +115,7 @@ export async function nodeStart(
     if (v1) {
       // TODO check if in the v1 dir when --v1
       // TODO extract along with stop.ts
-      console.log('Starting the v1 DB');
+      log('Starting the v1 DB');
       await execCmd(
         './manager.sh',
         ['start', 'db'],
@@ -134,33 +136,33 @@ export async function nodeStart(
     );
     if (!foreground) {
       if (ready) {
-        console.log('RISE Node started');
+        log('RISE Node started');
       } else {
-        console.log('RISE Node NOT started');
+        log('RISE Node NOT started');
       }
     }
     if (!ready) {
       throw new Error('Never reached "Blockchain ready"');
     }
   } catch (err) {
-    log(err);
+    debug(err);
     if (err instanceof NativeModulesError) {
-      console.log('Native modules need rebuilding');
+      log('Native modules need rebuilding');
       if (rebuildNative) {
         await nodeRebuildNative({ verbose });
         // try to start the node again, but skipping the rebuild and the
         // PID check
         await nodeStart({ config, foreground, network, verbose }, false, true);
       } else {
-        log('Automatic rebuild-native failed');
+        debug('Automatic rebuild-native failed');
         throw err;
       }
     } else if (err instanceof DBConnectionError) {
-      console.log("ERROR: Couldn't connect to the DB");
-      console.log(dbConnectionInfo(getDBEnvVars(network, config)));
+      log("ERROR: Couldn't connect to the DB");
+      log(dbConnectionInfo(getDBEnvVars(network, config)));
       throw err;
     } else if (err instanceof AddressInUseError) {
-      console.log('ERROR: Address currently in use. Another node running?');
+      log('ERROR: Address currently in use. Another node running?');
       throw err;
     } else {
       throw err;
@@ -187,7 +189,7 @@ function startLaunchpad(
       if (config) {
         params.push('-e', path.resolve(config));
       }
-      log('$', cmd + ' ' + params.join(' '));
+      debug('$', cmd + ' ' + params.join(' '));
 
       // wait for "Blockchain ready"
       const parseNodeOutput = createParseNodeOutput(
@@ -213,12 +215,12 @@ function startLaunchpad(
         setNodeLock(proc.pid, NodeStates.STARTING);
       }
 
-      console.log(`Starting as PID ${proc.pid}...`);
+      log(`Starting as PID ${proc.pid}...`);
       // timeout (not when in foreground)
       const timer = !foreground
         ? setTimeout(() => {
             if (!proc.killed) {
-              console.log(`Timeout (${timeout} secs)`);
+              log(`Timeout (${timeout} secs)`);
               proc.kill();
             }
           }, timeout)
@@ -229,7 +231,7 @@ function startLaunchpad(
         reject(error);
       });
       proc.on('close', (code) => {
-        log('close, exit code = ', code);
+        debug('close, exit code = ', code);
         if (!foreground) {
           clearTimeout(timer);
         }
@@ -245,14 +247,14 @@ function startLaunchpad(
 }
 
 function handleSigInt(proc: ChildProcess) {
-  log('Caught a SIGINT');
+  debug('Caught a SIGINT');
   assert(proc);
   process.kill(proc.pid);
 
   if (proc.killed) {
     process.exit();
   } else {
-    console.log('Waiting for RISE Node to quit...');
+    log('Waiting for RISE Node to quit...');
   }
 
   removeNodeLock();

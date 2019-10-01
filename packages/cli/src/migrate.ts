@@ -10,12 +10,12 @@ import { nodeCrontab } from './node/crontab';
 import { nodeStart } from './node/start';
 import { MIN, SEC } from './shared/constants';
 import { checkSourceDir } from './shared/fs-ops';
+import { debug, log } from './shared/log';
 import {
   execCmd,
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
-  log,
   runSQL,
 } from './shared/misc';
 import {
@@ -68,8 +68,8 @@ export default leaf({
       }
 
       if (!hasLocalPostgres()) {
-        console.log('Install PostgreSQL first:');
-        console.log('$ sudo ./rise db install');
+        log('Install PostgreSQL first:');
+        log('$ sudo ./rise db install');
         return;
       }
 
@@ -97,24 +97,24 @@ export default leaf({
 
       // precheck end
 
-      log(getDBEnvVars(network, config));
+      debug(getDBEnvVars(network, config));
 
-      console.log('Getting the current block height...');
+      log('Getting the current block height...');
 
       let blockHeightNow = await getBlockHeight(network, config);
 
-      console.log(`Block height = ${blockHeightNow}`);
+      log(`Block height = ${blockHeightNow}`);
 
       if (!blockHeight) {
         blockHeight = blockHeightNow + 1;
-        log(`Automatic block height ${blockHeight}`);
+        debug(`Automatic block height ${blockHeight}`);
       }
       if (blockHeightNow > blockHeight) {
-        console.log('Migration block is lower then the current one');
+        log('Migration block is lower then the current one');
         throw new Error('migration block too low');
       }
 
-      console.log(
+      log(
         `Waiting for block ${blockHeight} (${blockHeight -
           blockHeightNow} blocks from now)`
       );
@@ -122,8 +122,8 @@ export default leaf({
       while (true) {
         blockHeightNow = await getBlockHeight(network, config);
         if (blockHeightNow >= blockHeight) {
-          console.log('Migration block reached, starting the process...');
-          log(`found the migration block ${blockHeight}`);
+          log('Migration block reached, starting the process...');
+          debug(`found the migration block ${blockHeight}`);
           break;
         }
         // TODO align with the time blocks get mined
@@ -132,7 +132,7 @@ export default leaf({
 
       // MIGRATE
 
-      console.log('Backing up the DB');
+      log('Backing up the DB');
 
       // backup the DB
       await execCmd(
@@ -143,7 +143,7 @@ export default leaf({
         verbose
       );
 
-      console.log('Stopping the V1 node');
+      log('Stopping the V1 node');
 
       // stop the v1 node
       await execCmd(
@@ -155,46 +155,44 @@ export default leaf({
         30 * SEC
       );
 
-      console.log('Migrating...');
+      log('Migrating...');
 
       await runSQL(sql, network, config, verbose);
 
-      console.log('DB migration successful');
-      console.log(
-        "If you want to go back to v1, run './manager.sh restoreBackup'"
-      );
+      log('DB migration successful');
+      log("If you want to go back to v1, run './manager.sh restoreBackup'");
 
       // handle crontab
       await nodeCrontab({ verbose, v1: true });
 
       let tries = 0;
       while (++tries <= 3) {
-        console.log('Starting the v2 node');
+        log('Starting the v2 node');
         if (tries > 1) {
-          console.log(`Try ${tries}`);
+          log(`Try ${tries}`);
         }
         try {
           await nodeStart({ config, network, verbose, v1: true });
           break;
         } catch (e) {
-          console.log('v2 node couldnt start, waiting for 3mins...');
+          log('v2 node couldnt start, waiting for 3mins...');
           await delay(3 * MIN);
         }
       }
 
-      console.log('DONE');
-      console.log('To verify:\n$ ./rise node status');
+      log('DONE');
+      log('To verify:\n$ ./rise node status');
       if (network === 'mainnet') {
-        console.log('To start:\n$ ./rise node start --v1');
+        log('To start:\n$ ./rise node start --v1');
       } else {
-        console.log(`To start:\n$ ./rise node start --v1 --network ${network}`);
+        log(`To start:\n$ ./rise node start --v1 --network ${network}`);
       }
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nSomething went wrong. ' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );

@@ -4,7 +4,8 @@ import { http, https } from 'follow-redirects';
 import fs from 'fs';
 import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
 import { extractSourceFile } from './shared/fs-ops';
-import { execCmd, getDownloadURL, log } from './shared/misc';
+import { debug, log } from './shared/log';
+import { execCmd, getDownloadURL } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
 
 export type TOptions = { version: string } & IVerbose & { localhost: boolean };
@@ -34,21 +35,21 @@ export default leaf({
   async action({ version, verbose, localhost }: TOptions) {
     try {
       await download({ version, localhost });
-      console.log('Done');
-      console.log('');
-      console.log('You can start RISE Node using:');
-      console.log('  ./rise node install-deps');
-      console.log('  ./rise node start');
-      // console.log('');
-      // console.log('You can start a Docker container using:');
-      // console.log('  ./rise docker build');
-      // console.log('  ./rise docker start');
+      log('Done');
+      log('');
+      log('You can start RISE Node using:');
+      log('  ./rise node install-deps');
+      log('  ./rise node start');
+      // log('');
+      // log('You can start a Docker container using:');
+      // log('  ./rise docker build');
+      // log('  ./rise docker start');
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nSomething went wrong. ' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
@@ -66,8 +67,8 @@ export async function download(
     ? `http://localhost:8080/${DIST_FILE}`
     : getDownloadURL(DIST_FILE, version);
 
-  log(url);
-  console.log(`Downloading ${url}`);
+  debug(url);
+  log(`Downloading ${url}`);
 
   const file = fs.createWriteStream(DIST_FILE);
 
@@ -95,9 +96,9 @@ export async function download(
       });
   });
 
-  console.log('Download completed');
+  log('Download completed');
 
-  console.log(`Extracting ${DIST_FILE}`);
+  log(`Extracting ${DIST_FILE}`);
   if (fs.existsSync(DOCKER_DIR)) {
     await execCmd(
       'rm',

@@ -1,7 +1,8 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { checkSourceDir, getNodeDir } from '../shared/fs-ops';
-import { execCmd, isRoot, log } from '../shared/misc';
+import { closeLog, debug, log } from '../shared/log';
+import { execCmd, isRoot } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 import { nodeInstallDeps } from './install-deps';
 
@@ -14,15 +15,17 @@ export default leaf({
     try {
       await nodeRebuildNative({ verbose });
     } catch (err) {
-      log(err);
+      debug(err);
       if (verbose) {
-        console.log(err);
+        log(err);
       }
-      console.log(
+      log(
         '\nError while rebuilding native node modules.' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
+    } finally {
+      closeLog();
     }
   },
 });
@@ -30,7 +33,7 @@ export default leaf({
 export async function nodeRebuildNative({ verbose }: IVerbose) {
   await checkSourceDir();
 
-  console.log('Rebuilding native modules...');
+  log('Rebuilding native modules...');
 
   if (isRoot()) {
     await nodeInstallDeps({ verbose });
@@ -51,5 +54,5 @@ export async function nodeRebuildNative({ verbose }: IVerbose) {
     verbose
   );
 
-  console.log('Native node_modules have been rebuilt.');
+  log('Native node_modules have been rebuilt.');
 }
