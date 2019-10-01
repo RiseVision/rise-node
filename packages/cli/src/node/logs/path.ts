@@ -1,6 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import path from 'path';
+import { SHELL_LOG_FILE } from '../../shared/constants';
 import { getPackagePath } from '../../shared/fs-ops';
 import { closeLog, debug, log } from '../../shared/log';
 import { mergeConfig } from '../../shared/misc';
@@ -8,14 +9,16 @@ import {
   configOption,
   IConfig,
   INetwork,
+  IShell,
   IV1,
   IVerbose,
   networkOption,
+  shellOption,
   v1Option,
   verboseOption,
 } from '../../shared/options';
 
-export type TOptions = IConfig & INetwork & IVerbose & IV1;
+export type TOptions = IConfig & INetwork & IVerbose & IV1 & IShell;
 
 export default leaf({
   commandName: 'path',
@@ -25,11 +28,12 @@ export default leaf({
     ...networkOption,
     ...verboseOption,
     ...v1Option,
+    ...shellOption,
   },
 
-  async action({ verbose, network, config, v1 }: TOptions) {
+  async action({ verbose, network, config, v1, shell }: TOptions) {
     try {
-      log(nodeLogsPath({ network, config, v1 }));
+      log(nodeLogsPath({ network, config, v1, shell }));
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -46,13 +50,17 @@ export default leaf({
   },
 });
 
-export function nodeLogsPath({ network, config, v1 }: TOptions) {
-  if (v1 && !config) {
-    // TODO extract
-    config = 'etc/node_config.json';
+export function nodeLogsPath({ network, config, v1, shell }: TOptions) {
+  if (shell) {
+    return path.resolve(SHELL_LOG_FILE);
+  } else {
+    if (v1 && !config) {
+      // TODO extract
+      config = 'etc/node_config.json';
+    }
+    const mergedConfig = mergeConfig(network, config);
+    const filename = mergedConfig.logFileName;
+    const root = getPackagePath('rise');
+    return path.resolve(root, filename);
   }
-  const mergedConfig = mergeConfig(network, config);
-  const filename = mergedConfig.logFileName;
-  const root = getPackagePath('rise');
-  return path.resolve(root, filename);
 }

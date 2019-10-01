@@ -77,3 +77,18 @@ export const v1Option = {
 export interface IV1 {
   v1?: boolean;
 }
+
+// --shell
+
+export const shellOption = {
+  shell: option({
+    defaultValue: false,
+    description: 'Shell log',
+    nullable: true,
+    typeName: 'boolean',
+  }),
+};
+
+export interface IShell {
+  shell?: boolean;
+}

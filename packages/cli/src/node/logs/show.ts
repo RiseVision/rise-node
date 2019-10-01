@@ -6,15 +6,17 @@ import {
   configOption,
   IConfig,
   INetwork,
+  IShell,
   IV1,
   IVerbose,
   networkOption,
+  shellOption,
   v1Option,
   verboseOption,
 } from '../../shared/options';
 import { nodeLogsPath } from './path';
 
-export type TOptions = IConfig & INetwork & IVerbose & IV1;
+export type TOptions = IConfig & INetwork & IVerbose & IV1 & IShell;
 
 export default leaf({
   commandName: 'show',
@@ -24,11 +26,12 @@ export default leaf({
     ...networkOption,
     ...verboseOption,
     ...v1Option,
+    ...shellOption,
   },
 
-  async action({ verbose, network, config, v1 }: TOptions) {
+  async action({ verbose, network, config, v1, shell }: TOptions) {
     try {
-      const logPath = nodeLogsPath({ network, config, v1 });
+      const logPath = nodeLogsPath({ network, config, v1, shell });
       execSync(`less ${logPath}`, {
         stdio: 'inherit',
       });
