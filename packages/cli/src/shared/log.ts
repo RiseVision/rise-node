@@ -23,9 +23,18 @@ export function log(...msg: string[]) {
 }
 
 export function closeLog() {
+  // TODO doesnt seem to work
+  fs.writeSync(logHandler, '\n\n');
   fs.closeSync(logHandler);
 }
 
 function appendHeader(fd: number) {
-  // TODO
+  const header = [
+    '-'.repeat(10),
+    Date().toString(),
+    process.argv.join(' '),
+    '-'.repeat(10),
+  ];
+
+  fs.writeSync(fd, header.join('\n') + '\n\n\n');
 }
