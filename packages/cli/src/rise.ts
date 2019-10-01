@@ -91,8 +91,8 @@ export const root = branch({
     ./rise node export-db
     ./rise node import-db
     ./rise node crontab
-    ./rise node install-deps
     ./rise node rebuild-native
+    ./rise node install-deps
 
     # RISE Node in Docker (experimental)
     ./rise docker build

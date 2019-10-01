@@ -1,7 +1,7 @@
 import { option } from '@carnesen/cli';
 import { NETWORKS, TNetworkType } from './constants';
 
-// config
+// --config
 
 export const configOption = {
   config: option({
@@ -12,7 +12,7 @@ export const configOption = {
 };
 
 export interface IConfig {
-  config: string;
+  config?: string;
 }
 
 // --network
@@ -32,7 +32,7 @@ export interface INetwork {
   network?: TNetworkType;
 }
 
-// verbose
+// --verbose
 
 export const verboseOption = {
   verbose: option({

@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import path from 'path';
-import { SHELL_LOG_FILE } from '../../shared/constants';
+import { SHELL_LOG_FILE, V1_CONFIG_FILE } from '../../shared/constants';
 import { getPackagePath } from '../../shared/fs-ops';
 import { closeLog, debug, log } from '../../shared/log';
 import { mergeConfig } from '../../shared/misc';
@@ -55,8 +55,7 @@ export function nodeLogsPath({ network, config, v1, shell }: TOptions) {
     return path.resolve(SHELL_LOG_FILE);
   } else {
     if (v1 && !config) {
-      // TODO extract
-      config = 'etc/node_config.json';
+      config = V1_CONFIG_FILE;
     }
     const mergedConfig = mergeConfig(network, config);
     const filename = mergedConfig.logFileName;

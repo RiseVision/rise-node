@@ -26,6 +26,7 @@ export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
 export const BACKUPS_DIR = DATA_DIR + '/backups';
 export const LOGS_DIR = DATA_DIR + '/logs';
 export const SHELL_LOG_FILE = LOGS_DIR + '/shell';
+export const V1_CONFIG_FILE = 'etc/node_config.json';
 
 export enum NodeStates {
   STARTING = 'starting',
