@@ -32,8 +32,10 @@ import {
 } from '../shared/misc';
 import {
   configOption,
+  crontabOption,
   foregroundOption,
   IConfig,
+  ICrontab,
   IForeground,
   INetwork,
   IV1,
@@ -42,6 +44,7 @@ import {
   v1Option,
   verboseOption,
 } from '../shared/options';
+import { nodeCrontab } from './crontab';
 import { nodeRebuildNative } from './rebuild-native';
 import { nodeStop } from './stop';
 
@@ -49,7 +52,8 @@ export type TOptions = IConfig &
   INetwork &
   IForeground &
   IVerbose &
-  IV1 & { restart?: boolean };
+  IV1 &
+  ICrontab & { restart?: boolean };
 
 export default leaf({
   commandName: 'start',
@@ -67,6 +71,7 @@ export default leaf({
       typeName: 'boolean',
     },
     ...v1Option,
+    ...crontabOption,
   },
 
   async action(options: TOptions) {
@@ -92,7 +97,7 @@ export default leaf({
  * Starts a node or throws an exception.
  */
 export async function nodeStart(
-  { config, foreground, network, verbose, v1, restart }: TOptions,
+  { config, foreground, network, verbose, v1, restart, crontab }: TOptions,
   rebuildNative = true,
   skipPIDCheck = false
 ) {
@@ -143,6 +148,11 @@ export async function nodeStart(
     }
     if (!ready) {
       throw new Error('Never reached "Blockchain ready"');
+    }
+
+    // add the crontab entry if requested
+    if (crontab) {
+      nodeCrontab({ verbose, config, network, v1 });
     }
   } catch (err) {
     debug(err);

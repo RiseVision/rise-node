@@ -3,6 +3,7 @@ import { branch, cli, leaf } from '@carnesen/cli';
 import dot from 'dotenv';
 import 'source-map-support/register';
 import configDefaults from './config-default';
+import dbCrontab from './db/crontab';
 import dbInit from './db/init';
 import dbInstall from './db/install';
 import dbStart from './db/start';
@@ -61,7 +62,7 @@ export const dockerCompose = branch({
 export const db = branch({
   commandName: 'db',
   description: 'Manage the local PostgreSQL database',
-  subcommands: [dbInit, dbStart, dbStop, dbInstall],
+  subcommands: [dbInit, dbStart, dbStop, dbInstall, dbCrontab],
 });
 
 export const version = leaf({

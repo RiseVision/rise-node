@@ -1,5 +1,6 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import { nodeCrontab } from '../node/crontab';
 import { nodeStop } from '../node/stop';
 import {
   DB_DATA_DIR,
@@ -17,14 +18,17 @@ import {
 } from '../shared/misc';
 import {
   configOption,
+  crontabOption,
   IConfig,
+  ICrontab,
   INetwork,
+  IV1,
   IVerbose,
   networkOption,
   verboseOption,
 } from '../shared/options';
 
-export type TOptions = INetwork & IConfig & IVerbose;
+export type TOptions = INetwork & IConfig & IVerbose & ICrontab;
 
 export default leaf({
   commandName: 'start',
@@ -33,11 +37,17 @@ export default leaf({
     ...configOption,
     ...verboseOption,
     ...networkOption,
+    ...crontabOption,
   },
 
-  async action({ config, network, verbose }: TOptions) {
+  async action({ config, network, verbose, crontab }: TOptions) {
     try {
       await dbStart({ config, network, verbose });
+
+      // add the crontab entry if requested
+      if (crontab) {
+        nodeCrontab({ verbose, config, network });
+      }
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -54,7 +64,7 @@ export default leaf({
   },
 });
 
-export async function dbStart({ config, network, verbose }: TOptions) {
+export async function dbStart({ config, network, verbose, crontab }: TOptions) {
   await checkSourceDir(true);
   if (getPID(DB_LOCK_FILE)) {
     log('DB already running');

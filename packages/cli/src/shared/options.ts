@@ -92,3 +92,18 @@ export const shellOption = {
 export interface IShell {
   shell?: boolean;
 }
+
+// --crontab
+
+export const crontabOption = {
+  shell: option({
+    defaultValue: false,
+    description: 'Add the crontab entry',
+    nullable: true,
+    typeName: 'boolean',
+  }),
+};
+
+export interface ICrontab {
+  crontab?: boolean;
+}
