@@ -27,6 +27,7 @@ import nodeStatus from './node/status';
 import nodeStop from './node/stop';
 import { VERSION_CLI } from './shared/constants';
 import { log } from './shared/log';
+import updateCli from './update-cli';
 
 dot.config();
 
@@ -83,6 +84,7 @@ export const root = branch({
     Usage:
 
     ./rise download
+    ./rise update-cli
 
     # RISE Node on the host OS
     ./rise node start
@@ -100,7 +102,7 @@ export const root = branch({
     ./rise docker start
     ./rise docker stop
 
-    # RISE Node and a DB in Docker (experimental)
+    # RISE Node and DB in Docker (experimental)
     ./rise docker-compose start
     ./rise docker-compose stop
 
@@ -109,6 +111,7 @@ export const root = branch({
     ./rise db init
     ./rise db start
     ./rise db stop
+    ./rise db crontab
 
     # print config defaults
     ./rise config-defaults`,
@@ -121,6 +124,7 @@ export const root = branch({
     migrate,
     configDefaults,
     version,
+    updateCli,
   ],
 });
 

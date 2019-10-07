@@ -58,9 +58,9 @@ export async function nodeCrontab({ verbose, v1, removeOnly }: TOptions) {
   await removeEntries({ verbose });
   if (!removeOnly) {
     await addEntries({ verbose, v1 });
-    log('RISE entries added to crontab');
+    log('RISE Node entries added to crontab');
   } else {
-    log('RISE entries removed from crontab');
+    log('RISE Node entries removed from crontab');
   }
 }
 

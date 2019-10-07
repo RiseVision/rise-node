@@ -58,9 +58,9 @@ export async function dbCrontab({
   await removeEntries({ verbose });
   if (!removeOnly) {
     await addEntries({ verbose, config, network });
-    log('RISE entries added to crontab');
+    log('DB entries added to crontab');
   } else {
-    log('RISE entries removed from crontab');
+    log('DB entries removed from crontab');
   }
 }
 

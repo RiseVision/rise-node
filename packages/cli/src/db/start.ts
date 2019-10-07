@@ -46,7 +46,7 @@ export default leaf({
 
       // add the crontab entry if requested
       if (crontab) {
-        nodeCrontab({ verbose, config, network });
+        await nodeCrontab({ verbose, config, network });
       }
     } catch (err) {
       debug(err);

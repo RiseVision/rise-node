@@ -117,6 +117,11 @@ export async function nodeStart(
     let ready = false;
     removeNodeLock();
 
+    // add the crontab entry if requested
+    if (crontab) {
+      await nodeCrontab({ verbose, config, network, v1 });
+    }
+
     if (v1) {
       // TODO check if in the v1 dir when --v1
       // TODO extract along with stop.ts
@@ -148,11 +153,6 @@ export async function nodeStart(
     }
     if (!ready) {
       throw new Error('Never reached "Blockchain ready"');
-    }
-
-    // add the crontab entry if requested
-    if (crontab) {
-      nodeCrontab({ verbose, config, network, v1 });
     }
   } catch (err) {
     debug(err);

@@ -68,7 +68,7 @@ export interface IForeground {
 export const v1Option = {
   v1: option({
     defaultValue: false,
-    description: 'Use the V1 config and DB',
+    description: 'Use the V1 config and DB (optional)',
     nullable: true,
     typeName: 'boolean',
   }),
@@ -83,7 +83,7 @@ export interface IV1 {
 export const shellOption = {
   shell: option({
     defaultValue: false,
-    description: 'Shell log',
+    description: 'Show the shell log (optional)',
     nullable: true,
     typeName: 'boolean',
   }),
@@ -96,9 +96,9 @@ export interface IShell {
 // --crontab
 
 export const crontabOption = {
-  shell: option({
+  crontab: option({
     defaultValue: false,
-    description: 'Add the crontab entry',
+    description: 'Add a crontab entry (optional)',
     nullable: true,
     typeName: 'boolean',
   }),

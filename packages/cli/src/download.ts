@@ -2,6 +2,7 @@
 import { leaf, option } from '@carnesen/cli';
 import { http, https } from 'follow-redirects';
 import fs from 'fs';
+import { nodeLogsArchive } from './node/logs/archive';
 import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
 import { extractSourceFile } from './shared/fs-ops';
 import { debug, log } from './shared/log';
@@ -34,7 +35,7 @@ export default leaf({
 
   async action({ version, verbose, localhost }: TOptions) {
     try {
-      await download({ version, localhost });
+      await download({ version, localhost, verbose });
       log('Done');
       log('');
       log('You can start RISE Node using:');
@@ -59,7 +60,10 @@ export default leaf({
 });
 
 export async function download(
-  { version, localhost }: TOptions = { version: VERSION_RISE, localhost: false }
+  { version, localhost, verbose }: TOptions = {
+    localhost: false,
+    version: VERSION_RISE,
+  }
 ) {
   const url = process.env.DOWNLOAD_URL
     ? process.env.DOWNLOAD_URL
@@ -97,6 +101,13 @@ export async function download(
   });
 
   log('Download completed');
+
+  // archive the logs from the prev version (if any)
+  try {
+    nodeLogsArchive({ verbose });
+  } catch {
+    // pass
+  }
 
   log(`Extracting ${DIST_FILE}`);
   if (fs.existsSync(DOCKER_DIR)) {
