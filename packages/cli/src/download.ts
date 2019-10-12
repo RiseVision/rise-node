@@ -76,8 +76,8 @@ export async function download(
 
   const file = fs.createWriteStream(DIST_FILE);
 
+  // TODO use axios
   // TODO show progress
-  // TODO use a decent HTTP client
   await new Promise((resolve, reject) => {
     // use plain http when in DEV mode
     (process.env.DOWNLOAD_URL || localhost ? http : https)
