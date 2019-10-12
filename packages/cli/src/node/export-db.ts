@@ -51,8 +51,8 @@ export default leaf({
         log(err);
       }
       log(
-        'Error when creating the backup file.' +
-          (verbose ? '' : 'Examine the log using --verbose.')
+        'Error when creating a backup file.' +
+          (verbose ? '' : ' Examine the log using --verbose.')
       );
       process.exit(1);
     } finally {

@@ -22,6 +22,7 @@ export const DB_PG_CTL =
   process.platform === 'linux' ? '/usr/lib/postgresql/11/bin/pg_ctl' : 'pg_ctl';
 export const DOWNLOAD_URL = 'https://github.com/RiseVision/rise-node/releases/';
 export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
+export const SNAPSHOT_LOCK_FILE = '/tmp/rise-snapshot.pid.lock';
 export const BACKUP_LOCK_FILE = '/tmp/rise-backup.pid.lock';
 export const BACKUPS_DIR = DATA_DIR + '/backups';
 export const LOGS_DIR = DATA_DIR + '/logs';

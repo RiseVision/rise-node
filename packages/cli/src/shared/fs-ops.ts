@@ -9,7 +9,7 @@ import {
   NODE_DIR,
   NODE_FILE,
   NODE_LOCK_FILE,
-  NodeStates,
+  NodeStates, SNAPSHOT_LOCK_FILE,
   TNetworkType,
 } from './constants';
 import { NoRiseDistFileError } from './exceptions';
@@ -201,6 +201,14 @@ export function getNodeState(): NodeStates | false {
 export function getBackupPID(): number | false {
   try {
     return getPID(NODE_LOCK_FILE)[0];
+  } catch {
+    return false;
+  }
+}
+
+export function getSnapshotPID(): number | false {
+  try {
+    return getPID(SNAPSHOT_LOCK_FILE)[0];
   } catch {
     return false;
   }

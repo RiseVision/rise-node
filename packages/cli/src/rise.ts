@@ -17,6 +17,7 @@ import download from './download';
 import migrate from './migrate';
 import nodeCrontab from './node/crontab';
 import nodeExportDB from './node/export-db';
+import nodeExportSnapshot from './node/export-snapshot';
 import nodeImportDB from './node/import-db';
 import nodeInstallDeps from './node/install-deps';
 import nodeKill from './node/kill';
@@ -41,6 +42,7 @@ export const node = branch({
     nodeLogs,
     nodeExportDB,
     nodeImportDB,
+    nodeExportSnapshot,
     nodeInstallDeps,
     nodeRebuildNative,
     nodeCrontab,
@@ -93,6 +95,7 @@ export const root = branch({
     ./rise node logs
     ./rise node export-db
     ./rise node import-db
+    ./rise node export-snapshot
     ./rise node crontab
     ./rise node rebuild-native
     ./rise node install-deps

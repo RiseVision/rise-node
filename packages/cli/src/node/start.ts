@@ -53,7 +53,7 @@ export type TOptions = IConfig &
   IForeground &
   IVerbose &
   IV1 &
-  ICrontab & { restart?: boolean };
+  ICrontab & { restart?: boolean } & { verifySnapshot?: boolean };
 
 export default leaf({
   commandName: 'start',
@@ -72,6 +72,12 @@ export default leaf({
     },
     ...v1Option,
     ...crontabOption,
+    verifySnapshot: {
+      defaultValue: false,
+      description: 'Run in the snapshot verification mode and exit (or fail)',
+      nullable: true,
+      typeName: 'boolean',
+    },
   },
 
   async action(options: TOptions) {
@@ -97,7 +103,16 @@ export default leaf({
  * Starts a node or throws an exception.
  */
 export async function nodeStart(
-  { config, foreground, network, verbose, v1, restart, crontab }: TOptions,
+  {
+    config,
+    foreground,
+    network,
+    verbose,
+    v1,
+    restart,
+    crontab,
+    verifySnapshot,
+  }: TOptions,
   rebuildNative = true,
   skipPIDCheck = false
 ) {
@@ -139,6 +154,7 @@ export async function nodeStart(
         foreground,
         network,
         verbose,
+        verifySnapshot,
       },
       () => {
         ready = true;
@@ -151,7 +167,7 @@ export async function nodeStart(
         log('RISE Node NOT started');
       }
     }
-    if (!ready) {
+    if (!ready && !verifySnapshot) {
       throw new Error('Never reached "Blockchain ready"');
     }
   } catch (err) {
@@ -183,7 +199,7 @@ export async function nodeStart(
 // TODO simplify
 // tslint:disable-next-line:cognitive-complexity
 function startLaunchpad(
-  { config, network, foreground, verbose }: TOptions,
+  { config, network, foreground, verbose, verifySnapshot }: TOptions,
   setReady: () => void
 ): Promise<any> {
   const timeout = 2 * MIN;
@@ -198,6 +214,14 @@ function startLaunchpad(
       }
       if (config) {
         params.push('-e', path.resolve(config));
+      }
+      if (verifySnapshot) {
+        params.push(
+          '-s',
+          '--override-config',
+          // TODO test this works
+          `db.database="${mergedConfig.db.database}_snap"`
+        );
       }
       debug('$', cmd + ' ' + params.join(' '));
 

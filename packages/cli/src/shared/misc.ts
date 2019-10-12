@@ -54,6 +54,10 @@ export interface INodeConfig {
     user: string;
     password: string;
   };
+  address: string;
+  api: {
+    port: number
+  };
 }
 
 /**
@@ -270,13 +274,15 @@ export function printUsingConfig(network: TNetworkType, config: string | null) {
 export async function getBlockHeight(
   network: TNetworkType,
   config?: string,
-  streamOutput = false
+  streamOutput = false,
+  targetDB?: string
 ): Promise<number | null> {
   const output = await runSQL(
     'select height from blocks order by height desc limit 1;',
     network,
     config,
-    streamOutput
+    streamOutput,
+    targetDB
   );
   const blockHeight = parseInt(output, 10);
   debug(`block height: ${blockHeight}`);
@@ -287,13 +293,14 @@ export async function runSQL(
   query: string,
   network: TNetworkType,
   config?: string,
-  streamOutput = false
+  streamOutput = false,
+  database?: string
 ): Promise<string> {
   const envVars = getDBEnvVars(network, config);
   const escaped = query.replace(/"/g, '\\"');
   return await execCmd(
     'psql',
-    ['-d', envVars.PGDATABASE, '-t', '-c', `"${escaped}"`],
+    ['-d', database || envVars.PGDATABASE, '-t', '-c', `"${escaped}"`],
     'SQL query failed',
     {
       env: { ...process.env, ...envVars },
