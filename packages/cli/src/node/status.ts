@@ -1,11 +1,18 @@
 // tslint:disable:no-console
-import { leaf } from '@carnesen/cli';
+import { leaf, option } from '@carnesen/cli';
 import axios from 'axios';
 import fs from 'fs';
 import { ConditionsNotMetError } from '../shared/exceptions';
 import { checkSourceDir, getNodePID, getNodeState } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
-import { getBlockHeight, mergeConfig, printUsingConfig } from '../shared/misc';
+import {
+  dbConnectionInfo,
+  getBlockHeight,
+  getDBEnvVars,
+  mergeConfig,
+  printUsingConfig,
+  runSQL,
+} from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -15,7 +22,9 @@ import {
   verboseOption,
 } from '../shared/options';
 
-export type TOptions = IConfig & INetwork & IVerbose;
+export type TOptions = IConfig &
+  INetwork &
+  IVerbose & { skipSync?: boolean } & { skipDB?: boolean };
 
 export default leaf({
   commandName: 'status',
@@ -25,9 +34,23 @@ export default leaf({
     ...configOption,
     ...networkOption,
     ...verboseOption,
+    'skip-db': option({
+      defaultValue: false,
+      description: 'Skip showing of the DB info and status',
+      nullable: false,
+      typeName: 'boolean',
+    }),
+    'skip-sync': option({
+      defaultValue: false,
+      description: 'Skip showing of the sync progress and connected peers',
+      nullable: false,
+      typeName: 'boolean',
+    }),
   },
 
   async action(options: TOptions) {
+    options.skipSync = options['skip-sync'];
+    options.skipDB = options['skip-db'];
     try {
       await nodeStatus(options);
     } catch (err) {
@@ -58,15 +81,23 @@ async function showBlockHeight(network, config, verbose) {
 }
 
 function showPID(pid) {
-  log(`PID: ${pid}`);
   const state = getNodeState();
-  log(`PID state: ${state}`);
+  log(`State: ${state || 'off'}`);
+  if (pid) {
+    log(`PID: ${pid}`);
+  }
 }
 
 /**
  * Starts a node or throws an exception.
  */
-export async function nodeStatus({ config, network, verbose }: TOptions) {
+export async function nodeStatus({
+  config,
+  network,
+  verbose,
+  skipSync,
+  skipDB,
+}: TOptions) {
   await checkConditions(config);
 
   if (verbose) {
@@ -75,20 +106,61 @@ export async function nodeStatus({ config, network, verbose }: TOptions) {
 
   // check the PID, but not when in DEV
   const pid = getNodePID();
-  if (pid) {
-    showPID(pid);
-  }
+  showPID(pid);
 
   await showBlockHeight(network, config, verbose);
 
-  if (pid) {
-    await showPeers({ config, network, verbose });
+  const options = { config, network, verbose };
+
+  if (!skipDB) {
+    await showDBStatus(options);
+    showDBVars(options);
+  }
+
+  if (pid && !skipSync) {
+    await showPeers(options);
+    await showSync(options);
   }
 }
 
 async function showPeers(options: TOptions) {
   const res = await apiReq(options, '/api/peers');
   log(`Connected peers: ${res.peers.length}`);
+}
+
+async function showSync(options: TOptions) {
+  const res = await apiReq(options, '/api/peers');
+  const networkHeight = res.peers.reduce((height, peer) => {
+    return height < peer.height ? peer.height : height;
+  }, 0);
+  const blockHeight = await getBlockHeight(
+    options.network,
+    options.config,
+    options.verbose
+  );
+  log(`Network height: ${networkHeight}`);
+  log(`Sync progress: ${(blockHeight / networkHeight) * 100}%`);
+}
+
+async function showDBStatus(options: TOptions) {
+  try {
+    await runSQL(
+      'select height from blocks order by height desc limit 1;',
+      options.network,
+      options.config,
+      options.verbose
+    );
+    log('DB status: running');
+  } catch {
+    log('DB status: unavailable');
+  }
+}
+
+function showDBVars(options: TOptions) {
+  const vars = dbConnectionInfo(getDBEnvVars(options.network, options.config))
+    .split('\n')
+    .map((row) => '  ' + row);
+  log(vars.join('\n'));
 }
 
 async function apiReq(

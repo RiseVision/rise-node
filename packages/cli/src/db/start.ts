@@ -42,12 +42,7 @@ export default leaf({
 
   async action({ config, network, verbose, crontab }: TOptions) {
     try {
-      await dbStart({ config, network, verbose });
-
-      // add the crontab entry if requested
-      if (crontab) {
-        await nodeCrontab({ verbose, config, network });
-      }
+      await dbStart({ config, network, verbose, crontab });
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -55,7 +50,7 @@ export default leaf({
       }
       log(
         '\nError while starting the DB.' +
-          (verbose ? '' : 'Examine the log using --verbose.')
+          (verbose ? '' : ' Examine the log using --verbose.')
       );
       process.exit(1);
     } finally {
@@ -92,4 +87,9 @@ export async function dbStart({ config, network, verbose, crontab }: TOptions) {
   );
 
   log('\nDB started');
+
+  // add the crontab entry if requested
+  if (crontab) {
+    await nodeCrontab({ verbose, config, network });
+  }
 }

@@ -1,5 +1,5 @@
 // tslint:disable:no-console
-import { leaf } from '@carnesen/cli';
+import { leaf, option } from '@carnesen/cli';
 import assert from 'assert';
 import { ChildProcess, spawn } from 'child_process';
 import fs from 'fs';
@@ -64,20 +64,20 @@ export default leaf({
     ...foregroundOption,
     ...networkOption,
     ...verboseOption,
-    restart: {
+    restart: option({
       defaultValue: false,
       description: 'Stop a node if already running',
       nullable: true,
       typeName: 'boolean',
-    },
+    }),
     ...v1Option,
     ...crontabOption,
-    verifySnapshot: {
+    verifySnapshot: option({
       defaultValue: false,
       description: 'Run in the snapshot verification mode and exit (or fail)',
       nullable: true,
       typeName: 'boolean',
-    },
+    }),
   },
 
   async action(options: TOptions) {
