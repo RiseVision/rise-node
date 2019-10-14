@@ -172,7 +172,13 @@ export default leaf({
           log(`Try ${tries}`);
         }
         try {
-          await nodeStart({ config, network, verbose, v1: true });
+          await nodeStart({
+            config,
+            crontab: true,
+            network,
+            v1: true,
+            verbose,
+          });
           break;
         } catch (e) {
           log('v2 node couldnt start, waiting for 3mins...');
@@ -181,11 +187,13 @@ export default leaf({
       }
 
       log('DONE');
-      log('To verify:\n$ ./rise node status');
+      log('To verify:\n$ ./rise node status --v1');
       if (network === 'mainnet') {
-        log('To start:\n$ ./rise node start --v1');
+        log('To start:\n$ ./rise node start --v1 --crontab');
       } else {
-        log(`To start:\n$ ./rise node start --v1 --network ${network}`);
+        log(
+          `To start:\n$ ./rise node start --v1 --crontab --network ${network}`
+        );
       }
     } catch (err) {
       debug(err);
