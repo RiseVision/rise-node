@@ -1,6 +1,6 @@
 // config
-const hours = 5 * 24;
-const currentHeight = 330246;
+const hours = 4.2 * 24;
+const currentHeight = 2420555;
 
 // consts
 const secPerBlock = 30;

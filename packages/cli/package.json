@@ -7,7 +7,7 @@
   "engines": {
     "node": "~10"
   },
-  "version": "1.0.5",
+  "version": "1.0.6",
   "bin": {
     "rise": "dist/rise"
   },
@@ -44,6 +44,7 @@
     "typescript": "3.4.5"
   },
   "dependencies": {
-    "axios": "^0.19.0"
+    "axios": "^0.19.0",
+    "source-map-support": "^0.5.13"
   }
 }

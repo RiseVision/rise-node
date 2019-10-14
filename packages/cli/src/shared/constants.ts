@@ -1,5 +1,5 @@
 // TODO read this from package.json ?
-export const VERSION_CLI = 'v1.0.5';
+export const VERSION_CLI = 'v1.0.6';
 export const VERSION_RISE = 'latest';
 // TODO single enum for NETWORKS and NetworkType
 export const NETWORKS = ['mainnet', 'testnet', 'devnet'] as const;

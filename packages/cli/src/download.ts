@@ -39,7 +39,7 @@ export default leaf({
       log('Done');
       log('');
       log('You can start RISE Node using:');
-      log('  ./rise node install-deps');
+      log('  sudo ./rise node install-deps');
       log('  ./rise node start');
       // log('');
       // log('You can start a Docker container using:');

@@ -139,7 +139,10 @@ async function showSync(options: TOptions) {
     options.verbose
   );
   log(`Network height: ${networkHeight}`);
-  log(`Sync progress: ${(blockHeight / networkHeight) * 100}%`);
+  if (networkHeight) {
+    const percent = (blockHeight / networkHeight) * 100;
+    log(`Sync progress: ${Math.floor(percent)}%`);
+  }
 }
 
 async function showDBStatus(options: TOptions) {
