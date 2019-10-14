@@ -33,6 +33,14 @@ export class NoRiseDistFileError extends Error {
   }
 }
 
+export class DBNotInstalledError extends Error {
+  constructor() {
+    super(
+      'Install PostgreSQL first:\n$ sudo ./rise db install'
+    );
+  }
+}
+
 export class ConditionsNotMetError extends Error {
   public name = 'ErrorCmdConditionsNotMet';
 }

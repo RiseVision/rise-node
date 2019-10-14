@@ -93,8 +93,6 @@ export default leaf({
         30 * SEC
       );
 
-      // TODO check if db-deps are installed
-
       // precheck end
 
       debug(getDBEnvVars(network, config));

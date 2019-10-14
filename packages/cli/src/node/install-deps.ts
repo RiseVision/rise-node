@@ -19,7 +19,7 @@ export default leaf({
       }
       log(
         '\nError while rebuilding native node modules.' +
-          (verbose ? '' : 'Examine the log using --verbose.')
+          (verbose ? '' : ' Examine the log using --verbose.')
       );
       process.exit(1);
     } finally {

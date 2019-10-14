@@ -30,6 +30,7 @@ export default leaf({
 
 export async function dbInstall({ verbose }: IVerbose) {
   log('Installing the default version of PostgreSQL...');
+  await execCmd('apt-get', ['update'], "Couldn't update APT", null, verbose);
   const file = 'apt-get';
   const params = ['install', '-y', 'postgresql', 'postgresql-contrib'];
   const errorMsg =

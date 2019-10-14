@@ -118,7 +118,11 @@ export async function nodeStatus({
   const pid = getNodePID();
   showPID(pid);
 
-  await showBlockHeight(network, config, verbose);
+  try {
+    await showBlockHeight(network, config, verbose);
+  } catch {
+    // empty
+  }
 
   const options = { config, network, verbose };
 

@@ -14,6 +14,7 @@ import {
   AddressInUseError,
   DBConnectionError,
   DBCorruptedError,
+  DBNotInstalledError,
   NativeModulesError,
 } from './exceptions';
 import { getConfigPath } from './fs-ops';
@@ -56,7 +57,7 @@ export interface INodeConfig {
   };
   address: string;
   api: {
-    port: number
+    port: number;
   };
 }
 
@@ -153,7 +154,11 @@ export function execCmd(
             debug(errors);
           }
           log('ERROR: ' + errorMsg);
-          reject(new Error(errorMsg));
+          if (errorMsg.includes('psql: not found')) {
+            reject(new DBNotInstalledError());
+          } else {
+            reject(new Error(errorMsg));
+          }
         } else {
           resolve(output);
         }
