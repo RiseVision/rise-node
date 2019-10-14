@@ -17,13 +17,16 @@ import {
   configOption,
   IConfig,
   INetwork,
+  IV1,
   IVerbose,
   networkOption,
+  v1Option,
   verboseOption,
 } from '../shared/options';
 
 export type TOptions = IConfig &
   INetwork &
+  IV1 &
   IVerbose & { skipSync?: boolean } & { skipDB?: boolean };
 
 export default leaf({
@@ -34,6 +37,7 @@ export default leaf({
     ...configOption,
     ...networkOption,
     ...verboseOption,
+    ...v1Option,
     'skip-db': option({
       defaultValue: false,
       description: 'Skip showing of the DB info and status',
@@ -51,6 +55,12 @@ export default leaf({
   async action(options: TOptions) {
     options.skipSync = options['skip-sync'];
     options.skipDB = options['skip-db'];
+
+    if (options.v1 && !options.config) {
+      // TODO extract
+      options.config = 'etc/node_config.json';
+    }
+
     try {
       await nodeStatus(options);
     } catch (err) {

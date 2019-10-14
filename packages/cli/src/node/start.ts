@@ -101,7 +101,9 @@ export default leaf({
 
 /**
  * Starts a node or throws an exception.
+ * TODO simplify
  */
+// tslint:disable-next-line:cognitive-complexity
 export async function nodeStart(
   {
     config,
