@@ -36,7 +36,7 @@ export class NoRiseDistFileError extends Error {
 export class DBNotInstalledError extends Error {
   constructor() {
     super(
-      'Install PostgreSQL first:\n$ sudo ./rise db install'
+      'Install PostgreSQL first:\n$ sudo ./rise node install-deps'
     );
   }
 }

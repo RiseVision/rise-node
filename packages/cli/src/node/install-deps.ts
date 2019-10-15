@@ -37,6 +37,7 @@ export async function nodeInstallDeps({ verbose }: IVerbose) {
     // keep in sync with Docker.node_modules
     'build-essential',
     'python',
+    'postgresql-client',
     'postgresql-server-dev-all',
     'libtool',
     'autoconf',
