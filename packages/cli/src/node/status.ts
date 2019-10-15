@@ -70,7 +70,10 @@ export default leaf({
       }
       log(
         'Something went wrong.' +
-          (options.verbose ? '' : ' Examine the log using --verbose.')
+          (options.verbose
+            ? ''
+            : ' Examine the log using --verbose and make sure you use the ' +
+              '--network param in case of testnet / devnet.')
       );
       process.exit(1);
     } finally {
