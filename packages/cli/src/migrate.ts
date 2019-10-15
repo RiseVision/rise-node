@@ -47,7 +47,7 @@ export default leaf({
     ...networkOption,
     blockHeight: option({
       // TODO take from /packages/rise/etc/[testnet|mainnet]/constants.js ???
-      defaultValue: 344714,
+      defaultValue: 2432687,
       description: 'Migration block (0 = next one)',
       nullable: false,
       typeName: 'number',
@@ -68,8 +68,8 @@ export default leaf({
       }
 
       if (!hasLocalPostgres()) {
-        log('Install PostgreSQL first:');
-        log('$ sudo ./rise db install');
+        log('Dependencies not installed:');
+        log('$ sudo ./rise node install-deps');
         return;
       }
 
