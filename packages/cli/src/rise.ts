@@ -23,6 +23,7 @@ import nodeInstallDeps from './node/install-deps';
 import nodeKill from './node/kill';
 import nodeLogs from './node/logs';
 import nodeRebuildNative from './node/rebuild-native';
+import nodeReset from './node/reset';
 import nodeStart from './node/start';
 import nodeStatus from './node/status';
 import nodeStop from './node/stop';
@@ -47,6 +48,7 @@ export const node = branch({
     nodeRebuildNative,
     nodeCrontab,
     nodeKill,
+    nodeReset,
   ],
 });
 
@@ -99,6 +101,7 @@ export const root = branch({
     ./rise node crontab
     ./rise node rebuild-native
     ./rise node install-deps
+    ./rise node reset
 
     # RISE Node in Docker (experimental)
     ./rise docker build

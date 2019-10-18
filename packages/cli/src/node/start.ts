@@ -6,9 +6,11 @@ import fs from 'fs';
 import path from 'path';
 import { MIN, NodeStates } from '../shared/constants';
 import {
-  AddressInUseError,
+  CLIError,
   ConditionsNotMetError,
+  ConfigMissingError,
   DBConnectionError,
+  handleCLIError,
   NativeModulesError,
 } from '../shared/exceptions';
 import {
@@ -22,6 +24,7 @@ import {
 } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
 import {
+  assertV1Dir,
   createParseNodeOutput,
   dbConnectionInfo,
   execCmd,
@@ -140,13 +143,15 @@ export async function nodeStart(
     }
 
     if (v1) {
-      // TODO check if in the v1 dir when --v1
+      assertV1Dir();
       // TODO extract along with stop.ts
       log('Starting the v1 DB');
       await execCmd(
         './manager.sh',
         ['start', 'db'],
-        "Couldn't start the v1 DB"
+        "Couldn't start the v1 DB",
+        null,
+        verbose
       );
     }
 
@@ -170,12 +175,12 @@ export async function nodeStart(
       }
     }
     if (!ready && !verifySnapshot) {
-      throw new Error('Never reached "Blockchain ready"');
+      throw new CLIError('Never reached "Blockchain ready"');
     }
   } catch (err) {
     debug(err);
+    handleCLIError(err, false);
     if (err instanceof NativeModulesError) {
-      log('Native modules need rebuilding');
       if (rebuildNative) {
         await nodeRebuildNative({ verbose });
         // try to start the node again, but skipping the rebuild and the
@@ -186,11 +191,8 @@ export async function nodeStart(
         throw err;
       }
     } else if (err instanceof DBConnectionError) {
-      log("ERROR: Couldn't connect to the DB");
+      // show the DB info
       log(dbConnectionInfo(getDBEnvVars(network, config)));
-      throw err;
-    } else if (err instanceof AddressInUseError) {
-      log('ERROR: Address currently in use. Another node running?');
       throw err;
     } else {
       throw err;
@@ -308,15 +310,13 @@ async function checkConditions(
     const pid = getNodePID();
     if (pid && !restart) {
       throw new ConditionsNotMetError(
-        `ERROR: Node already running as PID ${pid}, stop it or use --restart`
+        `Node already running as PID ${pid}, stop it or use --restart`
       );
     } else if (pid && restart) {
       await nodeStop({ verbose });
     }
   }
   if (config && !fs.existsSync(config)) {
-    throw new ConditionsNotMetError(
-      `ERROR: Config file doesn't exist.\n${config}`
-    );
+    throw new ConfigMissingError(config);
   }
 }

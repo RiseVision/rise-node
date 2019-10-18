@@ -2,7 +2,7 @@
 import { leaf, option } from '@carnesen/cli';
 import axios from 'axios';
 import fs from 'fs';
-import { ConditionsNotMetError } from '../shared/exceptions';
+import { ConfigMissingError, handleCLIError } from '../shared/exceptions';
 import { checkSourceDir, getNodePID, getNodeState } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
 import {
@@ -69,7 +69,7 @@ export default leaf({
         log(err);
       }
       log(
-        'Something went wrong.' +
+        '\nSomething went wrong.' +
           (options.verbose
             ? ''
             : ' Examine the log using --verbose and make sure you use the ' +
@@ -111,32 +111,38 @@ export async function nodeStatus({
   skipSync,
   skipDB,
 }: TOptions) {
-  await checkConditions(config);
-
-  if (verbose) {
-    printUsingConfig(network, config);
-  }
-
-  // check the PID, but not when in DEV
-  const pid = getNodePID();
-  showPID(pid);
-
   try {
-    await showBlockHeight(network, config, verbose);
-  } catch {
-    // empty
-  }
+    log(`Network: ${network}`);
 
-  const options = { config, network, verbose };
+    await checkConditions(config);
 
-  if (!skipDB) {
-    await showDBStatus(options);
-    showDBVars(options);
-  }
+    if (verbose) {
+      printUsingConfig(network, config);
+    }
 
-  if (pid && !skipSync) {
-    await showPeers(options);
-    await showSync(options);
+    // check the PID, but not when in DEV
+    const pid = getNodePID();
+    showPID(pid);
+
+    try {
+      await showBlockHeight(network, config, verbose);
+    } catch {
+      // empty
+    }
+
+    const options = { config, network, verbose };
+
+    if (!skipDB) {
+      await showDBStatus(options);
+      showDBVars(options);
+    }
+
+    if (pid && !skipSync) {
+      await showPeers(options);
+      await showSync(options);
+    }
+  } catch (err) {
+    handleCLIError(err);
   }
 }
 
@@ -201,8 +207,6 @@ async function apiReq(
 async function checkConditions(config: string) {
   await checkSourceDir();
   if (config && !fs.existsSync(config)) {
-    throw new ConditionsNotMetError(
-      `ERROR: Config file doesn't exist.\n${config}`
-    );
+    throw new ConfigMissingError(config);
   }
 }

@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import { checkSourceDir, getNodeDir } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd, isRoot } from '../shared/misc';
+import { execCmd, isSudo } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 import { nodeInstallDeps } from './install-deps';
 
@@ -35,7 +35,7 @@ export async function nodeRebuildNative({ verbose }: IVerbose) {
 
   log('Rebuilding native modules...');
 
-  if (isRoot()) {
+  if (isSudo()) {
     await nodeInstallDeps({ verbose });
   }
 

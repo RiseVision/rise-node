@@ -12,6 +12,7 @@ import {
 } from './constants';
 import {
   AddressInUseError,
+  ConditionsNotMetError,
   DBConnectionError,
   DBCorruptedError,
   DBNotInstalledError,
@@ -94,6 +95,10 @@ export function mergeConfig(
   return extend(true, parentConfig, config);
 }
 
+/**
+ * TODO support `sudo -u USERNAME CMD` when in `isSudo()`
+ *   will cause problems with pipes
+ */
 // tslint:disable-next-line:cognitive-complexity
 export function execCmd(
   file: string,
@@ -318,7 +323,26 @@ export function isLinux() {
   return process.platform === 'linux';
 }
 
-export function isRoot() {
+export function isSudo() {
   const uid = execSync('id -u').toString('utf8');
   return uid === '0';
+}
+
+export function assertV1Dir() {
+  if (!fs.existsSync('manager.sh')) {
+    throw new ConditionsNotMetError('Not in the V1 directory');
+  }
+}
+
+/**
+ * Returns the name of the current user even if the CLI has been ran with sudo.
+ */
+export async function sudoUsername(verbose = false): Promise<string> {
+  return await execCmd(
+    'logname',
+    null,
+    "Couldn't get the username from before sudo",
+    null,
+    verbose
+  );
 }
