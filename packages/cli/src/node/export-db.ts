@@ -103,11 +103,14 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       { env },
       verbose
     );
-    // TODO unify with others by piping manually
+    // TODO unify with `execCmd` by piping manually
     try {
-      execSync(`pg_dump "${database}" | psql "${targetDB}"`, {
-        env,
-      });
+      log('Exporting the DB...');
+      const cmd = `pg_dump "${database}" | psql "${targetDB}"`;
+      if (verbose) {
+        log(`$ ${cmd}`);
+      }
+      execSync(cmd, { env });
     } catch (e) {
       log(`Cannot copy ${database} to ${targetDB}`);
     }
@@ -119,7 +122,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
 
     const backupName = `backup_${database}_${blockHeight}.gz`;
     const backupPath = path.resolve(getBackupsDir(), backupName);
-    // TODO unify with others by piping manually
+    // TODO unify with `execCmd` by piping manually
     try {
       execSync(`pg_dump -O "${targetDB}" | gzip > ${backupPath}`, {
         env,

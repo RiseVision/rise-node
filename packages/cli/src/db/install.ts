@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd } from '../shared/misc';
+import { checkSudo, execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({
@@ -29,6 +29,7 @@ export default leaf({
 });
 
 export async function dbInstall({ verbose }: IVerbose) {
+  checkSudo();
   log('Installing the default version of PostgreSQL...');
   await execCmd('apt-get', ['update'], "Couldn't update APT", null, verbose);
   const file = 'apt-get';
@@ -44,6 +45,17 @@ export async function dbInstall({ verbose }: IVerbose) {
   await execCmd(file, params, errorMsg, null, verbose);
   log('PostgreSQL installed.');
 }
+
+/**
+apt --purge remove postgresql -y -qq
+apt install wget ca-certificates -qq
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee -a /etc/apt/sources.list.d/pgdg.list
+apt-get update
+apt-get install postgresql-11 -qq
+service postgresql stop
+systemctl disable postgresql
+ */
 
 // TODO automate all 3 cmds
 // export async function dbInstall({ verbose }: IVerbose) {

@@ -2,13 +2,11 @@
 import { leaf, option } from '@carnesen/cli';
 import assert from 'assert';
 import { ChildProcess, spawn } from 'child_process';
-import fs from 'fs';
 import path from 'path';
 import { MIN, NodeStates } from '../shared/constants';
 import {
   CLIError,
   ConditionsNotMetError,
-  ConfigMissingError,
   DBConnectionError,
   handleCLIError,
   NativeModulesError,
@@ -24,8 +22,8 @@ import {
 } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
 import {
-  checkConfigFile,
   assertV1Dir,
+  checkConfigFile,
   createParseNodeOutput,
   dbConnectionInfo,
   execCmd,
@@ -61,7 +59,7 @@ export type TOptions = IConfig &
 
 export default leaf({
   commandName: 'start',
-  description: 'Starts the node using the provided config',
+  description: 'Starts the node using an optional config file',
 
   options: {
     ...configOption,

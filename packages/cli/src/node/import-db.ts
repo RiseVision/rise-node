@@ -55,7 +55,7 @@ export default leaf({
       }
       log(
         'Error when importing the backup file.' +
-          (verbose ? '' : 'Examine the log using --verbose.')
+          (verbose ? '' : ' Examine the log using --verbose.')
       );
       process.exit(1);
     } finally {
@@ -71,7 +71,7 @@ export async function nodeImportDB({
   verbose,
 }: TOptions) {
   try {
-    // TODO exceptions
+    // TODO exception
     if (!(await checkConditions(config, file))) {
       return;
     }
@@ -96,16 +96,20 @@ export async function nodeImportDB({
       { env },
       verbose
     );
-    // TODO unify with others by piping manually
+    // TODO unify with `execCmd` by piping manually
+    // TODO merge with `nodeExportSnapshot`
     try {
-      execSync(`gunzip -c "${file}" | psql > /dev/null`, {
-        env,
-      });
+      log('Importing the DB file...');
+      const cmd = `gunzip -c "${file}" | psql > /dev/null`;
+      if (verbose) {
+        log(`$ ${cmd}`);
+      }
+      execSync(cmd, { env });
     } catch (e) {
       log(`Cannot import "${file}"`);
     }
     const blockHeight = await getBlockHeight(network, config, verbose);
-    log(`Imported "./${file}" into the DB.`);
+    log('Import completed');
     log(`Block height: ${blockHeight}`);
   } finally {
     removeBackupLock();

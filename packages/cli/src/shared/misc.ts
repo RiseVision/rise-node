@@ -209,7 +209,8 @@ export function createParseNodeOutput(
     if (
       data.includes('Error: dlopen') ||
       data.includes('Error: Could not locate the bindings file') ||
-      data.includes('invalid ELF header')
+      data.includes('invalid ELF header') ||
+      data.includes('npm rebuild')
     ) {
       debug('NativeModulesError');
       reject(new NativeModulesError());
@@ -367,5 +368,12 @@ export async function getCrontab(verbose = false): Promise<string> {
     return crontab.trim();
   } catch {
     return '';
+  }
+}
+
+export function checkSudo(requireSudo = true) {
+  if (!isSudo() && requireSudo) {
+    throw new ConditionsNotMetError('Needs sudo');
+    // TODO show the whole command for copy&pasting
   }
 }

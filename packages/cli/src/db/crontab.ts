@@ -21,6 +21,7 @@ export default leaf({
   options: {
     ...configOption,
     ...verboseOption,
+    // TODO remove-only
     removeOnly: {
       defaultValue: false,
       description: "Remove old entries, but don't add new ones",
@@ -70,7 +71,7 @@ async function addEntries({ verbose, config, network }: TOptions) {
   debug('old crontab', crontab);
   const params = [];
 
-  if (network) {
+  if (network && network !== 'mainnet') {
     params.push(`--network ${network}`);
   }
 

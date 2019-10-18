@@ -64,14 +64,20 @@ export default leaf({
   },
 });
 
+/**
+ * TODO copy directly from `rise_db` to `rise_db_snap` to avoid the FS
+ * @param config
+ * @param network
+ * @param verbose
+ */
 export async function nodeExportSnapshot({
   config,
   network,
   verbose,
 }: TOptions) {
   try {
-    setSnapshotLock();
     await checkConditions({ config });
+    setSnapshotLock();
     // export the DB
     await nodeExportDB({ config, network, verbose });
     if (verbose) {
@@ -86,12 +92,6 @@ export async function nodeExportSnapshot({
     let env = { ...process.env, ...envVars };
     const database = envVars.PGDATABASE;
     env = { ...env, PGDATABASE: null };
-    // needd for `createdb`
-    const envHostPort = {
-      ...process.env,
-      PGHOST: envVars.PGHOST,
-      PGPORT: envVars.PGPORT,
-    };
     const targetDB = `${database}_snap`;
     await execCmd(
       'dropdb',
@@ -105,19 +105,23 @@ export async function nodeExportSnapshot({
       [targetDB],
       `Cannot createdb ${targetDB}`,
       {
-        env: envHostPort,
+        env,
       },
       verbose
     );
 
+    // TODO merge with `nodeImportDB()`
     // import the exported file
     log('Importing the backup file...');
     // TODO unify with others by piping manually
     const backupPath = path.resolve(getBackupsDir(), 'latest');
     try {
-      execSync(`gunzip -c "${backupPath}" | psql "${targetDB}" > /dev/null`, {
-        env,
-      });
+      log('Importing the DB file...');
+      const cmd = `gunzip -c "${backupPath}" | psql "${targetDB}" > /dev/null`;
+      if (verbose) {
+        log(`$ ${cmd}`);
+      }
+      execSync(cmd, { env });
     } catch (e) {
       log(`Cannot import "${backupPath}" into the snap DB`);
     }
@@ -134,6 +138,7 @@ export async function nodeExportSnapshot({
     log('Snapshot verification OK!');
 
     // clean the snap db
+    log('Cleaning up the snapshot DB');
     await runSQL('delete from peers;', network, config, verbose, targetDB);
     await runSQL('delete from info;', network, config, verbose, targetDB);
     await runSQL('delete from exceptions;', network, config, verbose, targetDB);
@@ -147,13 +152,15 @@ export async function nodeExportSnapshot({
     );
 
     const height = await getBlockHeight(network, config, verbose, targetDB);
+    // TODO extract for `nodeDownloadSnapshot`
     const name = `snap_${network}_${height}.gz`;
     const snapshotPath = path.resolve(getBackupsDir(), name);
-    // TODO unify with others by piping manually
+    // TODO unify with `execCmd` by piping manually
     try {
-      execSync(`pg_dump -O "${targetDB}" | gzip > ${snapshotPath}`, {
-        env,
-      });
+      const cmd = `pg_dump -O "${targetDB}" | gzip > ${snapshotPath}`;
+      log('Exporting the DB..');
+      log(`$ ${cmd}`);
+      execSync(cmd, { env });
     } catch (e) {
       log("Couldn't dump the DB");
     }

@@ -5,6 +5,12 @@
  * - migrate core nodes 1-by-1
  * - keep trying to connect to core nodes from user nodes in a loop
  * - failsafe `download-snapshot` after a long time on user nodes
+ *
+ * TODO note
+ * - force ppl to upgrade v1 with a block limit, before they run the migration
+ *
+ * TODO bonus - analize logs for "no common block with XXX" and
+ *   start from a snapshot in that case
  */
 import { leaf, option } from '@carnesen/cli';
 import clone from 'clone-deep';

@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd, getCrontab } from '../shared/misc';
+import { getCrontab } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -25,6 +25,7 @@ export default leaf({
   options: {
     ...configOption,
     ...verboseOption,
+    // TODO remove-only
     removeOnly: {
       defaultValue: false,
       description: "Remove old entries, but don't add new ones",
@@ -35,9 +36,9 @@ export default leaf({
     ...v1Option,
   },
 
-  async action({ verbose, v1, removeOnly }: TOptions) {
+  async action({ verbose, v1, removeOnly, config, network }: TOptions) {
     try {
-      await nodeCrontab({ verbose, v1, removeOnly });
+      await nodeCrontab({ verbose, v1, removeOnly, config, network });
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -54,10 +55,16 @@ export default leaf({
   },
 });
 
-export async function nodeCrontab({ verbose, v1, removeOnly }: TOptions) {
+export async function nodeCrontab({
+  verbose,
+  v1,
+  removeOnly,
+  config,
+  network,
+}: TOptions) {
   await removeEntries({ verbose });
   if (!removeOnly) {
-    await addEntries({ verbose, v1 });
+    await addEntries({ verbose, v1, config, network });
     log('RISE Node entries added to crontab');
   } else {
     log('RISE Node entries removed from crontab');
@@ -74,7 +81,7 @@ async function addEntries({ verbose, v1, config, network }: TOptions) {
     params.push('--v1');
   }
 
-  if (network) {
+  if (network && network !== 'mainnet') {
     params.push(`--network ${network}`);
   }
 

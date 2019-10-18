@@ -135,15 +135,19 @@ export function setBackupLock() {
 }
 
 export function removeBackupLock() {
-  fs.unlinkSync(BACKUP_LOCK_FILE);
+  if (fs.existsSync(BACKUP_LOCK_FILE)) {
+    fs.unlinkSync(BACKUP_LOCK_FILE);
+  }
 }
 
 export function setSnapshotLock() {
-  fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
+  fs.writeFileSync(SNAPSHOT_LOCK_FILE, process.pid);
 }
 
 export function removeSnapshotLock() {
-  fs.unlinkSync(SNAPSHOT_LOCK_FILE);
+  if (fs.existsSync(SNAPSHOT_LOCK_FILE)) {
+    fs.unlinkSync(SNAPSHOT_LOCK_FILE);
+  }
 }
 
 export function setNodeLock(pid: number, state: NodeStates) {

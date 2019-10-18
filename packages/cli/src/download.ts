@@ -1,12 +1,13 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
+import { execSync } from 'child_process';
 import { http, https } from 'follow-redirects';
 import fs from 'fs';
 import { nodeLogsArchive } from './node/logs/archive';
 import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
 import { extractSourceFile } from './shared/fs-ops';
 import { debug, log } from './shared/log';
-import { execCmd, getDownloadURL } from './shared/misc';
+import { checkSudo, execCmd, getDownloadURL } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
 
 export type TOptions = { version: string } & IVerbose & { localhost: boolean };
@@ -35,7 +36,9 @@ export default leaf({
 
   async action({ version, verbose, localhost }: TOptions) {
     try {
+      checkSudo(false);
       await download({ version, localhost, verbose });
+      execSync('./rise update-cli');
       log('Done');
       log('');
       log('You can start RISE Node using:');

@@ -16,6 +16,7 @@ import dockerStop from './docker/stop';
 import download from './download';
 import migrate from './migrate';
 import nodeCrontab from './node/crontab';
+import nodeDownloadSnapshot from './node/download-snapshot';
 import nodeExportDB from './node/export-db';
 import nodeExportSnapshot from './node/export-snapshot';
 import nodeImportDB from './node/import-db';
@@ -45,6 +46,7 @@ export const node = branch({
     nodeImportDB,
     nodeExportSnapshot,
     nodeInstallDeps,
+    nodeDownloadSnapshot,
     nodeRebuildNative,
     nodeCrontab,
     nodeKill,
