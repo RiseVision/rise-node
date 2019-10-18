@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd } from '../shared/misc';
+import { execCmd, getCrontab } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -65,6 +65,7 @@ export async function nodeCrontab({ verbose, v1, removeOnly }: TOptions) {
 }
 
 async function addEntries({ verbose, v1, config, network }: TOptions) {
+  // TODO assert `crontab` exists
   let crontab = await getCrontab(verbose);
   debug('old crontab', crontab);
   const params = [];
@@ -81,10 +82,9 @@ async function addEntries({ verbose, v1, config, network }: TOptions) {
     params.push(`--config ${config}`);
   }
 
-  const cmd = `${__dirname}${__filename} node start ${params.join(' ')}`;
-  // TODO
-  // crontab += `@daily ${__dirname}${__filename} node logRotate #managed_rise`;
+  const cmd = `${__filename} node start ${params.join(' ')}`;
   crontab += `@reboot ${cmd} #managed_rise\n`;
+  crontab += `@daily ${__filename} node logs archive #managed_rise\n`;
   debug('new crontab', crontab);
 
   execSync(`echo "${crontab}" | crontab -`);
@@ -99,14 +99,4 @@ async function removeEntries({ verbose }: TOptions) {
   debug('new crontab', crontab);
 
   execSync(`echo "${crontab.trim()}" | crontab -`);
-}
-
-async function getCrontab(verbose = false): Promise<string> {
-  return await execCmd(
-    'crontab',
-    ['-l'],
-    "Couldn't fetch crontab's content",
-    null,
-    verbose
-  );
 }

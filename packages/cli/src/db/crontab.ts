@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd } from '../shared/misc';
+import { execCmd, getCrontab } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -65,6 +65,7 @@ export async function dbCrontab({
 }
 
 async function addEntries({ verbose, config, network }: TOptions) {
+  // TODO assert `crontab` exists
   let crontab = await getCrontab(verbose);
   debug('old crontab', crontab);
   const params = [];
@@ -77,7 +78,7 @@ async function addEntries({ verbose, config, network }: TOptions) {
     params.push(`--config ${config}`);
   }
 
-  const cmd = `${__dirname}${__filename} db start ${params.join(' ')}`;
+  const cmd = `${__filename} db start ${params.join(' ')}`;
   crontab += `@reboot ${cmd} #managed_rise\n`;
   debug('new crontab', crontab);
 
@@ -92,15 +93,5 @@ async function removeEntries({ verbose }: TOptions) {
   crontab = crontab.replace(/^.+#managed_rise\n?/gm, '');
   debug('new crontab', crontab);
 
-  execSync(`echo "${crontab.trim()}" | crontab -`);
-}
-
-async function getCrontab(verbose = false): Promise<string> {
-  return await execCmd(
-    'crontab',
-    ['-l'],
-    "Couldn't fetch crontab's content",
-    null,
-    verbose
-  );
+  execSync(`echo "${crontab}" | crontab -`);
 }

@@ -21,6 +21,7 @@ import {
   networkOption,
   verboseOption,
 } from '../shared/options';
+import { dbCrontab } from './crontab';
 import { dbStart } from './start';
 import { dbStop } from './stop';
 
@@ -101,6 +102,7 @@ export async function dbInit({ config, network, verbose }: TOptions) {
     verbose
   );
 
+  await dbCrontab({ verbose, network, config });
   await delay(2 * SEC);
 
   // start the DB

@@ -9,7 +9,8 @@ import {
   NODE_DIR,
   NODE_FILE,
   NODE_LOCK_FILE,
-  NodeStates, SNAPSHOT_LOCK_FILE,
+  NodeStates,
+  SNAPSHOT_LOCK_FILE,
   TNetworkType,
 } from './constants';
 import { NoRiseDistFileError } from './exceptions';
@@ -137,6 +138,14 @@ export function removeBackupLock() {
   fs.unlinkSync(BACKUP_LOCK_FILE);
 }
 
+export function setSnapshotLock() {
+  fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
+}
+
+export function removeSnapshotLock() {
+  fs.unlinkSync(SNAPSHOT_LOCK_FILE);
+}
+
 export function setNodeLock(pid: number, state: NodeStates) {
   debug(`Creating lock file ${NODE_LOCK_FILE} (${pid})`);
   const data = [pid, state].join('\n');
@@ -200,7 +209,7 @@ export function getNodeState(): NodeStates | false {
 
 export function getBackupPID(): number | false {
   try {
-    return getPID(NODE_LOCK_FILE)[0];
+    return getPID(BACKUP_LOCK_FILE)[0];
   } catch {
     return false;
   }

@@ -50,7 +50,7 @@ export async function nodeReset({ verbose, v1 }: TOptions) {
     if (reset) {
       await execCmd(
         'rm',
-        ['-R', 'data/pg'],
+        ['-Rf', 'data/pg'],
         "Couldn't remove the v1 data dir",
         null,
         verbose

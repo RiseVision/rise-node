@@ -1,10 +1,11 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import path from 'path';
+import os from 'os';
 import { BACKUPS_DIR } from '../shared/constants';
+import { ConditionsNotMetError } from '../shared/exceptions';
 import {
   checkSourceDir,
   getBackupPID,
@@ -14,6 +15,7 @@ import {
 } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
 import {
+  checkConfigFile,
   execCmd,
   getBlockHeight,
   getDBEnvVars,
@@ -58,102 +60,109 @@ export default leaf({
     } finally {
       closeLog();
     }
-    removeBackupLock();
   },
 });
 
 export async function nodeExportDB({ config, network, verbose }: TOptions) {
-  if (!(await checkConditions({ config }))) {
-    return;
-  }
-  if (verbose) {
-    printUsingConfig(network, config);
-  }
-  setBackupLock();
-  mkdirpSync(getBackupsDir());
-  const envVars = getDBEnvVars(network, config);
-  const env = { ...process.env, ...envVars };
-  const database = envVars.PGDATABASE;
-  // TODO drop the _snap db after exporting?
-  const targetDB = `${database}_snap`;
-
-  await nodeStop();
-
-  debug(envVars);
-  log('Starting the export...');
-
-  await execCmd(
-    'dropdb',
-    ['--if-exists', targetDB],
-    `Cannot drop ${targetDB}`,
-    { env },
-    verbose
-  );
-  await execCmd(
-    'vacuumdb',
-    ['--analyze', '--full', database],
-    `Cannot vacuum ${database}`,
-    { env },
-    verbose
-  );
-  await execCmd(
-    'createdb',
-    [targetDB],
-    `Cannot createdb ${targetDB}`,
-    { env },
-    verbose
-  );
-  // TODO unify with others by piping manually
   try {
-    execSync(`pg_dump "${database}" | psql "${targetDB}"`, {
-      env,
-    });
-  } catch (e) {
-    log(`Cannot copy ${database} to ${targetDB}`);
-  }
-
-  const blockHeight = await getBlockHeight(network, config);
-  if (!blockHeight) {
-    throw new Error("ERROR: Couldn't get the block height");
-  }
-
-  const backupName = `backup_${database}_${blockHeight}.gz`;
-  const backupPath = path.resolve(getBackupsDir(), backupName);
-  // TODO unify with others by piping manually
-  try {
-    execSync(`pg_dump -O "${targetDB}" | gzip > ${backupPath}`, {
-      env,
-    });
-  } catch (e) {
-    log("Couldn't dump the DB");
-  }
-
-  // link the `latest` file
-  await execCmd(
-    'ln',
-    ['-sf', backupName, 'latest'],
-    `Couldn't symlink ${getBackupsDir()}/latest to the backup file`,
-    {
-      cwd: getBackupsDir(),
+    await checkConditions({ config });
+    if (verbose) {
+      printUsingConfig(network, config);
     }
-  );
-  log(`Created a DB backup file "${BACKUPS_DIR}/${backupName}".`);
+    setBackupLock();
+    mkdirpSync(getBackupsDir());
+    const envVars = getDBEnvVars(network, config);
+    const env = { ...process.env, ...envVars };
+    const database = envVars.PGDATABASE;
+    // TODO drop the _snap db after exporting?
+    const targetDB = `${database}_snap`;
+
+    await nodeStop();
+
+    debug(envVars);
+    log('Starting the export...');
+
+    await execCmd(
+      'dropdb',
+      ['--if-exists', targetDB],
+      `Cannot drop ${targetDB}`,
+      { env },
+      verbose
+    );
+    await execCmd(
+      'vacuumdb',
+      ['--analyze', '--full', database],
+      `Cannot vacuum ${database}`,
+      { env },
+      verbose
+    );
+    await execCmd(
+      'createdb',
+      [targetDB],
+      `Cannot createdb ${targetDB}`,
+      { env },
+      verbose
+    );
+    // TODO unify with others by piping manually
+    try {
+      execSync(`pg_dump "${database}" | psql "${targetDB}"`, {
+        env,
+      });
+    } catch (e) {
+      log(`Cannot copy ${database} to ${targetDB}`);
+    }
+
+    const blockHeight = await getBlockHeight(network, config);
+    if (!blockHeight) {
+      throw new Error("ERROR: Couldn't get the block height");
+    }
+
+    const backupName = `backup_${database}_${blockHeight}.gz`;
+    const backupPath = path.resolve(getBackupsDir(), backupName);
+    // TODO unify with others by piping manually
+    try {
+      execSync(`pg_dump -O "${targetDB}" | gzip > ${backupPath}`, {
+        env,
+      });
+    } catch (e) {
+      log("Couldn't dump the DB");
+    }
+
+    // link the `latest` file
+    await execCmd(
+      'ln',
+      ['-sf', backupName, 'latest'],
+      `Couldn't symlink ${getBackupsDir()}/latest to the backup file`,
+      {
+        cwd: getBackupsDir(),
+      }
+    );
+    // cleanup
+    await execCmd(
+      'dropdb',
+      ['--if-exists', targetDB],
+      `Cannot drop ${targetDB}`,
+      { env },
+      verbose
+    );
+
+    log(`Created a DB backup file "${BACKUPS_DIR}/${backupName}".`);
+  } finally {
+    removeBackupLock();
+  }
 }
 
 async function checkConditions({ config }: IConfig) {
+  // TODO extract checkActivePID(TYPE)
   const backupPID = getBackupPID();
   if (backupPID) {
-    log(`ERROR: Active backup with PID ${backupPID}`);
-    return false;
+    throw new ConditionsNotMetError(
+      `Active backup process with PID ${backupPID}`
+    );
   }
   if (!hasLocalPostgres()) {
-    log('ERROR: PostgreSQL not installed');
-    return false;
+    throw new ConditionsNotMetError('PostgreSQL not installed');
   }
-  if (config && !fs.existsSync(config)) {
-    log(`ERROR: Config file doesn't exist.\n${config}`);
-    return false;
-  }
+  checkConfigFile(config);
   await checkSourceDir();
-  return true;
 }

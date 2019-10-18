@@ -24,6 +24,7 @@ import {
 } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
 import {
+  checkConfigFile,
   assertV1Dir,
   createParseNodeOutput,
   dbConnectionInfo,
@@ -316,7 +317,5 @@ async function checkConditions(
       await nodeStop({ verbose });
     }
   }
-  if (config && !fs.existsSync(config)) {
-    throw new ConfigMissingError(config);
-  }
+  checkConfigFile(config);
 }

@@ -1,5 +1,6 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
+import { VERSION_CLI } from './shared/constants';
 import { debug, log } from './shared/log';
 import { execCmd } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
@@ -42,15 +43,20 @@ export default leaf({
         verbose
       );
 
-      const version = await execCmd(
+      let version = await execCmd(
         './rise',
         ['version'],
         "Couldn't get the version number",
         null,
         verbose
       );
+      version = version.trim();
 
-      console.log(`Updated to ${version}`);
+      if (VERSION_CLI === version) {
+        console.log('No new version available');
+      } else {
+        console.log(`Updated to ${version}`);
+      }
     } catch (err) {
       debug(err);
       if (verbose) {

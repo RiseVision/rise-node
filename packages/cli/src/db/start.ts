@@ -1,6 +1,5 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { nodeCrontab } from '../node/crontab';
 import { nodeStop } from '../node/stop';
 import {
   DB_DATA_DIR,
@@ -22,11 +21,11 @@ import {
   IConfig,
   ICrontab,
   INetwork,
-  IV1,
   IVerbose,
   networkOption,
   verboseOption,
 } from '../shared/options';
+import { dbCrontab } from './crontab';
 
 export type TOptions = INetwork & IConfig & IVerbose & ICrontab;
 
@@ -90,6 +89,6 @@ export async function dbStart({ config, network, verbose, crontab }: TOptions) {
 
   // add the crontab entry if requested
   if (crontab) {
-    await nodeCrontab({ verbose, config, network });
+    await dbCrontab({ verbose, config, network });
   }
 }

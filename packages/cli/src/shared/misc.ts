@@ -13,6 +13,7 @@ import {
 import {
   AddressInUseError,
   ConditionsNotMetError,
+  ConfigMissingError,
   DBConnectionError,
   DBCorruptedError,
   DBNotInstalledError,
@@ -32,6 +33,7 @@ export function isDevEnv() {
 
 /**
  * Checks if Postgres tools are intalled and runnable.
+ * TODO exceptions
  */
 export function hasLocalPostgres(): boolean {
   const toCheck = ['dropdb', 'vacuumdb', 'createdb', 'pg_dump', 'psql'];
@@ -345,4 +347,25 @@ export async function sudoUsername(verbose = false): Promise<string> {
     null,
     verbose
   );
+}
+
+export function checkConfigFile(config: string) {
+  if (config && !fs.existsSync(config)) {
+    throw new ConfigMissingError(config);
+  }
+}
+
+export async function getCrontab(verbose = false): Promise<string> {
+  try {
+    const crontab = await execCmd(
+      'crontab',
+      ['-l'],
+      "Couldn't fetch crontab's content",
+      null,
+      verbose
+    );
+    return crontab.trim();
+  } catch {
+    return '';
+  }
 }

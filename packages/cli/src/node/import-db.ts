@@ -61,7 +61,6 @@ export default leaf({
     } finally {
       closeLog();
     }
-    removeBackupLock();
   },
 });
 
@@ -71,43 +70,49 @@ export async function nodeImportDB({
   file,
   verbose,
 }: TOptions) {
-  if (!(await checkConditions(config, file))) {
-    return;
-  }
-  setBackupLock();
-  const envVars = getDBEnvVars(network, config);
-  const env = { ...process.env, ...envVars };
-  const database = envVars.PGDATABASE;
-
-  await nodeStop();
-
-  await execCmd(
-    'dropdb',
-    ['--if-exists', database],
-    `Couldn't drop DB ${database}`,
-    { env },
-    verbose
-  );
-  await execCmd(
-    'createdb',
-    [database],
-    `Couldn't create DB ${database}`,
-    { env },
-    verbose
-  );
-  // TODO unify with others by piping manually
   try {
-    execSync(`gunzip -c "${file}" | psql > /dev/null`, {
-      env,
-    });
-  } catch (e) {
-    log(`Cannot import "${file}"`);
+    // TODO exceptions
+    if (!(await checkConditions(config, file))) {
+      return;
+    }
+    setBackupLock();
+    const envVars = getDBEnvVars(network, config);
+    const env = { ...process.env, ...envVars };
+    const database = envVars.PGDATABASE;
+
+    await nodeStop();
+
+    await execCmd(
+      'dropdb',
+      ['--if-exists', database],
+      `Couldn't drop DB ${database}`,
+      { env },
+      verbose
+    );
+    await execCmd(
+      'createdb',
+      [database],
+      `Couldn't create DB ${database}`,
+      { env },
+      verbose
+    );
+    // TODO unify with others by piping manually
+    try {
+      execSync(`gunzip -c "${file}" | psql > /dev/null`, {
+        env,
+      });
+    } catch (e) {
+      log(`Cannot import "${file}"`);
+    }
+    const blockHeight = await getBlockHeight(network, config, verbose);
+    log(`Imported "./${file}" into the DB.`);
+    log(`Block height: ${blockHeight}`);
+  } finally {
+    removeBackupLock();
   }
-  const blockHeight = await getBlockHeight(network, config, verbose);
-  log(`Imported "./${file}" into the DB.`);
-  log(`Block height: ${blockHeight}`);
 }
 
+// TODO exceptions
 async function checkConditions(config: string | null, file: string) {
   const backupPID = getBackupPID();
   if (backupPID) {

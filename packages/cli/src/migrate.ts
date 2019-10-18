@@ -1,4 +1,11 @@
 // tslint:disable:no-console
+/**
+ * TODO
+ * - turn off user nodes X time before the core ones
+ * - migrate core nodes 1-by-1
+ * - keep trying to connect to core nodes from user nodes in a loop
+ * - failsafe `download-snapshot` after a long time on user nodes
+ */
 import { leaf, option } from '@carnesen/cli';
 import clone from 'clone-deep';
 import delay from 'delay';
