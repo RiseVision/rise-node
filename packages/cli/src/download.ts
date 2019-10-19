@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import { http, https } from 'follow-redirects';
 import fs from 'fs';
 import { nodeLogsArchive } from './node/logs/archive';
-import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
+import { DIST_FILE, DOCKER_DIR } from './shared/constants';
 import { extractSourceFile } from './shared/fs-ops';
 import { debug, log } from './shared/log';
 import {
@@ -14,10 +14,16 @@ import {
   getSudoUsername,
   isSudo,
 } from './shared/misc';
-import { IVerbose, verboseOption } from './shared/options';
-import { updateCli } from './update-cli';
+import {
+  IVerbose,
+  IVersion,
+  verboseOption,
+  versionOptions,
+} from './shared/options';
+import { updateCLI } from './update-cli';
 
-export type TOptions = { version?: string } & IVerbose & {
+export type TOptions = IVersion &
+  IVerbose & {
     localhost?: boolean;
   };
 
@@ -34,12 +40,7 @@ export default leaf({
       nullable: true,
       typeName: 'boolean',
     }),
-    version: option({
-      defaultValue: VERSION_RISE,
-      description: 'Version number to download, eg v2.0.0 (optional)',
-      nullable: true,
-      typeName: 'string',
-    }),
+    ...versionOptions,
     ...verboseOption,
   },
 
@@ -73,7 +74,7 @@ export default leaf({
 export async function download(
   { version, localhost, verbose }: TOptions = {
     localhost: false,
-    version: VERSION_RISE,
+    version: 'latest',
   },
   preserveCLI = false
 ) {
@@ -156,7 +157,7 @@ export async function download(
 
   if (!preserveCLI) {
     // make sure the CLI is always the latest
-    await updateCli({ verbose });
+    await updateCLI({ verbose });
   } else {
     // TODO figure out the cause of errors
     try {

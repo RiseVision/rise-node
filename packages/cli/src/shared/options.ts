@@ -122,3 +122,17 @@ export const crontabOption = {
 export interface ICrontab {
   crontab?: boolean;
 }
+
+// -- version
+export const versionOptions = {
+  version: option({
+    defaultValue: 'latest',
+    description: 'Version number to download, eg v2.0.0 (optional)',
+    nullable: true,
+    typeName: 'string',
+  }),
+};
+
+export interface IVersion {
+  version?: string;
+}

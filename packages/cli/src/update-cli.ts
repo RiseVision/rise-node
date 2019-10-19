@@ -1,11 +1,11 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
-import { VERSION_CLI } from './shared/constants';
+import { VERSION_CLI, VERSION_RISE } from './shared/constants';
 import { debug, log } from './shared/log';
-import { execCmd } from './shared/misc';
-import { IVerbose, verboseOption } from './shared/options';
+import { execCmd, getDownloadURL } from './shared/misc';
+import { IVerbose, IVersion, verboseOption } from './shared/options';
 
-export type TOptions = IVerbose & { localhost?: boolean };
+export type TOptions = IVersion & IVerbose & { localhost?: boolean };
 
 export default leaf({
   commandName: 'update-cli',
@@ -20,29 +20,37 @@ export default leaf({
       typeName: 'boolean',
     }),
     ...verboseOption,
+    // TODO replace with `...versionOption`
+    version: option({
+      defaultValue: VERSION_RISE,
+      description: 'Version number to download, eg v2.0.0 (optional)',
+      nullable: true,
+      typeName: 'string',
+    }),
   },
 
-  async action({ verbose, localhost }: TOptions) {
+  async action({ version, verbose, localhost }: TOptions) {
     try {
-      await updateCli({ verbose, localhost });
+      await updateCLI({ verbose, localhost, version });
     } catch (err) {
       debug(err);
       if (verbose) {
         log(err);
       }
       log(
-        '\nSomething went wrong. ' +
-          (verbose ? '' : 'Examine the log using --verbose.')
+        '\nSomething went wrong.' +
+          (verbose ? '' : ' Examine the log using --verbose.')
       );
       process.exit(1);
     }
   },
 });
 
-export async function updateCli({ verbose, localhost }: TOptions) {
+export async function updateCLI({ verbose, localhost, version }: TOptions) {
+  version = version || 'latest';
   const url = localhost
     ? 'http://localhost:8080/rise'
-    : 'https://github.com/RiseVision/rise-node/releases/latest/download/rise';
+    : getDownloadURL('rise', version);
 
   await execCmd(
     'wget',
@@ -60,18 +68,18 @@ export async function updateCli({ verbose, localhost }: TOptions) {
     verbose
   );
 
-  let version = await execCmd(
+  let currentVersion = await execCmd(
     './rise',
     ['version'],
     "Couldn't get the version number",
     null,
     verbose
   );
-  version = version.trim();
+  currentVersion = currentVersion.trim();
 
-  if (VERSION_CLI === version) {
+  if (VERSION_CLI === currentVersion) {
     console.log('No new version available');
   } else {
-    console.log(`Updated to ${version}`);
+    console.log(`Updated to ${currentVersion}`);
   }
 }

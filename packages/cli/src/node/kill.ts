@@ -1,12 +1,9 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import kill from 'tree-kill';
-import { promisify } from 'util';
+import { killProcessTree } from '../shared/kill';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
-
-const killAsync = promisify(kill);
 
 export type TOptions = IVerbose;
 
@@ -38,22 +35,5 @@ export default leaf({
 
 export async function nodeKill() {
   debug('nodeKill');
-  const list = await execCmd('ps x', null, "Couldn't get the process IDs");
-  debug('list');
-  debug(list);
-
-  const regex = new RegExp('^\\s*(\\d+).+rise-launchpad', 'mg');
-
-  const pids = list.match(regex);
-  if (!pids || !pids.length) {
-    log("RISE Node isn't running");
-    return;
-  }
-
-  // TODO parallel
-  for (const pid of pids) {
-    debug(`Killing PID tree ${pid}`);
-    log(`Killing RISE Node with PID ${pid}`);
-    await killAsync(parseInt(pid, 10));
-  }
+  await killProcessTree('rise-launchpad');
 }

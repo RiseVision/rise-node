@@ -1,7 +1,8 @@
 const isLinux = process.platform === 'linux';
-// TODO read this from package.json ?
-export const VERSION_CLI = 'v1.1.0';
-export const VERSION_RISE = 'latest';
+// TODO keep in sync with /packages/cli/package.json
+export const VERSION_CLI = 'v1.1.1';
+// TODO keep in sync with /package.json
+export const VERSION_RISE = 'v2.0.1-beta1';
 // TODO single enum for NETWORKS and NetworkType
 export const NETWORKS = ['mainnet', 'testnet', 'devnet'] as const;
 export type TNetworkType = 'mainnet' | 'testnet' | 'devnet';

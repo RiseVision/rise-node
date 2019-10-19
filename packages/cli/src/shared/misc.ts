@@ -5,13 +5,7 @@ import extend from 'extend';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import {
-  DB_PG_PATH,
-  DOWNLOAD_URL,
-  NODE_DIR,
-  TNetworkType,
-  VERSION_RISE,
-} from './constants';
+import { DB_PG_PATH, DOWNLOAD_URL, NODE_DIR, TNetworkType } from './constants';
 import {
   AddressInUseError,
   ConditionsNotMetError,
@@ -25,8 +19,14 @@ import { getConfigPath } from './fs-ops';
 import { debug, log } from './log';
 import { IForeground, IVerbose } from './options';
 
-export function getDownloadURL(file: string, version = VERSION_RISE) {
-  return DOWNLOAD_URL + version + '/download/' + file;
+export function getDownloadURL(file: string, version = 'latest') {
+  if (version === 'latest') {
+    return DOWNLOAD_URL + version + '/download/' + file;
+  } else {
+    return (
+      DOWNLOAD_URL.replace(/\/$/, '') + '/download/' + version + '/' + file
+    );
+  }
 }
 
 export function isDevEnv() {

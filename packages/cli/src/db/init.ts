@@ -98,7 +98,11 @@ export async function dbInit({ config, network, verbose }: TOptions) {
 
   if (isLinux()) {
     // 'fix' the perms for the data dir
-    execSync(`chmod -R o+r ${POSTGRES_HOME + DATA_DIR}`);
+    try {
+      execSync(`chmod -R o+r ${POSTGRES_HOME + DATA_DIR}`);
+    } catch {
+      // empty
+    }
   }
 
   await execCmd(
