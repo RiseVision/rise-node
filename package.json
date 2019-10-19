@@ -1,6 +1,6 @@
 {
   "name": "Rise-node",
-  "version": "2.0.0-beta7",
+  "version": "2.0.1-beta1",
   "engine": "^10",
   "engineStrict": true,
   "private": true,
