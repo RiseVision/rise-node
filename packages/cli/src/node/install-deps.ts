@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd } from '../shared/misc';
+import { checkSudo, execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({
@@ -29,8 +29,10 @@ export default leaf({
 });
 
 export async function nodeInstallDeps({ verbose }: IVerbose) {
-  const file = 'apt-get';
+  checkSudo();
+  const file = 'sudo';
   const params = [
+    'apt-get',
     'install',
     '-y',
     // packages required to build native modules

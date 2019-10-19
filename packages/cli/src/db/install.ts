@@ -1,7 +1,9 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import { execSync } from 'child_process';
+import { ConditionsNotMetError, handleCLIError } from '../shared/exceptions';
 import { closeLog, debug, log } from '../shared/log';
-import { checkSudo, execCmd } from '../shared/misc';
+import { isLinux, isSudo } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
 export default leaf({
@@ -29,68 +31,55 @@ export default leaf({
 });
 
 export async function dbInstall({ verbose }: IVerbose) {
-  checkSudo();
-  log('Installing the default version of PostgreSQL...');
-  await execCmd('apt-get', ['update'], "Couldn't update APT", null, verbose);
-  const file = 'apt-get';
-  const params = ['install', '-y', 'postgresql', 'postgresql-contrib'];
-  const errorMsg =
-    "Couldn't install PostgreSQL.\n\n" +
-    "Make sure you're using `sudo`:\n" +
-    '$ sudo ./rise db install\n' +
-    '\n' +
-    'Alternatively run the following command manually:\n' +
-    `$ sudo ${file} ${params.join(' ')}`;
+  try {
+    if (!isLinux()) {
+      throw new ConditionsNotMetError('This command is linux-only');
+    }
+    if (!isSudo()) {
+      throw new ConditionsNotMetError(
+        'Run this command with sudo:\n$ sudo ./rise db install'
+      );
+    }
+    log('Installing PostgreSQL...');
+    // await execCmd('apt-get', ['update'], "Couldn't update APT", null, verbose);
+    // const file = 'apt-get';
+    // const params = ['install', '-y', 'postgresql', 'postgresql-contrib'];
+    // const errorMsg =
+    //   "Couldn't install PostgreSQL.\n\n" +
+    //   "Make sure you're using `sudo`:\n" +
+    //   '$ sudo ./rise db install\n' +
+    //   '\n' +
+    //   'Alternatively run the following command manually:\n' +
+    //   `$ sudo ${file} ${params.join(' ')}`;
+    //
+    // await execCmd(file, params, errorMsg, null, verbose);
 
-  await execCmd(file, params, errorMsg, null, verbose);
-  log('PostgreSQL installed.');
+    // stop a running DB
+    execSync('./rise db stop');
+
+    // install keys and repos
+    const version = execSync('lsb_release -cs')
+      .toString('utf8')
+      .trim();
+    execSync('apt --purge remove postgresql -y -qq');
+    execSync('apt install wget ca-certificates -qq');
+    execSync(
+      'wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -'
+    );
+    execSync(
+      `add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ ${version}-pgdg main"`
+    );
+
+    // install postgres 11
+    execSync('apt-get update');
+    execSync('apt-get install postgresql-11 postgresql-contrib -qq');
+
+    // disable the postgres service
+    execSync('service postgresql stop');
+    execSync('systemctl disable postgresql');
+
+    log('PostgreSQL installed.');
+  } catch (err) {
+    handleCLIError(err);
+  }
 }
-
-/**
-apt --purge remove postgresql -y -qq
-apt install wget ca-certificates -qq
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee -a /etc/apt/sources.list.d/pgdg.list
-apt-get update
-apt-get install postgresql-11 -qq
-service postgresql stop
-systemctl disable postgresql
- */
-
-// TODO automate all 3 cmds
-// export async function dbInstall({ verbose }: IVerbose) {
-//   // get the default postgres to get the repo script
-//   log('Installing the default PostgreSQL');
-//   await dbCmd(
-//     'apt',
-//     ['install', '-y', 'postgresql', 'postgresql-contrib'],
-//     verbose
-//   );
-//
-//   // add postgres 11 repo
-//   // TODO requires pressing enter
-//   log('Adding PostgreSQL 11 repository');
-//   await dbCmd(
-//     'sh',
-//     ['/usr/share/postgresql-common/pgdg/apt.postgresql.org.sh'],
-//     verbose
-//   );
-//
-//   // install postgres 11
-//   log('Installing PostgreSQL v11');
-//   await dbCmd('apt', ['install', 'postgresql-11'], verbose);
-//
-//   log('PostgreSQL installed.');
-// }
-//
-// async function dbCmd(file: string, params: string[], verbose = false) {
-//   const errorMsg =
-//     "Couldn't install PostgreSQL.\n\n" +
-//     "Make sure you're using `sudo`:\n" +
-//     '$ sudo ./rise db install\n' +
-//     '\n' +
-//     'Alternatively run the following command manually:\n' +
-//     `$ sudo ${file} ${params.join(' ')}`;
-//
-//   await execCmd(file, params, errorMsg, null, verbose);
-// }

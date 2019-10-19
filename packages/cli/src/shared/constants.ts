@@ -1,5 +1,5 @@
 // TODO read this from package.json ?
-export const VERSION_CLI = 'v1.0.10';
+export const VERSION_CLI = 'v1.0.12';
 export const VERSION_RISE = 'latest';
 // TODO single enum for NETWORKS and NetworkType
 export const NETWORKS = ['mainnet', 'testnet', 'devnet'] as const;
@@ -18,8 +18,8 @@ export const DATA_DIR = 'data';
 export const DB_DATA_DIR = DATA_DIR + '/db';
 export const DB_LOG_FILE = DATA_DIR + '/db.log';
 export const DB_LOCK_FILE = DB_DATA_DIR + '/postmaster.pid';
-export const DB_PG_CTL =
-  process.platform === 'linux' ? '/usr/lib/postgresql/11/bin/pg_ctl' : 'pg_ctl';
+export const DB_PG_PATH =
+  process.platform === 'linux' ? '/usr/lib/postgresql/11/bin/' : '';
 export const DOWNLOAD_URL = 'https://github.com/RiseVision/rise-node/releases/';
 export const NODE_LOCK_FILE = '/tmp/rise-node.pid.lock';
 export const SNAPSHOT_LOCK_FILE = '/tmp/rise-snapshot.pid.lock';
@@ -28,6 +28,7 @@ export const BACKUPS_DIR = DATA_DIR + '/backups';
 export const LOGS_DIR = DATA_DIR + '/logs';
 export const SHELL_LOG_FILE = LOGS_DIR + '/shell';
 export const V1_CONFIG_FILE = 'etc/node_config.json';
+export const POSTGRES_HOME = '/var/lib/postgresql';
 
 export enum NodeStates {
   STARTING = 'starting',

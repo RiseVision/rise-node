@@ -1,10 +1,12 @@
 // tslint:disable:no-console
 import assert from 'assert';
-import { execSync, spawn, SpawnOptions } from 'child_process';
+import { execSync, ExecSyncOptions, spawn, SpawnOptions } from 'child_process';
 import extend from 'extend';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import {
+  DB_PG_PATH,
   DOWNLOAD_URL,
   NODE_DIR,
   TNetworkType,
@@ -36,10 +38,11 @@ export function isDevEnv() {
  * TODO exceptions
  */
 export function hasLocalPostgres(): boolean {
+  // TODO use /usr/lib/postgresql/11/bin/ on linux
   const toCheck = ['dropdb', 'vacuumdb', 'createdb', 'pg_dump', 'psql'];
   try {
     for (const file of toCheck) {
-      execSync(`which ${file}`);
+      execSyncAsUser(`which ${isLinux() ? DB_PG_PATH + file : file}`);
     }
   } catch {
     return false;
@@ -98,8 +101,7 @@ export function mergeConfig(
 }
 
 /**
- * TODO support `sudo -u USERNAME CMD` when in `isSudo()`
- *   will cause problems with pipes
+ * TODO support pipes (mind sudo)
  */
 // tslint:disable-next-line:cognitive-complexity
 export function execCmd(
@@ -108,10 +110,19 @@ export function execCmd(
   errorMsg?: string | null,
   options?: SpawnOptions,
   streamOutput = false,
-  timeout?: number
+  timeout?: number,
+  username?: string
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
+      if (!params) {
+        params = [];
+      }
+      // always run as the current user, unless requested otherwise
+      if (isSudo()) {
+        params.unshift('-u', username || getSudoUsername(), file);
+        file = 'sudo';
+      }
       const cmd = file + ' ' + params.join(' ');
       let output = '';
       let errors = '';
@@ -327,8 +338,15 @@ export function isLinux() {
 }
 
 export function isSudo() {
-  const uid = execSync('id -u').toString('utf8');
-  return uid === '0';
+  const uid = execSync('id -u')
+    .toString('utf8')
+    .trim();
+  log(`uid ${uid}`);
+  if (uid === '0') {
+    return true;
+  }
+  log(`getUsername() ${getUsername()}`);
+  return getUsername() === 'root';
 }
 
 export function assertV1Dir() {
@@ -340,14 +358,14 @@ export function assertV1Dir() {
 /**
  * Returns the name of the current user even if the CLI has been ran with sudo.
  */
-export async function sudoUsername(verbose = false): Promise<string> {
-  return await execCmd(
-    'logname',
-    null,
-    "Couldn't get the username from before sudo",
-    null,
-    verbose
-  );
+export function getSudoUsername(): string {
+  return execSync('logname')
+    .toString('utf8')
+    .trim();
+}
+
+export function getUsername(): string {
+  return os.userInfo().username;
 }
 
 export function checkConfigFile(config: string) {
@@ -373,7 +391,29 @@ export async function getCrontab(verbose = false): Promise<string> {
 
 export function checkSudo(requireSudo = true) {
   if (!isSudo() && requireSudo) {
+    debug('isSudo()', isSudo());
+    debug('getUsername()', getUsername());
     throw new ConditionsNotMetError('Needs sudo');
     // TODO show the whole command for copy&pasting
   }
+}
+
+export function execSyncAsUser(
+  cmd: string,
+  user: string = null,
+  options?: ExecSyncOptions
+): string {
+  let prefix = '';
+  if (isSudo()) {
+    prefix += `sudo -u ${user || getSudoUsername()} `;
+  } else if (!isSudo() && user) {
+    throw new Error('Running a cmd as a different user requires sudo');
+  }
+  log(prefix + cmd);
+  const ret = execSync(prefix + cmd, { ...options, stdio: 'inherit' });
+  // sometimes ret is null
+  if (!ret) {
+    return '';
+  }
+  return ret.toString('utf8').trim();
 }

@@ -1,8 +1,16 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
+import path from 'path';
+import { POSTGRES_HOME } from '../shared/constants';
+import { ConditionsNotMetError, handleCLIError } from '../shared/exceptions';
 import { closeLog, debug, log } from '../shared/log';
-import { execCmd, getCrontab } from '../shared/misc';
+import {
+  execSyncAsUser,
+  getCrontab,
+  getUsername,
+  isLinux,
+  isSudo,
+} from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -56,17 +64,30 @@ export async function dbCrontab({
   removeOnly,
   network,
 }: TOptions) {
-  await removeEntries({ verbose });
-  if (!removeOnly) {
-    await addEntries({ verbose, config, network });
-    log('DB entries added to crontab');
-  } else {
-    log('DB entries removed from crontab');
+  try {
+    if (isLinux() && getUsername() !== 'postgres' && !isSudo()) {
+      throw new ConditionsNotMetError(
+        `Run this command with sudo:\n$ sudo ${getCmd({
+          config,
+          network,
+          removeOnly,
+        })}`
+      );
+    }
+
+    await removeEntries({ verbose });
+    if (!removeOnly) {
+      await addEntries({ verbose, config, network });
+      log('DB entries added to crontab');
+    } else {
+      log('DB entries removed from crontab');
+    }
+  } catch (err) {
+    handleCLIError(err);
   }
 }
 
 async function addEntries({ verbose, config, network }: TOptions) {
-  // TODO assert `crontab` exists
   let crontab = await getCrontab(verbose);
   debug('old crontab', crontab);
   const params = [];
@@ -83,7 +104,11 @@ async function addEntries({ verbose, config, network }: TOptions) {
   crontab += `@reboot ${cmd} #managed_rise\n`;
   debug('new crontab', crontab);
 
-  execSync(`echo "${crontab}" | crontab -`);
+  execSyncAsUser(
+    `echo "${crontab}" | crontab -`,
+    isLinux() ? 'postgres' : null,
+    { ...getCwd(), env: process.env }
+  );
 }
 
 // TODO share with /src/node/crontab
@@ -94,5 +119,27 @@ async function removeEntries({ verbose }: TOptions) {
   crontab = crontab.replace(/^.+#managed_rise\n?/gm, '');
   debug('new crontab', crontab);
 
-  execSync(`echo "${crontab}" | crontab -`);
+  execSyncAsUser(
+    `echo "${crontab}" | crontab -`,
+    isLinux() ? 'postgres' : null,
+    { ...getCwd(), env: process.env }
+  );
+}
+
+function getCmd({ config, removeOnly, network }: TOptions): string {
+  let cmd = './rise db start';
+  if (config) {
+    cmd += ` --config ${path.resolve(__dirname, config)}`;
+  }
+  if (network !== 'mainnet') {
+    cmd += ` --network ${network}`;
+  }
+  if (removeOnly) {
+    cmd += ' --removeOnly';
+  }
+  return cmd;
+}
+
+function getCwd() {
+  return isLinux() ? { cwd: POSTGRES_HOME } : undefined;
 }

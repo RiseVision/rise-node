@@ -1,8 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import { closeLog, debug, log } from '../shared/log';
-import { getCrontab } from '../shared/misc';
+import { execSyncAsUser, getCrontab } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -94,7 +93,7 @@ async function addEntries({ verbose, v1, config, network }: TOptions) {
   crontab += `@daily ${__filename} node logs archive #managed_rise\n`;
   debug('new crontab', crontab);
 
-  execSync(`echo "${crontab}" | crontab -`);
+  execSyncAsUser(`echo "${crontab}" | crontab -`);
 }
 
 // TODO share with /src/db/crontab
@@ -105,5 +104,5 @@ async function removeEntries({ verbose }: TOptions) {
   crontab = crontab.replace(/^.+#managed_rise\n?/gm, '');
   debug('new crontab', crontab);
 
-  execSync(`echo "${crontab.trim()}" | crontab -`);
+  execSyncAsUser(`echo "${crontab.trim()}" | crontab -`);
 }

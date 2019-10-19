@@ -1,13 +1,12 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import { http, https } from 'follow-redirects';
 import fs from 'fs';
 import { nodeLogsArchive } from './node/logs/archive';
 import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
 import { extractSourceFile } from './shared/fs-ops';
 import { debug, log } from './shared/log';
-import { checkSudo, execCmd, getDownloadURL } from './shared/misc';
+import { execCmd, execSyncAsUser, getDownloadURL } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
 
 export type TOptions = { version: string } & IVerbose & { localhost: boolean };
@@ -36,9 +35,23 @@ export default leaf({
 
   async action({ version, verbose, localhost }: TOptions) {
     try {
-      checkSudo(false);
+      // TODO temp
+      try {
+        execSyncAsUser('rm -f rise.bak');
+      } catch {}
+      try {
+        execSyncAsUser('cp rise rise.bak');
+      } catch {}
       await download({ version, localhost, verbose });
-      execSync('./rise update-cli');
+      // make sure the CLI is always the latest
+      // execSyncAsUser('./rise update-cli');
+      // TODO temp
+      try {
+        execSyncAsUser('rm -f rise');
+      } catch {}
+      try {
+        execSyncAsUser('mv rise.bak rise');
+      } catch {}
       log('Done');
       log('');
       log('You can start RISE Node using:');

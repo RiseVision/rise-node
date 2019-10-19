@@ -16,6 +16,7 @@ import { closeLog, debug, log } from '../shared/log';
 import {
   checkConfigFile,
   execCmd,
+  execSyncAsUser,
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
@@ -121,7 +122,7 @@ export async function nodeExportSnapshot({
       if (verbose) {
         log(`$ ${cmd}`);
       }
-      execSync(cmd, { env });
+      execSyncAsUser(cmd, null, { env });
     } catch (e) {
       log(`Cannot import "${backupPath}" into the snap DB`);
     }
@@ -160,7 +161,7 @@ export async function nodeExportSnapshot({
       const cmd = `pg_dump -O "${targetDB}" | gzip > ${snapshotPath}`;
       log('Exporting the DB..');
       log(`$ ${cmd}`);
-      execSync(cmd, { env });
+      execSyncAsUser(cmd, null, { env });
     } catch (e) {
       log("Couldn't dump the DB");
     }

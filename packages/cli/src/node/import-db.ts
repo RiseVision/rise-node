@@ -1,6 +1,5 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { BACKUPS_DIR } from '../shared/constants';
@@ -14,6 +13,7 @@ import {
 import { closeLog, log } from '../shared/log';
 import {
   execCmd,
+  execSyncAsUser,
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
@@ -104,7 +104,7 @@ export async function nodeImportDB({
       if (verbose) {
         log(`$ ${cmd}`);
       }
-      execSync(cmd, { env });
+      execSyncAsUser(cmd, null, { env });
     } catch (e) {
       log(`Cannot import "${file}"`);
     }

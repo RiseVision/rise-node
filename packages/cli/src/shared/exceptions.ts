@@ -2,6 +2,9 @@
 
 import { log } from './log';
 
+/**
+ * User facing error class.
+ */
 export class CLIError extends Error {}
 
 export class NativeModulesError extends CLIError {

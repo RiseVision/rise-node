@@ -27,7 +27,7 @@ export default leaf({
       }
       log(
         '\nError while killing the node.' +
-          (verbose ? '' : 'Examine the log using --verbose.')
+          (verbose ? '' : ' Examine the log using --verbose.')
       );
       process.exit(1);
     } finally {
@@ -39,12 +39,13 @@ export default leaf({
 export async function nodeKill() {
   debug('nodeKill');
   const list = await execCmd('ps x', null, "Couldn't get the process IDs");
+  debug('list');
+  debug(list);
 
-  const match = 'rise-launchpad';
-  const regex = new RegExp(`^\s*(\d+).+${match}`, 'mg');
+  const regex = new RegExp('^\\s*(\\d+).+rise-launchpad', 'mg');
 
   const pids = list.match(regex);
-  if (!pids.length) {
+  if (!pids || !pids.length) {
     log("RISE Node isn't running");
     return;
   }

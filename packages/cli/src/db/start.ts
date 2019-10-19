@@ -1,18 +1,24 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import path from 'path';
 import { nodeStop } from '../node/stop';
 import {
   DB_DATA_DIR,
   DB_LOCK_FILE,
   DB_LOG_FILE,
-  DB_PG_CTL,
+  DB_PG_PATH,
+  POSTGRES_HOME,
 } from '../shared/constants';
+import { ConditionsNotMetError, handleCLIError } from '../shared/exceptions';
 import { checkSourceDir, getPID } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
 import {
   dbConnectionInfo,
   execCmd,
   getDBEnvVars,
+  getUsername,
+  isLinux,
+  isSudo,
   printUsingConfig,
 } from '../shared/misc';
 import {
@@ -59,36 +65,71 @@ export default leaf({
 });
 
 export async function dbStart({ config, network, verbose, crontab }: TOptions) {
-  await checkSourceDir(true);
-  if (getPID(DB_LOCK_FILE)) {
-    log('DB already running');
-    return;
+  try {
+    // TODO verify that postgres user exists when on linux
+    await checkSourceDir(true);
+    if (getPID(DB_LOCK_FILE)) {
+      log('DB already running');
+      return;
+    }
+
+    if (isLinux() && getUsername() !== 'postgres' && !isSudo()) {
+      debug(`getUsername() ${getUsername()}`);
+      debug(`isSudo() ${isSudo()}`);
+      throw new ConditionsNotMetError(
+        `Run this command with sudo:\n$ sudo ${getCmd({ config, network })}`
+      );
+    }
+
+    if (verbose) {
+      printUsingConfig(network, config);
+    }
+
+    const envVars = getDBEnvVars(network, config, true);
+    const env = { ...process.env, ...envVars };
+
+    log('Starting the DB...\n' + verbose ? dbConnectionInfo(envVars) : '');
+
+    await nodeStop();
+
+    debug(envVars);
+
+    await execCmd(
+      DB_PG_PATH + 'pg_ctl',
+      ['-D', DB_DATA_DIR, '-l', DB_LOG_FILE, 'start'],
+      `Failed to start the DB, check ${DB_LOG_FILE}.`,
+      { env, ...getCwd() },
+      verbose,
+      null,
+      // run as the postgres user
+      isLinux() ? 'postgres' : null
+    );
+
+    log('\nDB started');
+
+    // add the crontab entry if requested
+    if (crontab) {
+      await dbCrontab({ verbose, config, network });
+    }
+  } catch (err) {
+    handleCLIError(err);
   }
-  if (verbose) {
-    printUsingConfig(network, config);
+}
+
+function getCmd({ config, network, crontab }: TOptions): string {
+  let cmd = './rise db start';
+  if (config) {
+    cmd += ` --config ${path.resolve(__dirname, config)}`;
   }
-
-  const envVars = getDBEnvVars(network, config, true);
-  const env = { ...process.env, ...envVars };
-
-  log('Starting the DB...\n' + verbose ? dbConnectionInfo(envVars) : '');
-
-  await nodeStop();
-
-  debug(envVars);
-
-  await execCmd(
-    DB_PG_CTL,
-    ['-D', DB_DATA_DIR, '-l', DB_LOG_FILE, 'start'],
-    `Examine the log using --verbose and check ${DB_LOG_FILE}.`,
-    { env },
-    verbose
-  );
-
-  log('\nDB started');
-
-  // add the crontab entry if requested
+  if (network !== 'mainnet') {
+    cmd += ` --network ${network}`;
+  }
   if (crontab) {
-    await dbCrontab({ verbose, config, network });
+    cmd += ' --crontab';
   }
+  return cmd;
+}
+
+function getCwd() {
+  return isLinux() ? { cwd: POSTGRES_HOME } : undefined;
 }

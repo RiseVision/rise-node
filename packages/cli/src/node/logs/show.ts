@@ -1,7 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import { closeLog, debug, log } from '../../shared/log';
+import { execSyncAsUser } from '../../shared/misc';
 import {
   configOption,
   IConfig,
@@ -32,7 +32,7 @@ export default leaf({
   async action({ verbose, network, config, v1, shell }: TOptions) {
     try {
       const logPath = nodeLogsPath({ network, config, v1, shell });
-      execSync(`less ${logPath}`, {
+      execSyncAsUser(`less ${logPath}`, null, {
         stdio: 'inherit',
       });
     } catch (err) {

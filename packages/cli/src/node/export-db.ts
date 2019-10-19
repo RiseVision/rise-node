@@ -17,6 +17,7 @@ import { closeLog, debug, log } from '../shared/log';
 import {
   checkConfigFile,
   execCmd,
+  execSyncAsUser,
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
@@ -110,7 +111,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       if (verbose) {
         log(`$ ${cmd}`);
       }
-      execSync(cmd, { env });
+      execSyncAsUser(cmd, null, { env });
     } catch (e) {
       log(`Cannot copy ${database} to ${targetDB}`);
     }
@@ -124,7 +125,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
     const backupPath = path.resolve(getBackupsDir(), backupName);
     // TODO unify with `execCmd` by piping manually
     try {
-      execSync(`pg_dump -O "${targetDB}" | gzip > ${backupPath}`, {
+      execSyncAsUser(`pg_dump -O "${targetDB}" | gzip > ${backupPath}`, null, {
         env,
       });
     } catch (e) {

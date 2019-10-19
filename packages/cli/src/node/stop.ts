@@ -34,7 +34,7 @@ export default leaf({
       }
       log(
         '\nError while stopping the node.' +
-          (verbose ? '' : 'Examine the log using --verbose.')
+          (verbose ? '' : ' Examine the log using --verbose.')
       );
       process.exit(1);
     } finally {
@@ -62,7 +62,8 @@ export async function nodeStop({ verbose, v1 }: TOptions = {}) {
       ['stop', 'db'],
       "Couldn't stop the v1 DB",
       null,
-      verbose
+      verbose,
+      null
     );
   }
 

@@ -15,7 +15,7 @@ import {
 } from './constants';
 import { NoRiseDistFileError } from './exceptions';
 import { debug, log } from './log';
-import { execCmd, isDevEnv } from './misc';
+import { execCmd, execSyncAsUser, isDevEnv } from './misc';
 
 export async function checkSourceDir(relativeToCLI = false) {
   const dirPath = relativeToCLI ? path.resolve(__dirname, NODE_DIR) : NODE_DIR;
@@ -177,7 +177,7 @@ export function getPID(filePath: string): [number, NodeStates] | false {
       .split('\n');
     let exists: string;
     try {
-      exists = execSync(`ps -p ${pid} -o pid=`).toString('utf8');
+      exists = execSyncAsUser(`ps -p ${pid} -o pid=`);
     } catch {
       // empty
     }
