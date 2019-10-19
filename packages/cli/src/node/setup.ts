@@ -1,15 +1,13 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import { util } from 'protobufjs';
+import { dbInit } from '../db/init';
+import { dbAddRepos, dbInstall } from '../db/install';
+import { dbStop } from '../db/stop';
+import { download } from '../download';
 import { handleCLIError } from '../shared/exceptions';
 import { closeLog, debug, log } from '../shared/log';
-import {
-  checkSudo,
-  execSyncAsUser,
-  hasLocalPostgres,
-  isLinux,
-} from '../shared/misc';
+import { checkSudo, hasLocalPostgres, isLinux } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -18,6 +16,10 @@ import {
   networkOption,
   verboseOption,
 } from '../shared/options';
+import { nodeDownloadSnapshot } from './download-snapshot';
+import { nodeInstallDeps } from './install-deps';
+import { nodeStart } from './start';
+import { nodeStop } from './stop';
 import fs = util.fs;
 
 export type TOptions = IConfig & INetwork & IVerbose;
@@ -51,17 +53,6 @@ export default leaf({
   },
 });
 
-function getParams(config, network) {
-  const params = [];
-  if (config) {
-    params.push('--config', config);
-  }
-  if (network && network !== 'mainnet') {
-    params.push('--network', network);
-  }
-  return params;
-}
-
 function handleDefaultConfig(config?: string) {
   if (fs.existsSync('node_config.json') && !config) {
     log('Found node_config.json, using it as the default');
@@ -70,34 +61,46 @@ function handleDefaultConfig(config?: string) {
   return config;
 }
 
-export async function nodeSetup({ config, network }: TOptions) {
+async function stop(verbose, config, network) {
+  try {
+    await nodeStop({ verbose });
+  } catch {
+    // empty
+  }
+
+  try {
+    await dbStop({ config, network, verbose });
+  } catch {
+    // empty
+  }
+}
+
+export async function nodeSetup({ config, network, verbose }: TOptions) {
   try {
     // require `sudo` for the regular `execSync`
     checkSudo();
 
+    // TODO kill all the node and postgres processes
+
+
+    // try to clean things up first
+    await stop(verbose, config, network);
+
     // handle node_config.json
     config = handleDefaultConfig(config);
 
-    const params = getParams(config, network);
+    await download({ verbose }, true);
 
-    // const rise = `${__dirname}/rise`;
-    // TODO dont exec `rise` again, call the internal functions
-    const rise = './rise';
-    execSyncAsUser(`${rise} download`);
-
-    // sudo some apt deps on linux
     if (isLinux()) {
-      // TODO throws "needs sudo"
-      execSync(`${rise} db install`, { stdio: 'inherit' });
-      execSync(`${rise} node install-deps`, { stdio: 'inherit' });
+      dbAddRepos({ verbose });
+      await dbInstall({ verbose, skipRepo: true });
+      await nodeInstallDeps({ verbose, skipRepo: true });
     }
     hasLocalPostgres();
 
-    const cmd = `${rise} db init ${params.join(' ')}`;
-    execSyncAsUser(cmd, isLinux() ? 'postgres' : null);
-
-    execSyncAsUser(`${rise} node download-snapshot ${params.join(' ')}`);
-    execSyncAsUser(`${rise} node start --crontab ${params.join(' ')}`);
+    await dbInit({ config, network, verbose });
+    await nodeDownloadSnapshot({ config, network, verbose });
+    await nodeStart({ config, network, verbose, crontab: true });
   } catch (err) {
     handleCLIError(err);
   }

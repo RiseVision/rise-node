@@ -1,5 +1,4 @@
 // tslint:disable:no-console
-import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -15,7 +14,13 @@ import {
 } from './constants';
 import { NoRiseDistFileError } from './exceptions';
 import { debug, log } from './log';
-import { execCmd, execSyncAsUser, isDevEnv } from './misc';
+import {
+  execCmd,
+  execSyncAsUser,
+  getSudoUsername,
+  isDevEnv,
+  isSudo,
+} from './misc';
 
 export async function checkSourceDir(relativeToCLI = false) {
   const dirPath = relativeToCLI ? path.resolve(__dirname, NODE_DIR) : NODE_DIR;
@@ -129,9 +134,13 @@ export function getBackupsDir(): string {
 export function getCoreRiseDir(): string {
   return path.resolve(process.cwd(), NODE_DIR, 'packages', 'rise');
 }
+import { execSync } from 'child_process';
 
 export function setBackupLock() {
   fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);
+  if (isSudo()) {
+    execSync(`chown ${getSudoUsername()} ${BACKUP_LOCK_FILE}`);
+  }
 }
 
 export function removeBackupLock() {
@@ -142,6 +151,9 @@ export function removeBackupLock() {
 
 export function setSnapshotLock() {
   fs.writeFileSync(SNAPSHOT_LOCK_FILE, process.pid);
+  if (isSudo()) {
+    execSync(`chown ${getSudoUsername()} ${SNAPSHOT_LOCK_FILE}`);
+  }
 }
 
 export function removeSnapshotLock() {
@@ -154,6 +166,9 @@ export function setNodeLock(pid: number, state: NodeStates) {
   debug(`Creating lock file ${NODE_LOCK_FILE} (${pid})`);
   const data = [pid, state].join('\n');
   fs.writeFileSync(NODE_LOCK_FILE, data, { encoding: 'utf8' });
+  if (isSudo()) {
+    execSync(`chown ${getSudoUsername()} ${NODE_LOCK_FILE}`);
+  }
 }
 
 export function removeNodeLock() {
@@ -177,7 +192,7 @@ export function getPID(filePath: string): [number, NodeStates] | false {
       .split('\n');
     let exists: string;
     try {
-      exists = execSyncAsUser(`ps -p ${pid} -o pid=`);
+      exists = execSyncAsUser(`ps -p ${pid} -o pid=`, null, null, false);
     } catch {
       // empty
     }

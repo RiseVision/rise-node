@@ -27,8 +27,8 @@ import {
   createParseNodeOutput,
   dbConnectionInfo,
   execCmd,
-  getDBEnvVars,
-  isDevEnv,
+  getDBEnvVars, getSudoUsername,
+  isDevEnv, isSudo,
   mergeConfig,
   printUsingConfig,
 } from '../shared/misc';
@@ -209,7 +209,7 @@ function startLaunchpad(
   const mergedConfig = mergeConfig(network, config);
   return new Promise((resolve, reject) => {
     try {
-      const cmd = getLaunchpadFilePath();
+      let file = getLaunchpadFilePath();
       const params = ['--net', network];
       // increase the log level to properly read the console output
       if (mergedConfig.consoleLogLevel === 'error') {
@@ -226,7 +226,12 @@ function startLaunchpad(
           `db.database="${mergedConfig.db.database}_snap"`
         );
       }
-      debug('$', cmd + ' ' + params.join(' '));
+      // always run as the current user
+      if (isSudo()) {
+        params.unshift('-E -u', getSudoUsername(), file);
+        file = 'sudo';
+      }
+      debug('$', file + ' ' + params.join(' '));
 
       // wait for "Blockchain ready"
       const parseNodeOutput = createParseNodeOutput(
@@ -242,7 +247,7 @@ function startLaunchpad(
         reject
       );
       // run the command
-      const proc = spawn(cmd, params, {
+      const proc = spawn(file, params, {
         cwd: getCoreRiseDir(),
         shell: true,
       });

@@ -1,13 +1,19 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import path from 'path';
-import { SHELL_LOG_FILE, V1_CONFIG_FILE } from '../../shared/constants';
+import {
+  DB_LOG_FILE,
+  SHELL_LOG_FILE,
+  V1_CONFIG_FILE,
+} from '../../shared/constants';
 import { getPackagePath } from '../../shared/fs-ops';
 import { closeLog, debug, log } from '../../shared/log';
 import { mergeConfig } from '../../shared/misc';
 import {
   configOption,
+  dbOption,
   IConfig,
+  IDB,
   INetwork,
   IShell,
   IV1,
@@ -18,7 +24,7 @@ import {
   verboseOption,
 } from '../../shared/options';
 
-export type TOptions = IConfig & INetwork & IVerbose & IV1 & IShell;
+export type TOptions = IConfig & INetwork & IVerbose & IV1 & IShell & IDB;
 
 export default leaf({
   commandName: 'path',
@@ -29,11 +35,12 @@ export default leaf({
     ...verboseOption,
     ...v1Option,
     ...shellOption,
+    ...dbOption,
   },
 
-  async action({ verbose, network, config, v1, shell }: TOptions) {
+  async action({ verbose, network, config, v1, shell, db }: TOptions) {
     try {
-      log(nodeLogsPath({ network, config, v1, shell }));
+      log(nodeLogsPath({ network, config, v1, shell, db }));
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -50,9 +57,11 @@ export default leaf({
   },
 });
 
-export function nodeLogsPath({ network, config, v1, shell }: TOptions) {
+export function nodeLogsPath({ network, config, v1, shell, db }: TOptions) {
   if (shell) {
     return path.resolve(SHELL_LOG_FILE);
+  } else if (db) {
+    return path.resolve(DB_LOG_FILE);
   } else {
     if (v1 && !config) {
       config = V1_CONFIG_FILE;

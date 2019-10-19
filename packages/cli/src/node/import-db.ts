@@ -28,7 +28,8 @@ import {
 } from '../shared/options';
 import { nodeStop } from './stop';
 
-export type TOptions = IConfig & INetwork & { file: string } & IVerbose;
+export type TOptions = IConfig &
+  INetwork & { file: string; v1Backup?: boolean } & IVerbose;
 
 export default leaf({
   commandName: 'import-db',
@@ -44,9 +45,17 @@ export default leaf({
       nullable: false,
       typeName: 'string',
     }),
+    'v1-backup': option({
+      defaultValue: false,
+      description: 'Provided backup file needs a migration to v2',
+      nullable: false,
+      typeName: 'boolean',
+    }),
   },
 
-  async action({ config, network, file, verbose }: TOptions) {
+  async action(options: TOptions) {
+    const v1Backup = options['v1-backup'];
+    const { config, network, file, verbose } = options;
     try {
       await nodeImportDB({ config, network, file, verbose });
     } catch (err) {

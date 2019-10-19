@@ -22,6 +22,7 @@ import { sql } from './migrate/migrate-v1-v2';
 import { nodeCrontab } from './node/crontab';
 import { nodeStart } from './node/start';
 import { MIN, SEC } from './shared/constants';
+import { ConditionsNotMetError } from './shared/exceptions';
 import { checkSourceDir } from './shared/fs-ops';
 import { debug, log } from './shared/log';
 import {
@@ -58,6 +59,9 @@ export default leaf({
   options: {
     ...v1ConfigOption,
     ...networkOption,
+    // TODO add skip-backup (with a confirmation)
+    // TODO add delete-peers
+    // TODO rename to block-height
     blockHeight: option({
       // TODO take from /packages/rise/etc/[testnet|mainnet]/constants.js ???
       defaultValue: 2432687,
@@ -70,6 +74,9 @@ export default leaf({
 
   async action({ network, verbose, blockHeight, config }: TOptions) {
     try {
+      // disabled
+      throw new ConditionsNotMetError('This command is deprecate');
+
       // prechecks
       if (!fs.existsSync('etc')) {
         throw new Error('no in a v1 dir');
@@ -149,7 +156,7 @@ export default leaf({
       await execCmd(
         './manager.sh',
         ['backup'],
-        "Couldn't start the DB",
+        "Couldn't back up the DB",
         null,
         verbose
       );

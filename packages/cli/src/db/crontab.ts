@@ -5,6 +5,7 @@ import { POSTGRES_HOME } from '../shared/constants';
 import { ConditionsNotMetError, handleCLIError } from '../shared/exceptions';
 import { closeLog, debug, log } from '../shared/log';
 import {
+  checkConfigFile,
   execSyncAsUser,
   getCrontab,
   getUsername,
@@ -75,6 +76,8 @@ export async function dbCrontab({
       );
     }
 
+    checkConfigFile(config);
+
     await removeEntries({ verbose });
     if (!removeOnly) {
       await addEntries({ verbose, config, network });
@@ -88,7 +91,7 @@ export async function dbCrontab({
 }
 
 async function addEntries({ verbose, config, network }: TOptions) {
-  let crontab = await getCrontab(verbose);
+  let crontab = await getCrontab(verbose, 'postgres');
   debug('old crontab', crontab);
   const params = [];
 
@@ -97,7 +100,8 @@ async function addEntries({ verbose, config, network }: TOptions) {
   }
 
   if (config) {
-    params.push(`--config ${config}`);
+    // crontab run cmds in $HOME
+    params.push(`--config ${path.resolve(__dirname, config)}`);
   }
 
   const cmd = `${__filename} db start ${params.join(' ')}`;
@@ -105,7 +109,8 @@ async function addEntries({ verbose, config, network }: TOptions) {
   debug('new crontab', crontab);
 
   execSyncAsUser(
-    `echo "${crontab}" | crontab -`,
+    // TODO manual `sudo -E -u postgres`
+    `echo "${crontab}" | sudo -E -u postgres crontab -`,
     isLinux() ? 'postgres' : null,
     { ...getCwd(), env: process.env }
   );
@@ -113,14 +118,15 @@ async function addEntries({ verbose, config, network }: TOptions) {
 
 // TODO share with /src/node/crontab
 async function removeEntries({ verbose }: TOptions) {
-  let crontab = await getCrontab(verbose);
+  let crontab = await getCrontab(verbose, 'postgres');
   debug('old crontab', crontab);
 
   crontab = crontab.replace(/^.+#managed_rise\n?/gm, '');
   debug('new crontab', crontab);
 
   execSyncAsUser(
-    `echo "${crontab}" | crontab -`,
+    // TODO manual `sudo -E -u postgres`
+    `echo "${crontab}" | sudo -E -u postgres crontab -`,
     isLinux() ? 'postgres' : null,
     { ...getCwd(), env: process.env }
   );
@@ -129,7 +135,7 @@ async function removeEntries({ verbose }: TOptions) {
 function getCmd({ config, removeOnly, network }: TOptions): string {
   let cmd = './rise db start';
   if (config) {
-    cmd += ` --config ${path.resolve(__dirname, config)}`;
+    cmd += ` --config ${config}`;
   }
   if (network !== 'mainnet') {
     cmd += ` --network ${network}`;

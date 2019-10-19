@@ -1,6 +1,5 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import { sync as mkdirpSync } from 'mkdirp';
 import path from 'path';
 import { BACKUPS_DIR } from '../shared/constants';
@@ -20,6 +19,7 @@ import {
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
+  isLinux,
   printUsingConfig,
   runSQL,
 } from '../shared/misc';
@@ -36,6 +36,7 @@ import { nodeStart } from './start';
 
 export type TOptions = IConfig & INetwork & IVerbose;
 
+// TODO allow re-using an existing backup file
 export default leaf({
   commandName: 'export-snapshot',
   description: `Creates an optimized database snapshot using the provided config and places it in ./${BACKUPS_DIR}.`,
@@ -94,6 +95,7 @@ export async function nodeExportSnapshot({
     const database = envVars.PGDATABASE;
     env = { ...env, PGDATABASE: null };
     const targetDB = `${database}_snap`;
+    // TODO extract
     await execCmd(
       'dropdb',
       ['--if-exists', targetDB],
@@ -101,6 +103,7 @@ export async function nodeExportSnapshot({
       { env },
       verbose
     );
+    // TODO extract
     await execCmd(
       'createdb',
       [targetDB],
@@ -167,6 +170,7 @@ export async function nodeExportSnapshot({
     }
 
     log('Snapshot ready, removing the temp DB');
+    // TODO extract
     await execCmd(
       'dropdb',
       ['--if-exists', targetDB],

@@ -1,8 +1,10 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import axios from 'axios';
+import { execSync } from 'child_process';
 import fs from 'fs';
 import { closeLog, debug, log } from '../shared/log';
+import { getSudoUsername, isSudo } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -55,6 +57,10 @@ async function downloadLatest({ network }: TOptions): Promise<string> {
     writer.on('finish', resolve);
     writer.on('error', reject);
   });
+  // fix perms when in sudo
+  if (isSudo()) {
+    execSync(`chown ${getSudoUsername()} ${filename}`);
+  }
   return filename;
 }
 

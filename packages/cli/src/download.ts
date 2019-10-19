@@ -1,15 +1,25 @@
 // tslint:disable:no-console
 import { leaf, option } from '@carnesen/cli';
+import { execSync } from 'child_process';
 import { http, https } from 'follow-redirects';
 import fs from 'fs';
 import { nodeLogsArchive } from './node/logs/archive';
 import { DIST_FILE, DOCKER_DIR, VERSION_RISE } from './shared/constants';
 import { extractSourceFile } from './shared/fs-ops';
 import { debug, log } from './shared/log';
-import { execCmd, execSyncAsUser, getDownloadURL } from './shared/misc';
+import {
+  execCmd,
+  execSyncAsUser,
+  getDownloadURL,
+  getSudoUsername,
+  isSudo,
+} from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
+import { updateCli } from './update-cli';
 
-export type TOptions = { version: string } & IVerbose & { localhost: boolean };
+export type TOptions = { version?: string } & IVerbose & {
+    localhost?: boolean;
+  };
 
 export default leaf({
   commandName: 'download',
@@ -35,23 +45,7 @@ export default leaf({
 
   async action({ version, verbose, localhost }: TOptions) {
     try {
-      // TODO temp
-      try {
-        execSyncAsUser('rm -f rise.bak');
-      } catch {}
-      try {
-        execSyncAsUser('cp rise rise.bak');
-      } catch {}
       await download({ version, localhost, verbose });
-      // make sure the CLI is always the latest
-      // execSyncAsUser('./rise update-cli');
-      // TODO temp
-      try {
-        execSyncAsUser('rm -f rise');
-      } catch {}
-      try {
-        execSyncAsUser('mv rise.bak rise');
-      } catch {}
       log('Done');
       log('');
       log('You can start RISE Node using:');
@@ -75,17 +69,33 @@ export default leaf({
   },
 });
 
+// tslint:disable-next-line:cognitive-complexity
 export async function download(
   { version, localhost, verbose }: TOptions = {
     localhost: false,
     version: VERSION_RISE,
-  }
+  },
+  preserveCLI = false
 ) {
   const url = process.env.DOWNLOAD_URL
     ? process.env.DOWNLOAD_URL
     : localhost
     ? `http://localhost:8080/${DIST_FILE}`
     : getDownloadURL(DIST_FILE, version);
+
+  if (preserveCLI) {
+    // TODO figure out the cause of errors
+    try {
+      execSyncAsUser('rm -f rise.bak');
+    } catch {
+      // empty
+    }
+    try {
+      execSyncAsUser('cp rise rise.bak');
+    } catch {
+      // empty
+    }
+  }
 
   debug(url);
   log(`Downloading ${url}`);
@@ -118,6 +128,11 @@ export async function download(
 
   log('Download completed');
 
+  // fix perms when in sudo
+  if (isSudo()) {
+    execSync(`chown ${getSudoUsername()} ${DIST_FILE}`);
+  }
+
   // archive the logs from the prev version (if any)
   try {
     nodeLogsArchive({ verbose });
@@ -138,4 +153,21 @@ export async function download(
   await extractSourceFile();
 
   fs.unlinkSync(DIST_FILE);
+
+  if (!preserveCLI) {
+    // make sure the CLI is always the latest
+    await updateCli({ verbose });
+  } else {
+    // TODO figure out the cause of errors
+    try {
+      execSyncAsUser('rm -f rise');
+    } catch {
+      // empty
+    }
+    try {
+      execSyncAsUser('mv rise.bak rise');
+    } catch {
+      // empty}
+    }
+  }
 }

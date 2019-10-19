@@ -1,7 +1,14 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import path from 'path';
 import { closeLog, debug, log } from '../shared/log';
-import { execSyncAsUser, getCrontab } from '../shared/misc';
+import {
+  checkConfigFile,
+  execSyncAsUser,
+  getCrontab,
+  getSudoUsername,
+  isSudo,
+} from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -61,6 +68,7 @@ export async function nodeCrontab({
   config,
   network,
 }: TOptions) {
+  checkConfigFile(config);
   await removeEntries({ verbose });
   if (!removeOnly) {
     await addEntries({ verbose, v1, config, network });
@@ -85,7 +93,9 @@ async function addEntries({ verbose, v1, config, network }: TOptions) {
   }
 
   if (config) {
-    params.push(`--config ${config}`);
+    log(process.cwd());
+    // crontab run cmds in $HOME
+    params.push(`--config ${path.resolve(process.cwd(), config)}`);
   }
 
   const cmd = `${__filename} node start ${params.join(' ')}`;
@@ -93,7 +103,14 @@ async function addEntries({ verbose, v1, config, network }: TOptions) {
   crontab += `@daily ${__filename} node logs archive #managed_rise\n`;
   debug('new crontab', crontab);
 
-  execSyncAsUser(`echo "${crontab}" | crontab -`);
+  // TODO manual `sudo -E -u`
+  if (isSudo()) {
+    execSyncAsUser(
+      `echo "\n${crontab}" | sudo -E -u ${getSudoUsername()} crontab -`
+    );
+  } else {
+    execSyncAsUser(`echo "\n${crontab}" | crontab -`);
+  }
 }
 
 // TODO share with /src/db/crontab
@@ -104,5 +121,12 @@ async function removeEntries({ verbose }: TOptions) {
   crontab = crontab.replace(/^.+#managed_rise\n?/gm, '');
   debug('new crontab', crontab);
 
-  execSyncAsUser(`echo "${crontab.trim()}" | crontab -`);
+  // TODO manual `sudo -E -u`
+  if (isSudo()) {
+    execSyncAsUser(
+      `echo "${crontab.trim()}" | sudo -E -u ${getSudoUsername()} crontab -`
+    );
+  } else {
+    execSyncAsUser(`echo "${crontab.trim()}" | crontab -`);
+  }
 }

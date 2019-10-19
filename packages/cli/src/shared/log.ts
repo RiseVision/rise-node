@@ -1,8 +1,10 @@
 // tslint:disable:no-console
+import { execSync } from 'child_process';
 import { debug as createDebug } from 'debug';
 import fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
 import { LOGS_DIR, SHELL_LOG_FILE } from './constants';
+import { getSudoUsername, isSudo } from './misc';
 
 export const debug = createDebug('rise-cli');
 
@@ -13,7 +15,10 @@ function createShellLogHandler(): number {
   mkdirpSync(LOGS_DIR);
   const fd = fs.openSync(SHELL_LOG_FILE, 'a');
   appendHeader(fd);
-
+  // fix perms when in sudo
+  if (isSudo()) {
+    execSync(`chown ${getSudoUsername()} ${SHELL_LOG_FILE}`);
+  }
   return fd;
 }
 

@@ -1,9 +1,7 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import { sync as mkdirpSync } from 'mkdirp';
 import path from 'path';
-import os from 'os';
 import { BACKUPS_DIR } from '../shared/constants';
 import { ConditionsNotMetError } from '../shared/exceptions';
 import {
@@ -83,6 +81,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
     debug(envVars);
     log('Starting the export...');
 
+    // TODO extract
     await execCmd(
       'dropdb',
       ['--if-exists', targetDB],
@@ -90,6 +89,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       { env },
       verbose
     );
+    // TODO extract
     await execCmd(
       'vacuumdb',
       ['--analyze', '--full', database],
@@ -97,6 +97,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       { env },
       verbose
     );
+    // TODO extract
     await execCmd(
       'createdb',
       [targetDB],
@@ -139,9 +140,11 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
       `Couldn't symlink ${getBackupsDir()}/latest to the backup file`,
       {
         cwd: getBackupsDir(),
-      }
+      },
+      verbose
     );
     // cleanup
+    // TODO extract
     await execCmd(
       'dropdb',
       ['--if-exists', targetDB],

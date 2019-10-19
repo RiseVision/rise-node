@@ -1,17 +1,21 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import { execSync } from 'child_process';
+import { dbAddRepos } from '../db/install';
 import { closeLog, debug, log } from '../shared/log';
 import { checkSudo, execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
+
+export type TOptions = { skipRepo?: boolean } & IVerbose;
 
 export default leaf({
   commandName: 'install-deps',
   description: 'Install required dependencies to run a node on Ubuntu',
   options: verboseOption,
 
-  async action({ verbose }: IVerbose) {
+  async action({ verbose, skipRepo }: TOptions) {
     try {
-      await nodeInstallDeps({ verbose });
+      await nodeInstallDeps({ verbose, skipRepo });
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -28,8 +32,13 @@ export default leaf({
   },
 });
 
-export async function nodeInstallDeps({ verbose }: IVerbose) {
+export async function nodeInstallDeps({ verbose, skipRepo }: TOptions) {
   checkSudo();
+
+  if (!skipRepo) {
+    dbAddRepos({ verbose });
+  }
+  execSync('apt-get update');
   const file = 'sudo';
   const params = [
     'apt-get',
@@ -39,7 +48,7 @@ export async function nodeInstallDeps({ verbose }: IVerbose) {
     // keep in sync with Docker.node_modules
     'build-essential',
     'python',
-    'postgresql-client',
+    'postgresql-client-11',
     'postgresql-server-dev-all',
     'libtool',
     'autoconf',

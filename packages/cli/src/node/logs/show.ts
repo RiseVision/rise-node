@@ -4,7 +4,9 @@ import { closeLog, debug, log } from '../../shared/log';
 import { execSyncAsUser } from '../../shared/misc';
 import {
   configOption,
+  dbOption,
   IConfig,
+  IDB,
   INetwork,
   IShell,
   IV1,
@@ -16,22 +18,23 @@ import {
 } from '../../shared/options';
 import { nodeLogsPath } from './path';
 
-export type TOptions = IConfig & INetwork & IVerbose & IV1 & IShell;
+export type TOptions = IConfig & INetwork & IVerbose & IV1 & IShell & IDB;
 
 export default leaf({
   commandName: 'show',
-  description: 'Show the path of the log file',
+  description: 'Show the the log file using less',
   options: {
     ...configOption,
     ...networkOption,
     ...verboseOption,
     ...v1Option,
     ...shellOption,
+    ...dbOption,
   },
 
-  async action({ verbose, network, config, v1, shell }: TOptions) {
+  async action({ verbose, network, config, v1, shell, db }: TOptions) {
     try {
-      const logPath = nodeLogsPath({ network, config, v1, shell });
+      const logPath = nodeLogsPath({ network, config, v1, shell, db });
       execSyncAsUser(`less ${logPath}`, null, {
         stdio: 'inherit',
       });

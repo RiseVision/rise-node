@@ -93,6 +93,21 @@ export interface IShell {
   shell?: boolean;
 }
 
+// --db
+
+export const dbOption = {
+  shell: option({
+    defaultValue: false,
+    description: 'Show the DB log (optional)',
+    nullable: true,
+    typeName: 'boolean',
+  }),
+};
+
+export interface IDB {
+  db?: boolean;
+}
+
 // --crontab
 
 export const crontabOption = {

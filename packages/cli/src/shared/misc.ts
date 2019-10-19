@@ -120,7 +120,7 @@ export function execCmd(
       }
       // always run as the current user, unless requested otherwise
       if (isSudo()) {
-        params.unshift('-u', username || getSudoUsername(), file);
+        params.unshift('-E -u', username || getSudoUsername(), file);
         file = 'sudo';
       }
       const cmd = file + ' ' + params.join(' ');
@@ -341,11 +341,15 @@ export function isSudo() {
   const uid = execSync('id -u')
     .toString('utf8')
     .trim();
-  log(`uid ${uid}`);
+  // if (log) {
+  //   log(`uid ${uid}`);
+  // }
   if (uid === '0') {
     return true;
   }
-  log(`getUsername() ${getUsername()}`);
+  // if (log) {
+  //   log(`getUsername() ${getUsername()}`);
+  // }
   return getUsername() === 'root';
 }
 
@@ -364,6 +368,9 @@ export function getSudoUsername(): string {
     .trim();
 }
 
+/**
+ * Returns the user currently executing the command (after sudo).
+ */
 export function getUsername(): string {
   return os.userInfo().username;
 }
@@ -374,14 +381,19 @@ export function checkConfigFile(config: string) {
   }
 }
 
-export async function getCrontab(verbose = false): Promise<string> {
+export async function getCrontab(
+  verbose = false,
+  user = null
+): Promise<string> {
   try {
     const crontab = await execCmd(
       'crontab',
       ['-l'],
       "Couldn't fetch crontab's content",
       null,
-      verbose
+      verbose,
+      null,
+      user
     );
     return crontab.trim();
   } catch {
@@ -401,16 +413,23 @@ export function checkSudo(requireSudo = true) {
 export function execSyncAsUser(
   cmd: string,
   user: string = null,
-  options?: ExecSyncOptions
+  options?: ExecSyncOptions,
+  verbose = true
 ): string {
   let prefix = '';
   if (isSudo()) {
-    prefix += `sudo -u ${user || getSudoUsername()} `;
+    prefix += `sudo -E -u ${user || getSudoUsername()} `;
   } else if (!isSudo() && user) {
     throw new Error('Running a cmd as a different user requires sudo');
   }
-  log(prefix + cmd);
-  const ret = execSync(prefix + cmd, { ...options, stdio: 'inherit' });
+  // if (log) {
+  //   log(prefix + cmd);
+  // }
+  options = {
+    stdio: verbose ? 'inherit' : 'ignore',
+    ...options,
+  };
+  const ret = execSync(prefix + cmd, options);
   // sometimes ret is null
   if (!ret) {
     return '';

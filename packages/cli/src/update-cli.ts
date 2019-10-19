@@ -5,13 +5,14 @@ import { debug, log } from './shared/log';
 import { execCmd } from './shared/misc';
 import { IVerbose, verboseOption } from './shared/options';
 
-export type TOptions = IVerbose & { localhost: boolean };
+export type TOptions = IVerbose & { localhost?: boolean };
 
 export default leaf({
   commandName: 'update-cli',
   description: 'Download the latest RISE CLI file to the current directory',
 
   options: {
+    // TODO add version
     localhost: option({
       defaultValue: false,
       description: 'Download from localhost:8080',
@@ -23,40 +24,7 @@ export default leaf({
 
   async action({ verbose, localhost }: TOptions) {
     try {
-      const url = localhost
-        ? 'http://localhost:8080/rise'
-        : 'https://github.com/RiseVision/rise-node/releases/latest/download/rise';
-
-      await execCmd(
-        'wget',
-        ['--quiet', '-O', 'rise', url],
-        "Couldn't download the file",
-        null,
-        verbose
-      );
-
-      await execCmd(
-        'chmod',
-        ['+x', 'rise'],
-        "Couldn't chmod +x the file",
-        null,
-        verbose
-      );
-
-      let version = await execCmd(
-        './rise',
-        ['version'],
-        "Couldn't get the version number",
-        null,
-        verbose
-      );
-      version = version.trim();
-
-      if (VERSION_CLI === version) {
-        console.log('No new version available');
-      } else {
-        console.log(`Updated to ${version}`);
-      }
+      await updateCli({ verbose, localhost });
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -70,3 +38,40 @@ export default leaf({
     }
   },
 });
+
+export async function updateCli({ verbose, localhost }: TOptions) {
+  const url = localhost
+    ? 'http://localhost:8080/rise'
+    : 'https://github.com/RiseVision/rise-node/releases/latest/download/rise';
+
+  await execCmd(
+    'wget',
+    ['--quiet', '-O', 'rise', url],
+    "Couldn't download the file",
+    null,
+    verbose
+  );
+
+  await execCmd(
+    'chmod',
+    ['+x', 'rise'],
+    "Couldn't chmod +x the file",
+    null,
+    verbose
+  );
+
+  let version = await execCmd(
+    './rise',
+    ['version'],
+    "Couldn't get the version number",
+    null,
+    verbose
+  );
+  version = version.trim();
+
+  if (VERSION_CLI === version) {
+    console.log('No new version available');
+  } else {
+    console.log(`Updated to ${version}`);
+  }
+}

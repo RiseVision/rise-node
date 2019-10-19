@@ -1,9 +1,11 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
+import { execSync } from 'child_process';
 import delay from 'delay';
 import path from 'path';
 import { nodeStop } from '../node/stop';
 import {
+  DATA_DIR,
   DB_DATA_DIR,
   DB_LOG_FILE,
   DB_PG_PATH,
@@ -56,17 +58,8 @@ export default leaf({
         log(err);
       }
       if (!(err instanceof NoRiseDistFileError)) {
-        let cmd = path.resolve(__dirname, 'rise') + ' db init';
-        if (config) {
-          cmd += ` --config=${config}`;
-        }
-        if (network !== 'mainnet') {
-          cmd += ` --network=${network}`;
-        }
-
         log(
           '\nError while initializing a PostgreSQL database.\n' +
-            // getLinuxHelpMsg(config, network) +
             `\nExamine the log using --verbose and check ${DB_LOG_FILE}.`
         );
       }
@@ -102,6 +95,11 @@ export async function dbInit({ config, network, verbose }: TOptions) {
   await dbStop({ config, network, verbose });
 
   debug(envVars);
+
+  if (isLinux()) {
+    // 'fix' the perms for the data dir
+    execSync(`chmod -R o+r ${POSTGRES_HOME + DATA_DIR}`);
+  }
 
   await execCmd(
     'rm',
