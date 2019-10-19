@@ -96,7 +96,7 @@ export interface IShell {
 // --db
 
 export const dbOption = {
-  shell: option({
+  db: option({
     defaultValue: false,
     description: 'Show the DB log (optional)',
     nullable: true,

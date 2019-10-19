@@ -1,4 +1,5 @@
 // tslint:disable:no-console
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -134,7 +135,6 @@ export function getBackupsDir(): string {
 export function getCoreRiseDir(): string {
   return path.resolve(process.cwd(), NODE_DIR, 'packages', 'rise');
 }
-import { execSync } from 'child_process';
 
 export function setBackupLock() {
   fs.writeFileSync(BACKUP_LOCK_FILE, process.pid);

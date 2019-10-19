@@ -45,16 +45,16 @@ export default leaf({
       nullable: false,
       typeName: 'string',
     }),
-    'v1-backup': option({
-      defaultValue: false,
-      description: 'Provided backup file needs a migration to v2',
-      nullable: false,
-      typeName: 'boolean',
-    }),
+    // 'v1-backup': option({
+    //   defaultValue: false,
+    //   description: 'Provided backup file needs a migration to v2',
+    //   nullable: false,
+    //   typeName: 'boolean',
+    // }),
   },
 
   async action(options: TOptions) {
-    const v1Backup = options['v1-backup'];
+    // const v1Backup = options['v1-backup'];
     const { config, network, file, verbose } = options;
     try {
       await nodeImportDB({ config, network, file, verbose });

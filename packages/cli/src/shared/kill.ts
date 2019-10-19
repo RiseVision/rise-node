@@ -38,7 +38,6 @@ export async function killProcessTree(processName: string) {
     }
     debug(`Killing PID tree ${pid}`);
     log(`Killing PID tree ${pid}`);
-    // TODO regex out the actual PID
     await killAsync(parseInt(pid, 10));
   }
 }
