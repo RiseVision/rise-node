@@ -234,7 +234,10 @@ export function createParseNodeOutput(
       return;
     }
     // DB corrupted
-    if (data.includes('SequelizeUniqueConstraintError')) {
+    if (
+      data.includes('SequelizeUniqueConstraintError') ||
+      data.includes('violates not-null constraint')
+    ) {
       debug('DBCorruptedError');
       reject(new DBCorruptedError());
       return;
@@ -407,6 +410,11 @@ export function checkSudo(requireSudo = true) {
     debug('getUsername()', getUsername());
     throw new ConditionsNotMetError('Needs sudo');
     // TODO show the whole command for copy&pasting
+  }
+  if (isSudo() && getSudoUsername() === 'root' && getUsername() !== 'root') {
+    throw new ConditionsNotMetError(
+      'Logging in as root and switching with `su - USER` not supported'
+    );
   }
 }
 

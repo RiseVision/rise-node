@@ -81,12 +81,16 @@ export class PeersLogic {
         return false;
       }
       // insert peer!
+      // TODO fix
       if (!_.isEmpty(this.acceptable([thePeer]))) {
         thePeer.updated = Date.now();
         this.peers[thePeer.string] = thePeer;
         this.logger.debug('Inserted new peer', thePeer.string);
       } else {
-        this.logger.debug('Rejecting unacceptable peer', thePeer.string);
+        this.logger.debug(
+          'Rejecting unacceptable peer',
+          thePeer.string + ' v' + thePeer.version
+        );
       }
     }
 

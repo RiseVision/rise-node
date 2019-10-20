@@ -212,6 +212,7 @@ export class LoaderModule implements ILoaderModule {
       await this.blocksProcessModule.loadBlocksOffset(
         Math.min(limitPerIteration, 1 + count - offset), // exclusive limit
         offset,
+        // TODO
         true /*verify*/
       );
       offset = offset + limitPerIteration;

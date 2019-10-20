@@ -17,7 +17,6 @@ import { NoRiseDistFileError } from './exceptions';
 import { debug, log } from './log';
 import {
   execCmd,
-  execSyncAsUser,
   getSudoUsername,
   isDevEnv,
   isSudo,
@@ -172,6 +171,7 @@ export function setNodeLock(pid: number, state: NodeStates) {
 }
 
 export function removeNodeLock() {
+  debug('removing node lock');
   if (!isDevEnv() && fs.existsSync(NODE_LOCK_FILE)) {
     fs.unlinkSync(NODE_LOCK_FILE);
   }
@@ -192,11 +192,15 @@ export function getPID(filePath: string): [number, NodeStates] | false {
       .split('\n');
     let exists: string;
     try {
-      exists = execSyncAsUser(`ps -p ${pid} -o pid=`, null, null, false);
+      // null output when using execSyncAsUser
+      exists = execSync(`ps -p ${pid} -o pid=`)
+        .toString('utf8')
+        .trim();
     } catch {
       // empty
     }
     if (!exists) {
+      log(`PID ${pid} doesn't exist, removing the lock file`);
       fs.unlinkSync(filePath);
       return false;
     }

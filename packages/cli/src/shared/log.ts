@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 import { debug as createDebug } from 'debug';
 import fs from 'fs';
 import { sync as mkdirpSync } from 'mkdirp';
-import { LOGS_DIR, SHELL_LOG_FILE } from './constants';
+import { DATA_DIR, LOGS_DIR, SHELL_LOG_FILE } from './constants';
 import { getSudoUsername, isSudo } from './misc';
 
 export const debug = createDebug('rise-cli');
@@ -17,7 +17,7 @@ function createShellLogHandler(): number {
   appendHeader(fd);
   // fix perms when in sudo
   if (isSudo()) {
-    execSync(`chown ${getSudoUsername()} ${SHELL_LOG_FILE}`);
+    execSync(`chown -R ${getSudoUsername()} ${DATA_DIR}`);
   }
   return fd;
 }

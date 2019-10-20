@@ -157,7 +157,7 @@ export async function download(
 
   if (!preserveCLI) {
     // make sure the CLI is always the latest
-    await updateCLI({ verbose });
+    await updateCLI({ verbose, version });
   } else {
     // TODO figure out the cause of errors
     try {

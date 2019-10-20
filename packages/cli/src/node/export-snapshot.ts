@@ -19,7 +19,6 @@ import {
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
-  isLinux,
   printUsingConfig,
   runSQL,
 } from '../shared/misc';
@@ -36,7 +35,6 @@ import { nodeStart } from './start';
 
 export type TOptions = IConfig & INetwork & IVerbose;
 
-// TODO allow re-using an existing backup file
 export default leaf({
   commandName: 'export-snapshot',
   description: `Creates an optimized database snapshot using the provided config and places it in ./${BACKUPS_DIR}.`,
@@ -45,6 +43,7 @@ export default leaf({
     ...configOption,
     ...networkOption,
     ...verboseOption,
+    // TODO --file options, which points to backup (to avoid exporting the db)
   },
 
   async action({ config, network, verbose }: TOptions) {
@@ -116,7 +115,6 @@ export async function nodeExportSnapshot({
 
     // TODO merge with `nodeImportDB()`
     // import the exported file
-    log('Importing the backup file...');
     // TODO unify with others by piping manually
     const backupPath = path.resolve(getBackupsDir(), 'latest');
     try {
@@ -128,6 +126,7 @@ export async function nodeExportSnapshot({
       execSyncAsUser(cmd, null, { env });
     } catch (e) {
       log(`Cannot import "${backupPath}" into the snap DB`);
+      throw e;
     }
     await runSQL('delete from exceptions;', network, config, verbose, targetDB);
 
@@ -167,6 +166,7 @@ export async function nodeExportSnapshot({
       execSyncAsUser(cmd, null, { env });
     } catch (e) {
       log("Couldn't dump the DB");
+      throw e;
     }
 
     log('Snapshot ready, removing the temp DB');

@@ -27,8 +27,10 @@ import {
   createParseNodeOutput,
   dbConnectionInfo,
   execCmd,
-  getDBEnvVars, getSudoUsername,
-  isDevEnv, isSudo,
+  getDBEnvVars,
+  getSudoUsername,
+  isDevEnv,
+  isSudo,
   mergeConfig,
   printUsingConfig,
 } from '../shared/misc';
@@ -134,7 +136,6 @@ export async function nodeStart(
     log('Starting RISE Node...');
 
     let ready = false;
-    removeNodeLock();
 
     // add the crontab entry if requested
     if (crontab) {
@@ -222,7 +223,6 @@ function startLaunchpad(
         params.push(
           '-s',
           '--override-config',
-          // TODO test this works
           `db.database="${mergedConfig.db.database}_snap"`
         );
       }
@@ -238,7 +238,9 @@ function startLaunchpad(
         { foreground, verbose },
         () => {
           setReady();
-          setNodeLock(proc.pid, NodeStates.READY);
+          if (!isDevEnv()) {
+            setNodeLock(proc.pid, NodeStates.READY);
+          }
           if (!foreground) {
             resolve();
           }
