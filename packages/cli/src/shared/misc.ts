@@ -42,7 +42,12 @@ export function hasLocalPostgres(): boolean {
   const toCheck = ['dropdb', 'vacuumdb', 'createdb', 'pg_dump', 'psql'];
   try {
     for (const file of toCheck) {
-      execSyncAsUser(`which ${isLinux() ? DB_PG_PATH + file : file}`);
+      execSyncAsUser(
+        `which ${isLinux() ? DB_PG_PATH + file : file}`,
+        null,
+        null,
+        false
+      );
     }
   } catch {
     return false;

@@ -2,14 +2,19 @@
 import { leaf, option } from '@carnesen/cli';
 import { util } from 'protobufjs';
 import { dbInit } from '../db/init';
-import { dbAddRepos, dbInstall } from '../db/install';
+import { dbAddRepo, dbInstall } from '../db/install';
 import { dbStop } from '../db/stop';
 import { download } from '../download';
 import { VERSION_RISE } from '../shared/constants';
 import { handleCLIError } from '../shared/exceptions';
 import { killProcessTree } from '../shared/kill';
 import { closeLog, debug, log } from '../shared/log';
-import { checkSudo, hasLocalPostgres, isLinux } from '../shared/misc';
+import {
+  checkSudo,
+  execSyncAsUser,
+  hasLocalPostgres,
+  isLinux,
+} from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -21,11 +26,13 @@ import {
 import { updateCLI } from '../update-cli';
 import { nodeDownloadSnapshot } from './download-snapshot';
 import { nodeInstallDeps } from './install-deps';
-import { nodeStart } from './start';
+import { nodeLogsArchive } from './logs/archive';
 import { nodeStop } from './stop';
 import fs = util.fs;
 
-export type TOptions = IConfig & INetwork & IVerbose & { skipKill?: boolean };
+export type TOptions = IConfig &
+  INetwork &
+  IVerbose & { noKill?: boolean; noDownload?: boolean };
 
 export default leaf({
   commandName: 'setup',
@@ -35,7 +42,13 @@ export default leaf({
     ...configOption,
     ...networkOption,
     ...verboseOption,
-    'skip-kill': option({
+    'no-download': option({
+      defaultValue: false,
+      description: 'Dont download the latest version',
+      nullable: true,
+      typeName: 'boolean',
+    }),
+    'no-kill': option({
       defaultValue: false,
       description: 'Dont kill node and postgres processes',
       nullable: true,
@@ -45,7 +58,8 @@ export default leaf({
 
   async action(options: TOptions) {
     try {
-      options.skipKill = options['skip-kill'];
+      options.noKill = options['no-kill'];
+      options.noDownload = options['no-download'];
       await nodeSetup(options);
     } catch (err) {
       debug(err);
@@ -63,6 +77,64 @@ export default leaf({
   },
 });
 
+export async function nodeSetup({
+  config,
+  network,
+  verbose,
+  noKill,
+  noDownload,
+}: TOptions) {
+  try {
+    // require `sudo`
+    checkSudo();
+
+    if (noDownload) {
+      execSyncAsUser('tar -xzf source.tar.gz', null, {
+        cwd: 'rise-node',
+      });
+    } else {
+      // update
+      await download({ verbose }, true);
+      await updateCLI({ verbose });
+    }
+
+    // handle node_config.json
+    config = handleDefaultConfig(config);
+
+    // kill the v1 stuff (optional)
+    if (!noKill) {
+      await killProcessTree('postgres', verbose);
+      await killProcessTree('node', verbose);
+    }
+
+    // try to clean things up first
+    await stop(verbose, config, network);
+
+    if (isLinux()) {
+      dbAddRepo({ verbose });
+      await dbInstall({ verbose }, true);
+      await nodeInstallDeps({ verbose }, true);
+    }
+    hasLocalPostgres();
+
+    await dbInit({ config, network, verbose });
+    await nodeDownloadSnapshot({ config, network, verbose });
+
+    // archive previous logs
+    nodeLogsArchive({ network, config, verbose });
+
+    // start through the shell for a proper PID
+    const verboseParam = verbose ? '--verbose' : '';
+    const configParam = config ? '--config ' + config : '';
+    execSyncAsUser(
+      `./rise node start ${configParam} --crontab --network ${network} ${verboseParam}`
+    );
+  } catch (err) {
+    handleCLIError(err);
+  }
+}
+
+// TODO implement globally
 function handleDefaultConfig(config?: string) {
   if (fs.existsSync('node_config.json') && !config) {
     log('Found node_config.json, using it as the default');
@@ -82,46 +154,5 @@ async function stop(verbose, config, network) {
     await dbStop({ config, network, verbose });
   } catch {
     // empty
-  }
-}
-
-export async function nodeSetup({
-  config,
-  network,
-  verbose,
-  skipKill,
-}: TOptions) {
-  try {
-    // require `sudo`
-    checkSudo();
-
-    // update
-    await download({ verbose, version: VERSION_RISE }, true);
-    await updateCLI({ verbose, version: VERSION_RISE });
-
-    // handle node_config.json
-    config = handleDefaultConfig(config);
-
-    // kill the v1 stuff (optional)
-    if (!skipKill) {
-      await killProcessTree('postgres');
-      await killProcessTree('node');
-    }
-
-    // try to clean things up first
-    await stop(verbose, config, network);
-
-    if (isLinux()) {
-      dbAddRepos({ verbose });
-      await dbInstall({ verbose, skipRepo: true });
-      await nodeInstallDeps({ verbose, skipRepo: true });
-    }
-    hasLocalPostgres();
-
-    await dbInit({ config, network, verbose });
-    await nodeDownloadSnapshot({ config, network, verbose });
-    await nodeStart({ config, network, verbose, crontab: true });
-  } catch (err) {
-    handleCLIError(err);
   }
 }

@@ -97,7 +97,7 @@ export async function dbStart({ config, network, verbose, crontab }: TOptions) {
     await execCmd(
       DB_PG_PATH + 'pg_ctl',
       ['-D', DB_DATA_DIR, '-l', DB_LOG_FILE, 'start'],
-      `Failed to start the DB, check ${DB_LOG_FILE}`,
+      "Failed to start the DB, check 'sudo ./rise node logs show --db'.",
       { env, ...getCwd() },
       verbose,
       null,

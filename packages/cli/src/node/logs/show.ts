@@ -3,7 +3,7 @@ import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
 import { handleCLIError } from '../../shared/exceptions';
 import { closeLog, debug, log } from '../../shared/log';
-import { checkSudo } from '../../shared/misc';
+import { checkSudo, isLinux } from '../../shared/misc';
 import {
   configOption,
   dbOption,
@@ -36,7 +36,7 @@ export default leaf({
 
   async action({ verbose, network, config, v1, shell, db }: TOptions) {
     try {
-      if (db) {
+      if (db && !isLinux()) {
         checkSudo();
       }
       const logPath = nodeLogsPath({ network, config, v1, shell, db });

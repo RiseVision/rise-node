@@ -11,33 +11,38 @@ const killAsync = promisify(kill);
  *
  * @param processName Has to be regexp-safe (or escaped)
  */
-export async function killProcessTree(processName: string) {
-  const list = execSync('ps x')
+export async function killProcessTree(processName: string, verbose = false) {
+  const list = execSync(`ps ax | grep ${processName}`)
     .toString('utf8')
     .trim();
   debug('list of ' + processName);
   debug(list);
 
-  const regex = new RegExp(`^\\s*(\\d+).+${processName}`, 'mg');
-
-  const pids = list.match(regex);
-  if (!pids || !pids.length) {
-    log(`No processes to kill matching "${processName}"`);
-    return;
-  }
-
+  // get the parent PID of this process
   const selfPID = process.pid.toString();
   const ppid = execSync(`ps -p ${selfPID} -o ppid=`)
     .toString('utf8')
     .trim();
+
   // TODO parallel
-  for (const pid of pids) {
-    // never kill yourself
-    if (pid === selfPID || ppid) {
-      continue;
+  for (const line of list.split('\n')) {
+    try {
+      // skip gres
+      if (line.includes('grep')) {
+        continue;
+      }
+      const pid = line.match(/^\s*(\d+)/)[1];
+      debug(`PID ${pid}`);
+      // never kill yourself
+      if (pid === selfPID || pid === ppid) {
+        continue;
+      }
+      if (verbose) {
+        log(`Killing PID tree ${pid} of ${processName}`);
+      }
+      await killAsync(parseInt(pid, 10));
+    } catch (err) {
+      log(err);
     }
-    debug(`Killing PID tree ${pid}`);
-    log(`Killing PID tree ${pid}`);
-    await killAsync(parseInt(pid, 10));
   }
 }

@@ -1,6 +1,8 @@
 // tslint:disable:no-console
 /**
  * TODO
+ * - first deploy an old version disabling nodes after the migration point
+ *     (minVersion)
  * - turn off user nodes X time before the core ones
  * - migrate core nodes 1-by-1
  * - keep trying to connect to core nodes from user nodes in a loop

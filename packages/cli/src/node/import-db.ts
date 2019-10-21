@@ -17,6 +17,7 @@ import {
   getBlockHeight,
   getDBEnvVars,
   hasLocalPostgres,
+  runSQL,
 } from '../shared/misc';
 import {
   configOption,
@@ -29,7 +30,11 @@ import {
 import { nodeStop } from './stop';
 
 export type TOptions = IConfig &
-  INetwork & { file: string; v1Backup?: boolean } & IVerbose;
+  INetwork & {
+    file: string;
+    // v1Backup?: boolean;
+    snapshot?: boolean;
+  } & IVerbose;
 
 export default leaf({
   commandName: 'import-db',
@@ -45,6 +50,13 @@ export default leaf({
       nullable: false,
       typeName: 'string',
     }),
+    snapshot: option({
+      defaultValue: false,
+      description:
+        'Import a backup like a snapshot. Not required for snapshots.',
+      nullable: false,
+      typeName: 'boolean',
+    }),
     // 'v1-backup': option({
     //   defaultValue: false,
     //   description: 'Provided backup file needs a migration to v2',
@@ -55,9 +67,9 @@ export default leaf({
 
   async action(options: TOptions) {
     // const v1Backup = options['v1-backup'];
-    const { config, network, file, verbose } = options;
+    const { verbose } = options;
     try {
-      await nodeImportDB({ config, network, file, verbose });
+      await nodeImportDB(options);
     } catch (err) {
       if (verbose) {
         log(err);
@@ -78,6 +90,7 @@ export async function nodeImportDB({
   network,
   file,
   verbose,
+  snapshot,
 }: TOptions) {
   try {
     // TODO exception
@@ -117,6 +130,16 @@ export async function nodeImportDB({
     } catch (e) {
       log(`Cannot import "${file}"`);
     }
+
+    // perform snapshot-like cleanups
+    if (snapshot) {
+      log('Cleaning up non-snapshot data');
+      await runSQL('delete from exceptions;', network, config, verbose);
+      await runSQL('delete from peers;', network, config, verbose);
+      await runSQL('delete from info;', network, config, verbose);
+      await runSQL('delete from exceptions;', network, config, verbose);
+    }
+
     const blockHeight = await getBlockHeight(network, config, verbose);
     log('Import completed');
     log(`Block height: ${blockHeight}`);

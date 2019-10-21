@@ -5,24 +5,25 @@ import { ConditionsNotMetError, handleCLIError } from '../shared/exceptions';
 import { closeLog, debug, log } from '../shared/log';
 import { isLinux, isSudo } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
+import { dbStop } from './stop';
 
-export type TOptions = { skipRepo?: boolean } & IVerbose;
+export type TOptions = IVerbose;
 
 export default leaf({
   commandName: 'install',
   description: 'Install PostgreSQL database on Ubuntu',
   options: verboseOption,
 
-  async action({ verbose, skipRepo }: TOptions) {
+  async action({ verbose }: TOptions) {
     try {
-      await dbInstall({ verbose, skipRepo });
+      await dbInstall({ verbose });
     } catch (err) {
       debug(err);
       if (verbose) {
         log(err);
       }
       log(
-        'Error when installing the DB. ' +
+        '\nError when installing the DB. ' +
           (verbose ? '' : 'Examine the log using --verbose.')
       );
       process.exit(1);
@@ -32,7 +33,7 @@ export default leaf({
   },
 });
 
-export async function dbInstall({ verbose, skipRepo }: TOptions) {
+export async function dbInstall({ verbose }: TOptions, addDBRepo = true) {
   try {
     if (!isLinux()) {
       throw new ConditionsNotMetError('This command is linux-only');
@@ -58,13 +59,13 @@ export async function dbInstall({ verbose, skipRepo }: TOptions) {
 
     // stop a running DB
     try {
-      execSync('./rise db stop');
+      await dbStop({ verbose });
     } catch {
       // empty
     }
 
-    if (!skipRepo) {
-      dbAddRepos({ verbose });
+    if (addDBRepo) {
+      dbAddRepo({ verbose });
     }
 
     // install postgres 11
@@ -81,7 +82,7 @@ export async function dbInstall({ verbose, skipRepo }: TOptions) {
   }
 }
 
-export function dbAddRepos({ verbose }) {
+export function dbAddRepo({ verbose }) {
   // install keys and repos
   const version = execSync('lsb_release -cs')
     .toString('utf8')

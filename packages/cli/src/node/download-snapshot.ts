@@ -3,8 +3,9 @@ import { leaf } from '@carnesen/cli';
 import axios from 'axios';
 import { execSync } from 'child_process';
 import fs from 'fs';
+import { BACKUPS_DIR } from '../shared/constants';
 import { closeLog, debug, log } from '../shared/log';
-import { getSudoUsername, isSudo } from '../shared/misc';
+import { execSyncAsUser, getSudoUsername, isSudo } from '../shared/misc';
 import {
   configOption,
   IConfig,
@@ -49,7 +50,8 @@ export default leaf({
 async function downloadLatest({ network }: TOptions): Promise<string> {
   log('Downloading the latest snapshot file...');
   const url = `https://downloads.rise.vision/snapshots/${network}/latest`;
-  const filename = `snap_${network}_latest.gz`;
+  execSyncAsUser(`mkdir -p ${BACKUPS_DIR}`);
+  const filename = `${BACKUPS_DIR}/snap_${network}_latest.gz`;
   const writer = fs.createWriteStream(filename);
   const res = await axios.get(url, { responseType: 'stream' });
   res.data.pipe(writer);
@@ -70,5 +72,11 @@ export async function nodeDownloadSnapshot({
   verbose,
 }: TOptions) {
   const filename = await downloadLatest({ network });
-  await nodeImportDB({ network, verbose, config, file: filename });
+  await nodeImportDB({
+    config,
+    file: filename,
+    network,
+    snapshot: true,
+    verbose,
+  });
 }

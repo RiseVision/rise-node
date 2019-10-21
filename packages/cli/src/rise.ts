@@ -6,6 +6,7 @@ import configDefaults from './config-default';
 import dbCrontab from './db/crontab';
 import dbInit from './db/init';
 import dbInstall from './db/install';
+import dbKill from './db/kill';
 import dbStart from './db/start';
 import dbStop from './db/stop';
 import dockerComposeStart from './docker-compose/start';
@@ -71,7 +72,7 @@ export const dockerCompose = branch({
 export const db = branch({
   commandName: 'db',
   description: 'Manage the local PostgreSQL database',
-  subcommands: [dbInit, dbStart, dbStop, dbInstall, dbCrontab],
+  subcommands: [dbInit, dbStart, dbStop, dbInstall, dbCrontab, dbKill],
 });
 
 export const version = leaf({
@@ -123,6 +124,7 @@ export const root = branch({
     ./rise db start
     ./rise db stop
     ./rise db crontab
+    ./rise db kill
 
     # print config defaults
     ./rise config-defaults`,

@@ -2,7 +2,7 @@
 import { leaf } from '@carnesen/cli';
 import kill from 'tree-kill';
 import { promisify } from 'util';
-import { getNodePID } from '../shared/fs-ops';
+import { getNodePID, removeNodeLock } from '../shared/fs-ops';
 import { closeLog, debug, log } from '../shared/log';
 import { execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
@@ -68,4 +68,5 @@ export async function nodeStop({ verbose, v1 }: TOptions = {}) {
   }
 
   await killAsync(pid);
+  removeNodeLock();
 }

@@ -108,6 +108,7 @@ export async function nodeExportDB({ config, network, verbose }: TOptions) {
     // TODO unify with `execCmd` by piping manually
     try {
       log('Exporting the DB...');
+      // TODO switch to a SQL command and avoid the shell?
       const cmd = `pg_dump "${database}" | psql "${targetDB}"`;
       if (verbose) {
         log(`$ ${cmd}`);

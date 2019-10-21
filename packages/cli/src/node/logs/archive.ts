@@ -41,9 +41,6 @@ export default leaf({
 
   async action({ verbose, network, config, v1, dir }: TOptions) {
     try {
-      if (!dir) {
-        dir = LOGS_DIR;
-      }
       nodeLogsArchive({ network, config, v1, dir });
     } catch (err) {
       debug(err);
@@ -64,21 +61,26 @@ export default leaf({
 export function nodeLogsArchive({ network, config, v1, dir }: TOptions) {
   const shellLog = nodeLogsPath({ shell: true });
   const nodeLog = nodeLogsPath({ network, config, v1 });
-  // make sure the files exists
-  if (!fs.existsSync(shellLog)) {
-    throw new Error(`Log file doesn't exist: ${shellLog}`);
+
+  if (!dir) {
+    dir = LOGS_DIR;
   }
-  if (!fs.existsSync(nodeLog)) {
-    throw new Error(`Log file doesn't exist: ${nodeLog}`);
-  }
+
   // rename with the current date
   const suffix = new Date().toISOString();
-  const shellArchived = path.join(dir, 'shell-' + suffix);
-  const nodeArchived = path.join(dir, network + '-' + suffix);
-  // TODO get the name from the last part of config's "logFileName"
-  log(`Archiving ${shellLog} as ${shellArchived}`);
-  log(`Archiving ${nodeLog} as ${nodeArchived}`);
-  fs.renameSync(shellLog, shellArchived);
-  fs.renameSync(nodeLog, nodeArchived);
+
+  if (fs.existsSync(shellLog)) {
+    const shellArchived = path.join(dir, 'shell-' + suffix);
+    log(`Archiving ${shellLog} as ${shellArchived}`);
+    fs.renameSync(shellLog, shellArchived);
+  }
+
+  if (fs.existsSync(nodeLog)) {
+    const nodeArchived = path.join(dir, network + '-' + suffix);
+    // TODO get the name from the last part of config's "logFileName"
+    log(`Archiving ${nodeLog} as ${nodeArchived}`);
+    fs.renameSync(nodeLog, nodeArchived);
+  }
+
   log('Archiving done');
 }

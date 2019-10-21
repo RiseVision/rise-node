@@ -40,6 +40,7 @@ export default leaf({
       nullable: true,
       typeName: 'boolean',
     }),
+    // TODO --url (dont update-cli)
     ...versionOptions,
     ...verboseOption,
   },
@@ -157,7 +158,9 @@ export async function download(
 
   if (!preserveCLI) {
     // make sure the CLI is always the latest
-    await updateCLI({ verbose, version });
+    if (!localhost) {
+      await updateCLI({ verbose, version });
+    }
   } else {
     // TODO figure out the cause of errors
     try {

@@ -1,21 +1,21 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
 import { execSync } from 'child_process';
-import { dbAddRepos } from '../db/install';
+import { dbAddRepo } from '../db/install';
 import { closeLog, debug, log } from '../shared/log';
 import { checkSudo, execCmd } from '../shared/misc';
 import { IVerbose, verboseOption } from '../shared/options';
 
-export type TOptions = { skipRepo?: boolean } & IVerbose;
+export type TOptions = IVerbose;
 
 export default leaf({
   commandName: 'install-deps',
   description: 'Install required dependencies to run a node on Ubuntu',
   options: verboseOption,
 
-  async action({ verbose, skipRepo }: TOptions) {
+  async action({ verbose }: TOptions) {
     try {
-      await nodeInstallDeps({ verbose, skipRepo });
+      await nodeInstallDeps({ verbose });
     } catch (err) {
       debug(err);
       if (verbose) {
@@ -32,11 +32,11 @@ export default leaf({
   },
 });
 
-export async function nodeInstallDeps({ verbose, skipRepo }: TOptions) {
+export async function nodeInstallDeps({ verbose }: TOptions, addDBRepo = true) {
   checkSudo();
 
-  if (!skipRepo) {
-    dbAddRepos({ verbose });
+  if (addDBRepo) {
+    dbAddRepo({ verbose });
   }
   execSync('apt-get update');
   const file = 'sudo';

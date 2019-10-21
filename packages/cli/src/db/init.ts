@@ -59,8 +59,9 @@ export default leaf({
       }
       if (!(err instanceof NoRiseDistFileError)) {
         log(
-          '\nError while initializing a PostgreSQL database.\n' +
-            `\nExamine the log using --verbose and check ${DB_LOG_FILE}.`
+          '\nError while initializing a PostgreSQL database.' +
+            verbose ? '' : ' Examine the log using --verbose.' +
+            " Check 'sudo ./rise node logs show --db'."
         );
       }
       process.exit(1);
