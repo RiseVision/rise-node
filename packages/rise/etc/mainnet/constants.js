@@ -25,7 +25,7 @@ module.exports = {
       },
       {
         height: 2432687,
-        ver: '>=2.0.1',
+        ver: '>=2.1.1',
       },
     ],
     fees: [
