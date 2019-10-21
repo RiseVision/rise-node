@@ -156,6 +156,13 @@ export class PeersLogic {
         if ((process.env.NODE_ENV || '').toUpperCase() === 'TEST') {
           return peer.nonce !== this.systemModule.getNonce();
         }
+        if (peer.nonce === this.systemModule.getNonce()) {
+          this.logger.debug(
+            `Rejecting because of nonce (${
+              peer.nonce
+            } == ${this.systemModule.getNonce()})`
+          );
+        }
         return (
           // !ip.isPrivate(peer.ip) &&
           peer.nonce !== this.systemModule.getNonce() &&
@@ -163,7 +170,13 @@ export class PeersLogic {
           peer.os !== 'lisk-js-api'
         );
       })
-      .filter((peer) => this.systemModule.versionCompatible(peer.version))
+      .filter((peer) => {
+        const compat = this.systemModule.versionCompatible(peer.version);
+        if (!compat) {
+          this.logger.debug('Rejecting because of the version number');
+        }
+        return compat;
+      })
       .value();
   }
 
