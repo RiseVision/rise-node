@@ -203,6 +203,7 @@ export class BlockLoader extends Extendable {
         this.logger.error(
           `Failed to find common block with: ${syncPeer.string}`
         );
+        this.logger.error(err.message);
         throw err;
       }
       // Rollback local chain to last common block with peer if we appear to be on a fork
