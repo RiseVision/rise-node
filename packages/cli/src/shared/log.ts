@@ -12,14 +12,18 @@ export const debug = createDebug('rise-cli');
 export const logHandler = createShellLogHandler();
 
 function createShellLogHandler(): number {
-  mkdirpSync(LOGS_DIR);
-  const fd = fs.openSync(SHELL_LOG_FILE, 'a');
-  appendHeader(fd);
-  // fix perms when in sudo
-  if (isSudo()) {
-    execSync(`chown -R ${getSudoUsername()} ${DATA_DIR}`);
+  try {
+    mkdirpSync(LOGS_DIR);
+    const fd = fs.openSync(SHELL_LOG_FILE, 'a');
+    appendHeader(fd);
+    // fix perms when in sudo
+    if (isSudo()) {
+      execSync(`chown -R ${getSudoUsername()} ${DATA_DIR}`);
+    }
+    return fd;
+  } catch (err) {
+    log(err);
   }
-  return fd;
 }
 
 export function log(...msg: string[]) {
@@ -28,9 +32,14 @@ export function log(...msg: string[]) {
 }
 
 export function closeLog() {
-  // TODO doesnt seem to work
-  fs.writeSync(logHandler, '\n\n');
-  fs.closeSync(logHandler);
+  if (logHandler) {
+    fs.writeSync(logHandler, '\n\n');
+    fs.closeSync(logHandler);
+  }
+  // fix perms when in sudo
+  if (isSudo()) {
+    execSync(`chown -R ${getSudoUsername()} ${DATA_DIR}`);
+  }
 }
 
 function appendHeader(fd: number) {
