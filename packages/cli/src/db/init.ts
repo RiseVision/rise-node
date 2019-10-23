@@ -1,13 +1,10 @@
 // tslint:disable:no-console
 import { leaf } from '@carnesen/cli';
-import { execSync } from 'child_process';
 import delay from 'delay';
 import path from 'path';
 import { nodeStop } from '../node/stop';
 import {
-  DATA_DIR,
   DB_DATA_DIR,
-  DB_LOG_FILE,
   DB_PG_PATH,
   POSTGRES_HOME,
   SEC,
@@ -59,9 +56,10 @@ export default leaf({
       }
       if (!(err instanceof NoRiseDistFileError)) {
         log(
-          '\nError while initializing a PostgreSQL database.' +
-            verbose ? '' : ' Examine the log using --verbose.' +
-            " Check 'sudo ./rise node logs show --db'."
+          '\nError while initializing a PostgreSQL database.' + verbose
+            ? ''
+            : ' Examine the log using --verbose.' +
+                " Check 'sudo ./rise node logs show --db'."
         );
       }
       process.exit(1);

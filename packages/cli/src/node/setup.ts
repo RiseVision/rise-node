@@ -77,6 +77,38 @@ export default leaf({
   },
 });
 
+const welcomeMsg = `RISE Node setup
+
+Installer will automatically set up a working RISE Node.
+
+This includes:
+
+- download the newest dist file
+- kill running node & postgres processes
+- install the dependencies
+- install PostgreSQL
+- initialize a DB
+- download the latest snapshot
+- archive current logs
+- add entries to crontab
+- start the node
+
+Known issues:
+
+1. > Killing PID tree 12345 of node
+   > Connection to XXX closed by remote host.
+
+   sudo ./rise setup --no-kill
+
+2. > root is not in the sudoers file.  This incident will be reported.
+
+   Run 'sudo visudo'
+   Paste 'root ALL=(ALL) ALL'
+
+Support channel:
+https://app.slack.com/client/T13E3TDMG/C557VNSM6
+`;
+
 export async function nodeSetup({
   config,
   network,
@@ -87,6 +119,8 @@ export async function nodeSetup({
   try {
     // require `sudo`
     checkSudo();
+
+    console.log(welcomeMsg);
 
     if (noDownload) {
       execSyncAsUser('tar -xzf source.tar.gz', null, {

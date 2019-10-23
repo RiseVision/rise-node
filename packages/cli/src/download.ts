@@ -160,6 +160,9 @@ export async function download(
     // make sure the CLI is always the latest
     if (!localhost) {
       await updateCLI({ verbose, version });
+      if (isSudo()) {
+        execSync(`chmod ${getSudoUsername()} rise`);
+      }
     }
   } else {
     // TODO figure out the cause of errors

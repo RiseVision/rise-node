@@ -371,9 +371,16 @@ export function assertV1Dir() {
  * Returns the name of the current user even if the CLI has been ran with sudo.
  */
 export function getSudoUsername(): string {
-  return execSync('logname')
+  const user = execSync('logname')
     .toString('utf8')
     .trim();
+  // probably 'su - USER' as root, get the username from the parent dir
+  if (user === 'root') {
+    return execSync('stat -c %U ..')
+      .toString('utf8')
+      .trim();
+  }
+  return user;
 }
 
 /**
@@ -416,11 +423,11 @@ export function checkSudo(requireSudo = true) {
     throw new ConditionsNotMetError('Needs sudo');
     // TODO show the whole command for copy&pasting
   }
-  if (isSudo() && getSudoUsername() === 'root' && getUsername() !== 'root') {
-    throw new ConditionsNotMetError(
-      'Logging in as root and switching with `su - USER` not supported'
-    );
-  }
+  // if (isSudo() && getSudoUsername() === 'root' && getUsername() === 'root') {
+  //   throw new ConditionsNotMetError(
+  //     'Logging in as root and switching with `su - USER` not supported'
+  //   );
+  // }
 }
 
 export function execSyncAsUser(

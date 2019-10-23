@@ -90,6 +90,9 @@ export async function dbCrontab({
   }
 }
 
+// TODO automate
+const pipeSudo = isLinux() ? 'sudo -E -u postgres' : '';
+
 async function addEntries({ verbose, config, network }: TOptions) {
   let crontab = await getCrontab(verbose, 'postgres');
   debug('old crontab', crontab);
@@ -110,7 +113,7 @@ async function addEntries({ verbose, config, network }: TOptions) {
 
   execSyncAsUser(
     // TODO manual `sudo -E -u postgres`
-    `echo "${crontab}" | sudo -E -u postgres crontab -`,
+    `echo "${crontab}" | ${pipeSudo} crontab -`,
     isLinux() ? 'postgres' : null,
     { ...getCwd(), env: process.env }
   );
@@ -126,7 +129,7 @@ async function removeEntries({ verbose }: TOptions) {
 
   execSyncAsUser(
     // TODO manual `sudo -E -u postgres`
-    `echo "${crontab}" | sudo -E -u postgres crontab -`,
+    `echo "${crontab}" | ${pipeSudo} crontab -`,
     isLinux() ? 'postgres' : null,
     { ...getCwd(), env: process.env }
   );

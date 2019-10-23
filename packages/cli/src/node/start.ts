@@ -2,8 +2,9 @@
 import { leaf, option } from '@carnesen/cli';
 import assert from 'assert';
 import { ChildProcess, spawn } from 'child_process';
+import delay from 'delay';
 import path from 'path';
-import { MIN, NodeStates } from '../shared/constants';
+import { MIN, NodeStates, SEC } from '../shared/constants';
 import {
   CLIError,
   ConditionsNotMetError,
@@ -320,6 +321,8 @@ async function checkConditions(
       );
     } else if (pid && restart) {
       await nodeStop({ verbose });
+      // make sure the port gets freed
+      await delay(2 * SEC);
     }
   }
   checkConfigFile(config);

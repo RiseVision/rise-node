@@ -78,8 +78,8 @@ export async function updateCLI({ verbose, localhost, version }: TOptions) {
   currentVersion = currentVersion.trim();
 
   if (VERSION_CLI === currentVersion) {
-    console.log('No new version available');
+    console.log('RISE CLI is at the latest version');
   } else {
-    console.log(`Updated to ${currentVersion}`);
+    console.log(`RISE CLI updated to ${currentVersion}`);
   }
 }
