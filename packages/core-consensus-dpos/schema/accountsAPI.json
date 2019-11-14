@@ -37,7 +37,7 @@
         "type": "string",
         "format": "address",
         "minLength": 1,
-        "maxLength": 22
+        "maxLength": 250
       }
     },
     "required": ["address"]
