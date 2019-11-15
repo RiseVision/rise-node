@@ -60,7 +60,7 @@
       "q": {
         "type": "string",
         "minLength": 1,
-        "maxLength": 20
+        "maxLength": 250
       },
       "limit": {
         "type": "integer",
