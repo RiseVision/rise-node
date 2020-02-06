@@ -1,7 +1,7 @@
 {
     "port": 5555,
     "address": "0.0.0.0",
-    "version": "1.3.4",
+    "version": "3.0.1",
     "fileLogLevel": "info",
     "logFileName": "logs/rise-master.log",
     "consoleLogLevel": "info",
@@ -58,7 +58,7 @@
                 "port": 5555
             },
             {
-                "ip": "212.24.96.99",
+                "ip": "45.63.0.54",
                 "port": 5555
             }
         ],
