@@ -56,6 +56,7 @@ export default {
     { height: 1, ver: '>=0.1.0' },
     { height: 241000, ver: '>=0.1.1' },
     { height: 826500,  ver: '>=0.1.2' },
+    { height: 2432687,  ver: '>=3.0.1' },
   ],
   fees                         : [
     {
