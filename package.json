@@ -49,7 +49,7 @@
     "popsicle": "=10.0.1",
     "promise-parallel-throttle": "^3.0.0",
     "promise-retry": "^1.1.1",
-    "protobufjs": "^6.8.6",
+    "protobufjs": "^6.11.3",
     "rc-openapi-gen": "^0.1.1",
     "redis": "^2.8.0",
     "risejs": "^1.4.1",
