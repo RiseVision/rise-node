@@ -58,7 +58,7 @@
     "sequelize": "=4.38.0",
     "sequelize-typescript": "=0.6.5",
     "shuffle-array": "^1.0.1",
-    "socket.io": "=2.1.1",
+    "socket.io": "=2.5.0",
     "sodium": "=2.0.3",
     "sodium-native": "^2.1.6",
     "source-map-support": "=0.5.6",
