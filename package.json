@@ -29,7 +29,7 @@
     "compression": "=1.7.3",
     "cors": "=2.8.4",
     "dpos-offline": "=1.6.1",
-    "express": "=4.16.3",
+    "express": "=4.17.3",
     "express-domain-middleware": "=0.1.0",
     "express-rate-limit": "=2.11.0",
     "extend": "=3.0.2",
